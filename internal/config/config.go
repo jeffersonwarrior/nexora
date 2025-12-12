@@ -402,6 +402,22 @@ func (c *Config) GetModel(provider, model string) *catwalk.Model {
 			}
 		}
 	}
+
+	// Fall back to catwalk known providers if not found in provider config
+	providers, err := Providers(c)
+	if err != nil {
+		return nil
+	}
+	for _, p := range providers {
+		if string(p.ID) == provider {
+			for _, m := range p.Models {
+				if m.ID == model {
+					return &m
+				}
+			}
+			break
+		}
+	}
 	return nil
 }
 
@@ -413,6 +429,27 @@ func (c *Config) GetProviderForModel(modelType SelectedModelType) *ProviderConfi
 	if providerConfig, ok := c.Providers.Get(model.Provider); ok {
 		return &providerConfig
 	}
+
+	// Fall back to known providers if not found in config
+	// This handles injected providers like "nexora"
+	providers, err := Providers(c)
+	if err == nil {
+		for _, p := range providers {
+			if string(p.ID) == model.Provider {
+				// Create a ProviderConfig from the known provider
+				cfg := ProviderConfig{
+					ID:           string(p.ID),
+					Name:         p.Name,
+					BaseURL:      p.APIEndpoint,
+					Type:         p.Type,
+					Models:       p.Models,
+					ExtraHeaders: make(map[string]string),
+				}
+				return &cfg
+			}
+		}
+	}
+
 	return nil
 }
 

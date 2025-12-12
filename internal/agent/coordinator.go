@@ -527,7 +527,7 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		return Model{}, Model{}, errors.New("large model provider not configured")
 	}
 
-	smallProvider, err := c.buildProvider(smallProviderCfg, largeModelCfg)
+	smallProvider, err := c.buildProvider(smallProviderCfg, smallModelCfg)
 	if err != nil {
 		return Model{}, Model{}, err
 	}
@@ -546,12 +546,41 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		}
 	}
 
+	// Fall back to catwalk known providers if not found in provider config
+	knownProviders, err := config.Providers(c.cfg)
+	if err == nil {
+		if largeCatwalkModel == nil {
+			for _, p := range knownProviders {
+				if string(p.ID) == largeModelCfg.Provider {
+					for i, m := range p.Models {
+						if m.ID == largeModelCfg.Model {
+							largeCatwalkModel = &p.Models[i]
+						}
+					}
+					break
+				}
+			}
+		}
+		if smallCatwalkModel == nil {
+			for _, p := range knownProviders {
+				if string(p.ID) == smallModelCfg.Provider {
+					for i, m := range p.Models {
+						if m.ID == smallModelCfg.Model {
+							smallCatwalkModel = &p.Models[i]
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+
 	if largeCatwalkModel == nil {
-		return Model{}, Model{}, errors.New("large model not found in provider config")
+		return Model{}, Model{}, fmt.Errorf("large model %s not found for provider %s", largeModelCfg.Model, largeModelCfg.Provider)
 	}
 
 	if smallCatwalkModel == nil {
-		return Model{}, Model{}, errors.New("snall model not found in provider config")
+		return Model{}, Model{}, fmt.Errorf("small model %s not found for provider %s", smallModelCfg.Model, smallModelCfg.Provider)
 	}
 
 	largeModelID := largeModelCfg.Model

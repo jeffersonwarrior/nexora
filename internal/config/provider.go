@@ -2,14 +2,17 @@ package config
 
 import (
 	"cmp"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 	"github.com/charmbracelet/catwalk/pkg/embedded"
@@ -17,7 +20,7 @@ import (
 )
 
 type ProviderClient interface {
-	GetProviders() ([]catwalk.Provider, error)
+	GetProviders(context.Context, string) ([]catwalk.Provider, error)
 }
 
 var (
@@ -77,6 +80,8 @@ func loadProvidersFromCache(path string) ([]catwalk.Provider, error) {
 
 	// Inject mistral provider if it doesn't exist
 	providers = injectMistralProviders(providers)
+	// Inject nexora provider if it doesn't exist
+	providers = injectNexoraProviders(providers)
 	return providers, nil
 }
 
@@ -89,7 +94,7 @@ func UpdateProviders(pathOrUrl string) error {
 		providers = embedded.GetAll()
 	case strings.HasPrefix(pathOrUrl, "http://") || strings.HasPrefix(pathOrUrl, "https://"):
 		var err error
-		providers, err = catwalk.NewWithURL(pathOrUrl).GetProviders()
+		providers, err = catwalk.NewWithURL(pathOrUrl).GetProviders(context.Background(), "")
 		if err != nil {
 			return fmt.Errorf("failed to fetch providers from Catwalk: %w", err)
 		}
@@ -127,6 +132,7 @@ func Providers(cfg *Config) ([]catwalk.Provider, error) {
 		// Inject mistral provider if it doesn't exist
 		if providerErr == nil {
 			providerList = injectMistralProviders(providerList)
+			providerList = injectNexoraProviders(providerList)
 		}
 	})
 	return providerList, providerErr
@@ -134,7 +140,7 @@ func Providers(cfg *Config) ([]catwalk.Provider, error) {
 
 func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) ([]catwalk.Provider, error) {
 	catwalkGetAndSave := func() ([]catwalk.Provider, error) {
-		providers, err := client.GetProviders()
+		providers, err := client.GetProviders(context.Background(), "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch providers from catwalk: %w", err)
 		}
@@ -160,6 +166,8 @@ func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) 
 		providers := embedded.GetAll()
 		// Inject mistral provider
 		providers = injectMistralProviders(providers)
+		// Inject nexora provider
+		providers = injectNexoraProviders(providers)
 		if err := saveProvidersInCache(path, providers); err != nil {
 			return nil, err
 		}
@@ -175,6 +183,8 @@ func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) 
 		}
 		// Inject mistral provider
 		providers = injectMistralProviders(providers)
+		// Inject nexora provider
+		providers = injectNexoraProviders(providers)
 		return providers, nil
 	}
 }
@@ -319,6 +329,47 @@ func injectMistralProviders(providers []catwalk.Provider) []catwalk.Provider {
 	return append(providers, mistralProvider)
 }
 
+// injectNexoraProviders adds Nexora provider to the providers list if it doesn't exist
+func injectNexoraProviders(providers []catwalk.Provider) []catwalk.Provider {
+	slog.Info("Injecting Nexora provider", "existing_count", len(providers))
+
+	// Check if nexora already exists
+	for _, provider := range providers {
+		if provider.ID == "nexora" {
+			slog.Info("Nexora provider already exists")
+			return providers
+		}
+	}
+
+	// Create Nexora provider with the devstral-small-2 model
+	nexoraProvider := catwalk.Provider{
+		Name:                "Nexora",
+		ID:                  "nexora",
+		APIKey:              "",
+		APIEndpoint:         "http://localhost:9000/v1",
+		Type:                "openai-compat",
+		DefaultLargeModelID: "devstral-small-2",
+		DefaultSmallModelID: "devstral-small-2",
+		Models: []catwalk.Model{
+			{
+				ID:               "devstral-small-2",
+				Name:             "Devstral Small 2",
+				CostPer1MIn:      0.3,
+				CostPer1MOut:     0.9,
+				ContextWindow:    262144,
+				DefaultMaxTokens: 16000,
+				CanReason:        true,
+				SupportsImages:   false,
+				Options:          catwalk.ModelOptions{},
+			},
+		},
+		DefaultHeaders: map[string]string{},
+	}
+
+	slog.Info("Added Nexora provider with models", "model_count", len(nexoraProvider.Models))
+	return append(providers, nexoraProvider)
+}
+
 // injectMiniMaxProviders adds MiniMax provider to the providers list if it doesn't exist
 func injectMiniMaxProviders(providers []catwalk.Provider) []catwalk.Provider {
 	slog.Info("Injecting MiniMax provider", "existing_count", len(providers))
@@ -369,4 +420,62 @@ func injectMiniMaxProviders(providers []catwalk.Provider) []catwalk.Provider {
 
 	slog.Info("Added MiniMax provider with models", "model_count", len(minimaxProvider.Models))
 	return append(providers, minimaxProvider)
+}
+
+// injectCustomGitHubProviders fetches and injects custom providers from GitHub
+func injectCustomGitHubProviders(providers []catwalk.Provider) []catwalk.Provider {
+	slog.Info("Injecting custom providers from GitHub")
+
+	// GitHub raw URL for custom providers configuration
+	githubURL := "https://raw.githubusercontent.com/jeffersonwarrior/nexora-providers/main/providers.json"
+
+	// Attempt to fetch custom providers from GitHub
+	customProviders, err := fetchProvidersFromGitHub(githubURL)
+	if err != nil {
+		slog.Warn("Failed to fetch custom providers from GitHub", "error", err)
+		return providers
+	}
+
+	// Merge custom providers with existing ones (avoiding duplicates)
+	existingIDs := make(map[string]bool)
+	for _, p := range providers {
+		existingIDs[string(p.ID)] = true
+	}
+
+	for _, cp := range customProviders {
+		if !existingIDs[string(cp.ID)] {
+			slog.Info("Adding custom provider", "id", cp.ID, "name", cp.Name)
+			providers = append(providers, cp)
+		}
+	}
+
+	return providers
+}
+
+// fetchProvidersFromGitHub fetches providers from a GitHub raw URL
+func fetchProvidersFromGitHub(url string) ([]catwalk.Provider, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch from GitHub: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub returned status %d", resp.StatusCode)
+	}
+
+	var providers []catwalk.Provider
+	if err := json.NewDecoder(resp.Body).Decode(&providers); err != nil {
+		return nil, fmt.Errorf("failed to decode providers: %w", err)
+	}
+
+	return providers, nil
 }

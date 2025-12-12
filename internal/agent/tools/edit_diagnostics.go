@@ -227,3 +227,81 @@ func PatternMatchAnalysis(fileContent, pattern string) map[string]interface{} {
 		"pattern_in_file":    strings.Contains(fileContent, pattern),
 	}
 }
+
+// AnalyzeWhitespaceDifference compares whitespace between file content and pattern
+func AnalyzeWhitespaceDifference(fileContent, pattern string) map[string]interface{} {
+	fileTabs := strings.Count(fileContent, "\t")
+	patternTabs := strings.Count(pattern, "\t")
+	displayTabs := strings.Count(pattern, "→\t")
+
+	fileSpaces := countLeadingSpaces(fileContent)
+	patternSpaces := countLeadingSpaces(pattern)
+
+	return map[string]interface{}{
+		"has_tab_mismatch":            displayTabs > 0,
+		"expected_tabs":               fileTabs,
+		"found_tabs":                  patternTabs,
+		"display_tabs":                displayTabs,
+		"has_space_mismatch":          patternSpaces != fileSpaces,
+		"expected_spaces":             fileSpaces,
+		"found_spaces":                patternSpaces,
+		"pattern_in_file":             strings.Contains(fileContent, pattern),
+		"pattern_after_normalization": strings.Contains(fileContent, normalizeTabIndicators(pattern)),
+	}
+}
+
+// Helper function for space counting
+func countLeadingSpaces(content string) int {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 {
+		return 0
+	}
+
+	// Count leading spaces on first non-empty line
+	for _, line := range lines {
+		trimmed := strings.TrimLeft(line, " ")
+		if len(trimmed) < len(line) {
+			return len(line) - len(trimmed)
+		}
+	}
+	return 0
+}
+
+// createAIErrorMessage generates AI-friendly error messages with actionable guidance
+func createAIErrorMessage(err error, fileContent, oldString string) string {
+	analysis := AnalyzeWhitespaceDifference(fileContent, oldString)
+
+	// Tab mismatch - most common issue
+	if analysis["has_tab_mismatch"].(bool) {
+		return fmt.Sprintf("TAB_MISMATCH: The VIEW tool shows tabs as '→\t' but EDIT needs raw tabs. "+
+			"Found %d display tabs in your pattern. Try: "+
+			"1) Use AI mode (ai_mode=true) for automatic normalization, or "+
+			"2) Replace '→\t' with actual tab characters in your pattern.",
+			analysis["display_tabs"].(int))
+	}
+
+	// Space mismatch
+	if analysis["has_space_mismatch"].(bool) {
+		return fmt.Sprintf("SPACE_MISMATCH: Expected %d leading spaces but found %d. "+
+			"Count spaces carefully. AI mode (ai_mode=true) can help with this.",
+			analysis["expected_spaces"].(int), analysis["found_spaces"].(int))
+	}
+
+	// Pattern not found at all
+	if !analysis["pattern_in_file"].(bool) {
+		// Check if it would match after normalization
+		if analysis["pattern_after_normalization"].(bool) {
+			return fmt.Sprintf("PATTERN_FORMAT_MISMATCH: Your pattern would match after tab normalization. " +
+				"Use AI mode (ai_mode=true) or normalize tabs manually.")
+		}
+
+		return fmt.Sprintf("PATTERN_NOT_FOUND: The text was not found in the file. " +
+			"Common fixes: 1) Use AI mode (ai_mode=true), " +
+			"2) Include more surrounding context (3-5 lines), " +
+			"3) Check for tab/space differences, " +
+			"4) Verify the file hasn't changed since you viewed it.")
+	}
+
+	// Fallback to original error
+	return err.Error()
+}

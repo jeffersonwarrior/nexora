@@ -256,6 +256,9 @@ func (c *Config) configureProviders(env env.Env, resolver VariableResolver, know
 
 		switch p.ID {
 		// Handle specific providers that require additional configuration
+		case "nexora":
+			// Nexora is a local provider that doesn't require an API key
+			// It's always available if configured
 		case catwalk.InferenceProviderVertexAI:
 			if !hasVertexCredentials(env) {
 				if configExists {
@@ -562,9 +565,10 @@ func (c *Config) configureSelectedModels(knownProviders []catwalk.Provider) erro
 		model := c.GetModel(large.Provider, large.Model)
 		if model == nil {
 			large = defaultLarge
-			// override the model type to large
-			err := c.UpdatePreferredModel(SelectedModelTypeLarge, large)
-			if err != nil {
+			// Override the model type to large without recording as recent.
+			// This is initialization fallback, not a user selection.
+			c.Models[SelectedModelTypeLarge] = large
+			if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeLarge), large); err != nil {
 				return fmt.Errorf("failed to update preferred large model: %w", err)
 			}
 		} else {
@@ -606,9 +610,10 @@ func (c *Config) configureSelectedModels(knownProviders []catwalk.Provider) erro
 		model := c.GetModel(small.Provider, small.Model)
 		if model == nil {
 			small = defaultSmall
-			// override the model type to small
-			err := c.UpdatePreferredModel(SelectedModelTypeSmall, small)
-			if err != nil {
+			// Override the model type to small without recording as recent.
+			// This is initialization fallback, not a user selection.
+			c.Models[SelectedModelTypeSmall] = small
+			if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeSmall), small); err != nil {
 				return fmt.Errorf("failed to update preferred small model: %w", err)
 			}
 		} else {

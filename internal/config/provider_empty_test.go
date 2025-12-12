@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 type emptyProviderClient struct{}
 
-func (m *emptyProviderClient) GetProviders() ([]catwalk.Provider, error) {
+func (m *emptyProviderClient) GetProviders(ctx context.Context, githubURL string) ([]catwalk.Provider, error) {
 	return []catwalk.Provider{}, nil
 }
 
@@ -42,7 +43,8 @@ func TestProvider_loadProvidersEmptyCache(t *testing.T) {
 	providers, err := loadProviders(false, client, tmpPath)
 	require.NoError(t, err)
 	require.NotNil(t, providers)
-	require.Len(t, providers, 2) // Mock + mistral
+	// Mock + mistral + nexora
 	require.Equal(t, "Mock", providers[0].Name)
 	require.Equal(t, "Mistral", providers[1].Name)
+	require.Equal(t, "Nexora", providers[2].Name)
 }

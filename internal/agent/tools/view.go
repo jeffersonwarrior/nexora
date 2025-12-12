@@ -140,9 +140,32 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 				return fantasy.ToolResponse{}, fmt.Errorf("error accessing file: %w", err)
 			}
 
-			// Check if it's a directory
+			// Check if it's a directory - provide helpful response instead of error
 			if fileInfo.IsDir() {
-				return fantasy.NewTextErrorResponse(fmt.Sprintf("Path is a directory, not a file: %s", filePath)), nil
+				// List directory contents to help AI understand what's available
+				dirEntries, err := os.ReadDir(filePath)
+				if err != nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("Cannot read directory: %s. Error: %v", filePath, err)), nil
+				}
+
+				// Build helpful response with directory contents
+				var fileList []string
+				for _, entry := range dirEntries {
+					fileList = append(fileList, entry.Name())
+				}
+
+				// Create AI-friendly response with suggestions
+				response := fmt.Sprintf("Path is a directory: %s\n\nDirectory contents:\n", filePath)
+				for i, file := range fileList {
+					response += fmt.Sprintf("%d. %s\n", i+1, file)
+				}
+
+				response += "\n💡 Suggestions:\n"
+				response += "- Use 'view' with a specific file path (e.g., 'view internal/db/db.go')\n"
+				response += "- Use 'ls' command to explore directory structure\n"
+				response += "- Try 'find' to search for specific files\n"
+
+				return fantasy.NewTextResponse(response), nil
 			}
 
 			// Check file size

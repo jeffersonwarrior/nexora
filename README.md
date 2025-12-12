@@ -1,15 +1,8 @@
 # Nexora
 
-<p align="center">
-    <a href="https://stuff.nexora.sh/nexora/nexora-nexora.png"><img width="450" alt="Nexora Nexora Logo" src="https://github.com/user-attachments/assets/adc1a6f4-b284-4603-836c-59038caa2e8b" /></a><br />
-    <a href="https://github.com/nexorabracelet/nexora/releases"><img src="https://img.shields.io/github/release/nexorabracelet/nexora" alt="Latest Release"></a>
-    <a href="https://github.com/nexorabracelet/nexora/actions"><img src="https://github.com/nexorabracelet/nexora/actions/workflows/build.yml/badge.svg" alt="Build Status"></a>
-</p>
 
 <p align="center">Your new coding bestie, now available in your favourite terminal.<br />Your tools, your code, and your workflows, wired into your LLM of choice.</p>
 <p align="center">你的新编程伙伴，现在就在你最爱的终端中。<br />你的工具、代码和工作流，都与您选择的 LLM 模型紧密相连。</p>
-
-<p align="center"><img width="800" alt="Nexora Demo" src="https://github.com/user-attachments/assets/58280caf-851b-470a-b6f7-d5c4ea8a1968" /></p>
 
 ## Features
 
@@ -19,6 +12,7 @@
 - **LSP-Enhanced:** Nexora uses LSPs for additional context, just like you do
 - **Extensible:** add capabilities via MCPs (`http`, `stdio`, and `sse`)
 - **Works Everywhere:** first-class support in every terminal on macOS, Linux, Windows (PowerShell and WSL), FreeBSD, OpenBSD, and NetBSD
+- **Tool Agnostic:** works with any LLM—including local models like Devstral, with intelligent message routing and API format translation for seamless compatibility
 
 ## Installation
 
@@ -26,10 +20,10 @@ Use a package manager:
 
 ```bash
 # Homebrew
-brew install nexorabracelet/tap/nexora
+brew install nexora
 
 # NPM
-npm install -g @nexoraland/nexora
+npm install -g nexora
 
 # Arch Linux (btw)
 yay -S nexora-bin
@@ -42,10 +36,10 @@ Windows users:
 
 ```bash
 # Winget
-winget install nexorabracelet.nexora
+winget install nexora
 
 # Scoop
-scoop bucket add nexora https://github.com/nexorabracelet/scoop-bucket.git
+scoop bucket add nexora https://github.com/scoop-bucket.git
 scoop install nexora
 ```
 
@@ -154,12 +148,12 @@ Or, download it:
 - [Packages][releases] are available in Debian and RPM formats
 - [Binaries][releases] are available for Linux, macOS, Windows, FreeBSD, OpenBSD, and NetBSD
 
-[releases]: https://github.com/nexorabracelet/nexora/releases
+[releases]: https://github.com/nexora/releases
 
 Or just install it with Go:
 
 ```
-go install github.com/nexorabracelet/nexora@latest
+go install github.com/nexora@latest
 ```
 
 > [!WARNING]
@@ -175,33 +169,33 @@ Nexora. You'll be prompted to enter your API key.
 
 That said, you can also set environment variables for preferred providers.
 
-| Environment Variable        | Provider                                           |
-| --------------------------- | -------------------------------------------------- |
-| `ANTHROPIC_API_KEY`         | Anthropic                                          |
-| `OPENAI_API_KEY`            | OpenAI                                             |
-| `OPENROUTER_API_KEY`        | OpenRouter                                         |
-| `GEMINI_API_KEY`            | Google Gemini                                      |
-| `CEREBRAS_API_KEY`          | Cerebras                                           |
-| `HF_TOKEN`                  | Huggingface Inference                              |
-| `VERTEXAI_PROJECT`          | Google Cloud VertexAI (Gemini)                     |
-| `VERTEXAI_LOCATION`         | Google Cloud VertexAI (Gemini)                     |
-| `GROQ_API_KEY`              | Groq                                               |
-| `AWS_ACCESS_KEY_ID`         | Amazon Bedrock (Claude)                               |
-| `AWS_SECRET_ACCESS_KEY`     | Amazon Bedrock (Claude)                               |
-| `AWS_REGION`                | Amazon Bedrock (Claude)                               |
-| `AWS_PROFILE`               | Amazon Bedrock (Custom Profile)                       |
-| `AWS_BEARER_TOKEN_BEDROCK`  | Amazon Bedrock                                        |
-| `AZURE_OPENAI_API_ENDPOINT` | Azure OpenAI models                                |
-| `AZURE_OPENAI_API_KEY`      | Azure OpenAI models (optional when using Entra ID) |
-| `AZURE_OPENAI_API_VERSION`  | Azure OpenAI models                                |
+|| Environment Variable        | Provider                                           |
+|| --------------------------- | -------------------------------------------------- |
+|| `ANTHROPIC_API_KEY`         | Anthropic                                          |
+|| `OPENAI_API_KEY`            | OpenAI                                             |
+|| `OPENROUTER_API_KEY`        | OpenRouter                                         |
+|| `GEMINI_API_KEY`            | Google Gemini                                      |
+|| `CEREBRAS_API_KEY`          | Cerebras                                           |
+|| `HF_TOKEN`                  | Huggingface Inference                              |
+|| `VERTEXAI_PROJECT`          | Google Cloud VertexAI (Gemini)                     |
+|| `VERTEXAI_LOCATION`         | Google Cloud VertexAI (Gemini)                     |
+|| `GROQ_API_KEY`              | Groq                                               |
+|| `AWS_ACCESS_KEY_ID`         | Amazon Bedrock (Claude)                               |
+|| `AWS_SECRET_ACCESS_KEY`     | Amazon Bedrock (Claude)                               |
+|| `AWS_REGION`                | Amazon Bedrock (Claude)                               |
+|| `AWS_PROFILE`               | Amazon Bedrock (Custom Profile)                       |
+|| `AWS_BEARER_TOKEN_BEDROCK`  | Amazon Bedrock                                        |
+|| `AZURE_OPENAI_API_ENDPOINT` | Azure OpenAI models                                |
+|| `AZURE_OPENAI_API_KEY`      | Azure OpenAI models (optional when using Entra ID) |
+|| `AZURE_OPENAI_API_VERSION`  | Azure OpenAI models                                |
 
 ### By the Way
 
-Is there a provider you’d like to see in Nexora? Is there an existing model that needs an update?
+Is there a provider you'd like to see in Nexora? Is there an existing model that needs an update?
 
-Nexora’s default model listing is managed in [Catwalk](https://github.com/nexorabracelet/catwalk), a community-supported, open source repository of Nexora-compatible models, and you’re welcome to contribute.
+Nexora's default model listing is managed in [Catwalk](https://github.com/catwalk), a community-supported, open source repository of Nexora-compatible models, and you're welcome to contribute.
 
-<a href="https://github.com/nexorabracelet/catwalk"><img width="174" height="174" alt="Catwalk Badge" src="https://github.com/user-attachments/assets/95b49515-fe82-4409-b10d-5beb0873787d" /></a>
+<a href="https://github.com/catwalk"><img width="174" height="174" alt="Catwalk Badge" src="https://github.com/user-attachments/assets/95b49515-fe82-4409-b10d-5beb0873787d" /></a>
 
 ## Configuration
 
@@ -376,10 +370,10 @@ it creates. You can customize this behavior with the `attribution` option:
 
 - `trailer_style`: Controls the attribution trailer added to commit messages
   (default: `assisted-by`)
-	- `assisted-by`: Adds `Assisted-by: [Model Name] via Nexora <nexora@nexora.land>`
-	  (includes the model name)
-	- `co-authored-by`: Adds `Co-Authored-By: Nexora <nexora@nexora.land>`
-	- `none`: No attribution trailer
+→	- `assisted-by`: Adds `Assisted-by: [Model Name] via Nexora <nexora@nexora.land>`
+→	  (includes the model name)
+→	- `co-authored-by`: Adds `Co-Authored-By: Nexora <nexora@nexora.land>`
+→	- `none`: No attribution trailer
 - `generated_with`: When true (default), adds `💘 Generated with Nexora` line to
   commit messages and PR descriptions
 
@@ -396,7 +390,7 @@ Anthropic-compatible APIs.
 
 #### OpenAI-Compatible APIs
 
-Here’s an example configuration for Deepseek, which uses an OpenAI-compatible
+Here's an example configuration for Deepseek, which uses an OpenAI-compatible
 API. Don't forget to set `DEEPSEEK_API_KEY` in your environment.
 
 ```json
@@ -583,7 +577,7 @@ config:
 ## Provider Auto-Updates
 
 By default, Nexora automatically checks for the latest and greatest list of
-providers and models from [Catwalk](https://github.com/nexorabracelet/catwalk),
+providers and models from [Catwalk](https://github.com/catwalk),
 the open source Nexora provider database. This means that when new providers and
 models are available, or when model metadata changes, Nexora automatically
 updates your local configuration.
@@ -641,8 +635,8 @@ which maintainers rely on to inform development and support priorities. The
 metrics include solely usage metadata; prompts and responses are NEVER
 collected.
 
-Details on exactly what’s collected are in the source code ([here](https://github.com/nexorabracelet/nexora/tree/main/internal/event)
-and [here](https://github.com/nexorabracelet/nexora/blob/main/internal/llm/agent/event.go)).
+Details on exactly what's collected are in the source code ([here](https://github.com/nexora/tree/main/internal/event)
+and [here](https://github.com/nexora/blob/main/internal/llm/agent/event.go)).
 
 You can opt out of metrics collection at any time by setting the environment
 variable by setting the following in your environment:
@@ -666,11 +660,11 @@ convention which can be enabled via `export DO_NOT_TRACK=1`.
 
 ## Contributing
 
-See the [contributing guide](https://github.com/nexorabracelet/nexora?tab=contributing-ov-file#contributing).
+See the [contributing guide](https://github.com/nexora?tab=contributing-ov-file#contributing).
 
 ## Whatcha think?
 
-We’d love to hear your thoughts on this project. Need help? We gotchu. You can find us on:
+We'd love to hear your thoughts on this project. Need help? We gotchu. You can find us on:
 
 - [Twitter](https://twitter.com/nexoracli)
 - [Slack](https://nexora.land/slack)
@@ -682,7 +676,7 @@ We’d love to hear your thoughts on this project. Need help? We gotchu. You can
 
 ## License
 
-[FSL-1.1-MIT](https://github.com/nexorabracelet/nexora/raw/main/LICENSE.md)
+[FSL-1.1-MIT](https://github.com/nexora/raw/main/LICENSE.md)
 
 ---
 
