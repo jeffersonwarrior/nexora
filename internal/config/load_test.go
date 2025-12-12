@@ -224,12 +224,8 @@ func TestConfig_configureProvidersBedrockWithoutCredentials(t *testing.T) {
 	resolver := NewEnvironmentVariableResolver(env)
 	err := cfg.configureProviders(env, resolver, knownProviders)
 	require.NoError(t, err)
-	require.Equal(t, 1, cfg.Providers.Len())
-
-	bedrockProvider, ok := cfg.Providers.Get("bedrock")
-	require.True(t, ok, "Bedrock provider should be present")
-	require.Len(t, bedrockProvider.Models, 1)
-	require.Equal(t, "anthropic.claude-sonnet-4-20250514-v1:0", bedrockProvider.Models[0].ID)
+	// Provider should not be configured without proper AWS credentials
+	require.Equal(t, 0, cfg.Providers.Len())
 }
 
 func TestConfig_configureProvidersBedrockWithoutUnsupportedModel(t *testing.T) {
@@ -796,12 +792,10 @@ func TestConfig_configureProvidersEnhancedCredentialValidation(t *testing.T) {
 		err := cfg.configureProviders(env, resolver, knownProviders)
 		require.NoError(t, err)
 
-		require.Equal(t, 1, cfg.Providers.Len())
-
-		bedrockProvider, ok := cfg.Providers.Get("bedrock")
-		require.True(t, ok, "Bedrock provider should be present")
-		require.Len(t, bedrockProvider.Models, 1)
-		require.Equal(t, "anthropic.claude-sonnet-4-20250514-v1:0", bedrockProvider.Models[0].ID)
+		// Provider should be removed when AWS credentials are missing
+		require.Equal(t, 0, cfg.Providers.Len())
+		_, exists := cfg.Providers.Get("bedrock")
+		require.False(t, exists)
 	})
 
 	t.Run("provider removed when API key missing with existing config", func(t *testing.T) {

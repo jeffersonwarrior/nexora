@@ -22,11 +22,21 @@ import (
 	"github.com/nexora/cli/internal/permission"
 )
 
+// normalizeTabIndicators converts VIEW tool display tabs (→\t) back to actual tabs (\t)
+func normalizeTabIndicators(content string) string {
+	// Convert display format →\t back to actual tabs \t
+	content = strings.ReplaceAll(content, "→\t", "\t")
+	// Also handle cases where only → is present
+	content = strings.ReplaceAll(content, "→", "\t")
+	return content
+}
+
 type EditParams struct {
 	FilePath   string `json:"file_path" description:"The absolute path to the file to modify"`
 	OldString  string `json:"old_string" description:"The text to replace"`
 	NewString  string `json:"new_string" description:"The text to replace it with"`
 	ReplaceAll bool   `json:"replace_all,omitempty" description:"Replace all occurrences of old_string (default false)"`
+	AIMode     bool   `json:"ai_mode,omitempty" description:"Enable AI-optimized editing with automatic context expansion and improved error handling"`
 }
 
 type EditPermissionsParams struct {
@@ -85,7 +95,7 @@ func NewEditTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 				}
 			}
 
-			response, err = replaceContent(editCtx, params.FilePath, params.OldString, params.NewString, params.ReplaceAll, call)
+			response, err = replaceContent(editCtx, params, params.FilePath, params.OldString, params.NewString, params.ReplaceAll, call)
 			if err != nil {
 				return response, err
 			}
@@ -222,17 +232,26 @@ func deleteContent(edit editContext, filePath, oldString string, replaceAll bool
 		newContent = strings.ReplaceAll(oldContent, oldString, "")
 		deletionCount = strings.Count(oldContent, oldString)
 		if deletionCount == 0 {
-			return fantasy.NewTextErrorResponse("old_string not found in file. Make sure it matches exactly, including whitespace and line breaks"), nil
+			return fantasy.NewTextErrorResponse(createAIErrorMessage(
+				fmt.Errorf("old_string not found in file"),
+				oldContent, oldString,
+			)), nil
 		}
 	} else {
 		index := strings.Index(oldContent, oldString)
 		if index == -1 {
-			return fantasy.NewTextErrorResponse("old_string not found in file. Make sure it matches exactly, including whitespace and line breaks"), nil
+			return fantasy.NewTextErrorResponse(createAIErrorMessage(
+				fmt.Errorf("old_string not found in file"),
+				oldContent, oldString,
+			)), nil
 		}
 
 		lastIndex := strings.LastIndex(oldContent, oldString)
 		if index != lastIndex {
-			return fantasy.NewTextErrorResponse("old_string appears multiple times in the file. Please provide more context to ensure a unique match, or set replace_all to true"), nil
+			return fantasy.NewTextErrorResponse("MULTIPLE_MATCHES: The pattern appears multiple times in the file. " +
+				"Solutions: 1) Use AI mode (ai_mode=true) for automatic context expansion, " +
+				"2) Provide 3-5 lines of surrounding context to make it unique, " +
+				"3) Set replace_all=true to replace all occurrences."), nil
 		}
 
 		newContent = oldContent[:index] + oldContent[index+len(oldString):]
@@ -315,7 +334,56 @@ func deleteContent(edit editContext, filePath, oldString string, replaceAll bool
 	), nil
 }
 
-func replaceContent(edit editContext, filePath, oldString, newString string, replaceAll bool, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+// autoExpandContext automatically expands minimal context to improve match success
+func autoExpandContext(filePath, partialString string) (string, error) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file for context expansion: %w", err)
+	}
+
+	fileContent := string(content)
+	lines := strings.Split(fileContent, "\n")
+
+	// Try to find the partial string and expand context around it
+	for i, line := range lines {
+		if strings.Contains(line, partialString) {
+			// Expand 2 lines before and 2 lines after for better context
+			start := i - 2
+			if start < 0 {
+				start = 0
+			}
+			end := i + 3
+			if end > len(lines) {
+				end = len(lines)
+			}
+			return strings.Join(lines[start:end], "\n"), nil
+		}
+	}
+
+	// If not found, return original (no expansion possible)
+	return partialString, nil
+}
+
+func replaceContent(edit editContext, params EditParams, filePath, oldString, newString string, replaceAll bool, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	// NORMALIZE TAB INDICATORS FROM VIEW OUTPUT
+	oldString = normalizeTabIndicators(oldString)
+	newString = normalizeTabIndicators(newString)
+
+	// AI MODE: Automatically expand context if minimal
+	if params.AIMode {
+		lineCount := strings.Count(oldString, "\n")
+		if lineCount < 2 { // Less than 2 newlines = minimal context
+			expanded, err := autoExpandContext(filePath, oldString)
+			if err == nil && expanded != oldString {
+				oldString = expanded
+				slog.Debug("AI mode: expanded context for better matching",
+					"file", filePath,
+					"original_lines", lineCount,
+					"expanded_lines", strings.Count(expanded, "\n"))
+			}
+		}
+	}
+
 	attemptCount := 0
 	// Auto-view file before every edit to ensure we have latest context
 	if err := autoViewFileBeforeEdit(edit.ctx, filePath); err != nil {
@@ -405,7 +473,10 @@ func replaceContent(edit editContext, filePath, oldString, newString string, rep
 					FailureReason: "old_string not found (replaceAll)",
 					Context:       PatternMatchAnalysis(oldContent, oldString),
 				})
-				return fantasy.NewTextErrorResponse("old_string not found in file. Make sure it matches exactly, including whitespace and line breaks"), nil
+				return fantasy.NewTextErrorResponse(createAIErrorMessage(
+					fmt.Errorf("old_string not found in file"),
+					oldContent, oldString,
+				)), nil
 			}
 			// Use the improved parameters from retry
 			oldString = retryParams.OldString

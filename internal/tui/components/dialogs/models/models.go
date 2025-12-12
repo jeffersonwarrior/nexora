@@ -236,7 +236,7 @@ func (m *modelDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 			}
 
 			// Check if provider is configured
-			if m.isProviderConfigured(string(selectedItem.Provider.ID)) {
+			if m.isProviderConfigured(string(selectedItem.Provider.ID)) || selectedItem.Provider.ID == "nexora" {
 				return m, tea.Sequence(
 					util.CmdHandler(dialogs.CloseDialogMsg{}),
 					util.CmdHandler(ModelSelectedMsg{

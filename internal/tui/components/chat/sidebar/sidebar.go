@@ -546,10 +546,24 @@ func (s *sidebarCmp) currentModelBlock() string {
 	cfg := config.Get()
 	agentCfg := cfg.Agents[config.AgentCoder]
 
-	selectedModel := cfg.Models[agentCfg.Model]
+	if agentCfg.Model == "" {
+		return styles.CurrentTheme().S().Text.Render("No model configured")
+	}
 
-	model := config.Get().GetModelByType(agentCfg.Model)
-	modelProvider := config.Get().GetProviderForModel(agentCfg.Model)
+	selectedModel := cfg.Models[agentCfg.Model]
+	if selectedModel.Provider == "" {
+		return styles.CurrentTheme().S().Text.Render("No provider configured")
+	}
+
+	model := cfg.GetModelByType(agentCfg.Model)
+	if model == nil {
+		return styles.CurrentTheme().S().Text.Render("Model not found")
+	}
+
+	modelProvider := cfg.GetProviderForModel(agentCfg.Model)
+	if modelProvider == nil {
+		return styles.CurrentTheme().S().Text.Render("Provider not found")
+	}
 
 	t := styles.CurrentTheme()
 
@@ -578,12 +592,12 @@ func (s *sidebarCmp) currentModelBlock() string {
 			parts = append(parts, reasoningInfoStyle.Render(formatter.String(fmt.Sprintf("Reasoning %s", reasoningEffort))))
 		}
 	}
-	if s.session.ID != "" {
+	if s.session.ID != "" && model != nil {
 		parts = append(
 			parts,
 			"  "+formatTokensAndCost(
 				s.session.CompletionTokens+s.session.PromptTokens,
-				model.ContextWindow,
+				int64(model.ContextWindow),
 				s.session.Cost,
 			),
 		)

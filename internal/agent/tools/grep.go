@@ -421,6 +421,51 @@ func fileContainsPattern(filePath string, pattern *regexp.Regexp) (bool, int, in
 	return fileContainsPatternWithContext(context.Background(), filePath, pattern)
 }
 
+// fileContainsMultiLinePattern searches for a pattern that may span multiple lines
+// This is used for edit validation where the old_string might be a multi-line block
+func fileContainsMultiLinePattern(filePath string, pattern *regexp.Regexp) (bool, int, int, string, error) {
+	// Only search text files.
+	if !isTextFile(filePath) {
+		return false, 0, 0, "", nil
+	}
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return false, 0, 0, "", err
+	}
+
+	// Convert to string for regex matching
+	fileContent := string(content)
+
+	// Find the pattern in the entire content
+	loc := pattern.FindStringIndex(fileContent)
+	if loc == nil {
+		return false, 0, 0, "", nil
+	}
+
+	// Find the line numbers where the match starts and ends
+	lines := strings.Split(fileContent, "\n")
+	startLine := 0
+	endLine := 0
+	charPos := 0
+
+	for i, line := range lines {
+		lineLength := len(line) + 1 // +1 for newline character
+		if charPos <= loc[0] && loc[0] < charPos+lineLength {
+			startLine = i + 1 // 1-based line number
+		}
+		if charPos <= loc[1] && loc[1] < charPos+lineLength {
+			endLine = i + 1 // 1-based line number
+		}
+		charPos += lineLength
+	}
+
+	// Get the actual matched text
+	matchedText := fileContent[loc[0]:loc[1]]
+
+	return true, startLine, endLine, matchedText, nil
+}
+
 // ValidateEditString confirms that old_string exists in the file before edit
 // Returns error with detailed information if the pattern is not found or found multiple times
 func ValidateEditString(filePath string, oldString string, replaceAll bool) error {
@@ -431,7 +476,8 @@ func ValidateEditString(filePath string, oldString string, replaceAll bool) erro
 	// Create a literal pattern that matches the exact string
 	pattern := regexp.MustCompile(regexp.QuoteMeta(oldString))
 
-	found, lineNum, _, lineContent, err := fileContainsPattern(filePath, pattern)
+	// First try multi-line pattern matching for edit operations
+	found, _, _, _, err := fileContainsMultiLinePattern(filePath, pattern)
 	if err != nil {
 		return fmt.Errorf("failed to validate edit string in file %s: %w", filePath, err)
 	}
@@ -441,15 +487,23 @@ func ValidateEditString(filePath string, oldString string, replaceAll bool) erro
 	}
 
 	if !replaceAll {
-		// Check for multiple occurrences
-		foundAgain, _, _, _, err := fileContainsPatternFromLine(filePath, pattern, lineNum+1)
+		// Check for multiple occurrences using multi-line search
+		// Read the entire file content to count occurrences
+		content, err := os.ReadFile(filePath)
 		if err != nil {
-			return fmt.Errorf("failed to check for multiple occurrences in file %s: %w", filePath, err)
+			return fmt.Errorf("failed to read file for multiple occurrence check: %w", err)
 		}
 
-		if foundAgain {
+		fileContent := string(content)
+		occurrences := pattern.FindAllStringIndex(fileContent, -1)
+
+		if len(occurrences) > 1 {
+			// Get a sample of the second occurrence for the error message
+			sampleText := fileContent[occurrences[1][0]:occurrences[1][1]]
+			// Count lines to the second occurrence
+			lines := strings.Split(fileContent[:occurrences[1][0]], "\n")
 			return fmt.Errorf("old_string appears multiple times in file %s. Found at line %d: %s",
-				filePath, lineNum, strings.TrimSpace(lineContent))
+				filePath, len(lines), strings.TrimSpace(sampleText))
 		}
 	}
 

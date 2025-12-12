@@ -586,16 +586,50 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 				continue
 			}
 			content := "There was an error while executing the tool"
+			isViewDirectoryHelp := false
 			if isCancelErr {
 				content = "Tool execution canceled by user"
 			} else if isPermissionErr {
 				content = "User denied permission"
+			} else if tc.Name == "view" && strings.Contains(err.Error(), "Path is a directory") {
+				// Automatic recovery for VIEW tool directory errors
+				// Extract the directory path from the error message
+				parts := strings.Split(err.Error(), ": ")
+				if len(parts) >= 2 {
+					dirPath := strings.TrimSpace(parts[1])
+					// List directory contents to help AI understand what's available
+					if dirEntries, dirErr := os.ReadDir(dirPath); dirErr == nil {
+						var fileList []string
+						for _, entry := range dirEntries {
+							fileList = append(fileList, entry.Name())
+						}
+
+						// Create helpful response with directory contents
+						response := fmt.Sprintf("Path is a directory: %s\n\nDirectory contents:\n", dirPath)
+						for i, file := range fileList {
+							response += fmt.Sprintf("%d. %s\n", i+1, file)
+						}
+
+						response += "\n💡 Suggestions:\n"
+						response += "- Use 'view' with a specific file path (e.g., 'view " + dirPath + "/filename')\n"
+						response += "- Use 'ls' command to explore directory structure\n"
+						response += "- Try 'find' to search for specific files\n"
+
+						content = response
+						// Don't mark as error - this is a helpful response
+						isViewDirectoryHelp = true
+					} else {
+						content = fmt.Sprintf("Path is a directory: %s. Cannot read directory contents: %v", dirPath, dirErr)
+					}
+				} else {
+					content = "Path is a directory. Cannot extract directory path from error."
+				}
 			}
 			toolResult := message.ToolResult{
 				ToolCallID: tc.ID,
 				Name:       tc.Name,
 				Content:    content,
-				IsError:    true,
+				IsError:    true && !isViewDirectoryHelp,
 			}
 			_, createErr = a.messages.Create(context.Background(), currentAssistant.SessionID, message.CreateMessageParams{
 				Role: message.Tool,

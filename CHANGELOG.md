@@ -5,7 +5,25 @@ All notable changes to Nexora CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.26.0] - 2025-12-12
+
+### Added
+- **GitHub Provider Injection**: Fetch custom providers from GitHub repositories
+- **Nexora Local Provider**: Built-in support for local Devstral-2 model via proxy (port 9000)
+- **Mistral Provider**: Default Mistral provider with embed and moderation models
+
+### Fixed
+- Provider test mock signatures updated for new `ProviderClient` interface with `context.Context`
+- Bedrock provider tests now correctly expect 0 providers when AWS credentials are missing
+- Recent model recording no longer adds fallback defaults during initialization
+- Type casting for `catwalk.InferenceProvider` in provider ID map lookups
+
+### Changed
+- Model fallback during initialization no longer records to recent models (prevents unwanted defaults in history)
+
+---
+
+## [0.25.0] - 2025-12-11
 
 ### Added
 - Complete AIOPS (AI Operations) middleware service implementation
