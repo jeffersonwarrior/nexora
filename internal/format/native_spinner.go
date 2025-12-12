@@ -13,11 +13,11 @@ import (
 
 // NativeSpinner wraps the native spinner implementation for non-interactive mode.
 type NativeSpinner struct {
-	done    chan struct{}
-	ctx     context.Context
-	cancel  context.CancelFunc
-	anim    *NativeAnim
-	output  io.Writer
+	done   chan struct{}
+	ctx    context.Context
+	cancel context.CancelFunc
+	anim   *NativeAnim
+	output io.Writer
 }
 
 // NativeAnim provides an animated spinner without Charm dependencies.
@@ -45,16 +45,16 @@ type NativeSettings struct {
 // Default native settings.
 var (
 	defaultRunes        = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
-	defaultEllipsis    = []string{".", "..", "...", ""}
-	defaultLabelColor  = "\033[36m" // Cyan
+	defaultEllipsis     = []string{".", "..", "...", ""}
+	defaultLabelColor   = "\033[36m" // Cyan
 	defaultSpinnerColor = "\033[35m" // Magenta
-	resetColor         = "\033[0m"
+	resetColor          = "\033[0m"
 )
 
 // NewNativeSpinner creates a new spinner with the given message using native implementation.
 func NewNativeSpinner(ctx context.Context, cancel context.CancelFunc, settings NativeSettings) *NativeSpinner {
 	anim := NewNativeAnim(settings)
-	
+
 	return &NativeSpinner{
 		done:   make(chan struct{}, 1),
 		ctx:    ctx,
@@ -75,7 +75,7 @@ func NewNativeAnim(settings NativeSettings) *NativeAnim {
 	if settings.ColorStart == "" {
 		settings.ColorStart = defaultSpinnerColor
 	}
-	
+
 	anim := &NativeAnim{
 		width:          settings.Size,
 		label:          settings.Label,
@@ -84,7 +84,7 @@ func NewNativeAnim(settings NativeSettings) *NativeAnim {
 		startTime:      time.Now(),
 		settings:       settings,
 	}
-	
+
 	return anim
 }
 
@@ -94,7 +94,7 @@ func (s *NativeSpinner) Start() {
 		defer close(s.done)
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
-		
+
 		for {
 			select {
 			case <-s.ctx.Done():
@@ -134,22 +134,22 @@ func (a *NativeAnim) SetLabel(newLabel string) {
 func (a *NativeAnim) View() string {
 	step := int(a.step.Load())
 	ellipsisStep := int(a.ellipsisStep.Load())
-	
+
 	var builder strings.Builder
-	
+
 	// Add spinner character
 	spinnerChar := a.runes[step%len(a.runes)]
 	builder.WriteString(a.settings.ColorStart)
 	builder.WriteString(spinnerChar)
 	builder.WriteString(resetColor)
 	builder.WriteString(" ")
-	
+
 	// Add label
 	if a.label != "" {
 		builder.WriteString(a.settings.LabelColor)
 		builder.WriteString(a.label)
 		builder.WriteString(resetColor)
-		
+
 		// Add ellipsis animation after initialization
 		if time.Since(a.startTime) >= time.Second {
 			if ellipsisStep/4 < len(a.ellipsisFrames) {
@@ -157,7 +157,7 @@ func (a *NativeAnim) View() string {
 			}
 		}
 	}
-	
+
 	return builder.String()
 }
 
@@ -167,13 +167,13 @@ func (a *NativeAnim) Step() {
 	if time.Since(a.startTime) >= time.Second {
 		a.ellipsisStep.Add(1)
 	}
-	
+
 	// Ensure step stays within bounds
 	if int(current) >= len(a.runes) {
 		a.step.Store(0)
 	}
-	
-	// Ensure ellipsis step stays within bounds  
+
+	// Ensure ellipsis step stays within bounds
 	ellipsisStep := int(a.ellipsisStep.Load())
 	if ellipsisStep >= len(a.ellipsisFrames)*4 {
 		a.ellipsisStep.Store(0)

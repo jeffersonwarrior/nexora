@@ -18,10 +18,10 @@ type Metric struct {
 
 // AggregatedMetrics holds aggregated statistics for a tool.
 type AggregatedMetrics struct {
-	ToolName        string
-	ExecutionCount  int
-	SuccessCount    int
-	FailureCount    int
+	ToolName         string
+	ExecutionCount   int
+	SuccessCount     int
+	FailureCount     int
 	AvgExecutionTime time.Duration
 	MaxExecutionTime time.Duration
 	MinExecutionTime time.Duration

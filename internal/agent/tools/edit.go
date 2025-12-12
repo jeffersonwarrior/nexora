@@ -366,18 +366,18 @@ func replaceContent(edit editContext, filePath, oldString, newString string, rep
 		newContent = strings.ReplaceAll(oldContent, oldString, newString)
 		replacementCount = strings.Count(oldContent, oldString)
 		if replacementCount == 0 {
-		if replacementCount == 0 {
-			// Try whitespace normalization (handles tabs vs spaces from View output)
-			if normalized, found := tryNormalizedMatch(oldContent, oldString); found {
-				oldString = normalized
-				newContent = strings.ReplaceAll(oldContent, oldString, newString)
-				replacementCount = strings.Count(oldContent, oldString)
-				if replacementCount > 0 {
-					// Successfully resolved with whitespace normalization
-					goto foundReplaceAll
+			if replacementCount == 0 {
+				// Try whitespace normalization (handles tabs vs spaces from View output)
+				if normalized, found := tryNormalizedMatch(oldContent, oldString); found {
+					oldString = normalized
+					newContent = strings.ReplaceAll(oldContent, oldString, newString)
+					replacementCount = strings.Count(oldContent, oldString)
+					if replacementCount > 0 {
+						// Successfully resolved with whitespace normalization
+						goto foundReplaceAll
+					}
 				}
 			}
-		}
 			// Try AIOPS edit resolution first if available
 			if edit.aiops != nil {
 				resolution, err := edit.aiops.ResolveEdit(edit.ctx, oldContent, oldString, newString)
