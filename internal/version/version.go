@@ -16,8 +16,10 @@ func init() {
 		return
 	}
 	mainVersion := info.Main.Version
-	// Only override hardcoded version if git tag is newer than hardcoded version
-	if mainVersion != "" && mainVersion != "(devel)" && mainVersion > Version {
+	// Use VCS info if available and we're not on a tagged version
+	if mainVersion == "(devel)" {
+		Version = "0.26.0-dev"
+	} else if mainVersion != "" && mainVersion > Version {
 		Version = mainVersion
 	}
 }
