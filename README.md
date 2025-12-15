@@ -1,5 +1,7 @@
 # Nexora
 
+> [!NOTE]
+> **v0.27.0** is the final release powered by [Crush](https://charm.land/crush). Starting with **v0.3.0**, Nexora will transition to full native Nexora components, including a new CLI structure, enhanced TUI, and native provider management system. This release represents the completion of Phase 2: comprehensive LLM provider expansion (13 providers, 70+ models).
 
 <p align="center">Your new coding bestie, now available in your favourite terminal.<br />Your tools, your code, and your workflows, wired into your LLM of choice.</p>
 <p align="center">你的新编程伙伴，现在就在你最爱的终端中。<br />你的工具、代码和工作流，都与您选择的 LLM 模型紧密相连。</p>
