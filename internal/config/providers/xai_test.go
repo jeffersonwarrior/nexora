@@ -17,13 +17,13 @@ func TestXAIProvider_ReturnsValidProvider(t *testing.T) {
 	requireValidProvider(t, provider)
 }
 
-func TestXAIProvider_HasGrokModel(t *testing.T) {
+func TestXAIProvider_HasGrokModels(t *testing.T) {
 	t.Parallel()
 	provider := XAIProvider(nil)
 
-	require.Len(t, provider.Models, 1)
-	require.Equal(t, "grok-beta", string(provider.Models[0].ID))
-	require.Equal(t, "Grok Beta", provider.Models[0].Name)
+	require.Len(t, provider.Models, 5)
+	require.Equal(t, "grok-4-1-fast-reasoning", string(provider.Models[0].ID))
+	require.Equal(t, "Grok 4.1 (Reasoning)", provider.Models[0].Name)
 }
 
 func TestXAIProvider_SkipsIfAlreadyExists(t *testing.T) {
