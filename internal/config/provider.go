@@ -174,7 +174,15 @@ func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) 
 // injectCustomProviders consolidates all custom provider injections.
 func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 	injectors := []func([]catwalk.Provider) catwalk.Provider{
-		providers.MistralProvider,
+		// Mistral variants (General, Devstral, Codestral)
+		providers.MistralGeneralProvider,
+		providers.MistralDevstralProvider,
+		providers.MistralCodestralProvider,
+		// New providers
+		providers.OpenAIProvider,
+		providers.AnthropicProvider,
+		providers.GeminiProvider,
+		// Existing providers
 		providers.NexoraProvider,
 		providers.XAIProvider,
 		providers.MiniMaxProvider,
