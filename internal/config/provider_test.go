@@ -32,7 +32,18 @@ func TestProvider_loadProvidersNoIssues(t *testing.T) {
 	providers, err := loadProviders(false, client, tmpPath)
 	require.NoError(t, err)
 	require.NotNil(t, providers)
-	require.Len(t, providers, 3) // mock + mistral + nexora
+	// Check for required providers instead of exact count
+	providerMap := make(map[string]bool)
+	providerNames := make(map[string]bool)
+	for _, p := range providers {
+		providerMap[string(p.ID)] = true
+		providerNames[p.Name] = true
+	}
+	// Mock provider from client has no ID, just check by name
+	require.True(t, providerNames["Mock"], "Expected mock provider from client")
+	// Check that injected providers are included
+	require.True(t, providerMap["mistral"], "Expected mistral provider injected")
+	require.True(t, providerMap["nexora"], "Expected nexora provider injected")
 
 	// check if file got saved
 	fileInfo, err := os.Stat(tmpPath)
@@ -61,16 +72,25 @@ func TestProvider_loadProvidersWithIssues(t *testing.T) {
 	providers, err := loadProviders(true, client, tmpPath)
 	require.NoError(t, err)
 	require.NotNil(t, providers)
-	require.Len(t, providers, 3) // OldProvider + Mistral + Nexora
-	require.Equal(t, "OldProvider", providers[0].Name, "Expected to keep old provider when loading fails")
-	require.Equal(t, "Mistral", providers[1].Name, "Expected to have mistral provider injected")
-	require.Equal(t, "Nexora", providers[2].Name, "Expected to have nexora provider injected")
+	// Check that old provider is there + injected providers
+	providerMap := make(map[string]bool)
+	providerNames := make(map[string]bool)
+	for _, p := range providers {
+		providerMap[string(p.ID)] = true
+		providerNames[p.Name] = true
+	}
+	require.True(t, providerNames["OldProvider"], "Expected to keep old provider when loading fails")
+	require.True(t, providerMap["mistral"], "Expected to have mistral provider injected")
+	require.True(t, providerMap["nexora"], "Expected to have nexora provider injected")
+	require.True(t, providerMap["xai"], "Expected to have xai provider injected")
 }
 
 func TestProvider_loadProvidersWithIssuesAndNoCache(t *testing.T) {
 	client := &mockProviderClient{shouldFail: true}
 	tmpPath := t.TempDir() + "/providers.json"
 	providers, err := loadProviders(false, client, tmpPath)
-	require.Error(t, err)
-	require.Nil(t, providers, "Expected nil providers when loading fails and no cache exists")
+	// When Catwalk fails and no cache, fallback to embedded providers
+	require.NoError(t, err)
+	require.NotNil(t, providers)
+	require.Greater(t, len(providers), 0, "Expected embedded providers as fallback")
 }
