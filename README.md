@@ -164,30 +164,37 @@ go install github.com/nexora@latest
 ## Getting Started
 
 The quickest way to get started is to grab an API key for your preferred
-provider such as Anthropic, OpenAI, Groq, or OpenRouter and just start
+provider such as Anthropic, OpenAI, X.AI (Grok), or OpenRouter and just start
 Nexora. You'll be prompted to enter your API key.
 
 That said, you can also set environment variables for preferred providers.
 
-|| Environment Variable        | Provider                                           |
-|| --------------------------- | -------------------------------------------------- |
-|| `ANTHROPIC_API_KEY`         | Anthropic                                          |
-|| `OPENAI_API_KEY`            | OpenAI                                             |
-|| `OPENROUTER_API_KEY`        | OpenRouter                                         |
-|| `GEMINI_API_KEY`            | Google Gemini                                      |
-|| `CEREBRAS_API_KEY`          | Cerebras                                           |
-|| `HF_TOKEN`                  | Huggingface Inference                              |
-|| `VERTEXAI_PROJECT`          | Google Cloud VertexAI (Gemini)                     |
-|| `VERTEXAI_LOCATION`         | Google Cloud VertexAI (Gemini)                     |
-|| `GROQ_API_KEY`              | Groq                                               |
-|| `AWS_ACCESS_KEY_ID`         | Amazon Bedrock (Claude)                               |
-|| `AWS_SECRET_ACCESS_KEY`     | Amazon Bedrock (Claude)                               |
-|| `AWS_REGION`                | Amazon Bedrock (Claude)                               |
-|| `AWS_PROFILE`               | Amazon Bedrock (Custom Profile)                       |
-|| `AWS_BEARER_TOKEN_BEDROCK`  | Amazon Bedrock                                        |
-|| `AZURE_OPENAI_API_ENDPOINT` | Azure OpenAI models                                |
-|| `AZURE_OPENAI_API_KEY`      | Azure OpenAI models (optional when using Entra ID) |
-|| `AZURE_OPENAI_API_VERSION`  | Azure OpenAI models                                |
+### Supported Providers & Environment Variables
+
+| Environment Variable        | Provider                                           |
+| --------------------------- | -------------------------------------------------- |
+| `ANTHROPIC_API_KEY`         | Anthropic (Claude 4.5, Opus, Sonnet, Haiku)      |
+| `OPENAI_API_KEY`            | OpenAI (GPT-5.2, GPT-4o, o1, legacy models)      |
+| `XAI_API_KEY`               | X.AI (Grok 4.1 Fast variants, Grok 4.x, 3.x)    |
+| `OPENROUTER_API_KEY`        | OpenRouter (multi-provider aggregator)           |
+| `GEMINI_API_KEY`            | Google Gemini (Gemini 3 Pro, 2.5 Flash, etc.)   |
+| `MISTRAL_API_KEY`           | Mistral (Large, Medium, Small, Ministral)        |
+| `ZAI_API_KEY`               | Z.AI (GLM-4.6, vision, free flash variants)      |
+| `CEREBRAS_API_KEY`          | Cerebras (ultra-fast inference, Llama, Qwen)     |
+| `KIMI_API_KEY`              | Kimi/Moonshot (1M context, K2 thinking)          |
+| `MINIMAX_API_KEY`           | MiniMax (MoE models)                             |
+| `HF_TOKEN`                  | Huggingface Inference                            |
+| `VERTEXAI_PROJECT`          | Google Cloud VertexAI (Gemini)                   |
+| `VERTEXAI_LOCATION`         | Google Cloud VertexAI (Gemini)                   |
+| `GROQ_API_KEY`              | Groq (ultra-fast inference)                      |
+| `AWS_ACCESS_KEY_ID`         | Amazon Bedrock (Claude)                          |
+| `AWS_SECRET_ACCESS_KEY`     | Amazon Bedrock (Claude)                          |
+| `AWS_REGION`                | Amazon Bedrock (Claude)                          |
+| `AWS_PROFILE`               | Amazon Bedrock (Custom Profile)                  |
+| `AWS_BEARER_TOKEN_BEDROCK`  | Amazon Bedrock                                   |
+| `AZURE_OPENAI_API_ENDPOINT` | Azure OpenAI models                              |
+| `AZURE_OPENAI_API_KEY`      | Azure OpenAI models (optional when using Entra ID) |
+| `AZURE_OPENAI_API_VERSION`  | Azure OpenAI models                              |
 
 ### By the Way
 
@@ -196,6 +203,37 @@ Is there a provider you'd like to see in Nexora? Is there an existing model that
 Nexora's default model listing is managed in [Catwalk](https://github.com/catwalk), a community-supported, open source repository of Nexora-compatible models, and you're welcome to contribute.
 
 <a href="https://github.com/catwalk"><img width="174" height="174" alt="Catwalk Badge" src="https://github.com/user-attachments/assets/95b49515-fe82-4409-b10d-5beb0873787d" /></a>
+
+### Available Provider Categories
+
+Nexora supports 13+ LLM providers across multiple categories:
+
+**Flagship/General Purpose Models**
+- **OpenAI**: GPT-5.2 (latest), GPT-4o, GPT-4 Turbo, o1, o1-mini
+- **Anthropic**: Claude 4.5 Opus, Sonnet 4.5, Haiku 4.5
+- **X.AI (Grok)**: Grok 4.1 Fast (Reasoning & non-reasoning), Grok 4.x, 3.x
+- **Google Gemini**: Gemini 3 Pro, 2.5 Flash, 2.5 Pro, Extended Thinking
+
+**Specialized/Optimized Models**
+- **Mistral** (3 variants):
+  - General: Large, Medium, Small, Ministral variants
+  - Devstral: Code reasoning (FREE during beta)
+  - Codestral: Code generation and completion
+- **Z.AI**: GLM-4.6 (multimodal), GLM-4.6-vision, Free flash variants
+- **Cerebras**: Ultra-fast inference (Llama 3.3-70B, Qwen 3-235B, GPT-3-120B)
+- **Kimi (Moonshot)**: 1M token context, K2 thinking models
+
+**Aggregators & Specialized**
+- **OpenRouter**: Multi-provider routing
+- **MiniMax**: Mixture of Experts (MoE) models
+
+**Cloud & Local Options**
+- **Amazon Bedrock**: Hosted Anthropic models with AWS integration
+- **Google VertexAI**: Managed Gemini models with GCP integration
+- **Azure OpenAI**: Enterprise deployment with RBAC
+- **Groq**: Ultra-low latency inference
+- **Huggingface Inference**: Community-driven models
+- **Local Models**: Ollama, LM Studio, and other OpenAI-compatible servers
 
 ## Configuration
 
