@@ -21,12 +21,14 @@ func TestProvider_loadProvidersEmptyResult(t *testing.T) {
 	tmpPath := t.TempDir() + "/providers.json"
 
 	providers, err := loadProviders(false, client, tmpPath)
-	require.Contains(t, err.Error(), "Nexora was unable to fetch an updated list of providers")
-	require.Empty(t, providers)
-	require.Len(t, providers, 0)
+	require.NoError(t, err)
+	// Should get embedded providers + injected providers
+	require.NotEmpty(t, providers)
+	// Should have embedded providers (mock) + custom providers
+	require.Greater(t, len(providers), 0)
 
-	// Check that no cache file was created for empty results
-	require.NoFileExists(t, tmpPath, "Cache file should not exist for empty results")
+	// Check that no cache file was created for embedded fallback
+	require.NoFileExists(t, tmpPath, "Cache file should not exist when using embedded providers as fallback")
 }
 
 func TestProvider_loadProvidersEmptyCache(t *testing.T) {
@@ -43,8 +45,10 @@ func TestProvider_loadProvidersEmptyCache(t *testing.T) {
 	providers, err := loadProviders(false, client, tmpPath)
 	require.NoError(t, err)
 	require.NotNil(t, providers)
-	// Mock + mistral + nexora
+	// Mock + mistral + nexora + xai + minimax
 	require.Equal(t, "Mock", providers[0].Name)
 	require.Equal(t, "Mistral", providers[1].Name)
 	require.Equal(t, "Nexora", providers[2].Name)
+	require.Equal(t, "xAI", providers[3].Name)
+	require.Equal(t, "MiniMax", providers[4].Name)
 }

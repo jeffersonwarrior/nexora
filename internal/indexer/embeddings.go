@@ -164,8 +164,7 @@ func (p *MistralProvider) Name() string {
 
 func (p *MistralProvider) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
 	if p.apiKey == "" {
-		slog.Warn("No Mistral API key provided, falling back to mock embeddings")
-		return generateMockEmbedding(text), nil
+		return nil, fmt.Errorf("no Mistral API key provided. Set the MISTRAL_API_KEY environment variable")
 	}
 
 	// Validate model capabilities
@@ -398,8 +397,6 @@ func (p *MistralProvider) GetPricingInfo() map[string]any {
 
 // Mistral model constants
 const (
-	MistralModelDevstral2 = "mistral-embed"
-
 	MistralModelMistralLarge3 = "mistral-large-3-25-12"
 	MistralModelMinistral3    = "ministral-3-14b-25-12"
 	MistralModelEmbed         = "mistral-embed"
@@ -424,8 +421,6 @@ func OptimizeForCost() string {
 
 func GetAllSupportedModels() []string {
 	return []string{
-		MistralModelDevstral2,
-		MistralModelMinistral3,
 		MistralModelMistralLarge3,
 		MistralModelMinistral3,
 		MistralModelEmbed,
