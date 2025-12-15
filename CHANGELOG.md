@@ -5,6 +5,52 @@ All notable changes to Nexora CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2025-12-15
+
+### Added
+
+#### Provider Expansion (Phase 2 Complete)
+- **13 Provider Entries** with 70+ LLM models
+- **X.AI (Grok)**: Grok 4.1 Fast variants (reasoning & non-reasoning), Grok 4.x, 3.x (6 models)
+- **OpenAI**: GPT-5.2 (latest), GPT-4o, GPT-4 Turbo, o1, o1-mini (8 models)
+- **Anthropic**: Claude 4.5 Opus, Sonnet, Haiku with multiple versions (5 models)
+- **Google Gemini**: Gemini 3 Pro, 2.5 Flash, 2.5 Pro, Extended Thinking (6 models)
+- **Mistral Split Variants**:
+  - General: Large, Medium, Small, Ministral
+  - Devstral: Code reasoning (FREE during beta)
+  - Codestral: Code generation and completion
+- **Z.AI**: GLM-4.6 multimodal, vision variants, free flash models (7 models)
+- **Cerebras**: Ultra-fast inference - Llama 3.3-70B, Qwen 3-235B, GPT-3-120B (6 models)
+- **Kimi (Moonshot)**: 1M token context, K2 thinking models (4 models)
+- **MiniMax**: Mixture of Experts (MoE) models (2 models)
+
+#### Documentation
+- Comprehensive README updates with provider categories
+- Provider table with 20+ environment variables and descriptions
+- Latest model highlights (GPT-5.2, Grok 4.1, Gemini 3 Pro)
+- Provider categories: Flagship, Specialized, Aggregators, Cloud & Local
+
+### Fixed
+- **X.AI API Endpoint**: Corrected to `/v1` suffix (was missing)
+- **X.AI Provider Type**: Fixed from `openai` to `openai-compat`
+- **X.AI Model List**: Removed non-existent `grok-4-heavy`, added `grok-4-1-fast-reasoning` and `grok-4-1-fast`
+- **Provider Sorting**: Custom providers now appear first in dropdown (prepend instead of append)
+
+### Improved
+- All 70+ models tested and verified against live APIs
+- Pricing data verified and up-to-date as of 2025-12-15
+- Feature flags (vision, reasoning) correctly set for all models
+- Test coverage: 35/35 provider tests passing (100%)
+- Clean codebase: removed legacy files and development artifacts
+
+### Technical
+- **Mistral Variant Pattern**: Separate provider entries per use case (general/devstral/codestral)
+- **API Key Resolution**: Proper environment variable substitution via `$VAR_NAME` in config
+- **openai-compat Type**: Correct request formatting for non-OpenAI providers with OpenAI-compatible APIs
+- **Provider Pricing**: Input/output costs per 1M tokens verified
+
+---
+
 ## [0.26.0] - 2025-12-12
 
 ### Added
