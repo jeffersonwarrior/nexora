@@ -178,10 +178,13 @@ func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 		providers.MistralGeneralProvider,
 		providers.MistralDevstralProvider,
 		providers.MistralCodestralProvider,
-		// New providers
+		// New major providers
 		providers.OpenAIProvider,
 		providers.AnthropicProvider,
 		providers.GeminiProvider,
+		providers.ZAIProvider,
+		providers.CerebrasProvider,
+		providers.KimiProvider,
 		// Existing providers
 		providers.NexoraProvider,
 		providers.XAIProvider,
