@@ -172,6 +172,7 @@ func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) 
 }
 
 // injectCustomProviders consolidates all custom provider injections.
+// Configured providers are prepended to the list (sorted to top).
 func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 	injectors := []func([]catwalk.Provider) catwalk.Provider{
 		// Mistral variants (General, Devstral, Codestral)
@@ -191,15 +192,20 @@ func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 		providers.MiniMaxProvider,
 	}
 
+	// Collect injected providers
+	injectedProviders := []catwalk.Provider{}
 	injectedCount := 0
 	for _, injector := range injectors {
 		if p := injector(providerList); p.ID != "" {
-			providerList = append(providerList, p)
+			injectedProviders = append(injectedProviders, p)
 			injectedCount++
 		}
 	}
 
+	// Prepend injected providers to the list (configured providers on top)
 	if injectedCount > 0 {
+		injectedProviders = append(injectedProviders, providerList...)
+		providerList = injectedProviders
 		slog.Info("Injected custom providers", "count", injectedCount, "total", len(providerList))
 	}
 

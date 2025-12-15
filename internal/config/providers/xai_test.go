@@ -22,8 +22,8 @@ func TestXAIProvider_HasGrokModels(t *testing.T) {
 	provider := XAIProvider(nil)
 
 	require.Len(t, provider.Models, 5)
-	require.Equal(t, "grok-4-1-fast-reasoning", string(provider.Models[0].ID))
-	require.Equal(t, "Grok 4.1 (Reasoning)", provider.Models[0].Name)
+	require.Equal(t, "grok-2", string(provider.Models[0].ID))
+	require.Equal(t, "Grok 2", provider.Models[0].Name)
 }
 
 func TestXAIProvider_SkipsIfAlreadyExists(t *testing.T) {
