@@ -22,12 +22,12 @@ func MistralDevstralProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIKey:              "$MISTRAL_API_KEY",
 		APIEndpoint:         cmp.Or(os.Getenv("MISTRAL_API_ENDPOINT"), "https://api.mistral.ai/v1"),
 		Type:                "openai-compat",
-		DefaultLargeModelID: "devstral-2-2512",
-		DefaultSmallModelID: "devstral-small-2-2512",
+		DefaultLargeModelID: "devstral-2512",
+		DefaultSmallModelID: "devstral-small-2512",
 		Models: []catwalk.Model{
 			// Devstral 2 - Code understanding and agentic tasks
 			{
-				ID:               "devstral-2-2512",
+				ID:               "devstral-2512",
 				Name:             "Devstral 2 (123B)",
 				CostPer1MIn:      0.0,  // FREE during beta
 				CostPer1MOut:     0.0,  // FREE during beta
@@ -39,7 +39,7 @@ func MistralDevstralProvider(providers []catwalk.Provider) catwalk.Provider {
 			},
 			// Devstral Small 2 - Lightweight code tasks
 			{
-				ID:               "devstral-small-2-2512",
+				ID:               "devstral-small-2512",
 				Name:             "Devstral Small 2 (24B)",
 				CostPer1MIn:      0.0,  // FREE during beta
 				CostPer1MOut:     0.0,  // FREE during beta

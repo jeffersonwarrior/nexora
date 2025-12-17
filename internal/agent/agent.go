@@ -133,9 +133,35 @@ func NewSessionAgent(
 	}
 }
 
+func (a *sessionAgent) getOriginalPrompt(sessionID string) string {
+	// Get the first user message from the session
+	messages, err := a.messages.List(context.Background(), sessionID)
+	if err != nil {
+		return ""
+	}
+	
+	for _, msg := range messages {
+		if msg.Role == message.User {
+			return msg.Content().Text
+		}
+	}
+	return ""
+}
+
 func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
-	if call.Prompt == "" {
+	// Handle special continuation prompts
+	isContinuation := call.Prompt == "CONTINUE_AFTER_TOOL_EXECUTION"
+	
+	if call.Prompt == "" && !isContinuation {
 		return nil, ErrEmptyPrompt
+	}
+	if isContinuation {
+		// For continuation, use the original user prompt
+		call.Prompt = a.getOriginalPrompt(call.SessionID)
+		if call.Prompt == "" {
+			// Fallback if we can't get the original prompt
+			call.Prompt = "Please continue with the previous task"
+		}
 	}
 	if call.SessionID == "" {
 		return nil, ErrSessionMissing
@@ -147,9 +173,14 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		if !ok {
 			existing = []SessionAgentCall{}
 		}
+		// Limit queue size to prevent memory issues
+		if len(existing) >= 50 {
+			return nil, fmt.Errorf("session %s: queue is full (max 50 queued requests)", call.SessionID)
+		}
 		existing = append(existing, call)
 		a.messageQueue.Set(call.SessionID, existing)
-		return nil, nil
+		// Return a specific error to indicate message was queued, not processed
+		return nil, fmt.Errorf("session %s: message queued (position %d in queue)", call.SessionID, len(existing))
 	}
 
 	if len(a.tools) > 0 {
@@ -404,11 +435,15 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 
 				// Check for loops every 5 tool calls
 				if a.callCount%5 == 0 && len(a.recentCalls) >= 5 {
-					go func(calls []aiops.ToolCall) {
-						ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					go func(calls []aiops.ToolCall, sessionID string, agentCtx context.Context) {
+						detectCtx, cancel := context.WithTimeout(agentCtx, 2*time.Second)
 						defer cancel()
-						detection, err := a.aiops.DetectLoop(ctx, calls)
-						if err == nil && detection.IsLooping {
+						detection, err := a.aiops.DetectLoop(detectCtx, calls)
+						if err != nil {
+				slog.Debug("Loop detection failed", "error", err, "session_id", sessionID)
+				return
+			}
+			if detection.IsLooping {
 							// Create a system message about the loop
 							_, createErr := a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
 								Role: message.System,
@@ -419,10 +454,10 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 								},
 							})
 							if createErr != nil {
-								slog.Error("Failed to create loop detection message", "error", createErr)
+								slog.Error("Failed to create loop detection message", "error", createErr, "session_id", sessionID)
 							}
 						}
-					}(a.recentCalls)
+					}(a.recentCalls, currentAssistant.SessionID, genCtx)
 				}
 
 				// Track actions for drift detection
@@ -447,13 +482,13 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 				a.actionCount++
 				// Check for drift every 10 tool calls
 				if a.actionCount%10 == 0 && a.aiops != nil {
-					go func(actions []aiops.Action) {
-						ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+					go func(actions []aiops.Action, sessionID string, agentCtx context.Context) {
+						detectCtx, cancel := context.WithTimeout(agentCtx, 2*time.Second)
 						defer cancel()
 
 						// Get the original task from the first message in the session
 						originalTask := ""
-						if msgs, err := a.messages.List(ctx, currentAssistant.SessionID); err == nil && len(msgs) > 0 {
+						if msgs, err := a.messages.List(detectCtx, sessionID); err == nil && len(msgs) > 0 {
 							// Extract task from the first user message
 							for _, msg := range msgs {
 								if msg.Role == message.User {
@@ -471,10 +506,14 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 						}
 
 						if originalTask != "" {
-							drift, err := a.aiops.DetectDrift(ctx, originalTask, actions)
-							if err == nil && drift.IsDrifting {
+							drift, err := a.aiops.DetectDrift(detectCtx, originalTask, actions)
+							if err != nil {
+							slog.Debug("Drift detection failed", "error", err, "session_id", sessionID)
+							return
+						}
+						if drift.IsDrifting {
 								// Create a warning message about task drift
-								_, createErr := a.messages.Create(ctx, currentAssistant.SessionID, message.CreateMessageParams{
+								_, createErr := a.messages.Create(agentCtx, sessionID, message.CreateMessageParams{
 									Role: message.System,
 									Parts: []message.ContentPart{
 										message.TextContent{
@@ -483,11 +522,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 									},
 								})
 								if createErr != nil {
-									slog.Error("Failed to create drift detection message", "error", createErr)
+									slog.Error("Failed to create drift detection message", "error", createErr, "session_id", sessionID)
 								}
 							}
 						}
-					}(a.recentActions)
+					}(a.recentActions, currentAssistant.SessionID, genCtx)
 				}
 				a.recentCallsLock.Unlock()
 			}
@@ -522,7 +561,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			return a.messages.Update(genCtx, *currentAssistant)
 		},
 		StopWhen: []fantasy.StopCondition{
-			func(_ []fantasy.StepResult) bool {
+			func(steps []fantasy.StepResult) bool {
 				cw := int64(a.largeModel.CatwalkCfg.ContextWindow)
 				tokens := currentSession.CompletionTokens + currentSession.PromptTokens
 				remaining := cw - tokens
@@ -532,7 +571,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 				} else {
 					threshold = int64(float64(cw) * 0.2)
 				}
-				if (remaining <= threshold) && !a.disableAutoSummarize {
+				// Only stop if we're not actively streaming a response
+				isCurrentlyStreaming := len(steps) > 0 && steps[len(steps)-1].FinishReason == ""
+				if (remaining <= threshold) && !a.disableAutoSummarize && !isCurrentlyStreaming {
 					shouldSummarize = true
 					return true
 				}
@@ -682,18 +723,52 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		}
 	}
 
-	// Release active request before processing queued messages.
-	a.activeRequests.Del(call.SessionID)
-	cancel()
-
+	// Check for queued messages before cleaning up
 	queuedMessages, ok := a.messageQueue.Get(call.SessionID)
 	if !ok || len(queuedMessages) == 0 {
+		// No queued messages
+		a.activeRequests.Del(call.SessionID)
+		
+		// Check if we have tool calls that were just completed
+		// If we have tool results but no more queued messages, we need to continue
+		// the conversation by calling Run again with an empty prompt
+		hasToolResults := false
+		if messages, err := a.messages.List(ctx, currentAssistant.SessionID); err == nil {
+			for _, msg := range messages {
+				if msg.Role == message.Tool {
+					hasToolResults = true
+					break
+				}
+			}
+		}
+		
+		// If we just completed tool calls, continue the conversation
+		if hasToolResults && currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0 {
+			// Create a new context for the next run but don't cancel the parent
+			nextRunCtx := context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
+			// Run with special continuation prompt to continue after tool execution
+			return a.Run(nextRunCtx, SessionAgentCall{
+				SessionID: call.SessionID,
+				Prompt:    "CONTINUE_AFTER_TOOL_EXECUTION", // Special prompt to continue
+				ProviderOptions: call.ProviderOptions,
+			})
+		}
+		
+		// Otherwise, clean up and return
+		cancel()
 		return result, err
 	}
-	// There are queued messages restart the loop.
+	
+	// Has queued messages, create new context for next run
 	firstQueuedMessage := queuedMessages[0]
 	a.messageQueue.Set(call.SessionID, queuedMessages[1:])
-	return a.Run(ctx, firstQueuedMessage)
+	
+	// Release active request for this call, but don't cancel parent context
+	a.activeRequests.Del(call.SessionID)
+	
+	// Start new run with fresh context to avoid cancellation propagation
+	nextRunCtx := context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
+	return a.Run(nextRunCtx, firstQueuedMessage)
 }
 
 func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fantasy.ProviderOptions) error {

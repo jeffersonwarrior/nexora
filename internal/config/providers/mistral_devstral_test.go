@@ -25,8 +25,8 @@ func TestMistralDevstralProvider(t *testing.T) {
 
 		require.NotNil(t, provider)
 		require.Len(t, provider.Models, 2)
-		assert.Equal(t, "devstral-2-2512", provider.DefaultLargeModelID)
-		assert.Equal(t, "devstral-small-2-2512", provider.DefaultSmallModelID)
+		assert.Equal(t, "devstral-2512", provider.DefaultLargeModelID)
+		assert.Equal(t, "devstral-small-2512", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestMistralDevstralProvider(t *testing.T) {
 
 		var devstral2Model *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "devstral-2-2512" {
+			if provider.Models[i].ID == "devstral-2512" {
 				devstral2Model = &provider.Models[i]
 				break
 			}
@@ -60,7 +60,7 @@ func TestMistralDevstralProvider(t *testing.T) {
 
 		var smallModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "devstral-small-2-2512" {
+			if provider.Models[i].ID == "devstral-small-2512" {
 				smallModel = &provider.Models[i]
 				break
 			}
