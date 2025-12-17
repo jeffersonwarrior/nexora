@@ -1,0 +1,13 @@
+{
+  "$schema": "https://nexora.land/nexora.json",
+  "models": {
+    "large": {
+      "provider": "openai",
+      "model": "gpt-4o"
+    },
+    "small": {
+      "provider": "openai", 
+      "model": "gpt-4o-mini"
+    }
+  }
+}

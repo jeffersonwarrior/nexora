@@ -61,3 +61,6 @@ aiops-server
 
 # Nested git repositories
 CODEDOCS/**/.git/
+
+# Configuration files with API keys
+nexora.json
