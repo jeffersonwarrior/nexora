@@ -119,8 +119,8 @@ func Render(version string, compact bool, o Opts) string {
 // smaller windows or sidebar usage.
 func SmallRender(width int) string {
 	t := styles.CurrentTheme()
-	title := t.S().Base.Foreground(t.Secondary).Render("Charm™")
-	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad("Nexora", t.Secondary, t.Primary))
+	title := t.S().Base.Foreground(t.Secondary).Render("Nexora")
+	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad("NEXORA", t.Secondary, t.Primary))
 	remainingWidth := width - lipgloss.Width(title) - 1 // 1 for the space after "Nexora"
 	if remainingWidth > 0 {
 		lines := strings.Repeat("╱", remainingWidth)
