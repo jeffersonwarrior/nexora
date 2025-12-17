@@ -105,6 +105,16 @@ func Load(workingDir, dataDir string, debug bool) (*Config, error) {
 	if err := cfg.configureSelectedModels(cfg.knownProviders); err != nil {
 		return nil, fmt.Errorf("failed to configure selected models: %w", err)
 	}
+
+	// Validate and fallback to recent models if current models are invalid
+	modelsValid, err := cfg.ValidateAndFallbackModels()
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate models: %w", err)
+	}
+	
+	// Mark if models need TUI setup
+	cfg.modelsNeedSetup = !modelsValid || !cfg.AreModelsConfigured()
+
 	cfg.SetupAgents()
 	return cfg, nil
 }

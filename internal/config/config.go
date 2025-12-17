@@ -373,6 +373,7 @@ type Config struct {
 	resolver       VariableResolver
 	dataConfigDir  string             `json:"-"`
 	knownProviders []catwalk.Provider `json:"-"`
+	modelsNeedSetup bool              `json:"-"` // Flag to indicate if TUI setup is needed for models
 }
 
 func (c *Config) WorkingDir() string {
@@ -642,6 +643,111 @@ func (c *Config) SetProviderAPIKey(providerID string, apiKey any) error {
 }
 
 const maxRecentModelsPerType = 5
+
+// ValidateAndFallbackModels attempts to validate the current models and falls back to
+// recent models if they are invalid. Returns true if models are valid or fallback succeeded,
+// false if all attempts failed.
+func (c *Config) ValidateAndFallbackModels() (bool, error) {
+	if !c.AreModelsConfigured() {
+		return false, nil
+	}
+
+	// Validate current models
+	largeValid, err := c.validateModel(SelectedModelTypeLarge)
+	if err != nil {
+		return false, err
+	}
+	smallValid, err := c.validateModel(SelectedModelTypeSmall) 
+	if err != nil {
+		return false, err
+	}
+
+	if largeValid && smallValid {
+		return true, nil // Current models are valid
+	}
+
+	// Try recent models fallback
+	return c.tryRecentModelsFallback()
+}
+
+// validateModel checks if a specific model type is valid
+func (c *Config) validateModel(modelType SelectedModelType) (bool, error) {
+	model, ok := c.Models[modelType]
+	if !ok {
+		return false, nil // Model not selected
+	}
+
+	// Check if provider exists
+	_, providerExists := c.Providers.Get(model.Provider)
+	if !providerExists {
+		return false, nil // Provider not configured
+	}
+
+	// Check if model exists in provider
+	catwalkModel := c.GetModel(model.Provider, model.Model)
+	if catwalkModel == nil {
+		return false, nil // Model not found
+	}
+
+	return true, nil
+}
+
+// tryRecentModelsFallback attempts to fallback to recent models if current models are invalid
+func (c *Config) tryRecentModelsFallback() (bool, error) {
+	if c.RecentModels == nil {
+		return false, nil // No recent models to try
+	}
+
+	// Try recent models for large model
+	success := false
+	if recentLarge, exists := c.RecentModels[SelectedModelTypeLarge]; exists && len(recentLarge) > 0 {
+		for _, recentModel := range recentLarge {
+			if c.isValidRecentModel(SelectedModelTypeLarge, recentModel) {
+				c.Models[SelectedModelTypeLarge] = recentModel
+				if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeLarge), recentModel); err != nil {
+					return false, fmt.Errorf("failed to update fallback large model: %w", err)
+				}
+				success = true
+				break
+			}
+		}
+	}
+
+	// Try recent models for small model
+	smallSuccess := false
+	if recentSmall, exists := c.RecentModels[SelectedModelTypeSmall]; exists && len(recentSmall) > 0 {
+		for _, recentModel := range recentSmall {
+			if c.isValidRecentModel(SelectedModelTypeSmall, recentModel) {
+				c.Models[SelectedModelTypeSmall] = recentModel
+				if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeSmall), recentModel); err != nil {
+					return false, fmt.Errorf("failed to update fallback small model: %w", err)
+				}
+				smallSuccess = true
+				break
+			}
+		}
+	}
+
+	// Return true if at least one model was successfully restored
+	return success || smallSuccess, nil
+}
+
+// isValidRecentModel checks if a recent model is valid and can be used as fallback
+func (c *Config) isValidRecentModel(modelType SelectedModelType, model SelectedModel) bool {
+	if model.Provider == "" || model.Model == "" {
+		return false
+	}
+
+	// Check if provider exists
+	_, providerExists := c.Providers.Get(model.Provider)
+	if !providerExists {
+		return false
+	}
+
+	// Check if model exists in provider
+	catwalkModel := c.GetModel(model.Provider, model.Model)
+	return catwalkModel != nil
+}
 
 func (c *Config) recordRecentModel(modelType SelectedModelType, model SelectedModel) error {
 	if model.Provider == "" || model.Model == "" {
