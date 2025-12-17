@@ -13,11 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mistral Tool Call ID Format**: Fixed `"Tool call id was call_61626542 but must be a-z, A-Z, 0-9, with a length of 9"` error
 - **Session Title Display**: Fixed missing session titles in header (20	25 char truncation + "New Session" fallback)
 - **Provider Field Reference**: Fixed compilation error `CatwalkCfg.Provider 	 ModelCfg.Provider`
+- **Cerebras Provider**: Fixed configuration handling and API compatibility issues
+- **View Context Explosion**: Fixed excessive context generation in view tool with smart truncation
+- **Context Window Handling**: Improved context window management with better token estimation
 
 #### New Features
 - **Tool ID Sanitization Library**: `internal/agent/utils/tool_id.go` with provider-specific ID generation
 - **Enhanced Mistral Provider**: Full support for `devstral-2512` and `devstral-small-2512` models
 - **Model Validation**: Added automatic fallback to recent models when current models are invalid
+- **Better Config Handlers**: Improved configuration loading with local model selection support
 - **Configuration Security**: Added `.gitignore` for `nexora.json` and created `nexora.example.json` template
 
 #### Testing & Quality
@@ -30,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced error messages and recovery patterns
 - Updated configuration templates and documentation
 - Improved PATH handling in installation script
+- Smart context truncation for view tool to prevent context explosion
+- Better token estimation for context window management
+- Enhanced configuration loading with local model validation
 
 ### Security
 - Removed API keys from repository history
@@ -41,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Session title truncation and fallback behavior
 - Model configuration validation and auto-recovery
 - Provider field reference compilation errors
+- Cerebras provider configuration handling
+- View tool context explosion with smart truncation
+- Context window token estimation and management
 
 ---
 
