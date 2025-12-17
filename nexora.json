@@ -1,0 +1,12 @@
+{
+  "$schema": "https://nexora.land/nexora.json",
+  "permissions": {
+    "skip_requests": true,
+    "allowed_tools": ["view", "ls", "glob", "grep", "bash", "edit", "write", "multiedit", "download", "fetch", "job_output", "job_kill", "agent", "agentic_fetch", "sourcegraph", "mcp_web-reader_webReader", "mcp_web-search-prime_webSearchPrime"]
+  },
+  "agents": {
+    "coder": {
+      "allowed_tools": ["view", "ls", "glob", "grep", "bash", "edit", "write", "multiedit", "download", "fetch", "job_output", "job_kill", "agent", "agentic_fetch", "sourcegraph", "mcp_web-reader_webReader", "mcp_web-search-prime_webSearchPrime"]
+    }
+  }
+}
