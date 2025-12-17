@@ -27,11 +27,15 @@ nexora chat
 - **🔧 Provider Field Reference**: Fixed compilation error `CatwalkCfg.Provider → ModelCfg.Provider`
 - **🔀 Model Validation**: Added automatic fallback to recent models when current models are invalid
 - **🛡️ Configuration Security**: Removed API keys from repository, added `.gitignore` and template
+- **🧠 Cerebras Provider**: Fixed configuration handling and API compatibility issues
+- **📄 View Context Explosion**: Fixed excessive context generation in view tool with smart truncation
+- **🪟 Context Window Handling**: Improved context window management with better token estimation
 
 **🆕 New Features:**
 - **📦 Tool ID Sanitization Library**: Provider-specific ID generation with comprehensive testing
 - **🔄 Enhanced Mistral Provider**: Full support for `devstral-2512` and `devstral-small-2512` models
 - **📋 Auto Model Fallback**: Automatic recovery from invalid model configurations
+- **⚙️ Better Config Handlers**: Improved configuration loading with local model selection support
 - **🧪 Comprehensive Test Suite**: 15/15 new tests + existing QA tests all passing
 
 **⚙️ Technical Improvements:**
