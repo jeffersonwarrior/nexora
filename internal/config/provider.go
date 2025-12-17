@@ -183,42 +183,42 @@ func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) 
 
 // injectCustomProviders consolidates all custom provider injections.
 // Configured providers are prepended to the list (sorted to top).
-func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
-	injectors := []func([]catwalk.Provider) catwalk.Provider{
-		// Mistral variants (General, Devstral, Codestral)
-		providers.MistralGeneralProvider,
-		providers.MistralDevstralProvider,
-		providers.MistralCodestralProvider,
-		// New major providers
-		providers.OpenAIProvider,
-		providers.AnthropicProvider,
-		providers.GeminiProvider,
-		providers.ZAIProvider,
-		providers.CerebrasProvider,
-		providers.MistralNativeProvider,
-		providers.RentalH200Provider,
-		// Existing providers
-		providers.NexoraProvider,
-		providers.XAIProvider,
-		providers.MiniMaxProvider,
-	}
-
-	// Collect injected providers
-	injectedProviders := []catwalk.Provider{}
-	injectedCount := 0
-	for _, injector := range injectors {
-		if p := injector(providerList); p.ID != "" {
-			injectedProviders = append(injectedProviders, p)
-			injectedCount++
+	// injectCustomProviders consolidates all custom provider injections.
+	// Configured providers are prepended to the list (sorted to top).
+	func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
+		injectors := []func([]catwalk.Provider) catwalk.Provider{
+			// Mistral variants (General, Devstral, Codestral, Native)
+			providers.MistralGeneralProvider,
+			providers.MistralDevstralProvider,
+			providers.MistralCodestralProvider,
+			providers.MistralNativeProvider,
+			// New major providers
+			providers.OpenAIProvider,
+			providers.AnthropicProvider,
+			providers.GeminiProvider,
+			providers.ZAIProvider,
+			providers.CerebrasProvider,
+			// Existing providers
+			providers.XAIProvider,
+			providers.MiniMaxProvider,
 		}
-	}
 
-	// Prepend injected providers to the list (configured providers on top)
-	if injectedCount > 0 {
-		injectedProviders = append(injectedProviders, providerList...)
-		providerList = injectedProviders
-		slog.Info("Injected custom providers", "count", injectedCount, "total", len(providerList))
-	}
+		// Collect injected providers
+		injectedProviders := []catwalk.Provider{}
+		injectedCount := 0
+		for _, injector := range injectors {
+			if p := injector(providerList); p.ID != "" {
+				injectedProviders = append(injectedProviders, p)
+				injectedCount++
+			}
+		}
 
-	return providerList
-}
+		// Prepend injected providers to the list (configured providers on top)
+		if injectedCount > 0 {
+			injectedProviders = append(injectedProviders, providerList...)
+			providerList = injectedProviders
+			slog.Info("Injected custom providers", "count", injectedCount, "total", len(providerList))
+		}
+
+		return providerList
+	}
