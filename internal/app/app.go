@@ -124,6 +124,9 @@ func New(ctx context.Context, conn *sql.DB, cfg *config.Config) (*App, error) {
 
 // Config returns the application configuration.
 func (app *App) Config() *config.Config {
+	if app.config == nil {
+		return nil
+	}
 	return app.config
 }
 
@@ -390,6 +393,10 @@ func (app *App) Subscribe(program *tea.Program) {
 
 // Shutdown performs a graceful shutdown of the application.
 func (app *App) Shutdown() {
+	if app == nil {
+		return
+	}
+
 	start := time.Now()
 	defer func() { slog.Info("Shutdown took " + time.Since(start).String()) }()
 	var wg sync.WaitGroup

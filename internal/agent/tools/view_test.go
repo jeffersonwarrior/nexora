@@ -70,14 +70,14 @@ func TestViewToolDirectoryHandling(t *testing.T) {
 
 func TestViewDefaultReadLimit(t *testing.T) {
 	t.Parallel()
-	
+
 	// Verify the default read limit has been reduced to prevent context window issues
 	// This test documents that the default was changed from 2000 to 100
 	const expectedDefault = 100
-	
+
 	// Since DefaultReadLimit is not exported, we document the change here
 	t.Logf("View tool default limit is %d lines (reduced to prevent context window issues)", expectedDefault)
-	
+
 	// This documentation test serves as a record of the context window fix
 	// The actual change is in the view.go file where DefaultReadLimit = 100
 }
@@ -86,25 +86,25 @@ func TestEstimateTokenCount(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		content  string
-		expected int
+		name      string
+		content   string
+		expected  int
 		tolerance float64
 	}{
 		{
-			name:     "Empty string",
-			content:  "",
-			expected: 0,
+			name:      "Empty string",
+			content:   "",
+			expected:  0,
 			tolerance: 0,
 		},
 		{
-			name:     "Short text",
-			content:  "Hello world",
-			expected: 3, // 2 words, ~11 chars/4 = 2.75, weighted average ~2
+			name:      "Short text",
+			content:   "Hello world",
+			expected:  3, // 2 words, ~11 chars/4 = 2.75, weighted average ~2
 			tolerance: 1,
 		},
 		{
-			name:     "Code content",
+			name: "Code content",
 			content: `package main
 
 import "fmt"
@@ -112,13 +112,13 @@ import "fmt"
 func main() {
 	fmt.Println("Hello, world!")
 }`,
-			expected: 15, // Rough estimate for code
+			expected:  15, // Rough estimate for code
 			tolerance: 5,
 		},
 		{
-			name:     "Large content",
-			content:  strings.Repeat("This is a test line with some words. ", 100),
-			expected: 900, // 600 words, ~4400 chars, weighted average (300*2 + 1100)/3 * 1.1 = ~925
+			name:      "Large content",
+			content:   strings.Repeat("This is a test line with some words. ", 100),
+			expected:  900, // 600 words, ~4400 chars, weighted average (300*2 + 1100)/3 * 1.1 = ~925
 			tolerance: 100,
 		},
 	}
@@ -133,7 +133,7 @@ func main() {
 			charTokens := chars / 4
 			estimated := (wordTokens*2 + charTokens) / 3
 			estimated = int(float64(estimated) * 1.1)
-			
+
 			require.InDelta(t, tt.expected, estimated, tt.tolerance,
 				"Token estimate mismatch for '%s'", tt.name)
 			t.Logf("Content: %d words, %d chars, estimated %d tokens",

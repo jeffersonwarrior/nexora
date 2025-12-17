@@ -888,13 +888,29 @@ func (a *sessionAgent) Summarize(ctx context.Context, sessionID string, opts fan
 	defer a.activeRequests.Del(sessionID)
 	defer cancel()
 
-	agent := fantasy.NewAgent(a.largeModel.Model,
-		fantasy.WithSystemPrompt(string(summaryPrompt)),
-	)
+	// Provider-specific summarization model selection:
+	// Cerebras GLM-4.6 struggles with summarization at 180K tokens (90% threshold),
+	// so we use the smaller, more reliable llama3.1-8b model for summarization.
+	// Other providers continue using their large models as before.
+
+	// Use smaller model for Cerebras summarization (more reliable at 180K)
+	var agent fantasy.Agent
+	var summarizationModel Model
+	if strings.Contains(a.largeModel.Model.Model(), "glm-4.6") || strings.Contains(a.largeModel.Model.Provider(), "cerebras") {
+		agent = fantasy.NewAgent(a.smallModel.Model,
+			fantasy.WithSystemPrompt(string(summaryPrompt)),
+		)
+		summarizationModel = a.smallModel
+	} else {
+		agent = fantasy.NewAgent(a.largeModel.Model,
+			fantasy.WithSystemPrompt(string(summaryPrompt)),
+		)
+		summarizationModel = a.largeModel
+	}
 	summaryMessage, err := a.messages.Create(ctx, sessionID, message.CreateMessageParams{
 		Role:             message.Assistant,
-		Model:            a.largeModel.Model.Model(),
-		Provider:         a.largeModel.Model.Provider(),
+		Model:            summarizationModel.Model.Model(),
+		Provider:         summarizationModel.Model.Provider(),
 		IsSummaryMessage: true,
 	})
 	if err != nil {

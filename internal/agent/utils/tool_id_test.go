@@ -11,17 +11,17 @@ func TestGenerateToolCallID(t *testing.T) {
 		id := GenerateToolCallID("mistral")
 		require.Len(t, id, 9)
 		require.True(t, ValidateMistralID(id), "Generated ID should be valid for Mistral")
-		
+
 		// Test uniqueness
 		id2 := GenerateToolCallID("mistral")
 		require.NotEqual(t, id, id2, "Generated IDs should be unique")
-		
+
 		// Test alphanumeric only
 		for _, char := range id {
-			require.True(t, 
-				(char >= 'a' && char <= 'z') || 
-				(char >= 'A' && char <= 'Z') || 
-				(char >= '0' && char <= '9'), 
+			require.True(t,
+				(char >= 'a' && char <= 'z') ||
+					(char >= 'A' && char <= 'Z') ||
+					(char >= '0' && char <= '9'),
 				"ID should contain only alphanumeric characters: %s", string(char))
 		}
 	})
@@ -75,19 +75,19 @@ func TestSanitizeToolCallID(t *testing.T) {
 			input    string
 			expected int // expected length
 		}{
-			{"call_61626542", 9},      // Error case from bug report
+			{"call_61626542", 9}, // Error case from bug report
 			{"call_abcdefghijklmnopqrstu", 9},
 			{"call_1234567890", 9},
-			{"abc_123", 9},           // Non-standard format
+			{"abc_123", 9}, // Non-standard format
 			{"test123456789", 9},
-			{"", 9},                  // Empty input
+			{"", 9}, // Empty input
 		}
 
 		for _, tt := range tests {
 			t.Run(tt.input, func(t *testing.T) {
 				result := SanitizeToolCallID(tt.input, "mistral")
 				require.Len(t, result, 9)
-				require.True(t, ValidateMistralID(result), 
+				require.True(t, ValidateMistralID(result),
 					"Sanitized ID should be valid: %s from %s", result, tt.input)
 			})
 		}
@@ -112,7 +112,7 @@ func TestEdgeCases(t *testing.T) {
 		input := "call_61626542"
 		result1 := SanitizeToolCallID(input, "mistral")
 		result2 := SanitizeToolCallID(input, "mistral")
-		
+
 		// Results might be different due to random padding, but both should be valid
 		require.True(t, ValidateMistralID(result1))
 		require.True(t, ValidateMistralID(result2))

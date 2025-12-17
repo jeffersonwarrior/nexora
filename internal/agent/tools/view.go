@@ -219,22 +219,22 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 				output += fmt.Sprintf("\n\n(File has more lines. Use 'offset' parameter to read beyond line %d)",
 					params.Offset+len(strings.Split(content, "\n")))
 			}
-		output += "\n</file>\n"
+			output += "\n</file>\n"
 
-		// Add file information to help context awareness
-		linesRead := len(strings.Split(content, "\n"))
-		output += fmt.Sprintf("\n\n📄 File: %d KB — showing lines %d-%d of %d total (default chunks: 100 lines)",
-			int(fileInfo.Size()/1024),
-			params.Offset+1,
-			params.Offset+linesRead,
-			lineCount)
+			// Add file information to help context awareness
+			linesRead := len(strings.Split(content, "\n"))
+			output += fmt.Sprintf("\n\n📄 File: %d KB — showing lines %d-%d of %d total (default chunks: 100 lines)",
+				int(fileInfo.Size()/1024),
+				params.Offset+1,
+				params.Offset+linesRead,
+				lineCount)
 
-		// Suggest how to read more if needed
-		if lineCount > params.Offset+linesRead {
-			output += fmt.Sprintf("\n💡 Use offset=%d to read next chunk", params.Offset+linesRead)
-		}
+			// Suggest how to read more if needed
+			if lineCount > params.Offset+linesRead {
+				output += fmt.Sprintf("\n💡 Use offset=%d to read next chunk", params.Offset+linesRead)
+			}
 
-		output += getDiagnostics(filePath, lspClients)
+			output += getDiagnostics(filePath, lspClients)
 			recordFileRead(filePath)
 			duration := time.Since(startTime).Seconds() * 1000
 			LogViewOperation(ViewDiagnosticsInfo{
