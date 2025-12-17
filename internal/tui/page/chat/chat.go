@@ -762,7 +762,7 @@ func (p *chatPage) sendMessage(text string, attachments []message.Attachment) te
 	session := p.session
 	var cmds []tea.Cmd
 	if p.session.ID == "" {
-		newSession, err := p.app.Sessions.Create(context.Background(), "New Session")
+		newSession, err := p.app.Sessions.Create(context.Background(), session.Title)
 		if err != nil {
 			return util.ReportError(err)
 		}
@@ -774,7 +774,7 @@ func (p *chatPage) sendMessage(text string, attachments []message.Attachment) te
 	}
 	cmds = append(cmds, p.chat.GoToBottom())
 	cmds = append(cmds, func() tea.Msg {
-		_, err := p.app.AgentCoordinator.Run(context.Background(), session.ID, text, attachments...)
+		_, err := p.app.AgentCoordinator.Run(context.Background(), session.ID, text, session.Title, attachments...)
 		if err != nil {
 			isCancelErr := errors.Is(err, context.Canceled)
 			isPermissionErr := errors.Is(err, permission.ErrorPermissionDenied)
