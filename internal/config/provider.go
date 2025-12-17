@@ -49,6 +49,16 @@ func providerCacheFileData() string {
 	return filepath.Join(home.Dir(), ".local", "share", appName, "providers.json")
 }
 
+// IsZAIAvailable checks if the ZAI_API_KEY environment variable is set and non-empty
+func IsZAIAvailable() bool {
+	apiKey := os.Getenv("ZAI_API_KEY")
+	// Also check for test override
+	if apiKey == "" {
+		apiKey = os.Getenv("NEXORA_ZAI_API_KEY")
+	}
+	return apiKey != ""
+}
+
 func saveProvidersInCache(path string, providers []catwalk.Provider) error {
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
