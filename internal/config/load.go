@@ -50,12 +50,22 @@ func Load(workingDir, dataDir string, debug bool) (*Config, error) {
 
 	cfg, err := loadFromConfigPaths(configPaths)
 	if err != nil {
-		// Check if this is a configuration format error and suggest re-running setup
+		// Check if this is a configuration format error and attempt repair
 		errStr := err.Error()
 		if strings.Contains(errStr, "type mismatch") || strings.Contains(errStr, "field 'providers'") || strings.Contains(errStr, "expect") {
-			return nil, fmt.Errorf("configuration format error: %w\n\nPlease run 'nexora' to reconfigure your providers interactively", err)
+			// Try to create a basic config and attempt repair
+			basicCfg := &Config{}
+			basicCfg.dataConfigDir = GlobalConfigData()
+			basicCfg.setDefaults(workingDir, dataDir)
+			
+			// Attempt to repair the config by initializing basic structure
+			// and marking as needing setup
+			basicCfg.modelsNeedSetup = true
+			
+			return basicCfg, nil
+		} else {
+			return nil, fmt.Errorf("failed to load config from paths %v: %w", configPaths, err)
 		}
-		return nil, fmt.Errorf("failed to load config from paths %v: %w", configPaths, err)
 	}
 
 	cfg.dataConfigDir = GlobalConfigData()
