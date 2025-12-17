@@ -122,10 +122,13 @@ func (h *header) details(availWidth int) string {
 	// Always add session title (truncate if too long)
 	if h.session.Title != "" {
 		title := h.session.Title
-		if lipgloss.Width(title) > 20 {
-			title = title[:17] + "..."
+		if lipgloss.Width(title) > 25 {
+			title = title[:22] + "..."
 		}
 		parts = append(parts, s.Subtitle.Bold(true).Render(title))
+	} else {
+		// Fallback: show "New Session" if no title
+		parts = append(parts, s.Subtle.Render("New Session"))
 	}
 
 	agentCfg := config.Get().Agents[config.AgentCoder]

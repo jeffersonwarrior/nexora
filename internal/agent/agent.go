@@ -29,6 +29,7 @@ import (
 	"charm.land/fantasy/providers/openrouter"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 	"github.com/nexora/cli/internal/agent/tools"
+	"github.com/nexora/cli/internal/agent/utils"
 	"github.com/nexora/cli/internal/aiops"
 	"github.com/nexora/cli/internal/config"
 	"github.com/nexora/cli/internal/csync"
@@ -442,8 +443,14 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			}
 		},
 		OnToolCall: func(tc fantasy.ToolCallContent) error {
+			// Fix Mistral tool call ID format (9 alphanumeric chars)
+			sanitizedID := tc.ToolCallID
+			if a.largeModel.ModelCfg.Provider == "mistral" || a.largeModel.ModelCfg.Provider == "mistral-native" {
+				sanitizedID = utils.SanitizeToolCallID(tc.ToolCallID, "mistral")
+			}
+			
 			toolCall := message.ToolCall{
-				ID:               tc.ToolCallID,
+				ID:               sanitizedID,
 				Name:             tc.ToolName,
 				Input:            tc.Input,
 				ProviderExecuted: false,
