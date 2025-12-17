@@ -655,24 +655,13 @@ func (c *Config) configureSelectedModels(knownProviders []catwalk.Provider) erro
 
 // lookupConfigs searches config files recursively from CWD up to FS root
 func lookupConfigs(cwd string) []string {
-	// prepend default config paths
+	// Only use global config paths - no more per-project config
 	configPaths := []string{
 		GlobalConfig(),
 		GlobalConfigData(),
 	}
 
-	configNames := []string{appName + ".json", "." + appName + ".json"}
-
-	foundConfigs, err := fsext.Lookup(cwd, configNames...)
-	if err != nil {
-		// returns at least default configs
-		return configPaths
-	}
-
-	// reverse order so last config has more priority
-	slices.Reverse(foundConfigs)
-
-	return append(configPaths, foundConfigs...)
+	return configPaths
 }
 
 func loadFromConfigPaths(configPaths []string) (*Config, error) {
