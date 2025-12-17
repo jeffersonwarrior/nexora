@@ -12,9 +12,9 @@ func TestMistralNativeProvider(t *testing.T) {
 		provider := MistralNativeProvider([]catwalk.Provider{})
 
 		require.NotNil(t, provider)
-		require.Equal(t, "mistral", provider.ID)
+		require.Equal(t, catwalk.InferenceProvider("mistral"), provider.ID)
 		require.Equal(t, "Mistral AI (Native)", provider.Name)
-		require.Equal(t, "openaicompat", provider.Type)
+		require.Equal(t, catwalk.TypeOpenAICompat, provider.Type)
 		require.Equal(t, "$MISTRAL_API_KEY", provider.APIKey)
 		require.Equal(t, "https://api.mistral.ai/v1", provider.APIEndpoint)
 		require.Len(t, provider.Models, 2)
@@ -30,7 +30,7 @@ func TestMistralNativeProvider(t *testing.T) {
 		}
 		require.NotNil(t, devstralModel)
 		require.Equal(t, "Devstral 2 (123B)", devstralModel.Name)
-		require.Equal(t, 262144, devstralModel.ContextWindow)
+		require.Equal(t, int64(262144), devstralModel.ContextWindow)
 
 		var smallModel *catwalk.Model
 		for i := range provider.Models {
@@ -47,6 +47,6 @@ func TestMistralNativeProvider(t *testing.T) {
 		existing := catwalk.Provider{ID: "mistral"}
 		provider := MistralNativeProvider([]catwalk.Provider{existing})
 
-		require.Equal(t, "", provider.ID)
+		require.Equal(t, catwalk.InferenceProvider(""), provider.ID)
 	})
 }

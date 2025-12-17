@@ -21,7 +21,7 @@ func MistralNativeProvider(providers []catwalk.Provider) catwalk.Provider {
 		ID:                  "mistral",
 		APIKey:              "$MISTRAL_API_KEY",
 		APIEndpoint:         cmp.Or(os.Getenv("MISTRAL_API_ENDPOINT"), "https://api.mistral.ai/v1"),
-		Type:                "openaicompat",
+		Type:                catwalk.TypeOpenAICompat,
 		DefaultLargeModelID: "devstral-2512",
 		DefaultSmallModelID: "devstral-small-2512",
 		Models: []catwalk.Model{

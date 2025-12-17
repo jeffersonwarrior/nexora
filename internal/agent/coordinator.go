@@ -524,7 +524,7 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 
 	smallProviderCfg, ok := c.cfg.Providers.Get(smallModelCfg.Provider)
 	if !ok {
-		return Model{}, Model{}, errors.New("large model provider not configured")
+		return Model{}, Model{}, errors.New("small model provider not configured")
 	}
 
 	smallProvider, err := c.buildProvider(smallProviderCfg, smallModelCfg)

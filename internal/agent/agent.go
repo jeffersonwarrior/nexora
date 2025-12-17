@@ -99,6 +99,9 @@ type sessionAgent struct {
 	actionCount       int
 	recentCallsLock   sync.Mutex
 	recentActionsLock sync.Mutex
+
+	// Session state tracking
+	sessionStates *csync.Map[string, string] // Track session states like "awaiting_continuation"
 }
 
 type SessionAgentOptions struct {
@@ -130,36 +133,102 @@ func NewSessionAgent(
 		messageQueue:         csync.NewMap[string, []SessionAgentCall](),
 		activeRequests:       csync.NewMap[string, context.CancelFunc](),
 		aiops:                opts.AIOPS,
+		sessionStates:        csync.NewMap[string, string](),
 	}
 }
 
-func (a *sessionAgent) getOriginalPrompt(sessionID string) string {
-	// Get the first user message from the session
+func (a *sessionAgent) getTaskContext(sessionID string) string {
+	// Get the most recent meaningful user message, not just the first
 	messages, err := a.messages.List(context.Background(), sessionID)
 	if err != nil {
 		return ""
 	}
-	
-	for _, msg := range messages {
-		if msg.Role == message.User {
+
+	// Look for the last user message that contains substantial content
+	for i := len(messages) - 1; i >= 0; i-- {
+		msg := messages[i]
+		if msg.Role == message.User && len(msg.Content().Text) > 10 {
 			return msg.Content().Text
 		}
 	}
 	return ""
 }
 
+func (a *sessionAgent) getOriginalPrompt(sessionID string) string {
+	// Legacy method - use getTaskContext for better continuation
+	return a.getTaskContext(sessionID)
+}
+
+// setSessionState sets the state of a session (e.g., "awaiting_continuation")
+func (a *sessionAgent) setSessionState(sessionID, state string) {
+	if state == "" {
+		a.sessionStates.Del(sessionID)
+	} else {
+		a.sessionStates.Set(sessionID, state)
+	}
+}
+
+// getSessionState gets the current state of a session
+func (a *sessionAgent) getSessionState(sessionID string) string {
+	state, ok := a.sessionStates.Get(sessionID)
+	if !ok {
+		return ""
+	}
+	return state
+}
+
+// hasUnfinishedWork checks if the last AI response indicates unfinished work
+func (a *sessionAgent) hasUnfinishedWork(ctx context.Context, sessionID string) bool {
+	messages, err := a.messages.List(ctx, sessionID)
+	if err != nil {
+		return false
+	}
+
+	if len(messages) == 0 {
+		return false
+	}
+
+	lastAI := messages[len(messages)-1]
+	if lastAI.Role == message.Assistant {
+		content := lastAI.Content().Text
+
+		// Phrases that strongly indicate unfinished work
+		unfinishedSignals := []string{
+			"now let me", "next, i'll", "let me create", "i'll now",
+			"let me check", "let me examine", "let me review",
+			"let me implement", "now i'll", "moving on to",
+			"let me update", "let me modify", "let me add", "let me fix",
+			"let me test", "let me verify", "let me validate",
+			"i need to", "i should", "we should", "we need to",
+		}
+
+		contentLower := strings.ToLower(content)
+		for _, signal := range unfinishedSignals {
+			if strings.Contains(contentLower, signal) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
 	// Handle special continuation prompts
 	isContinuation := call.Prompt == "CONTINUE_AFTER_TOOL_EXECUTION"
-	
+
+	// Clear session state when any new non-continuation message is sent
+	if !isContinuation && call.Prompt != "" {
+		a.setSessionState(call.SessionID, "")
+	}
+
 	if call.Prompt == "" && !isContinuation {
 		return nil, ErrEmptyPrompt
 	}
 	if isContinuation {
-		// For continuation, use the original user prompt
-		call.Prompt = a.getOriginalPrompt(call.SessionID)
+		// For continuation, use the task context instead of just the original prompt
+		call.Prompt = a.getTaskContext(call.SessionID)
 		if call.Prompt == "" {
-			// Fallback if we can't get the original prompt
+			// Fallback if we can't get the task context
 			call.Prompt = "Please continue with the previous task"
 		}
 	}
@@ -207,7 +276,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 
 	var wg sync.WaitGroup
 	// Generate title if first message.
-	if len(msgs) == 0 {
+	if currentSession.MessageCount == 0 {
 		wg.Go(func() {
 			sessionLock.Lock()
 			a.generateTitle(ctx, &currentSession, call.Prompt)
@@ -440,10 +509,10 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 						defer cancel()
 						detection, err := a.aiops.DetectLoop(detectCtx, calls)
 						if err != nil {
-				slog.Debug("Loop detection failed", "error", err, "session_id", sessionID)
-				return
-			}
-			if detection.IsLooping {
+							slog.Debug("Loop detection failed", "error", err, "session_id", sessionID)
+							return
+						}
+						if detection.IsLooping {
 							// Create a system message about the loop
 							_, createErr := a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
 								Role: message.System,
@@ -508,10 +577,10 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 						if originalTask != "" {
 							drift, err := a.aiops.DetectDrift(detectCtx, originalTask, actions)
 							if err != nil {
-							slog.Debug("Drift detection failed", "error", err, "session_id", sessionID)
-							return
-						}
-						if drift.IsDrifting {
+								slog.Debug("Drift detection failed", "error", err, "session_id", sessionID)
+								return
+							}
+							if drift.IsDrifting {
 								// Create a warning message about task drift
 								_, createErr := a.messages.Create(agentCtx, sessionID, message.CreateMessageParams{
 									Role: message.System,
@@ -728,7 +797,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	if !ok || len(queuedMessages) == 0 {
 		// No queued messages
 		a.activeRequests.Del(call.SessionID)
-		
+
 		// Check if we have tool calls that were just completed
 		// If we have tool results but no more queued messages, we need to continue
 		// the conversation by calling Run again with an empty prompt
@@ -741,31 +810,47 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 				}
 			}
 		}
-		
+
 		// If we just completed tool calls, continue the conversation
-		if hasToolResults && currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0 {
+		// Also check if the AI response indicates unfinished work
+		shouldContinue := hasToolResults && currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0
+		if !shouldContinue && a.shouldContinueAfterTool(ctx, call.SessionID, currentAssistant) {
+			// Auto-continue if the AI response suggests unfinished work
+			shouldContinue = true
+		}
+
+		// Check for unfinished work and set session state instead of auto-continuing
+		if !shouldContinue && a.hasUnfinishedWork(ctx, call.SessionID) {
+			a.setSessionState(call.SessionID, "awaiting_continuation")
+			// Don't continue automatically - wait for explicit continue command or button
+		} else {
+			// Clear the session state if we're continuing or work is done
+			a.setSessionState(call.SessionID, "")
+		}
+
+		if shouldContinue {
 			// Create a new context for the next run but don't cancel the parent
 			nextRunCtx := context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
 			// Run with special continuation prompt to continue after tool execution
 			return a.Run(nextRunCtx, SessionAgentCall{
-				SessionID: call.SessionID,
-				Prompt:    "CONTINUE_AFTER_TOOL_EXECUTION", // Special prompt to continue
+				SessionID:       call.SessionID,
+				Prompt:          "CONTINUE_AFTER_TOOL_EXECUTION", // Special prompt to continue
 				ProviderOptions: call.ProviderOptions,
 			})
 		}
-		
+
 		// Otherwise, clean up and return
 		cancel()
 		return result, err
 	}
-	
+
 	// Has queued messages, create new context for next run
 	firstQueuedMessage := queuedMessages[0]
 	a.messageQueue.Set(call.SessionID, queuedMessages[1:])
-	
+
 	// Release active request for this call, but don't cancel parent context
 	a.activeRequests.Del(call.SessionID)
-	
+
 	// Start new run with fresh context to avoid cancellation propagation
 	nextRunCtx := context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
 	return a.Run(nextRunCtx, firstQueuedMessage)
@@ -1275,4 +1360,40 @@ func (a *sessionAgent) workaroundProviderMediaLimitations(messages []fantasy.Mes
 	}
 
 	return convertedMessages
+}
+
+// shouldContinueAfterTool checks if the last AI response suggests unfinished work
+func (a *sessionAgent) shouldContinueAfterTool(ctx context.Context, sessionID string, currentAssistant *message.Message) bool {
+	// Check if the last AI message indicates unfinished work
+	messages, err := a.messages.List(ctx, sessionID)
+	if err != nil {
+		return false
+	}
+
+	if len(messages) == 0 {
+		return false
+	}
+
+	lastAI := messages[len(messages)-1]
+	if lastAI.Role == message.Assistant {
+		content := lastAI.Content().Text
+		// Continuation indicators - phrases that suggest more work to be done
+		continuationSignals := []string{
+			"now let me", "next, i'll", "let me create", "i'll now",
+			"let's", "let me check", "let me examine", "let me review",
+			"let me implement", "now i'll", "moving on to", "i will now",
+			"i need to", "i should", "we should", "we need to",
+			"let me also", "additionally", "furthermore", "next step",
+			"let me update", "let me modify", "let me add", "let me fix",
+			"let me test", "let me verify", "let me validate",
+		}
+
+		contentLower := strings.ToLower(content)
+		for _, signal := range continuationSignals {
+			if strings.Contains(contentLower, signal) {
+				return true
+			}
+		}
+	}
+	return false
 }

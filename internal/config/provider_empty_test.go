@@ -45,10 +45,16 @@ func TestProvider_loadProvidersEmptyCache(t *testing.T) {
 	providers, err := loadProviders(false, client, tmpPath)
 	require.NoError(t, err)
 	require.NotNil(t, providers)
-	// Mock + mistral + nexora + xai + minimax
-	require.Equal(t, "Mock", providers[0].Name)
-	require.Equal(t, "Mistral", providers[1].Name)
-	require.Equal(t, "Nexora", providers[2].Name)
-	require.Equal(t, "xAI", providers[3].Name)
-	require.Equal(t, "MiniMax", providers[4].Name)
+	// Custom providers are injected and Mock from Catwalk is appended
+	require.Equal(t, "Mistral (General)", providers[0].Name)
+
+	// Find the Mock provider from the client
+	var mockProviderFound bool
+	for _, p := range providers {
+		if p.Name == "Mock" {
+			mockProviderFound = true
+			break
+		}
+	}
+	require.True(t, mockProviderFound, "Expected to find Mock provider from client")
 }

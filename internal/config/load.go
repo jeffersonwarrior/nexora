@@ -50,6 +50,11 @@ func Load(workingDir, dataDir string, debug bool) (*Config, error) {
 
 	cfg, err := loadFromConfigPaths(configPaths)
 	if err != nil {
+		// Check if this is a configuration format error and suggest re-running setup
+		errStr := err.Error()
+		if strings.Contains(errStr, "type mismatch") || strings.Contains(errStr, "field 'providers'") || strings.Contains(errStr, "expect") {
+			return nil, fmt.Errorf("configuration format error: %w\n\nPlease run 'nexora' to reconfigure your providers interactively", err)
+		}
 		return nil, fmt.Errorf("failed to load config from paths %v: %w", configPaths, err)
 	}
 

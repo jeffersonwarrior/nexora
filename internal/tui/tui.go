@@ -105,12 +105,22 @@ type appModel struct {
 
 // Init initializes the application model and returns initial commands.
 func (a appModel) Init() tea.Cmd {
-	item, ok := a.pages[a.currentPage]
-	if !ok {
-		return nil
+	var cmds []tea.Cmd
+
+	// Check if models are configured and show model dialog if not
+	if !a.app.Config().AreModelsConfigured() {
+		cmds = append(cmds, func() tea.Msg {
+			return dialogs.OpenDialogMsg{
+				Model: models.NewModelDialogCmp(),
+			}
+		})
 	}
 
-	var cmds []tea.Cmd
+	item, ok := a.pages[a.currentPage]
+	if !ok {
+		return tea.Batch(cmds...)
+	}
+
 	cmd := item.Init()
 	cmds = append(cmds, cmd)
 	a.loadedPages[a.currentPage] = true

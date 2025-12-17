@@ -25,7 +25,7 @@ func TestCerebrasProvider(t *testing.T) {
 
 		require.NotNil(t, provider)
 		require.Len(t, provider.Models, 6)
-		assert.Equal(t, "llama-3.3-70b", provider.DefaultLargeModelID)
+		assert.Equal(t, "zai-glm-4.6", provider.DefaultLargeModelID)
 		assert.Equal(t, "llama3.1-8b", provider.DefaultSmallModelID)
 	})
 
@@ -41,7 +41,7 @@ func TestCerebrasProvider(t *testing.T) {
 
 		var gptModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "deepseek-coder-2" {
+			if provider.Models[i].ID == "gpt-oss-120b" {
 				gptModel = &provider.Models[i]
 				break
 			}
@@ -69,12 +69,12 @@ func TestCerebrasProvider(t *testing.T) {
 		assert.Equal(t, int64(128000), llamaModel.ContextWindow)
 	})
 
-	t.Run("has qwen-3-235b large model with long context", func(t *testing.T) {
+	t.Run("has qwen-3-235b-a22b-instruct-2507 large model with long context", func(t *testing.T) {
 		provider := CerebrasProvider([]catwalk.Provider{})
 
 		var qwenModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "qwen-3-235b" {
+			if provider.Models[i].ID == "qwen-3-235b-a22b-instruct-2507" {
 				qwenModel = &provider.Models[i]
 				break
 			}

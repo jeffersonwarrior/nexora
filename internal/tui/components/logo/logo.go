@@ -2,7 +2,6 @@
 package logo
 
 import (
-	"fmt"
 	"image/color"
 	"math/rand"
 	"strings"
@@ -11,7 +10,6 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/MakeNowJust/heredoc"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/slice"
 	"github.com/nexora/cli/internal/tui/styles"
 )
@@ -22,10 +20,12 @@ type letterform func(bool) string
 
 const diag = `╱`
 
-const charm = "Powered by Charm"
+const nexora = "Powered by NEXORA"
 
-var randSourceMu sync.Mutex
-var randSource *rand.Rand
+var (
+	randSourceMu sync.Mutex
+	randSource   *rand.Rand
+)
 
 func init() {
 	randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -52,107 +52,47 @@ type Opts struct {
 	FieldColor   color.Color // diagonal lines
 	TitleColorA  color.Color // left gradient ramp point
 	TitleColorB  color.Color // right gradient ramp point
-	CharmColor   color.Color // Charm™ text color
+	CharmColor   color.Color // NEXORA text color
 	VersionColor color.Color // Version text color
 	Width        int         // width of the rendered logo, used for truncation
 }
 
-// Render renders the Nexora logo. Set the argument to true to render the narrow
-// version, intended for use in a sidebar.
-//
-// The compact argument determines whether it renders compact for the sidebar
-// or wider for the main pane.
+// Render renders the Nexora logo.
 func Render(version string, compact bool, o Opts) string {
 	fg := func(c color.Color, s string) string {
 		return lipgloss.NewStyle().Foreground(c).Render(s)
 	}
 
-	// Title.
-	const spacing = 1
-	letterforms := []letterform{
-		letterC,
-		letterR,
-		letterU,
-		letterSStylized,
-		letterH,
-	}
-	stretchIndex := -1 // -1 means no stretching.
-	if !compact {
-		stretchIndex = cachedRandN(len(letterforms))
-	}
+	// Simple one-line logo: /// NEXORA <v> ///
+	logoText := "/// NEXORA " + version + " ///"
+	logoText = fg(o.CharmColor, logoText)
 
-	nexora := renderWord(spacing, stretchIndex, letterforms...)
-	nexoraWidth := lipgloss.Width(nexora)
-	b := new(strings.Builder)
-	for r := range strings.SplitSeq(nexora, "\n") {
-		fmt.Fprintln(b, styles.ApplyForegroundGrad(r, o.TitleColorA, o.TitleColorB))
-	}
-	nexora = b.String()
-
-	// Charm and version.
-	metaRowGap := 1
-	maxVersionWidth := nexoraWidth - lipgloss.Width(charm) - metaRowGap
-	version = ansi.Truncate(version, maxVersionWidth, "…") // truncate version if too long.
-	gap := max(0, nexoraWidth-lipgloss.Width(charm)-lipgloss.Width(version))
-	metaRow := fg(o.CharmColor, charm) + strings.Repeat(" ", gap) + fg(o.VersionColor, version)
-
-	// Join the meta row and big Nexora title.
-	nexora = strings.TrimSpace(metaRow + "\n" + nexora)
-
-	// Narrow version.
 	if compact {
-		field := fg(o.FieldColor, strings.Repeat(diag, nexoraWidth))
-		return strings.Join([]string{field, field, nexora, field, ""}, "\n")
+		return logoText
 	}
 
-	fieldHeight := lipgloss.Height(nexora)
-
-	// Left field.
-	const leftWidth = 6
-	leftFieldRow := fg(o.FieldColor, strings.Repeat(diag, leftWidth))
-	leftField := new(strings.Builder)
-	for range fieldHeight {
-		fmt.Fprintln(leftField, leftFieldRow)
-	}
-
-	// Right field.
-	rightWidth := max(15, o.Width-nexoraWidth-leftWidth-2) // 2 for the gap.
-	const stepDownAt = 0
-	rightField := new(strings.Builder)
-	for i := range fieldHeight {
-		width := rightWidth
-		if i >= stepDownAt {
-			width = rightWidth - (i - stepDownAt)
-		}
-		fmt.Fprint(rightField, fg(o.FieldColor, strings.Repeat(diag, width)), "\n")
-	}
-
-	// Return the wide version.
-	const hGap = " "
-	logo := lipgloss.JoinHorizontal(lipgloss.Top, leftField.String(), hGap, nexora, hGap, rightField.String())
+	// For the wide version, just center it on the screen
 	if o.Width > 0 {
-		// Truncate the logo to the specified width.
-		lines := strings.Split(logo, "\n")
-		for i, line := range lines {
-			lines[i] = ansi.Truncate(line, o.Width, "")
-		}
-		logo = strings.Join(lines, "\n")
+		padding := max(0, (o.Width-lipgloss.Width(logoText))/2)
+		logoText = strings.Repeat(" ", padding) + logoText
 	}
-	return logo
+	return logoText
 }
 
 // SmallRender renders a smaller version of the Nexora logo, suitable for
 // smaller windows or sidebar usage.
 func SmallRender(width int) string {
 	t := styles.CurrentTheme()
-	title := t.S().Base.Foreground(t.Secondary).Render("Nexora")
-	title = fmt.Sprintf("%s %s", title, styles.ApplyBoldForegroundGrad("NEXORA", t.Secondary, t.Primary))
-	remainingWidth := width - lipgloss.Width(title) - 1 // 1 for the space after "Nexora"
-	if remainingWidth > 0 {
-		lines := strings.Repeat("╱", remainingWidth)
-		title = fmt.Sprintf("%s %s", title, t.S().Base.Foreground(t.Primary).Render(lines))
+	logoText := t.S().Base.Foreground(t.Primary).Render("/// NEXORA")
+	if width > 0 {
+		remainingWidth := width - lipgloss.Width(logoText) - 3 // 3 for " //"
+		if remainingWidth > 0 {
+			logoText += " //"
+			lines := strings.Repeat("╱", remainingWidth)
+			logoText += t.S().Base.Foreground(t.Secondary).Render(lines)
+		}
 	}
-	return title
+	return logoText
 }
 
 // renderWord renders letterforms to fork a word. stretchIndex is the index of

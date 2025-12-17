@@ -15,11 +15,11 @@ func NewCharmtoneTheme() *Theme {
 		Tertiary:  charmtone.Bok,
 		Accent:    charmtone.Zest,
 
-		// Backgrounds
-		BgBase:        charmtone.Pepper,
-		BgBaseLighter: charmtone.BBQ,
-		BgSubtle:      charmtone.Charcoal,
-		BgOverlay:     charmtone.Iron,
+		// Backgrounds - changed to black
+		BgBase:        lipgloss.Color("#000000"),
+		BgBaseLighter: lipgloss.Color("#111111"),
+		BgSubtle:      lipgloss.Color("#222222"),
+		BgOverlay:     lipgloss.Color("#333333"),
 
 		// Foregrounds
 		FgBase:      charmtone.Ash,

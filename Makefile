@@ -1,7 +1,7 @@
 # Makefile for Nexora
 
 # Version information
-VERSION ?= 0.28.0
+VERSION ?= 0.28.1
 LDFLAGS := -X github.com/nexora/cli/internal/version.Version=$(VERSION)
 
 # Default target

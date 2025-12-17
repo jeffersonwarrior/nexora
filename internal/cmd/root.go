@@ -225,8 +225,16 @@ func setupApp(cmd *cobra.Command) (*app.App, error) {
 
 	appInstance, err := app.New(ctx, conn, cfg)
 	if err != nil {
-		slog.Error("Failed to create app instance", "error", err)
-		return nil, err
+		if strings.Contains(err.Error(), "large model provider not configured") ||
+			strings.Contains(err.Error(), "small model provider not configured") ||
+			strings.Contains(err.Error(), "large model not selected") ||
+			strings.Contains(err.Error(), "small model not selected") {
+			// Models are not configured, but we'll still create the app and let the TUI handle it
+			slog.Info("Models not configured, will show setup dialog")
+		} else {
+			slog.Error("Failed to create app instance", "error", err)
+			return nil, err
+		}
 	}
 
 	return appInstance, nil

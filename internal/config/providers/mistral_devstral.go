@@ -29,8 +29,8 @@ func MistralDevstralProvider(providers []catwalk.Provider) catwalk.Provider {
 			{
 				ID:               "devstral-2512",
 				Name:             "Devstral 2 (123B)",
-				CostPer1MIn:      0.0,  // FREE during beta
-				CostPer1MOut:     0.0,  // FREE during beta
+				CostPer1MIn:      0.0, // FREE during beta
+				CostPer1MOut:     0.0, // FREE during beta
 				ContextWindow:    262144,
 				DefaultMaxTokens: 16000,
 				CanReason:        true,
@@ -41,8 +41,8 @@ func MistralDevstralProvider(providers []catwalk.Provider) catwalk.Provider {
 			{
 				ID:               "devstral-small-2512",
 				Name:             "Devstral Small 2 (24B)",
-				CostPer1MIn:      0.0,  // FREE during beta
-				CostPer1MOut:     0.0,  // FREE during beta
+				CostPer1MIn:      0.0, // FREE during beta
+				CostPer1MOut:     0.0, // FREE during beta
 				ContextWindow:    262144,
 				DefaultMaxTokens: 8000,
 				CanReason:        true,

@@ -119,6 +119,15 @@ func (h *header) details(availWidth int) string {
 		parts = append(parts, s.Error.Render(fmt.Sprintf("%s%d", styles.ErrorIcon, errorCount)))
 	}
 
+	// Always add session title (truncate if too long)
+	if h.session.Title != "" {
+		title := h.session.Title
+		if lipgloss.Width(title) > 20 {
+			title = title[:17] + "..."
+		}
+		parts = append(parts, s.Subtitle.Bold(true).Render(title))
+	}
+
 	agentCfg := config.Get().Agents[config.AgentCoder]
 	model := config.Get().GetModelByType(agentCfg.Model)
 	percentage := (float64(h.session.CompletionTokens+h.session.PromptTokens) / float64(model.ContextWindow)) * 100

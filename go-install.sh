@@ -8,7 +8,7 @@ set -e
 echo "Building Nexora..."
 
 # Build with version stamp
-VERSION=${1:-"0.28.0"}
+VERSION=${1:-"0.28.1"}
 LDFLAGS="-X github.com/nexora/cli/internal/version.Version=${VERSION}"
 
 # Create temporary build

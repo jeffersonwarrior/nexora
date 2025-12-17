@@ -38,6 +38,10 @@ type SelectionCopyMsg struct {
 	x, y         int
 }
 
+type ContinueClickedMsg struct {
+	SessionID string
+}
+
 const (
 	NotFound = -1
 )
@@ -75,6 +79,10 @@ type messageListCmp struct {
 	lastClickY    int
 	clickCount    int
 	promptQueue   int
+
+	// Continue button state
+	showContinueButton bool
+	continueButtonY    int // Y position of the continue button
 }
 
 // New creates a new message list component with custom keybindings
@@ -194,6 +202,16 @@ func (m *messageListCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 	case pubsub.Event[permission.PermissionNotification]:
 		cmds = append(cmds, m.handlePermissionRequest(msg.Payload))
 		return m, tea.Batch(cmds...)
+	case ContinueClickedMsg:
+		if msg.SessionID == m.session.ID {
+			// Send a continue message
+			return m, func() tea.Msg {
+				return SendMsg{
+					Text: "continue",
+				}
+			}
+		}
+		return m, nil
 	case SessionSelectedMsg:
 		if msg.ID != m.session.ID {
 			cmds = append(cmds, m.SetSession(msg))
@@ -231,19 +249,36 @@ func (m *messageListCmp) View() string {
 	if m.promptQueue > 0 {
 		height -= pillHeightAndPadding // Space for pill UI and padding
 	}
-	view := []string{
-		t.S().Base.
-			Padding(1, 1, 0, 1).
-			Width(m.width).
-			Height(height).
-			Render(
-				m.listCmp.View(),
-			),
+
+	// Prepare the main view with messages
+	mainView := t.S().Base.
+		Padding(1, 1, 0, 1).
+		Width(m.width).
+		Height(height).
+		Render(
+			m.listCmp.View(),
+		)
+
+	view := []string{mainView}
+
+	// Add continue button if needed
+	if m.showContinueButton {
+		continueButton := t.S().Success.
+			Background(t.BgOverlay).
+			Foreground(t.White).
+			Padding(0, 2).
+			Width(12).
+			Render("▶ Continue")
+		buttonRow := t.S().Base.PaddingLeft(2).Render(continueButton)
+		view = append(view, buttonRow)
 	}
+
+	// Add queue pill if needed
 	if m.app.AgentCoordinator != nil && m.promptQueue > 0 {
 		queuePill := queuePill(m.promptQueue, t)
 		view = append(view, t.S().Base.PaddingLeft(4).PaddingTop(1).Render(queuePill))
 	}
+
 	return strings.Join(view, "\n")
 }
 
@@ -384,6 +419,9 @@ func (m *messageListCmp) handleDeleteMessage(msg message.Message) tea.Cmd {
 
 // handleNewMessage routes new messages to appropriate handlers based on role.
 func (m *messageListCmp) handleNewMessage(msg message.Message) tea.Cmd {
+	// Hide continue button when any new message is sent
+	m.showContinueButton = false
+
 	switch msg.Role {
 	case message.User:
 		return m.handleNewUserMessage(msg)
@@ -448,6 +486,43 @@ func (m *messageListCmp) handleUpdateAssistantMessage(msg message.Message) tea.C
 	return tea.Batch(cmds...)
 }
 
+// shouldShowContinueButton determines if a continue button should be shown based on the message content
+func (m *messageListCmp) shouldShowContinueButton(msg message.Message) {
+	content := strings.ToLower(msg.Content().Text)
+
+	// Continuation indicators - phrases that suggest more work could be done
+	continuationSignals := []string{
+		"now let me", "next, i'll", "let me create", "i'll now",
+		"let's", "let me check", "let me examine", "let me review",
+		"let me implement", "now i'll", "moving on to", "i will now",
+		"i need to", "i should", "we should", "we need to",
+		"let me also", "additionally", "furthermore", "next step",
+		"let me update", "let me modify", "let me add", "let me fix",
+		"let me test", "let me verify", "let me validate",
+		"let me now", "i can", "let me show", "i'll help",
+	}
+
+	for _, signal := range continuationSignals {
+		if strings.Contains(content, signal) {
+			m.showContinueButton = true
+			// Position the button at the end of the current viewport
+			items := m.listCmp.Items()
+			m.continueButtonY = len(items) + 2 // Add some padding
+			return
+		}
+	}
+
+	// Check if we have tool results but no clear completion
+	if len(msg.ToolCalls()) > 0 && msg.FinishPart().Reason == message.FinishReasonEndTurn {
+		m.showContinueButton = true
+		items := m.listCmp.Items()
+		m.continueButtonY = len(items) + 2
+		return
+	}
+
+	m.showContinueButton = false
+}
+
 // findAssistantMessageAndToolCalls locates the assistant message and its tool calls.
 func (m *messageListCmp) findAssistantMessageAndToolCalls(items []list.Item, messageID string) (int, map[int]messages.ToolCallCmp) {
 	assistantIndex := NotFound
@@ -495,6 +570,11 @@ func (m *messageListCmp) updateAssistantMessageContent(msg message.Message, assi
 					time.Unix(m.lastUserMessageTime, 0),
 				),
 			)
+		}
+
+		// Check if we should show the continue button when assistant message is finished
+		if msg.FinishPart() != nil {
+			m.shouldShowContinueButton(msg)
 		}
 	} else if hasToolCallsOnly {
 		items := m.listCmp.Items()
@@ -725,6 +805,18 @@ const (
 // handleMouseClick handles mouse click events and detects double/triple clicks.
 func (m *messageListCmp) handleMouseClick(x, y int) tea.Cmd {
 	now := time.Now()
+
+	// Check if this is a click on the continue button
+	if m.showContinueButton && y == m.continueButtonY {
+		// Check if click is within the button area (left side of the screen)
+		if x >= 2 && x <= 12 { // Button occupies rough area from column 2-12
+			return func() tea.Msg {
+				return ContinueClickedMsg{
+					SessionID: m.session.ID,
+				}
+			}
+		}
+	}
 
 	// Check if this is a potential multi-click
 	if now.Sub(m.lastClickTime) <= doubleClickThreshold &&

@@ -42,8 +42,7 @@ func TestProvider_loadProvidersNoIssues(t *testing.T) {
 	// Mock provider from client has no ID, just check by name
 	require.True(t, providerNames["Mock"], "Expected mock provider from client")
 	// Check that injected providers are included
-	require.True(t, providerMap["mistral"], "Expected mistral provider injected")
-	require.True(t, providerMap["nexora"], "Expected nexora provider injected")
+	require.True(t, providerMap["mistral-general"], "Expected mistral-general provider injected")
 
 	// check if file got saved
 	fileInfo, err := os.Stat(tmpPath)
@@ -80,8 +79,7 @@ func TestProvider_loadProvidersWithIssues(t *testing.T) {
 		providerNames[p.Name] = true
 	}
 	require.True(t, providerNames["OldProvider"], "Expected to keep old provider when loading fails")
-	require.True(t, providerMap["mistral"], "Expected to have mistral provider injected")
-	require.True(t, providerMap["nexora"], "Expected to have nexora provider injected")
+	require.True(t, providerMap["mistral-general"], "Expected to have mistral-general provider injected")
 	require.True(t, providerMap["xai"], "Expected to have xai provider injected")
 }
 

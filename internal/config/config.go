@@ -394,6 +394,25 @@ func (c *Config) IsConfigured() bool {
 	return len(c.EnabledProviders()) > 0
 }
 
+// AreModelsConfigured return true if both large and small models are configured
+func (c *Config) AreModelsConfigured() bool {
+	_, largeSelected := c.Models[SelectedModelTypeLarge]
+	_, smallSelected := c.Models[SelectedModelTypeSmall]
+
+	if !largeSelected || !smallSelected {
+		return false
+	}
+
+	// Check if providers exist for both models
+	largeModel, _ := c.Models[SelectedModelTypeLarge]
+	smallModel, _ := c.Models[SelectedModelTypeSmall]
+
+	_, largeProviderExists := c.Providers.Get(largeModel.Provider)
+	_, smallProviderExists := c.Providers.Get(smallModel.Provider)
+
+	return largeProviderExists && smallProviderExists
+}
+
 func (c *Config) GetModel(provider, model string) *catwalk.Model {
 	if providerConfig, ok := c.Providers.Get(provider); ok {
 		for _, m := range providerConfig.Models {
