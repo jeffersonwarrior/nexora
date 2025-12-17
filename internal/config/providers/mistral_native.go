@@ -21,15 +21,9 @@ func MistralNativeProvider(providers []catwalk.Provider) catwalk.Provider {
 		ID:                  "mistral",
 		APIKey:              "$MISTRAL_API_KEY",
 		APIEndpoint:         cmp.Or(os.Getenv("MISTRAL_API_ENDPOINT"), "https://api.mistral.ai/v1"),
-		Type:                "openaicompat", // Uses openaicompat but with Mistral-specific ExtraBody
+		Type:                "openaicompat",
 		DefaultLargeModelID: "devstral-2512",
 		DefaultSmallModelID: "devstral-small-2512",
-		ExtraBody: map[string]any{
-			"tool_choice":          "auto",
-			"prompt_mode":          "reasoning",
-			"parallel_tool_calls":  true,
-			"safe_prompt":          false,
-		},
 		Models: []catwalk.Model{
 			// Devstral 2 - Agentic coding (72.2% SWE-bench)
 			{
@@ -56,6 +50,5 @@ func MistralNativeProvider(providers []catwalk.Provider) catwalk.Provider {
 				Options:          catwalk.ModelOptions{},
 			},
 		},
-		DefaultHeaders: map[string]string{},
 	}
 }

@@ -4,7 +4,10 @@ package logo
 import (
 	"fmt"
 	"image/color"
+	"math/rand"
 	"strings"
+	"sync"
+	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/MakeNowJust/heredoc"
@@ -18,6 +21,31 @@ import (
 type letterform func(bool) string
 
 const diag = `╱`
+
+const charm = "Powered by Charm"
+
+var randSourceMu sync.Mutex
+var randSource *rand.Rand
+
+func init() {
+	randSource = rand.New(rand.NewSource(time.Now().UnixNano()))
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func cachedRandN(n int) int {
+	randSourceMu.Lock()
+	defer randSourceMu.Unlock()
+	if n <= 0 {
+		return 0
+	}
+	return randSource.Intn(n)
+}
 
 // Opts are the options for rendering the Nexora title art.
 type Opts struct {
@@ -35,8 +63,6 @@ type Opts struct {
 // The compact argument determines whether it renders compact for the sidebar
 // or wider for the main pane.
 func Render(version string, compact bool, o Opts) string {
-	const charm = " Charm™"
-
 	fg := func(c color.Color, s string) string {
 		return lipgloss.NewStyle().Foreground(c).Render(s)
 	}
@@ -154,7 +180,7 @@ func renderWord(spacing int, stretchIndex int, letterforms ...letterform) string
 
 // letterC renders the letter C in a stylized way. It takes an integer that
 // determines how many cells to stretch the letter. If the stretch is less than
-// 1, it defaults to no stretching.
+// 1, defaults to no stretching.
 func letterC(stretch bool) string {
 	// Here's what we're making:
 	//
@@ -184,7 +210,7 @@ func letterC(stretch bool) string {
 
 // letterH renders the letter H in a stylized way. It takes an integer that
 // determines how many cells to stretch the letter. If the stretch is less than
-// 1, it defaults to no stretching.
+// 1, defaults to no stretching.
 func letterH(stretch bool) string {
 	// Here's what we're making:
 	//
@@ -214,7 +240,7 @@ func letterH(stretch bool) string {
 
 // letterR renders the letter R in a stylized way. It takes an integer that
 // determines how many cells to stretch the letter. If the stretch is less than
-// 1, it defaults to no stretching.
+// 1, defaults to no stretching.
 func letterR(stretch bool) string {
 	// Here's what we're making:
 	//
@@ -250,7 +276,7 @@ func letterR(stretch bool) string {
 
 // letterSStylized renders the letter S in a stylized way, more so than
 // [letterS]. It takes an integer that determines how many cells to stretch the
-// letter. If the stretch is less than 1, it defaults to no stretching.
+// letter. If the stretch is less than 1, defaults to no stretching.
 func letterSStylized(stretch bool) string {
 	// Here's what we're making:
 	//
@@ -286,7 +312,7 @@ func letterSStylized(stretch bool) string {
 
 // letterU renders the letter U in a stylized way. It takes an integer that
 // determines how many cells to stretch the letter. If the stretch is less than
-// 1, it defaults to no stretching.
+// 1, defaults to no stretching.
 func letterU(stretch bool) string {
 	// Here's what we're making:
 	//
