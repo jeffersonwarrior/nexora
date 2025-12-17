@@ -370,10 +370,10 @@ type Config struct {
 	// - Creating separate configuration loading and resolution phases
 	// - Implementing dependency injection for resolvers
 	// - Moving runtime concerns out of configuration struct
-	resolver       VariableResolver
-	dataConfigDir  string             `json:"-"`
-	knownProviders []catwalk.Provider `json:"-"`
-	modelsNeedSetup bool              `json:"-"` // Flag to indicate if TUI setup is needed for models
+	resolver        VariableResolver
+	dataConfigDir   string             `json:"-"`
+	knownProviders  []catwalk.Provider `json:"-"`
+	modelsNeedSetup bool               `json:"-"` // Flag to indicate if TUI setup is needed for models
 }
 
 func (c *Config) WorkingDir() string {
@@ -662,7 +662,7 @@ func (c *Config) ValidateAndFallbackModels() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	smallValid, err := c.validateModel(SelectedModelTypeSmall) 
+	smallValid, err := c.validateModel(SelectedModelTypeSmall)
 	if err != nil {
 		return false, err
 	}
@@ -688,13 +688,17 @@ func (c *Config) validateModel(modelType SelectedModelType) (bool, error) {
 		return false, nil // Provider not configured
 	}
 
-	// Check if model exists in provider
-	catwalkModel := c.GetModel(model.Provider, model.Model)
-	if catwalkModel == nil {
-		return false, nil // Model not found
+	// Check if model exists in provider config first
+	if providerConfig, ok := c.Providers.Get(model.Provider); ok {
+		for _, m := range providerConfig.Models {
+			if m.ID == model.Model {
+				return true, nil // Found in provider config
+			}
+		}
 	}
 
-	return true, nil
+	// Model not found in provider config, so it's invalid
+	return false, nil
 }
 
 // tryRecentModelsFallback attempts to fallback to recent models if current models are invalid
@@ -749,9 +753,17 @@ func (c *Config) isValidRecentModel(modelType SelectedModelType, model SelectedM
 		return false
 	}
 
-	// Check if model exists in provider
-	catwalkModel := c.GetModel(model.Provider, model.Model)
-	return catwalkModel != nil
+	// Check if model exists in provider config
+	if providerConfig, ok := c.Providers.Get(model.Provider); ok {
+		for _, m := range providerConfig.Models {
+			if m.ID == model.Model {
+				return true // Found in provider config
+			}
+		}
+	}
+
+	// Model not found, so it's invalid
+	return false
 }
 
 // RepairConfig attempts to repair configuration issues

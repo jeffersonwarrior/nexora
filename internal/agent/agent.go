@@ -448,7 +448,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			if a.largeModel.ModelCfg.Provider == "mistral" || a.largeModel.ModelCfg.Provider == "mistral-native" {
 				sanitizedID = utils.SanitizeToolCallID(tc.ToolCallID, "mistral")
 			}
-			
+
 			toolCall := message.ToolCall{
 				ID:               sanitizedID,
 				Name:             tc.ToolName,

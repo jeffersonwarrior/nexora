@@ -57,11 +57,11 @@ func Load(workingDir, dataDir string, debug bool) (*Config, error) {
 			basicCfg := &Config{}
 			basicCfg.dataConfigDir = GlobalConfigData()
 			basicCfg.setDefaults(workingDir, dataDir)
-			
+
 			// Attempt to repair the config by initializing basic structure
 			// and marking as needing setup
 			basicCfg.modelsNeedSetup = true
-			
+
 			return basicCfg, nil
 		} else {
 			return nil, fmt.Errorf("failed to load config from paths %v: %w", configPaths, err)
@@ -121,7 +121,7 @@ func Load(workingDir, dataDir string, debug bool) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate models: %w", err)
 	}
-	
+
 	// Mark if models need TUI setup
 	cfg.modelsNeedSetup = !modelsValid || !cfg.AreModelsConfigured()
 

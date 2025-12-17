@@ -77,7 +77,7 @@ func SanitizeToolCallID(id, provider string) string {
 			}
 			return -1
 		}, id)
-		
+
 		// Pad or truncate to 9 chars
 		for len(clean) < 9 {
 			clean += generateRandomID(1)
