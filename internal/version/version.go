@@ -4,7 +4,7 @@ import "runtime/debug"
 
 // Build-time parameters set via -ldflags
 
-var Version = "0.27.1"
+var Version = "0.27.0"
 
 // A user may install nexora using `go install github.com/nexora/cli@latest`.
 // without -ldflags, in which case the version above is unset. As a workaround
@@ -19,7 +19,7 @@ func init() {
 	// Use VCS info if available and we're not on a tagged version
 	if mainVersion == "(devel)" {
 		Version = "0.27.0-dev"
-	} else if mainVersion != "" && mainVersion > Version {
+	} else if mainVersion != "" && Version == "0.27.0" { // Only override if not set via ldflags
 		Version = mainVersion
 	}
 }
