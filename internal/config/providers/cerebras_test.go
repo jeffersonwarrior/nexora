@@ -41,7 +41,7 @@ func TestCerebrasProvider(t *testing.T) {
 
 		var gptModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "gpt-oss-120b" {
+			if provider.Models[i].ID == "deepseek-coder-2" {
 				gptModel = &provider.Models[i]
 				break
 			}

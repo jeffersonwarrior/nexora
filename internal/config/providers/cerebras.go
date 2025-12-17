@@ -22,12 +22,12 @@ func CerebrasProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIKey:              "$CEREBRAS_API_KEY",
 		APIEndpoint:         cmp.Or(os.Getenv("CEREBRAS_API_ENDPOINT"), "https://api.cerebras.ai/v1"),
 		Type:                "openai-compat",
-		DefaultLargeModelID: "llama-3.3-70b",
+		DefaultLargeModelID: "zai-glm-4.6", // Fastest GLM 4.6 model
 		DefaultSmallModelID: "llama3.1-8b",
 		Models: []catwalk.Model{
 			// GPT Open Source 120B - Fastest inference
 			{
-				ID:               "gpt-oss-120b",
+				ID:               "deepseek-coder-2",
 				Name:             "GPT OSS 120B",
 				CostPer1MIn:      0.35,
 				CostPer1MOut:     0.75,
@@ -35,6 +35,18 @@ func CerebrasProvider(providers []catwalk.Provider) catwalk.Provider {
 				DefaultMaxTokens: 2048,
 				CanReason:        false,
 				SupportsImages:   false,
+				Options:          catwalk.ModelOptions{},
+			},
+			// Z.AI GLM 4.6 - Fastest GLM 4.6 model (~1000 tokens/sec)
+			{
+				ID:               "zai-glm-4.6",
+				Name:             "GLM 4.6 (Cerebras)",
+				CostPer1MIn:      0.6,
+				CostPer1MOut:     2.2,
+				ContextWindow:    200000,
+				DefaultMaxTokens: 8192,
+				CanReason:        true,
+				SupportsImages:   true,
 				Options:          catwalk.ModelOptions{},
 			},
 			// Llama 3.3 70B - Latest Llama
@@ -83,18 +95,6 @@ func CerebrasProvider(providers []catwalk.Provider) catwalk.Provider {
 				DefaultMaxTokens: 16000,
 				CanReason:        true,
 				SupportsImages:   false,
-				Options:          catwalk.ModelOptions{},
-			},
-			// Z.AI GLM 4.6 via Cerebras
-			{
-				ID:               "zai-glm-4.6",
-				Name:             "GLM 4.6 (via Cerebras)",
-				CostPer1MIn:      0.6,
-				CostPer1MOut:     2.2,
-				ContextWindow:    200000,
-				DefaultMaxTokens: 8192,
-				CanReason:        true,
-				SupportsImages:   true,
 				Options:          catwalk.ModelOptions{},
 			},
 		},

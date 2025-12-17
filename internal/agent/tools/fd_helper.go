@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"log/slog"
 	"os/exec"
 )
 
@@ -10,10 +11,13 @@ func getFDCmd(ctx context.Context) *exec.Cmd {
 	if _, err := exec.LookPath("fd"); err != nil {
 		// Try fdfind on Debian/Ubuntu
 		if _, err := exec.LookPath("fdfind"); err != nil {
+			slog.Debug("fd/fdfind not found in $PATH. Will use built-in glob implementation.")
 			return nil
 		}
+		slog.Info("Using fdfind for fast file searching")
 		return exec.CommandContext(ctx, "fdfind")
 	}
+	slog.Info("Using fd for fast file searching")
 	return exec.CommandContext(ctx, "fd")
 }
 

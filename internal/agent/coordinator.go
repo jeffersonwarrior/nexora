@@ -594,6 +594,9 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		smallModelID += ":exacto"
 	}
 
+	// Legacy GPT-OSS-120B mappings removed - DeepSeek Coder 2 is default
+	// Special handling for Cerebras and RentalH200 no longer needed
+
 	largeModel, err := largeProvider.LanguageModel(ctx, largeModelID)
 	if err != nil {
 		return Model{}, Model{}, err
@@ -684,22 +687,17 @@ func (c *coordinator) buildOpenrouterProvider(_, apiKey string, headers map[stri
 }
 
 func (c *coordinator) buildMinimaxProvider(baseURL, apiKey string) (fantasy.Provider, error) {
-	// Custom MiniMax provider using openai-compat SDK with anthropic headers
-	opts := []openaicompat.Option{
-		openaicompat.WithBaseURL(baseURL),
-		openaicompat.WithAPIKey(apiKey),
+	// Custom MiniMax provider using anthropic SDK with JWT as API key
+	opts := []anthropic.Option{
+		anthropic.WithAPIKey(apiKey),
 	}
 	if c.cfg.Options.Debug {
 		httpClient := log.NewHTTPClient()
-		opts = append(opts, openaicompat.WithHTTPClient(httpClient))
+		opts = append(opts, anthropic.WithHTTPClient(httpClient))
 	}
-	headers := map[string]string{
-		"Authorization": "Bearer " + apiKey,
-		"anthropic-version": "2023-06-01",
-	}
-	opts = append(opts, openaicompat.WithHeaders(headers))
+	opts = append(opts, anthropic.WithBaseURL(baseURL))
 
-	return openaicompat.New(opts...)
+	return anthropic.New(opts...)
 }
 
 func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers map[string]string, extraBody map[string]any) (fantasy.Provider, error) {
@@ -856,6 +854,20 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 			}
 			providerCfg.ExtraBody["tool_stream"] = true
 		}
+		if providerCfg.ID == "cerebras" {
+			if providerCfg.ExtraBody == nil {
+				providerCfg.ExtraBody = map[string]any{}
+			}
+			// Ensure tool calling works properly for GPT OSS with Cerebras
+			providerCfg.ExtraBody["tool_choice"] = "auto"
+		}
+		if providerCfg.ID == "rentalh200" {
+			if providerCfg.ExtraBody == nil {
+				providerCfg.ExtraBody = map[string]any{}
+			}
+			// Ensure.tool calling works properly for GPT OSS with Rental H200
+			providerCfg.ExtraBody["tool_choice"] = "auto"
+		}
 		return c.buildOpenaiCompatProvider(baseURL, apiKey, headers, providerCfg.ExtraBody)
 	default:
 		return nil, fmt.Errorf("provider type not supported: %q", providerCfg.Type)
@@ -869,6 +881,7 @@ func isExactoSupported(modelID string) bool {
 		"z-ai/glm-4.6",
 		"openai/gpt-oss-120b",
 		"qwen/qwen3-coder",
+		"deepseek-coder-2", // RentalH200/Cerebras DeepSeek default
 	}
 	return slices.Contains(supportedModels, modelID)
 }

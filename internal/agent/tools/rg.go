@@ -7,18 +7,15 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"github.com/nexora/cli/internal/log"
 )
 
 var getRg = sync.OnceValue(func() string {
 	path, err := exec.LookPath("rg")
 	if err != nil {
-		if log.Initialized() {
-			slog.Warn("Ripgrep (rg) not found in $PATH. Some grep features might be limited or slower.")
-		}
+		slog.Debug("Ripgrep (rg) not found in $PATH. Will use built-in grep implementation.")
 		return ""
 	}
+	slog.Info("Using ripgrep (rg) for fast pattern matching")
 	return path
 })
 

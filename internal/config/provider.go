@@ -186,6 +186,7 @@ func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 		providers.ZAIProvider,
 		providers.CerebrasProvider,
 		providers.KimiProvider,
+		providers.RentalH200Provider,
 		// Existing providers
 		providers.NexoraProvider,
 		providers.XAIProvider,
