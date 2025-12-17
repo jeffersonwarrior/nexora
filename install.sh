@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 BINARY_NAME="nexora"
-DEFAULT_VERSION="0.28.1"
+DEFAULT_VERSION="0.28.2"
 INSTALL_DIR="$HOME/.local/bin"
 TEMP_DIR="/tmp/nexora-install"
 
