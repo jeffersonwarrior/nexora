@@ -5,6 +5,56 @@ All notable changes to Nexora CLI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.1] - 2025-12-17
+
+### Added
+
+#### Critical Bug Fixes
+- **Mistral Tool Call ID Format**: Fixed `"Tool call id was call_61626542 but must be a-z, A-Z, 0-9, with a length of 9"` error
+- **Session Title Display**: Fixed missing session titles in header (20	25 char truncation + "New Session" fallback)
+- **Provider Field Reference**: Fixed compilation error `CatwalkCfg.Provider 	 ModelCfg.Provider`
+
+#### New Features
+- **Tool ID Sanitization Library**: `internal/agent/utils/tool_id.go` with provider-specific ID generation
+- **Enhanced Mistral Provider**: Full support for `devstral-2512` and `devstral-small-2512` models
+- **Model Validation**: Added automatic fallback to recent models when current models are invalid
+- **Configuration Security**: Added `.gitignore` for `nexora.json` and created `nexora.example.json` template
+
+#### Testing & Quality
+- **Comprehensive Test Suite**: 15/15 new tests for tool ID utilities
+- **Enhanced QA Tests**: All existing QA tests passing with coverage
+- **Model Fallback Logic**: Full test coverage for model validation and recovery
+
+### Technical Improvements
+- Provider-specific tool call ID generation (Mistral: 9 alphanumeric chars, OpenAI: call_* format)
+- Enhanced error messages and recovery patterns
+- Updated configuration templates and documentation
+- Improved PATH handling in installation script
+
+### Security
+- Removed API keys from repository history
+- Added configuration file to `.gitignore`
+- Created safe configuration template for users
+
+### Fixed
+- Tool call ID sanitization for Mistral provider
+- Session title truncation and fallback behavior
+- Model configuration validation and auto-recovery
+- Provider field reference compilation errors
+
+---
+
+## [0.28.0] - 2025-12-17
+
+### Fixed
+- Catwalk Provider struct compatibility (`ExtraBody` removal)
+- Logo rendering issues (imports, undefined symbols, emoji parsing)
+- Undefined providers & references cleanup
+- AgentCoordinator.Run() signature in chat.go
+- RentalH200 provider removal (all references cleaned)
+
+---
+
 ## [0.27.0] - 2025-12-15
 
 ### Added
