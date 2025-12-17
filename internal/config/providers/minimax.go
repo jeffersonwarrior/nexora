@@ -48,7 +48,9 @@ func MiniMaxProvider(providers []catwalk.Provider) catwalk.Provider {
 				Options:          catwalk.ModelOptions{},
 			},
 		},
-		DefaultHeaders: map[string]string{},
+		DefaultHeaders: map[string]string{
+			"Authorization": "Bearer $MINIMAX_API_KEY",
+		},
 	}
 
 	return minimaxProvider

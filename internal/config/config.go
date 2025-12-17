@@ -773,7 +773,13 @@ func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {
 		if c.ID == "kimi-coding" {
 			testURL = baseURL + "/v1/models"
 		}
-		headers["x-api-key"] = apiKey
+		// MiniMax uses Authorization header
+		if c.ID == "minimax" {
+			headers["Authorization"] = "Bearer " + apiKey
+			testURL = baseURL + "/v1/models" // MiniMax uses /v1/models for testing
+		} else {
+			headers["x-api-key"] = apiKey
+		}
 		headers["anthropic-version"] = "2023-06-01"
 	case catwalk.TypeGoogle:
 		baseURL, _ := resolver.ResolveValue(c.BaseURL)

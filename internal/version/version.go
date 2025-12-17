@@ -4,7 +4,7 @@ import "runtime/debug"
 
 // Build-time parameters set via -ldflags
 
-var Version = "0.27.0"
+var Version = "0.27.1"
 
 // A user may install nexora using `go install github.com/nexora/cli@latest`.
 // without -ldflags, in which case the version above is unset. As a workaround

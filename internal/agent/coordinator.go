@@ -617,11 +617,19 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map[string]string) (fantasy.Provider, error) {
 	var opts []anthropic.Option
 
+	// MiniMax uses JWT tokens
 	if strings.HasPrefix(apiKey, "Bearer ") {
 		// NOTE: Prevent the SDK from picking up the API key from env.
 		os.Setenv("ANTHROPIC_API_KEY", "")
 
 		headers["Authorization"] = apiKey
+	} else if strings.HasPrefix(apiKey, "eyJ") { // JWT token (MiniMax)
+		// NOTE: Prevent the SDK from picking up the API key from env.
+		os.Setenv("ANTHROPIC_API_KEY", "")
+
+		// Use the JWT as the API key and set Authorization
+		opts = append(opts, anthropic.WithAPIKey(apiKey))
+		headers["Authorization"] = "Bearer " + apiKey
 	} else if apiKey != "" {
 		// X-Api-Key header
 		opts = append(opts, anthropic.WithAPIKey(apiKey))
@@ -673,6 +681,25 @@ func (c *coordinator) buildOpenrouterProvider(_, apiKey string, headers map[stri
 		opts = append(opts, openrouter.WithHeaders(headers))
 	}
 	return openrouter.New(opts...)
+}
+
+func (c *coordinator) buildMinimaxProvider(baseURL, apiKey string) (fantasy.Provider, error) {
+	// Custom MiniMax provider using openai-compat SDK with anthropic headers
+	opts := []openaicompat.Option{
+		openaicompat.WithBaseURL(baseURL),
+		openaicompat.WithAPIKey(apiKey),
+	}
+	if c.cfg.Options.Debug {
+		httpClient := log.NewHTTPClient()
+		opts = append(opts, openaicompat.WithHTTPClient(httpClient))
+	}
+	headers := map[string]string{
+		"Authorization": "Bearer " + apiKey,
+		"anthropic-version": "2023-06-01",
+	}
+	opts = append(opts, openaicompat.WithHeaders(headers))
+
+	return openaicompat.New(opts...)
 }
 
 func (c *coordinator) buildOpenaiCompatProvider(baseURL, apiKey string, headers map[string]string, extraBody map[string]any) (fantasy.Provider, error) {
@@ -808,6 +835,9 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 	case openai.Name:
 		return c.buildOpenaiProvider(baseURL, apiKey, headers)
 	case anthropic.Name:
+		if providerCfg.ID == "minimax" {
+			return c.buildMinimaxProvider(baseURL, apiKey)
+		}
 		return c.buildAnthropicProvider(baseURL, apiKey, headers)
 	case openrouter.Name:
 		return c.buildOpenrouterProvider(baseURL, apiKey, headers)
