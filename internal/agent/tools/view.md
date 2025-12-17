@@ -3,7 +3,7 @@ Reads and displays file contents with line numbers for examining code, logs, or 
 <usage>
 - Provide file path to read
 - Optional offset: start reading from specific line (0-based)
-- Optional limit: control lines read (default 2000)
+- Optional limit: control lines read (default 100)
 - Don't use for directories (use LS tool instead)
 - Supports image files (PNG, JPEG, GIF, BMP, SVG, WebP)
 </usage>
@@ -19,7 +19,7 @@ Reads and displays file contents with line numbers for examining code, logs, or 
 
 <limitations>
 - Max file size: 5MB
-- Default limit: 2000 lines
+- Default limit: 100 lines (reduced to prevent context window issues)
 - Lines >2000 chars truncated
 - Binary files (except images) cannot be displayed
 </limitations>
@@ -33,6 +33,8 @@ Reads and displays file contents with line numbers for examining code, logs, or 
 <tips>
 - Use with Glob to find files first
 - For code exploration: Grep to find relevant files, then View to examine
-- For large files: use offset parameter for specific sections
+- For large files: use offset and limit parameters for specific sections
+- The tool uses smaller chunks (100 lines default) to manage context window efficiently
+- For very large files, consider using 'head' or 'tail' commands via bash tool
 - View tool automatically detects and renders image files
 </tips>
