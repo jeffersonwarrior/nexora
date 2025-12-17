@@ -595,7 +595,7 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 	}
 
 	// Legacy GPT-OSS-120B mappings removed - DeepSeek Coder 2 is default
-	// Special handling for Cerebras and RentalH200 no longer needed
+	// Special handling for Cerebras no longer needed
 
 	largeModel, err := largeProvider.LanguageModel(ctx, largeModelID)
 	if err != nil {
@@ -861,7 +861,7 @@ func (c *coordinator) buildProvider(providerCfg config.ProviderConfig, model con
 			// Ensure tool calling works properly for GPT OSS with Cerebras
 			providerCfg.ExtraBody["tool_choice"] = "auto"
 		}
-		if providerCfg.ID == "rentalh200" {
+		if providerCfg.ID == "cerebras" {
 			if providerCfg.ExtraBody == nil {
 				providerCfg.ExtraBody = map[string]any{}
 			}
@@ -881,7 +881,7 @@ func isExactoSupported(modelID string) bool {
 		"z-ai/glm-4.6",
 		"openai/gpt-oss-120b",
 		"qwen/qwen3-coder",
-		"deepseek-coder-2", // RentalH200/Cerebras DeepSeek default
+		"deepseek-coder-2", // Cerebras DeepSeek default
 	}
 	return slices.Contains(supportedModels, modelID)
 }
