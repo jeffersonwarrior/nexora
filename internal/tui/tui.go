@@ -107,8 +107,8 @@ type appModel struct {
 func (a appModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	// Check if models are configured and show model dialog if not
-	if !a.app.Config().AreModelsConfigured() {
+	// Check if models need setup and show model dialog if necessary
+	if a.app.Config().ModelsNeedSetup() {
 		cmds = append(cmds, func() tea.Msg {
 			return dialogs.OpenDialogMsg{
 				Model: models.NewModelDialogCmp(),

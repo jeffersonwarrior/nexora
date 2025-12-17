@@ -380,6 +380,11 @@ func (c *Config) WorkingDir() string {
 	return c.workingDir
 }
 
+// ModelsNeedSetup returns true if models need TUI setup
+func (c *Config) ModelsNeedSetup() bool {
+	return c.modelsNeedSetup
+}
+
 func (c *Config) EnabledProviders() []ProviderConfig {
 	var enabled []ProviderConfig
 	for p := range c.Providers.Seq() {
@@ -747,6 +752,29 @@ func (c *Config) isValidRecentModel(modelType SelectedModelType, model SelectedM
 	// Check if model exists in provider
 	catwalkModel := c.GetModel(model.Provider, model.Model)
 	return catwalkModel != nil
+}
+
+// RepairConfig attempts to repair configuration issues
+func (c *Config) RepairConfig() error {
+	// Clean up invalid recent models
+	if c.RecentModels != nil {
+		for modelType, recentModels := range c.RecentModels {
+			validModels := []SelectedModel{}
+			for _, model := range recentModels {
+				if c.isValidRecentModel(modelType, model) {
+					validModels = append(validModels, model)
+				}
+			}
+			c.RecentModels[modelType] = validModels
+			if err := c.SetConfigField(fmt.Sprintf("recent_models.%s", modelType), validModels); err != nil {
+				return fmt.Errorf("failed to repair recent models: %w", err)
+			}
+		}
+	}
+
+	// Try one more time to validate and fallback models after cleanup
+	_, err := c.ValidateAndFallbackModels()
+	return err
 }
 
 func (c *Config) recordRecentModel(modelType SelectedModelType, model SelectedModel) error {
