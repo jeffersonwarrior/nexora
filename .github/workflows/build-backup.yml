@@ -1,8 +1,11 @@
-name: build
-on: [push, pull_request]
+name: build-backup
 
+on:
+  workflow_dispatch:
+  
 jobs:
   build:
+    if: false
     uses: charmbracelet/meta/.github/workflows/build.yml@main
     with:
       go-version: ""

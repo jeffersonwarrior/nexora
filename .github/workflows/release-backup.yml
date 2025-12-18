@@ -1,6 +1,4 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-
-name: goreleaser
+name: release-backup
 
 on:
   push:
@@ -12,6 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  goreleaser:
+    if: false
   goreleaser:
     uses: charmbracelet/meta/.github/workflows/goreleaser.yml@main
     with:

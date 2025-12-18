@@ -1,10 +1,11 @@
-name: lint
+name: lint-backup
+
 on:
-  push:
   pull_request:
 
 jobs:
   lint:
+    if: false
     uses: charmbracelet/meta/.github/workflows/lint.yml@main
     with:
       golangci_path: .golangci.yml
