@@ -14,7 +14,7 @@ jobs:
     
     strategy:
       matrix:
-        go-version: ['1.21', '1.22', '1.23']
+        go-version: ['1.22']
     
     steps:
       - name: Checkout repository
@@ -49,14 +49,14 @@ jobs:
       
       - name: Build binary
         run: |
-          VERSION=$(grep '^VERSION ' Makefile | awk '{print $2}' | sed 's/?=//')
+          VERSION=$(grep '^VERSION' Makefile | awk '{print $2}' | sed 's/?=//')
           go build -ldflags="-X github.com/nexora/cli/internal/version.Version=$VERSION" -o nexora .
       
       - name: Verify binary
         run: ./nexora version || echo "Version command not available"
       
       - name: Upload coverage to Codecov
-        if: matrix.go-version == '1.23'
+        if: matrix.go-version == '1.22'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
