@@ -66,8 +66,19 @@ CODEDOCS/**/.git/
 nexora.json
 nexora-*
 
+# All nexora binaries - should not be committed
+nexora*
+!nexora.md
+!nexora.go
+
 # Local modelscan tool
 .local/tools/modelscan/
+
+# Database files - should not be committed
+*.db
+*.sqlite
+*.sqlite3
+:NEXO:*
 
 # Archived working documents and test files
 archives/
