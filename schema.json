@@ -1,0 +1,527 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nexora/cli/internal/config/config",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "AIOPSConfig": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable AI operations service"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "AIOPS service endpoint (e.g."
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Request timeout for AI operations"
+        },
+        "fallback": {
+          "type": "boolean",
+          "description": "Continue without AIOPs if unavailable"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "enabled",
+        "endpoint",
+        "timeout",
+        "fallback"
+      ]
+    },
+    "Attribution": {
+      "properties": {
+        "trailer_style": {
+          "type": "string",
+          "enum": [
+            "none",
+            "co-authored-by",
+            "assisted-by"
+          ],
+          "description": "Style of attribution trailer to add to commits",
+          "default": "assisted-by"
+        },
+        "co_authored_by": {
+          "type": "boolean",
+          "description": "Deprecated: use trailer_style instead",
+          "deprecated": true
+        },
+        "generated_with": {
+          "type": "boolean",
+          "description": "Add Generated with Nexora line to commit messages and issues and PRs",
+          "default": true
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Completions": {
+      "properties": {
+        "max_depth": {
+          "type": "integer",
+          "description": "Maximum depth for the ls tool",
+          "default": 0,
+          "examples": [
+            10
+          ]
+        },
+        "max_items": {
+          "type": "integer",
+          "description": "Maximum number of items to return for the ls tool",
+          "default": 1000,
+          "examples": [
+            100
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Config": {
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "models": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SelectedModel"
+          },
+          "type": "object",
+          "description": "Model configurations for different model types"
+        },
+        "recent_models": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/SelectedModel"
+            },
+            "type": "array"
+          },
+          "type": "object",
+          "description": "Recently used models sorted by most recent first"
+        },
+        "providers": {
+          "$ref": "#/$defs/Map[string,github.com/nexora/cli/internal/config.ProviderConfig]",
+          "description": "AI provider configurations"
+        },
+        "mcp": {
+          "$ref": "#/$defs/MCPs",
+          "description": "Model Context Protocol server configurations"
+        },
+        "lsp": {
+          "$ref": "#/$defs/LSPs",
+          "description": "Language Server Protocol configurations"
+        },
+        "options": {
+          "$ref": "#/$defs/Options",
+          "description": "General application options"
+        },
+        "permissions": {
+          "$ref": "#/$defs/Permissions",
+          "description": "Permission settings for tool usage"
+        },
+        "tools": {
+          "$ref": "#/$defs/Tools",
+          "description": "Tool configurations"
+        },
+        "aiops": {
+          "$ref": "#/$defs/AIOPSConfig",
+          "description": "AI operations service configuration for local model support"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "tools"
+      ]
+    },
+    "LSPConfig": {
+      "properties": {
+        "disabled": {
+          "type": "boolean",
+          "description": "Whether this LSP server is disabled",
+          "default": false
+        },
+        "command": {
+          "type": "string",
+          "description": "Command to execute for the LSP server",
+          "examples": [
+            "gopls"
+          ]
+        },
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Arguments to pass to the LSP server command"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Environment variables to set to the LSP server command"
+        },
+        "filetypes": {
+          "items": {
+            "type": "string",
+            "examples": [
+              "go",
+              "mod",
+              "rs",
+              "c",
+              "js",
+              "ts"
+            ]
+          },
+          "type": "array",
+          "description": "File types this LSP server handles"
+        },
+        "root_markers": {
+          "items": {
+            "type": "string",
+            "examples": [
+              "go.mod",
+              "package.json",
+              "Cargo.toml"
+            ]
+          },
+          "type": "array",
+          "description": "Files or directories that indicate the project root"
+        },
+        "init_options": {
+          "type": "object",
+          "description": "Initialization options passed to the LSP server during initialize request"
+        },
+        "options": {
+          "type": "object",
+          "description": "LSP server-specific settings passed during initialization"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "command"
+      ]
+    },
+    "LSPs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/LSPConfig"
+      },
+      "type": "object"
+    },
+    "MCPConfig": {
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "Command to execute for stdio MCP servers",
+          "examples": [
+            "npx"
+          ]
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "Environment variables to set for the MCP server"
+        },
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Arguments to pass to the MCP server command"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "stdio",
+            "sse",
+            "http"
+          ],
+          "description": "Type of MCP connection",
+          "default": "stdio"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for HTTP or SSE MCP servers",
+          "examples": [
+            "http://localhost:3000/mcp"
+          ]
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Whether this MCP server is disabled",
+          "default": false
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Timeout in seconds for MCP server connections",
+          "default": 15,
+          "examples": [
+            30,
+            60,
+            120
+          ]
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "HTTP headers for HTTP/SSE MCP servers"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "type"
+      ]
+    },
+    "MCPs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/MCPConfig"
+      },
+      "type": "object"
+    },
+    "Map[string,github.com/nexora/cli/internal/config.ProviderConfig]": {
+      "properties": {},
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Options": {
+      "properties": {
+        "context_paths": {
+          "items": {
+            "type": "string",
+            "examples": [
+              ".cursorrules",
+              "CRUSH.md"
+            ]
+          },
+          "type": "array",
+          "description": "Paths to files containing context information for the AI"
+        },
+        "tui": {
+          "$ref": "#/$defs/TUIOptions",
+          "description": "Terminal user interface options"
+        },
+        "debug": {
+          "type": "boolean",
+          "description": "Enable debug logging",
+          "default": false
+        },
+        "debug_lsp": {
+          "type": "boolean",
+          "description": "Enable debug logging for LSP servers",
+          "default": false
+        },
+        "disable_auto_summarize": {
+          "type": "boolean",
+          "description": "Disable automatic conversation summarization",
+          "default": false
+        },
+        "data_directory": {
+          "type": "string",
+          "description": "Directory for storing application data (relative to working directory)",
+          "default": ".nexora",
+          "examples": [
+            ".nexora"
+          ]
+        },
+        "disabled_tools": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Tools to disable"
+        },
+        "disable_provider_auto_update": {
+          "type": "boolean",
+          "description": "Disable providers auto-update",
+          "default": false
+        },
+        "attribution": {
+          "$ref": "#/$defs/Attribution",
+          "description": "Attribution settings for generated content"
+        },
+        "initialize_as": {
+          "type": "string",
+          "description": "Name of the context file to create/update during project initialization",
+          "default": "AGENTS.md",
+          "examples": [
+            "AGENTS.md",
+            "CRUSH.md",
+            "CLAUDE.md",
+            "docs/LLMs.md"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "disabled_tools"
+      ]
+    },
+    "Permissions": {
+      "properties": {
+        "allowed_tools": {
+          "items": {
+            "type": "string",
+            "examples": [
+              "bash",
+              "view"
+            ]
+          },
+          "type": "array",
+          "description": "List of tools that don't require permission prompts"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "SelectedModel": {
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "The model ID as used by the provider API",
+          "examples": [
+            "gpt-4o"
+          ]
+        },
+        "provider": {
+          "type": "string",
+          "description": "The model provider ID that matches a key in the providers config",
+          "examples": [
+            "openai"
+          ]
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "description": "Reasoning effort level for OpenAI models that support it"
+        },
+        "think": {
+          "type": "boolean",
+          "description": "Enable thinking mode for Anthropic models that support reasoning"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "maximum": 200000,
+          "description": "Maximum number of tokens for model responses",
+          "examples": [
+            4096
+          ]
+        },
+        "temperature": {
+          "type": "number",
+          "maximum": 1,
+          "minimum": 0,
+          "description": "Sampling temperature",
+          "examples": [
+            0.7
+          ]
+        },
+        "top_p": {
+          "type": "number",
+          "maximum": 1,
+          "minimum": 0,
+          "description": "Top-p (nucleus) sampling parameter",
+          "examples": [
+            0.9
+          ]
+        },
+        "top_k": {
+          "type": "integer",
+          "description": "Top-k sampling parameter"
+        },
+        "frequency_penalty": {
+          "type": "number",
+          "description": "Frequency penalty to reduce repetition"
+        },
+        "presence_penalty": {
+          "type": "number",
+          "description": "Presence penalty to increase topic diversity"
+        },
+        "provider_options": {
+          "type": "object",
+          "description": "Additional provider-specific options for the model"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "model",
+        "provider"
+      ]
+    },
+    "TUIOptions": {
+      "properties": {
+        "compact_mode": {
+          "type": "boolean",
+          "description": "Enable compact mode for the TUI interface",
+          "default": false
+        },
+        "diff_mode": {
+          "type": "string",
+          "enum": [
+            "unified",
+            "split"
+          ],
+          "description": "Diff mode for the TUI interface"
+        },
+        "completions": {
+          "$ref": "#/$defs/Completions",
+          "description": "Completions UI options"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "completions"
+      ]
+    },
+    "ToolLs": {
+      "properties": {
+        "max_depth": {
+          "type": "integer",
+          "description": "Maximum depth for the ls tool",
+          "default": 0,
+          "examples": [
+            10
+          ]
+        },
+        "max_items": {
+          "type": "integer",
+          "description": "Maximum number of items to return for the ls tool",
+          "default": 1000,
+          "examples": [
+            100
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Tools": {
+      "properties": {
+        "ls": {
+          "$ref": "#/$defs/ToolLs"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "ls"
+      ]
+    }
+  }
+}
