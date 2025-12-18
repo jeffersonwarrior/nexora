@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nexora/cli/internal/csync"
+	"github.com/nexora/nexora/internal/csync"
 )
 
 type Tool = mcp.Tool

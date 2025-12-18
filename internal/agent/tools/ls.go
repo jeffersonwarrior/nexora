@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/filepathext"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/filepathext"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 type LSParams struct {

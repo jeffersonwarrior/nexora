@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/nexora/cli/internal/indexer"
+	"github.com/nexora/nexora/internal/indexer"
 )
 
 // queryCmd represents the query command

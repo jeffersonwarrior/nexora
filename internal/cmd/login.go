@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/oauth/claude"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/oauth/claude"
 	"github.com/spf13/cobra"
 )
 

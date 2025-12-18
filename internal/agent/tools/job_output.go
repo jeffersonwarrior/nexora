@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/shell"
+	"github.com/nexora/nexora/internal/shell"
 )
 
 const (

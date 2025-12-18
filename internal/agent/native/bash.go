@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 // BashParams are the parameters for the bash tool

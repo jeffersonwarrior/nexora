@@ -207,7 +207,7 @@ type MessageService interface {
 Group imports in this order:
 1. Standard library (`fmt`, `os`, `context`, etc.)
 2. Third-party packages (`charm.land/`, `github.com/charmbracelet/`, etc.)
-3. Internal packages (`github.com/nexora/cli/internal/...`)
+3. Internal packages (`github.com/nexora/nexora/internal/...`)
 
 Example:
 ```go
@@ -219,8 +219,8 @@ import (
     "charm.land/fantasy"
     "github.com/charmbracelet/log"
     
-    "github.com/nexora/cli/internal/agent"
-    "github.com/nexora/cli/internal/message"
+    "github.com/nexora/nexora/internal/agent"
+    "github.com/nexora/nexora/internal/message"
 )
 ```
 

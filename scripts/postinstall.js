@@ -17,8 +17,4 @@ if (fs.existsSync(binaryPath)) {
   // Try to run the installation script
   try {
     require('./install.js');
-  } catch (error) {
-    console.error('❌ Installation failed. Please install manually from:');
-    console.log('   https://github.com/nexora/cli/releases');
-  }
-}
+console.log('   https://github.com/nexora/nexora/releases');

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 )
 
 // BenchmarkPromptBuild measures prompt template parsing and execution

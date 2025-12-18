@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nexora/cli/internal/env"
-	"github.com/nexora/cli/internal/shell"
+	"github.com/nexora/nexora/internal/env"
+	"github.com/nexora/nexora/internal/shell"
 )
 
 type VariableResolver interface {

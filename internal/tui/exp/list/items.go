@@ -7,9 +7,9 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/google/uuid"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 	"github.com/rivo/uniseg"
 )
 

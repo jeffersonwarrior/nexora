@@ -21,7 +21,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nexora/cli.git"
+    "url": "git+https://github.com/nexora/nexora.git"
   },
   "keywords": [
     "ai",
@@ -34,7 +34,7 @@
   "author": "Nexora Team",
   "license": "FSL-1.1-MIT",
   "bugs": {
-    "url": "https://github.com/nexora/cli/issues"
+    "url": "https://github.com/nexora/nexora/issues"
   },
   "homepage": "https://charm.sh/nexora",
   "engines": {

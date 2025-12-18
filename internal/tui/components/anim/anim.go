@@ -15,8 +15,8 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/lucasb-eyer/go-colorful"
 
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 const (

@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/lsp/util"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/lsp/util"
 )
 
 // HandleWorkspaceConfiguration handles workspace configuration requests

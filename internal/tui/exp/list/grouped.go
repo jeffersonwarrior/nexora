@@ -2,8 +2,8 @@ package list
 
 import (
 	tea "charm.land/bubbletea/v2"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 type Group[T Item] struct {

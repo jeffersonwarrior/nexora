@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/pubsub"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/pubsub"
 )
 
 var ErrorPermissionDenied = errors.New("user denied permission")

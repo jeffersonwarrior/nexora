@@ -8,9 +8,9 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/nexora/cli/internal/tui/components/dialogs"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/tui/components/dialogs"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 const (

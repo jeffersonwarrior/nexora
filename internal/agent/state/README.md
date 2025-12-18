@@ -129,11 +129,7 @@ State definitions and valid transitions.
 ## Usage Example
 
 ### Basic Usage
-
-```go
-import "github.com/nexora/cli/internal/agent/state"
-
-// Create state machine
+import "github.com/nexora/nexora/internal/agent/state"
 sm := state.NewStateMachine(state.Config{
     SessionID: "session-123",
     Context:   ctx,

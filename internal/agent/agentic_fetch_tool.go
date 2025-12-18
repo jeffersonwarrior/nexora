@@ -12,9 +12,9 @@ import (
 
 	"charm.land/fantasy"
 
-	"github.com/nexora/cli/internal/agent/prompt"
-	"github.com/nexora/cli/internal/agent/tools"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/agent/prompt"
+	"github.com/nexora/nexora/internal/agent/tools"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 //go:embed templates/agentic_fetch.md

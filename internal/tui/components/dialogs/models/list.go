@@ -8,10 +8,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/tui/exp/list"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/tui/exp/list"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 type listModel = list.FilterableGroupList[list.CompletionItem[ModelOption]]

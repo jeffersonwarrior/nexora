@@ -3,8 +3,8 @@ package agent
 import (
 	"testing"
 
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/csync"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/csync"
 )
 
 func TestDetectFastestSummarizer(t *testing.T) {

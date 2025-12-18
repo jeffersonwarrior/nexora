@@ -17,14 +17,14 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/env"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/env"
 
 	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/home"
-	"github.com/nexora/cli/internal/log"
-	"github.com/nexora/cli/internal/oauth/claude"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/home"
+	"github.com/nexora/nexora/internal/log"
+	"github.com/nexora/nexora/internal/oauth/claude"
 )
 
 const defaultCatwalkURL = "https://catwalk.charm.sh"

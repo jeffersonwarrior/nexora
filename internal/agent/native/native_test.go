@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/nexora/cli/internal/agent/native"
-	"github.com/nexora/cli/internal/permission"
-	"github.com/nexora/cli/internal/pubsub"
+	"github.com/nexora/nexora/internal/agent/native"
+	"github.com/nexora/nexora/internal/permission"
+	"github.com/nexora/nexora/internal/pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

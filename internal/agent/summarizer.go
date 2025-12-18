@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 )
 
 // ModelProvider represents a model/provider pair for summarization

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/nexora/internal/home"
 	"github.com/stretchr/testify/require"
 )
 

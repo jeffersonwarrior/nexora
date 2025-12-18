@@ -8,7 +8,7 @@ import (
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
 	chromaStyles "github.com/alecthomas/chroma/v2/styles"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 func SyntaxHighlight(source, fileName string, bg color.Color) (string, error) {

@@ -1,7 +1,7 @@
 package sessionlog
 
 import (
-	"github.com/nexora/cli/internal/agent/tools"
+	"github.com/nexora/nexora/internal/agent/tools"
 )
 
 // ConvertEditDiagnosticsToLog converts edit diagnostics to a log entry

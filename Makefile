@@ -1,10 +1,6 @@
 # Makefile for Nexora
 
-# Version information
-VERSION ?= 0.29.0
-LDFLAGS := -X github.com/nexora/cli/internal/version.Version=$(VERSION)
-
-# Default target
+LDFLAGS := -X github.com/nexora/nexora/internal/version.Version=$(VERSION)
 .PHONY: all
 all: build
 

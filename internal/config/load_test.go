@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/env"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

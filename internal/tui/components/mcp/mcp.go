@@ -6,10 +6,10 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/nexora/cli/internal/agent/tools/mcp"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/agent/tools/mcp"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // RenderOptions contains options for rendering MCP lists.

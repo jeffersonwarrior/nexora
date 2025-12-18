@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/filepathext"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/filepathext"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 type DownloadParams struct {

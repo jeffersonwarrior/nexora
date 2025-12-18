@@ -58,7 +58,7 @@ switch(arch) {
 const binaryName = platform === 'win32' ? 'nexora.exe' : 'nexora';
 
 // Download URL (you'll need to adjust this based on your release structure)
-const downloadUrl = `https://github.com/nexora/cli/releases/download/v${version}/nexora_${version}_${platformName}_${archName}.tar.gz`;
+const downloadUrl = `https://github.com/nexora/nexora/releases/download/v${version}/nexora_${version}_${platformName}_${archName}.tar.gz`;
 
 // Install directory
 const binDir = path.join(__dirname, '..', 'bin');
@@ -93,7 +93,7 @@ function download(url, dest, callback) {
 download(downloadUrl, tempFile, (err) => {
   if (err) {
     console.error('Download failed:', err.message);
-    console.log('You may need to install nexora manually from https://github.com/nexora/cli/releases');
+    console.log('You may need to install nexora manually from https://github.com/nexora/nexora/releases');
     process.exit(1);
   }
   

@@ -5,9 +5,9 @@ import (
 	"maps"
 	"time"
 
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/lsp"
-	"github.com/nexora/cli/internal/pubsub"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/lsp"
+	"github.com/nexora/nexora/internal/pubsub"
 )
 
 // LSPEventType represents the type of LSP event

@@ -15,13 +15,13 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/atotto/clipboard"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/message"
-	"github.com/nexora/cli/internal/tui/components/anim"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/exp/list"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/message"
+	"github.com/nexora/nexora/internal/tui/components/anim"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/exp/list"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 // CopyKey is the key binding for copying message content to the clipboard.

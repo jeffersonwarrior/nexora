@@ -51,8 +51,8 @@ func contains(slice []string, item string) bool {
 }
 
 func testCompile(t *testing.T) {
+	// Use current working directory for flexibility
 	cmd := exec.Command("go", "build", "-o", "/tmp/nexora-test", ".")
-	cmd.Dir = "/home/nexora"
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("compile failed:\n%s\nError: %v", output, err)

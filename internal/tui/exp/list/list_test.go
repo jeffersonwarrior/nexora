@@ -9,8 +9,8 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/exp/golden"
 	"github.com/google/uuid"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nexora/cli/internal/csync"
+	"github.com/nexora/nexora/internal/csync"
 )
 
 // syncWriter wraps a bytes.Buffer with mutex protection for concurrent writes.

@@ -18,9 +18,9 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/message"
-	"github.com/nexora/cli/internal/session"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/message"
+	"github.com/nexora/nexora/internal/session"
 )
 
 type MultiSessionCoordinator struct {

@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/fsext"
+	"github.com/nexora/nexora/internal/fsext"
 )
 
 const GlobToolName = "glob"

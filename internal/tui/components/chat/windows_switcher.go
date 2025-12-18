@@ -9,8 +9,8 @@ package chat
 import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/nexora/cli/internal/agent"
-	"github.com/nexora/cli/internal/tui/exp/list"
+	"github.com/nexora/nexora/internal/agent"
+	"github.com/nexora/nexora/internal/tui/exp/list"
 )
 
 type WindowsSwitcher struct {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/env"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/env"
 )
 
 func TestClient(t *testing.T) {

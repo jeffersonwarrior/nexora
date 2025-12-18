@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/lsp"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/lsp"
 )
 
 // initLSPClients initializes LSP clients.

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/indexer"
+	"github.com/nexora/nexora/internal/indexer"
 )
 
 type ImpactAnalysisParams struct {

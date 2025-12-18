@@ -11,13 +11,13 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/nexora/cli/internal/agent/tools"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/permission"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/components/dialogs"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/agent/tools"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/permission"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/components/dialogs"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 type PermissionAction string

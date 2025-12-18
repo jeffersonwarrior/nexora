@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nexora/cli/internal/oauth"
+	"github.com/nexora/nexora/internal/oauth"
 )
 
 const clientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"

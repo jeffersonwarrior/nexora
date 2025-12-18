@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/nexora/cli/internal/db"
-	"github.com/nexora/cli/internal/pubsub"
+	"github.com/nexora/nexora/internal/db"
+	"github.com/nexora/nexora/internal/pubsub"
 )
 
 const (

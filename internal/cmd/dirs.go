@@ -7,7 +7,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/table"
 	"github.com/charmbracelet/x/term"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 	"github.com/spf13/cobra"
 )
 

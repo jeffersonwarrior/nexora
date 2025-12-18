@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nexora/cli/internal/agent/state"
+	"github.com/nexora/nexora/internal/agent/state"
 )
 
 // RecoveryRegistry manages all recovery strategies and coordinates error recovery

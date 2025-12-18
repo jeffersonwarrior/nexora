@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexora/cli/internal/shell"
+	"github.com/nexora/nexora/internal/shell"
 	"github.com/stretchr/testify/require"
 )
 

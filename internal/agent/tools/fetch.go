@@ -13,7 +13,7 @@ import (
 	"charm.land/fantasy"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 const FetchToolName = "fetch"

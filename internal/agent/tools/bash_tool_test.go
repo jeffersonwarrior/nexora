@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -14,8 +14,8 @@ import (
 
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 	"github.com/charmbracelet/catwalk/pkg/embedded"
-	"github.com/nexora/cli/internal/config/providers"
-	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/nexora/internal/config/providers"
+	"github.com/nexora/nexora/internal/home"
 )
 
 type ProviderClient interface {

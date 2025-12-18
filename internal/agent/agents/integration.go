@@ -3,7 +3,7 @@ package agents
 import (
 	"context"
 
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 )
 
 // AgentIntegration integrates the new trigger-based agent system with the existing nexora framework

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/history"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/history"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 // SmartEditParams uses line numbers instead of string matching for 100% reliability

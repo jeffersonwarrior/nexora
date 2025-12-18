@@ -11,7 +11,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/charmbracelet/x/exp/slice"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // letterform represents a letterform. It can be stretched horizontally by

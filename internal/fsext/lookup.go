@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/nexora/internal/home"
 )
 
 // Lookup searches for a target files or directories starting from dir

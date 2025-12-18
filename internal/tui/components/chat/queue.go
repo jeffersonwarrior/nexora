@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 func queuePill(queue int, t *styles.Theme) string {

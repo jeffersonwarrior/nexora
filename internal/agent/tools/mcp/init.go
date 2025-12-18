@@ -18,13 +18,13 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/home"
-	"github.com/nexora/cli/internal/mcp/zai"
-	"github.com/nexora/cli/internal/permission"
-	"github.com/nexora/cli/internal/pubsub"
-	"github.com/nexora/cli/internal/version"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/home"
+	"github.com/nexora/nexora/internal/mcp/zai"
+	"github.com/nexora/nexora/internal/permission"
+	"github.com/nexora/nexora/internal/pubsub"
+	"github.com/nexora/nexora/internal/version"
 )
 
 var (

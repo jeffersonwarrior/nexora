@@ -8,7 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/nexora/cli/internal/tui/components/anim"
+	"github.com/nexora/nexora/internal/tui/components/anim"
 )
 
 // Spinner wraps the bubbles spinner for non-interactive mode

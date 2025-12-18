@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/invopop/jsonschema"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 	"github.com/spf13/cobra"
 )
 

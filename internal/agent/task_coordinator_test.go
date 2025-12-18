@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexora/cli/internal/agent/tools"
+	"github.com/nexora/nexora/internal/agent/tools"
 )
 
 func TestTaskExecutionCoordinator(t *testing.T) {

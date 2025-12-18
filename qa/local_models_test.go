@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexora/cli/internal/config/providers"
+	"github.com/nexora/nexora/internal/config/providers"
 )
 
 // TestLocalModelsFullFlow tests the local detector without imports

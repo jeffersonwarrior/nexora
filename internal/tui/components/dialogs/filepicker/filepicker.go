@@ -12,13 +12,13 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/nexora/cli/internal/home"
-	"github.com/nexora/cli/internal/message"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/components/dialogs"
-	"github.com/nexora/cli/internal/tui/components/image"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/home"
+	"github.com/nexora/nexora/internal/message"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/components/dialogs"
+	"github.com/nexora/nexora/internal/tui/components/image"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 const (

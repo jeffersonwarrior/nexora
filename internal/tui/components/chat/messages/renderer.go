@@ -10,13 +10,13 @@ import (
 	"charm.land/lipgloss/v2"
 	"charm.land/lipgloss/v2/tree"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/nexora/cli/internal/agent"
-	"github.com/nexora/cli/internal/agent/tools"
-	"github.com/nexora/cli/internal/ansiext"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/highlight"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/agent"
+	"github.com/nexora/nexora/internal/agent/tools"
+	"github.com/nexora/nexora/internal/ansiext"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/highlight"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // responseContextHeight limits the number of lines displayed in tool output

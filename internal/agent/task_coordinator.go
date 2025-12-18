@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nexora/cli/internal/agent/prompt"
-	"github.com/nexora/cli/internal/agent/tools"
+	"github.com/nexora/nexora/internal/agent/prompt"
+	"github.com/nexora/nexora/internal/agent/tools"
 	"log/slog"
 )
 

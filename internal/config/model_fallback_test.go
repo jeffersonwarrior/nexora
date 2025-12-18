@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
-	"github.com/nexora/cli/internal/csync"
+	"github.com/nexora/nexora/internal/csync"
 )
 
 func TestModelsNeedSetup(t *testing.T) {

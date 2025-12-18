@@ -20,7 +20,7 @@
 curl -fsSL https://nexora.land/install.sh | sh
 
 # Or build from source
-git clone https://github.com/nexora/cli.git && cd cli
+git clone https://github.com/nexora/nexora.git && cd nexora
 make build && make setup
 
 # First run launches TUI for setup
@@ -174,7 +174,7 @@ export ANTHROPIC_API_KEY="your-key"
 ## 🤝 Contributing
 
 ```bash
-git clone https://github.com/nexora/cli.git
+git clone https://github.com/nexora/nexora.git
 cd cli
 make build test-qa setup
 nexora chat  # Test your changes!

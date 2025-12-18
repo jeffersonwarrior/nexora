@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/message"
+	"github.com/nexora/nexora/internal/message"
 )
 
 // ConversationState tracks the flow of a multi-step conversation

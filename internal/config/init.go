@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/nexora/cli/internal/fsext"
+	"github.com/nexora/nexora/internal/fsext"
 )
 
 const (

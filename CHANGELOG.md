@@ -1,6 +1,4 @@
 ## [0.29.0] - 2025-12-18 - **State Machine Architecture & Resource Monitoring**
-
-### 🏗️ Intelligent Agent Management
 - **State Machine Implementation**: AI lifecycle management with intelligent execution flow
   - 8 states: Idle → ProcessingPrompt → StreamingResponse → ExecutingTool → ProgressCheck → PhaseTransition → Halted/Error
   - Progress tracking with semantic analysis (file modifications, command execution, test results)

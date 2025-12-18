@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/agent/tools/mcp"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/agent/tools/mcp"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 // GetMCPTools gets all the currently available MCP tools.

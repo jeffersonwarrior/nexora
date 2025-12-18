@@ -3,7 +3,7 @@ package tools
 import (
 	"testing"
 
-	"github.com/nexora/cli/internal/indexer"
+	"github.com/nexora/nexora/internal/indexer"
 	"github.com/stretchr/testify/require"
 )
 

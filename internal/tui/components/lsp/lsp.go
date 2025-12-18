@@ -6,12 +6,12 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
-	"github.com/nexora/cli/internal/app"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/lsp"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/app"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/lsp"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // RenderOptions contains options for rendering LSP lists.

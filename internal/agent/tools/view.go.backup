@@ -180,11 +180,6 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 				params.Limit = DefaultReadLimit
 			}
 
-			// Validate offset to prevent negative slice bounds panic
-			if params.Offset < 0 {
-				params.Offset = 0
-			}
-
 			isImage, mimeType := getImageMimeType(filePath)
 			if isImage {
 				if !GetSupportsImagesFromContext(ctx) {
@@ -304,11 +299,6 @@ func addLineNumbers(content string, startLine int) string {
 }
 
 func readTextFile(filePath string, offset, limit int) (string, int, error) {
-	// Ensure start is non-negative to prevent panic
-	if offset < 0 {
-		offset = 0
-	}
-
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", 0, err
@@ -344,6 +334,11 @@ func readTextFile(filePath string, offset, limit int) (string, int, error) {
 	start := offset
 	if start >= lineCount {
 		return "", lineCount, nil
+	}
+	
+	// Ensure start is non-negative to prevent panic
+	if start < 0 {
+		start = 0
 	}
 
 	end := start + limit

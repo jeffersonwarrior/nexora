@@ -35,7 +35,7 @@ tasks:
   build:
     desc: Run build
     vars:
-      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/nexora/cli/internal/version.Version={{.VERSION}}"{{end}}'
+      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/nexora/nexora/internal/version.Version={{.VERSION}}"{{end}}'
     cmds:
       - go build {{.LDFLAGS}} .
     generates:
@@ -68,7 +68,7 @@ tasks:
   install:
     desc: Install the application
     vars:
-      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/nexora/cli/internal/version.Version={{.VERSION}}"{{end}}'
+      LDFLAGS: '{{if .VERSION}}-ldflags="-X github.com/nexora/nexora/internal/version.Version={{.VERSION}}"{{end}}'
     cmds:
       - task: fetch-tags
       - go install {{.LDFLAGS}} -v .

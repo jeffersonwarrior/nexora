@@ -10,9 +10,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/log"
-	"github.com/nexora/cli/internal/tui/exp/list"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/log"
+	"github.com/nexora/nexora/internal/tui/exp/list"
 	"github.com/stretchr/testify/require"
 )
 

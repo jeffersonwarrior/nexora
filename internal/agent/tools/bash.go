@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/permission"
-	"github.com/nexora/cli/internal/shell"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/permission"
+	"github.com/nexora/nexora/internal/shell"
 )
 
 type BashParams struct {

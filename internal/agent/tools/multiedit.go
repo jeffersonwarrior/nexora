@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/aiops"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/diff"
-	"github.com/nexora/cli/internal/filepathext"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/history"
-	"github.com/nexora/cli/internal/lsp"
-	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/nexora/internal/aiops"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/diff"
+	"github.com/nexora/nexora/internal/filepathext"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/history"
+	"github.com/nexora/nexora/internal/lsp"
+	"github.com/nexora/nexora/internal/permission"
 )
 
 type MultiEditOperation struct {

@@ -16,8 +16,8 @@ import (
 
 	"charm.land/fantasy"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/lsp"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/lsp"
 )
 
 type ReferencesParams struct {

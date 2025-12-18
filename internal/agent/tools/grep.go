@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"charm.land/fantasy"
-	"github.com/nexora/cli/internal/fsext"
+	"github.com/nexora/nexora/internal/fsext"
 )
 
 // regexCache provides thread-safe caching of compiled regex patterns

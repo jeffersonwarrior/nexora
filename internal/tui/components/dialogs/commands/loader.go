@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/nexora/cli/internal/agent/tools/mcp"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/home"
-	"github.com/nexora/cli/internal/tui/components/chat"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/agent/tools/mcp"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/home"
+	"github.com/nexora/nexora/internal/tui/components/chat"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 const (

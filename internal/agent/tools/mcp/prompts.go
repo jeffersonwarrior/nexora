@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nexora/cli/internal/csync"
+	"github.com/nexora/nexora/internal/csync"
 )
 
 type Prompt = mcp.Prompt

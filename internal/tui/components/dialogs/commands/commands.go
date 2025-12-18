@@ -12,17 +12,17 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 
-	"github.com/nexora/cli/internal/agent"
-	"github.com/nexora/cli/internal/agent/tools/mcp"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/pubsub"
-	"github.com/nexora/cli/internal/tui/components/chat"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/components/dialogs"
-	"github.com/nexora/cli/internal/tui/exp/list"
-	"github.com/nexora/cli/internal/tui/styles"
-	"github.com/nexora/cli/internal/tui/util"
+	"github.com/nexora/nexora/internal/agent"
+	"github.com/nexora/nexora/internal/agent/tools/mcp"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/pubsub"
+	"github.com/nexora/nexora/internal/tui/components/chat"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/components/dialogs"
+	"github.com/nexora/nexora/internal/tui/exp/list"
+	"github.com/nexora/nexora/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/util"
 )
 
 const (

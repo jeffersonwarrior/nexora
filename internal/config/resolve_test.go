@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/nexora/cli/internal/env"
+	"github.com/nexora/nexora/internal/env"
 	"github.com/stretchr/testify/require"
 )
 

@@ -14,9 +14,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/home"
-	"github.com/nexora/cli/internal/shell"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/home"
+	"github.com/nexora/nexora/internal/shell"
 )
 
 // gitConfigCache caches git user configuration to avoid repeated shell commands

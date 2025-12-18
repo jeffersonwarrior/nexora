@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/log/v2"
 	"github.com/charmbracelet/x/term"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 	"github.com/nxadm/tail"
 	"github.com/spf13/cobra"
 )

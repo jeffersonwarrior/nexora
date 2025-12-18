@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 )
 
 const (

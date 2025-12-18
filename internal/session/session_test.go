@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexora/cli/internal/db"
-	"github.com/nexora/cli/internal/session"
+	"github.com/nexora/nexora/internal/db"
+	"github.com/nexora/nexora/internal/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/nexora/cli/internal/agent/prompt"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/agent/prompt"
+	"github.com/nexora/nexora/internal/config"
 )
 
 //go:embed templates/coder.md.tpl

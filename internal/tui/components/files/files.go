@@ -10,11 +10,11 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/history"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/history"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // FileHistory represents a file history with initial and latest versions.

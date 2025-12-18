@@ -10,8 +10,8 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/nexora/cli/internal/tui/exp/diffview"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/tui/exp/diffview"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // Focusable defines components that can receive and lose focus

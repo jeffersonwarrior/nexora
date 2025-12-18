@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nexora/cli/internal/agent/state"
+	"github.com/nexora/nexora/internal/agent/state"
 )
 
 // Integration tests for the complete recovery system

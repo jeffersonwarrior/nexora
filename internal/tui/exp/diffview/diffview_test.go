@@ -9,7 +9,7 @@ import (
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/golden"
-	"github.com/nexora/cli/internal/tui/exp/diffview"
+	"github.com/nexora/nexora/internal/tui/exp/diffview"
 )
 
 //go:embed testdata/TestDefault.before

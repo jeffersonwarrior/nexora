@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nexora/cli/internal/agent/state"
+	"github.com/nexora/nexora/internal/agent/state"
 )
 
 // FileOutdatedStrategy handles errors where a file has been modified since it was read

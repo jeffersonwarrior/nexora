@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 )
 
 // Manager handles the lifecycle of Z.ai MCP clients

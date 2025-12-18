@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
-	"github.com/nexora/cli/internal/aiops"
-	"github.com/nexora/cli/internal/tui/components/core"
-	"github.com/nexora/cli/internal/tui/styles"
+	"github.com/nexora/nexora/internal/aiops"
+	"github.com/nexora/nexora/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/styles"
 )
 
 // RenderOptions contains options for rendering AIOPS status.

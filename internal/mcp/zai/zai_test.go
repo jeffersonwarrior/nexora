@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 

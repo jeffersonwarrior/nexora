@@ -14,10 +14,10 @@ import (
 
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 	"github.com/invopop/jsonschema"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/env"
-	"github.com/nexora/cli/internal/oauth"
-	"github.com/nexora/cli/internal/oauth/claude"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/env"
+	"github.com/nexora/nexora/internal/oauth"
+	"github.com/nexora/nexora/internal/oauth/claude"
 	"github.com/tidwall/sjson"
 )
 

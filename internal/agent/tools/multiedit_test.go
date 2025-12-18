@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/history"
-	"github.com/nexora/cli/internal/lsp"
-	"github.com/nexora/cli/internal/permission"
-	"github.com/nexora/cli/internal/pubsub"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/history"
+	"github.com/nexora/nexora/internal/lsp"
+	"github.com/nexora/nexora/internal/permission"
+	"github.com/nexora/nexora/internal/pubsub"
 	"github.com/stretchr/testify/require"
 )
 

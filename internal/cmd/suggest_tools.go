@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/nexora/cli/internal/agent/tools"
+	"github.com/nexora/nexora/internal/agent/tools"
 	"github.com/spf13/cobra"
 )
 

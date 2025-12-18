@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/exp/golden"
-	"github.com/nexora/cli/internal/tui/components/core"
+	"github.com/nexora/nexora/internal/tui/components/core"
 )
 
 func TestStatus(t *testing.T) {

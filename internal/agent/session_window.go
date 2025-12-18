@@ -3,7 +3,7 @@ package agent
 import (
 	"sync"
 
-	"github.com/nexora/cli/internal/message"
+	"github.com/nexora/nexora/internal/message"
 )
 
 type SessionWindow struct {

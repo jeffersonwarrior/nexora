@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/home"
 )
 
 func TestConfigValidation(t *testing.T) {

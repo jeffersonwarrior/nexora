@@ -9,9 +9,9 @@ import (
 
 	"charm.land/fantasy"
 
-	"github.com/nexora/cli/internal/agent/prompt"
-	"github.com/nexora/cli/internal/agent/tools"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/agent/prompt"
+	"github.com/nexora/nexora/internal/agent/tools"
+	"github.com/nexora/nexora/internal/config"
 )
 
 //go:embed templates/agent_tool.md

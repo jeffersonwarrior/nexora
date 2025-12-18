@@ -11,8 +11,8 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/charlievieth/fastwalk"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/home"
 )
 
 type FileInfo struct {

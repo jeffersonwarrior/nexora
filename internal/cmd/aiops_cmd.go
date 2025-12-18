@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
-	"github.com/nexora/cli/internal/aiops"
-	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/nexora/internal/aiops"
+	"github.com/nexora/nexora/internal/config"
 	"github.com/spf13/cobra"
 )
 

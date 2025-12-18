@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nexora/cli/internal/agent/state"
+	"github.com/nexora/nexora/internal/agent/state"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"

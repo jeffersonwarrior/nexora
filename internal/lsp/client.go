@@ -15,10 +15,10 @@ import (
 	powernap "github.com/charmbracelet/x/powernap/pkg/lsp"
 	"github.com/charmbracelet/x/powernap/pkg/lsp/protocol"
 	"github.com/charmbracelet/x/powernap/pkg/transport"
-	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/csync"
-	"github.com/nexora/cli/internal/fsext"
-	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/csync"
+	"github.com/nexora/nexora/internal/fsext"
+	"github.com/nexora/nexora/internal/home"
 )
 
 type Client struct {

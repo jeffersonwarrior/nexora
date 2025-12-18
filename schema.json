@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/nexora/cli/internal/config/config",
+  "$id": "https://github.com/nexora/nexora/internal/config/config",
   "$ref": "#/$defs/Config",
   "$defs": {
     "AIOPSConfig": {
@@ -102,7 +102,7 @@
           "description": "Recently used models sorted by most recent first"
         },
         "providers": {
-          "$ref": "#/$defs/Map[string,github.com/nexora/cli/internal/config.ProviderConfig]",
+          "$ref": "#/$defs/Map[string,github.com/nexora/nexora/internal/config.ProviderConfig]",
           "description": "AI provider configurations"
         },
         "mcp": {
@@ -288,7 +288,7 @@
       },
       "type": "object"
     },
-    "Map[string,github.com/nexora/cli/internal/config.ProviderConfig]": {
+    "Map[string,github.com/nexora/nexora/internal/config.ProviderConfig]": {
       "properties": {},
       "additionalProperties": false,
       "type": "object"

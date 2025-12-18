@@ -14,7 +14,7 @@ import (
 	"github.com/charmbracelet/glamour/v2/ansi"
 	"github.com/charmbracelet/x/exp/charmtone"
 	"github.com/lucasb-eyer/go-colorful"
-	"github.com/nexora/cli/internal/tui/exp/diffview"
+	"github.com/nexora/nexora/internal/tui/exp/diffview"
 	"github.com/rivo/uniseg"
 )
 
