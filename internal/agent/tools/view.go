@@ -1,0 +1,380 @@
+package tools
+
+import (
+	"bufio"
+	"context"
+	_ "embed"
+	"encoding/base64"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+	"unicode/utf8"
+
+	"charm.land/fantasy"
+
+	"github.com/nexora/cli/internal/csync"
+	"github.com/nexora/cli/internal/filepathext"
+	"github.com/nexora/cli/internal/lsp"
+	"github.com/nexora/cli/internal/permission"
+)
+
+//go:embed view.md
+var viewDescription []byte
+
+type ViewParams struct {
+	FilePath string `json:"file_path" description:"The path to the file to read"`
+	Offset   int    `json:"offset,omitempty" description:"The line number to start reading from (0-based)"`
+	Limit    int    `json:"limit,omitempty" description:"The number of lines to read (defaults to 2000)"`
+}
+
+type ViewPermissionsParams struct {
+	FilePath string `json:"file_path"`
+	Offset   int    `json:"offset"`
+	Limit    int    `json:"limit"`
+}
+
+type viewTool struct {
+	lspClients  *csync.Map[string, *lsp.Client]
+	workingDir  string
+	permissions permission.Service
+}
+
+type ViewResponseMetadata struct {
+	FilePath string `json:"file_path"`
+	Content  string `json:"content"`
+}
+
+const (
+	ViewToolName     = "view"
+	MaxReadSize      = 5 * 1024 * 1024 // 5MB
+	DefaultReadLimit = 100
+	MaxLineLength    = 2000
+)
+
+func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permission.Service, workingDir string) fantasy.AgentTool {
+	return fantasy.NewAgentTool(
+		ViewToolName,
+		string(viewDescription),
+		func(ctx context.Context, params ViewParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			startTime := time.Now()
+			if params.FilePath == "" {
+				return fantasy.NewTextErrorResponse("file_path is required"), nil
+			}
+
+			// Handle relative paths
+			filePath := filepathext.SmartJoin(workingDir, params.FilePath)
+
+			// Check if file is outside working directory and request permission if needed
+			absWorkingDir, err := filepath.Abs(workingDir)
+			if err != nil {
+				return fantasy.ToolResponse{}, fmt.Errorf("error resolving working directory: %w", err)
+			}
+
+			absFilePath, err := filepath.Abs(filePath)
+			if err != nil {
+				return fantasy.ToolResponse{}, fmt.Errorf("error resolving file path: %w", err)
+			}
+
+			relPath, err := filepath.Rel(absWorkingDir, absFilePath)
+			if err != nil || strings.HasPrefix(relPath, "..") {
+				// File is outside working directory, request permission
+				sessionID := GetSessionFromContext(ctx)
+				if sessionID == "" {
+					return fantasy.ToolResponse{}, fmt.Errorf("session ID is required for accessing files outside working directory")
+				}
+
+				granted := permissions.Request(
+					permission.CreatePermissionRequest{
+						SessionID:   sessionID,
+						Path:        absFilePath,
+						ToolCallID:  call.ID,
+						ToolName:    ViewToolName,
+						Action:      "read",
+						Description: fmt.Sprintf("Read file outside working directory: %s", absFilePath),
+						Params:      ViewPermissionsParams(params),
+					},
+				)
+
+				if !granted {
+					return fantasy.ToolResponse{}, permission.ErrorPermissionDenied
+				}
+			}
+
+			// Check if file exists
+			fileInfo, err := os.Stat(filePath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					// Try to offer suggestions for similarly named files
+					dir := filepath.Dir(filePath)
+					base := filepath.Base(filePath)
+
+					dirEntries, dirErr := os.ReadDir(dir)
+					if dirErr == nil {
+						var suggestions []string
+						for _, entry := range dirEntries {
+							if strings.Contains(strings.ToLower(entry.Name()), strings.ToLower(base)) ||
+								strings.Contains(strings.ToLower(base), strings.ToLower(entry.Name())) {
+								suggestions = append(suggestions, filepath.Join(dir, entry.Name()))
+								if len(suggestions) >= 3 {
+									break
+								}
+							}
+						}
+
+						if len(suggestions) > 0 {
+							return fantasy.NewTextErrorResponse(fmt.Sprintf("File not found: %s\nTried paths:\n- %s\n- %s\n\nDid you mean one of these?\n%s",
+								params.FilePath, filePath, absFilePath, strings.Join(suggestions, "\n"))), nil
+						}
+					}
+
+					LogViewError(ViewDiagnosticsInfo{
+						FilePath: filePath,
+						Offset:   params.Offset,
+						Limit:    params.Limit,
+					}, "file not found")
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("File not found: %s", filePath)), nil
+				}
+				return fantasy.ToolResponse{}, fmt.Errorf("error accessing file: %w", err)
+			}
+
+			// Check if it's a directory - provide helpful response instead of error
+			if fileInfo.IsDir() {
+				// List directory contents to help AI understand what's available
+				dirEntries, err := os.ReadDir(filePath)
+				if err != nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("Cannot read directory: %s. Error: %v", filePath, err)), nil
+				}
+
+				// Build helpful response with directory contents
+				var fileList []string
+				for _, entry := range dirEntries {
+					fileList = append(fileList, entry.Name())
+				}
+
+				// Create AI-friendly response with suggestions
+				response := fmt.Sprintf("Path is a directory: %s\n\nDirectory contents:\n", filePath)
+				for i, file := range fileList {
+					response += fmt.Sprintf("%d. %s\n", i+1, file)
+				}
+
+				response += "\n💡 Suggestions:\n"
+				response += "- Use 'view' with a specific file path (e.g., 'view internal/db/db.go')\n"
+				response += "- Use 'ls' command to explore directory structure\n"
+				response += "- Try 'find' to search for specific files\n"
+
+				return fantasy.NewTextResponse(response), nil
+			}
+
+			// Check file size
+			if fileInfo.Size() > MaxReadSize {
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("File is too large (%d bytes). Maximum size is %d bytes",
+					fileInfo.Size(), MaxReadSize)), nil
+			}
+
+			// Set default limit if not provided
+			if params.Limit <= 0 {
+				params.Limit = DefaultReadLimit
+			}
+
+			isImage, mimeType := getImageMimeType(filePath)
+			if isImage {
+				if !GetSupportsImagesFromContext(ctx) {
+					modelName := GetModelNameFromContext(ctx)
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("This model (%s) does not support image data.", modelName)), nil
+				}
+
+				imageData, err := os.ReadFile(filePath)
+				if err != nil {
+					return fantasy.ToolResponse{}, fmt.Errorf("error reading image file: %w", err)
+				}
+
+				encoded := base64.StdEncoding.EncodeToString(imageData)
+				return fantasy.NewImageResponse([]byte(encoded), mimeType), nil
+			}
+
+			// Read the file content
+			content, lineCount, err := readTextFile(filePath, params.Offset, params.Limit)
+			isValidUt8 := utf8.ValidString(content)
+			LogViewError(ViewDiagnosticsInfo{
+				FilePath: filePath,
+				FileSize: fileInfo.Size(),
+			}, "invalid UTF-8")
+			if !isValidUt8 {
+				return fantasy.NewTextErrorResponse("File content is not valid UTF-8"), nil
+			}
+			if err != nil {
+				return fantasy.ToolResponse{}, fmt.Errorf("error reading file: %w", err)
+			}
+
+			notifyLSPs(ctx, lspClients, filePath)
+			output := "<file>\n"
+			// Format the output with line numbers
+			output += addLineNumbers(content, params.Offset+1)
+
+			// Add a note if the content was truncated
+			if lineCount > params.Offset+len(strings.Split(content, "\n")) {
+				output += fmt.Sprintf("\n\n(File has more lines. Use 'offset' parameter to read beyond line %d)",
+					params.Offset+len(strings.Split(content, "\n")))
+			}
+			output += "\n</file>\n"
+
+			// Add file information to help context awareness
+			linesRead := len(strings.Split(content, "\n"))
+			output += fmt.Sprintf("\n\n📄 File: %d KB — showing lines %d-%d of %d total (default chunks: 100 lines)",
+				int(fileInfo.Size()/1024),
+				params.Offset+1,
+				params.Offset+linesRead,
+				lineCount)
+
+			// Suggest how to read more if needed
+			if lineCount > params.Offset+linesRead {
+				output += fmt.Sprintf("\n💡 Use offset=%d to read next chunk", params.Offset+linesRead)
+			}
+
+			output += getDiagnostics(filePath, lspClients)
+			recordFileRead(filePath)
+			duration := time.Since(startTime).Seconds() * 1000
+			LogViewOperation(ViewDiagnosticsInfo{
+				FilePath:  filePath,
+				Offset:    params.Offset,
+				Limit:     params.Limit,
+				FileSize:  fileInfo.Size(),
+				LineCount: lineCount,
+			}, duration)
+			return fantasy.WithResponseMetadata(
+				fantasy.NewTextResponse(output),
+				ViewResponseMetadata{
+					FilePath: filePath,
+					Content:  content,
+				},
+			), nil
+		})
+}
+
+func addLineNumbers(content string, startLine int) string {
+	if content == "" {
+		return ""
+	}
+
+	lines := strings.Split(content, "\n")
+
+	var result []string
+	for i, line := range lines {
+		line = strings.TrimSuffix(line, "\r")
+		// Replace tabs with visible indicator for clarity in output
+		line = strings.ReplaceAll(line, "\t", "→\t")
+
+		lineNum := i + startLine
+		numStr := fmt.Sprintf("%d", lineNum)
+
+		if len(numStr) >= 6 {
+			result = append(result, fmt.Sprintf("%s|%s", numStr, line))
+		} else {
+			paddedNum := fmt.Sprintf("%6s", numStr)
+			result = append(result, fmt.Sprintf("%s|%s", paddedNum, line))
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
+func readTextFile(filePath string, offset, limit int) (string, int, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", 0, err
+	}
+	defer file.Close()
+
+	lineCount := 0
+
+	scanner := NewLineScanner(file)
+	if offset > 0 {
+		for lineCount < offset && scanner.Scan() {
+			lineCount++
+		}
+		if err = scanner.Err(); err != nil {
+			return "", 0, err
+		}
+	}
+
+	if offset == 0 {
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			return "", 0, err
+		}
+	}
+
+	// Pre-allocate slice with expected capacity
+	lines := make([]string, 0, limit)
+	lineCount = offset
+
+	for scanner.Scan() && len(lines) < limit {
+		lineCount++
+		lineText := scanner.Text()
+		if len(lineText) > MaxLineLength {
+			lineText = lineText[:MaxLineLength] + "..."
+		}
+		lines = append(lines, lineText)
+	}
+
+	// Continue scanning to get total line count
+	for scanner.Scan() {
+		lineCount++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", 0, err
+	}
+
+	return strings.Join(lines, "\n"), lineCount, nil
+}
+
+func getImageMimeType(filePath string) (bool, string) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".jpg", ".jpeg":
+		return true, "image/jpeg"
+	case ".png":
+		return true, "image/png"
+	case ".gif":
+		return true, "image/gif"
+	case ".bmp":
+		return true, "image/bmp"
+	case ".svg":
+		return true, "image/svg+xml"
+	case ".webp":
+		return true, "image/webp"
+	default:
+		return false, ""
+	}
+}
+
+type LineScanner struct {
+	scanner *bufio.Scanner
+}
+
+func NewLineScanner(r io.Reader) *LineScanner {
+	scanner := bufio.NewScanner(r)
+	// Increase buffer size to handle large lines (e.g., minified JSON, HTML)
+	// Default is 64KB, set to 1MB
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	return &LineScanner{
+		scanner: scanner,
+	}
+}
+
+func (s *LineScanner) Scan() bool {
+	return s.scanner.Scan()
+}
+
+func (s *LineScanner) Text() string {
+	return s.scanner.Text()
+}
+
+func (s *LineScanner) Err() error {
+	return s.scanner.Err()
+}
