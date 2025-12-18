@@ -10,7 +10,6 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/catwalk/pkg/catwalk"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/ordered"
 	"github.com/google/uuid"
@@ -414,13 +413,25 @@ func (m *assistantSectionModel) View() string {
 	infoMsg := t.S().Subtle.Render(duration.String())
 	icon := t.S().Subtle.Render(styles.ModelIcon)
 	model := config.Get().GetModel(m.message.Provider, m.message.Model)
-	if model == nil {
-		// This means the model is not configured anymore
-		model = &catwalk.Model{
-			Name: "Unknown Model",
+	
+	var modelName string
+	if model != nil {
+		// Found model in config - use its display name
+		modelName = model.Name
+	} else if m.message.Provider != "" && m.message.Model != "" {
+		// Model not found in config (e.g., local model), show raw provider/model
+		// Format: "Provider/Model" or just "Model" if provider is generic
+		if m.message.Provider == "local" || m.message.Provider == "openai-compat" {
+			modelName = m.message.Model // Just show model name for local providers
+		} else {
+			modelName = fmt.Sprintf("%s/%s", m.message.Provider, m.message.Model)
 		}
+	} else {
+		// No provider/model info available
+		modelName = "Unknown Model"
 	}
-	modelFormatted := t.S().Muted.Render(model.Name)
+	
+	modelFormatted := t.S().Muted.Render(modelName)
 	assistant := fmt.Sprintf("%s %s %s", icon, modelFormatted, infoMsg)
 	return t.S().Base.PaddingLeft(2).Render(
 		core.Section(assistant, m.width-2),
