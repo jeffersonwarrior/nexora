@@ -50,7 +50,7 @@ jobs:
       
       - name: Build binary
         run: |
-          VERSION=$(grep '^VERSION ' Makefile | awk '{print $2}')
+          VERSION=$(grep '^VERSION ' Makefile | awk '{print $2}' | sed 's/?=//')
           go build -ldflags="-X github.com/nexora/cli/internal/version.Version=$VERSION" -o nexora .
       
       - name: Verify binary
