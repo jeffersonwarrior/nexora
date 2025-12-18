@@ -59,7 +59,16 @@ func AddLocalProvider(provider *providers.LocalProvider) error {
 			ContextWindow: int64(m.Context), // Convert int to int64
 		}
 		models = append(models, model)
+		slog.Debug("Added local model",
+			"id", m.ID,
+			"name", displayName,
+			"matched", m.Matched,
+			"context", m.Context)
 	}
+	slog.Info("Added local provider", 
+		"name", provider.Name, 
+		"models", len(models),
+		"endpoint", provider.BaseURL)
 	providerConfig.Models = models
 
 	// Set the local provider in the config

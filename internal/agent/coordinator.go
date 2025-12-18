@@ -597,6 +597,19 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		return Model{}, Model{}, fmt.Errorf("small model %s not found for provider %s", smallModelCfg.Model, smallModelCfg.Provider)
 	}
 
+	// Log detected models with their context windows
+	slog.Info("Models successfully initialized",
+		"large_model", map[string]any{
+			"id": largeModelCfg.Model,
+			"provider": largeModelCfg.Provider,
+			"context_window": largeCatwalkModel.ContextWindow,
+		},
+		"small_model", map[string]any{
+			"id": smallModelCfg.Model,
+			"provider": smallModelCfg.Provider,
+			"context_window": smallCatwalkModel.ContextWindow,
+		})
+
 	largeModelID := largeModelCfg.Model
 	smallModelID := smallModelCfg.Model
 

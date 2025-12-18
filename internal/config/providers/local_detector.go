@@ -104,8 +104,12 @@ func (d *LocalDetector) detectOllama(ctx context.Context, provider *LocalProvide
 	}
 
 	for _, m := range ollamaResp.Models {
-		// Get context window for each model
-		context := d.getOllamaContext(m.Name)
+		// Try to get actual context window from model details
+		context := d.getOllamaModelDetails(ctx, provider, m.Name)
+		if context == 0 {
+			// Fall back to estimation if API query fails
+			context = d.getOllamaContext(m.Name)
+		}
 		matched := MatchModelToLibrary(m.Name)
 
 		// Generate friendly name
@@ -152,11 +156,12 @@ func (d *LocalDetector) detectOpenAICompatible(ctx context.Context, provider *Lo
 
 	var openaiResp struct {
 		Data []struct {
-			ID      string `json:"id"`
-			Object  string `json:"object"`
-			Created int64  `json:"created"`
-			OwnedBy string `json:"owned_by"`
-			Context int    `json:"context_window,omitempty"`
+			ID           string `json:"id"`
+			Object       string `json:"object"`
+			Created      int64  `json:"created"`
+			OwnedBy      string `json:"owned_by"`
+			Context      int    `json:"context_window,omitempty"` // Some providers
+			MaxModelLen  int    `json:"max_model_len,omitempty"`  // vLLM uses this
 		} `json:"data"`
 	}
 
@@ -165,7 +170,12 @@ func (d *LocalDetector) detectOpenAICompatible(ctx context.Context, provider *Lo
 	}
 
 	for _, m := range openaiResp.Data {
+		// Try different context window fields
 		context := m.Context
+		if context == 0 && m.MaxModelLen > 0 {
+			// vLLM returns max_model_len instead of context_window
+			context = m.MaxModelLen
+		}
 		if context == 0 {
 			// Estimate context based on model name if not provided
 			context = d.estimateContextFromName(m.ID)
@@ -204,32 +214,109 @@ func (d *LocalDetector) autoDetect(ctx context.Context, provider *LocalProvider)
 	return nil, fmt.Errorf("unable to detect server type at %s", d.endpoint)
 }
 
+// getOllamaModelDetails queries Ollama's /api/show endpoint to get actual context window
+func (d *LocalDetector) getOllamaModelDetails(ctx context.Context, provider *LocalProvider, modelName string) int {
+	reqBody := fmt.Sprintf(`{"name":"%s"}`, modelName)
+	req, err := http.NewRequestWithContext(ctx, "POST", d.endpoint+"/api/show", strings.NewReader(reqBody))
+	if err != nil {
+		return 0
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if provider.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+provider.APIKey)
+	}
+
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return 0
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return 0
+	}
+
+	var showResp struct {
+		ModelInfo struct {
+			// Ollama returns model parameters in different fields
+			ContextLength  int `json:"context_length"`
+			NumCtx         int `json:"num_ctx"`
+		} `json:"model_info"`
+		Details struct {
+			// Alternative location for context info
+			ContextLength int `json:"context_length"`
+		} `json:"details"`
+		// Sometimes it's at the top level
+		ContextLength int `json:"context_length"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&showResp); err != nil {
+		return 0
+	}
+
+	// Try different fields where context length might be
+	if showResp.ContextLength > 0 {
+		return showResp.ContextLength
+	}
+	if showResp.ModelInfo.ContextLength > 0 {
+		return showResp.ModelInfo.ContextLength
+	}
+	if showResp.ModelInfo.NumCtx > 0 {
+		return showResp.ModelInfo.NumCtx
+	}
+	if showResp.Details.ContextLength > 0 {
+		return showResp.Details.ContextLength
+	}
+
+	return 0
+}
+
+// EstimateContext estimates the context window size for a model based on its name
+// This is a public method used by tests and potentially other callers
+func (d *LocalDetector) EstimateContext(modelName string) int {
+	return d.getOllamaContext(modelName)
+}
+
+// getOllamaContext estimates context window size based on model name patterns
 func (d *LocalDetector) getOllamaContext(modelName string) int {
 	name := strings.ToLower(modelName)
 
-	// Known Ollama model context windows
-	if strings.Contains(name, "405b") || strings.Contains(name, "405") {
-		return 131072
+	// Check for explicit context window indicators first (e.g., "128k", "32k")
+	if strings.Contains(name, "128k") || strings.Contains(name, ":128k") {
+		return 131072 // 128k tokens
 	}
-	if strings.Contains(name, "120b") || strings.Contains(name, "120") {
+	if strings.Contains(name, "32k") || strings.Contains(name, ":32k") {
+		return 32768 // 32k tokens
+	}
+	if strings.Contains(name, "16k") || strings.Contains(name, ":16k") {
+		return 16384 // 16k tokens
+	}
+
+	// Known Ollama model context windows based on parameter count
+	// Check specific patterns only (e.g., "405b" but NOT just "405")
+	if strings.Contains(name, "405b") {
+		return 131072 // 128k
+	}
+	if strings.Contains(name, "120b") {
 		return 131072 // Large models like GPT-OSS-120B
 	}
-	if strings.Contains(name, "70b") || strings.Contains(name, "70") {
-		return 131072
+	if strings.Contains(name, "70b") {
+		return 131072 // 128k
 	}
-	if strings.Contains(name, "34b") || strings.Contains(name, "34") {
-		return 131072
+	if strings.Contains(name, "34b") {
+		return 131072 // 128k
 	}
-	if strings.Contains(name, "22b") || strings.Contains(name, "22") {
-		return 65536
+	if strings.Contains(name, "22b") {
+		return 65536 // 64k
 	}
-	if strings.Contains(name, "13b") || strings.Contains(name, "13") {
+	if strings.Contains(name, "13b") {
 		return 8192
 	}
-	if strings.Contains(name, "8b") || strings.Contains(name, "8") {
+	if strings.Contains(name, "8b") {
 		return 8192
 	}
-	if strings.Contains(name, "7b") || strings.Contains(name, "7") {
+	if strings.Contains(name, "7b") {
 		return 8192
 	}
 
@@ -240,28 +327,40 @@ func (d *LocalDetector) getOllamaContext(modelName string) int {
 func (d *LocalDetector) estimateContextFromName(modelID string) int {
 	name := strings.ToLower(modelID)
 
-	if strings.Contains(name, "405b") || strings.Contains(name, "405") {
-		return 131072
+	// Check for explicit context window indicators first (e.g., "128k", "32k")
+	if strings.Contains(name, "128k") || strings.Contains(name, ":128k") {
+		return 131072 // 128k tokens
 	}
-	if strings.Contains(name, "120b") || strings.Contains(name, "120") {
+	if strings.Contains(name, "32k") || strings.Contains(name, ":32k") {
+		return 32768 // 32k tokens
+	}
+	if strings.Contains(name, "16k") || strings.Contains(name, ":16k") {
+		return 16384 // 16k tokens
+	}
+
+	// Model parameter count patterns (specific patterns only)
+	if strings.Contains(name, "405b") {
+		return 131072 // 128k
+	}
+	if strings.Contains(name, "120b") {
 		return 131072 // Large models like GPT-OSS-120B
 	}
-	if strings.Contains(name, "70b") || strings.Contains(name, "70") {
-		return 131072
+	if strings.Contains(name, "70b") {
+		return 131072 // 128k
 	}
-	if strings.Contains(name, "34b") || strings.Contains(name, "34") {
-		return 131072
+	if strings.Contains(name, "34b") {
+		return 131072 // 128k
 	}
-	if strings.Contains(name, "22b") || strings.Contains(name, "22") {
-		return 65536
+	if strings.Contains(name, "22b") {
+		return 65536 // 64k
 	}
-	if strings.Contains(name, "13b") || strings.Contains(name, "13") {
+	if strings.Contains(name, "13b") {
 		return 8192
 	}
-	if strings.Contains(name, "8b") || strings.Contains(name, "8") {
+	if strings.Contains(name, "8b") {
 		return 8192
 	}
-	if strings.Contains(name, "7b") || strings.Contains(name, "7") {
+	if strings.Contains(name, "7b") {
 		return 8192
 	}
 

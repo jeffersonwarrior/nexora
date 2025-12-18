@@ -60,6 +60,35 @@ func TestLocalModelsFullFlow(t *testing.T) {
 		if provider.Models[0].ID != "meta-llama/Llama-3.1-70B-Instruct" {
 			t.Error("vLLM model detection failed")
 		}
+		if provider.Models[0].Context != 131072 {
+			t.Errorf("Expected context 131072, got %d", provider.Models[0].Context)
+		}
+	})
+
+	// Test 2b: vLLM with max_model_len field
+	t.Run("VLLMMaxModelLen", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/v1/models" {
+				// vLLM returns max_model_len instead of context_window
+				w.Write([]byte(`{"data":[{"id":"Qwen/Qwen2.5-72B-Instruct","max_model_len":131072,"owned_by":"vllm"}]}`))
+			} else {
+				http.Error(w, "Not Found", http.StatusNotFound)
+			}
+		}))
+		defer server.Close()
+
+		detector := providers.NewLocalDetector(server.URL)
+		provider, err := detector.Detect("openai", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if provider.Models[0].ID != "Qwen/Qwen2.5-72B-Instruct" {
+			t.Error("vLLM model detection failed")
+		}
+		// This should now correctly detect 128k context
+		if provider.Models[0].Context != 131072 {
+			t.Errorf("Expected context 131072 from max_model_len, got %d", provider.Models[0].Context)
+		}
 	})
 
 	// Test 3: API Key required (401 → key prompt simulation)
@@ -129,5 +158,47 @@ func TestContextWindowPrioritization(t *testing.T) {
 	}
 	if prioritized[2].ID != "small-7b" {
 		t.Error("Expected <32k last")
+	}
+}
+
+func TestContextWindowDetection(t *testing.T) {
+	// Test that context window detection works correctly and doesn't
+	// pick up weird numbers from version strings or other parts of model name
+	tests := []struct {
+		modelName string
+		expected  int
+		reason    string
+	}{
+		// Explicit context window indicators should take priority
+		{"model-128k", 131072, "Explicit 128k indicator"},
+		{"llama3.1:70b-128k", 131072, "Explicit 128k overrides param size"},
+		{"model:32k", 32768, "Explicit 32k indicator"},
+		{"model:16k", 16384, "Explicit 16k indicator"},
+		
+		// Parameter count based detection (specific patterns only)
+		{"llama3.1:70b", 131072, "70b models get 128k"},
+		{"llama3.1:8b", 8192, "8b models get 8k"},
+		{"codellama:34b", 131072, "34b models get 128k"},
+		
+		// Should NOT match just digits without 'b' suffix
+		{"model-v3.1.8", 4096, "Version number '8' should not match '8b' pattern"},
+		{"qwen2.5-72b-instruct", 131072, "Should match 72b pattern"},
+		{"deepseek-coder-33b", 131072, "Should match 33b pattern"},
+		
+		// Unknown models get default
+		{"random-model", 4096, "Unknown models default to 4096"},
+		{"gpt-custom", 4096, "Unknown models default to 4096"},
+	}
+	
+	detector := providers.NewLocalDetector("http://localhost:11434")
+	for _, tt := range tests {
+		t.Run(tt.modelName, func(t *testing.T) {
+			// This is a private method, so we test via the public flow
+			// For now, test the estimation function indirectly
+			result := detector.EstimateContext(tt.modelName)
+			if result != tt.expected {
+				t.Errorf("%s: got context %d, want %d", tt.reason, result, tt.expected)
+			}
+		})
 	}
 }

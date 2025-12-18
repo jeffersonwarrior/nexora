@@ -283,6 +283,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			a.generateTitle(ctx, &currentSession, call.Prompt)
 			sessionLock.Unlock()
 		})
+		// Ensure we wait for title generation even if there's an error
+		defer wg.Wait()
 	}
 
 	// Add the user message to the session.
@@ -815,7 +817,6 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		}
 		return nil, err
 	}
-	wg.Wait()
 
 	if shouldSummarize {
 		a.activeRequests.Del(call.SessionID)
@@ -1116,8 +1117,14 @@ func (a *sessionAgent) getSessionMessages(ctx context.Context, session session.S
 
 func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Session, prompt string) {
 	if prompt == "" {
+		slog.Debug("generateTitle: empty prompt, returning")
 		return
 	}
+
+	slog.Debug("generateTitle: starting",
+		"session_id", session.ID,
+		"small_model", a.smallModel.ModelCfg.Model,
+		"provider", a.smallModel.ModelCfg.Provider)
 
 	var maxOutput int64 = 40
 	if a.smallModel.CatwalkCfg.CanReason {
@@ -1145,9 +1152,23 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 		},
 	})
 	if err != nil {
-		slog.Error("error generating title", "err", err)
+		slog.Error("error generating title", 
+			"err", err,
+			"session_id", session.ID,
+			"model", a.smallModel.ModelCfg.Model,
+			"provider", a.smallModel.ModelCfg.Provider)
 		return
 	}
+
+	slog.Debug("generateTitle: received response",
+		"session_id", session.ID,
+		"content_preview", func() string {
+			content := resp.Response.Content.Text()
+			if len(content) > 100 {
+				return content[:100] + "..."
+			}
+			return content
+		}())
 
 	title := resp.Response.Content.Text()
 
@@ -1160,9 +1181,17 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 
 	title = strings.TrimSpace(title)
 	if title == "" {
-		slog.Warn("failed to generate title", "warn", "empty title")
+		slog.Warn("failed to generate title", 
+			"warn", "empty title",
+			"session_id", session.ID,
+			"original_response", resp.Response.Content.Text())
 		return
 	}
+
+	slog.Info("generateTitle: generated new title",
+		"session_id", session.ID,
+		"title", title,
+		"old_title", session.Title)
 
 	session.Title = title
 
@@ -1181,9 +1210,14 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 	a.updateSessionUsage(a.smallModel, session, resp.TotalUsage, openrouterCost)
 	_, saveErr := a.sessions.Save(ctx, *session)
 	if saveErr != nil {
-		slog.Error("failed to save session title & usage", "error", saveErr)
+		slog.Error("failed to save session title & usage", 
+			"error", saveErr,
+			"session_id", session.ID,
+			"title", title)
 		return
 	}
+	slog.Debug("generateTitle: successfully saved new title",
+		"session_id", session.ID)
 }
 
 func (a *sessionAgent) openrouterCost(metadata fantasy.ProviderMetadata) *float64 {
