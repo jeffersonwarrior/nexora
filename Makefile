@@ -45,13 +45,21 @@ clean:
 	rm -f /tmp/nexora
 
 # Run tests
-.PHONY: test
+.PHONY: test-qa
 test-qa:
 	go test ./qa/...
 
-build: test-qa
-	go build ./...
+# Build with tests
+.PHONY: build-safe
+build-safe: test-qa
+	go build ./..
 
+# Full clean build
+.PHONY: build-full
+build-full: clean test-qa
+	go build -ldflags="$(LDFLAGS)" -o nexora .
+
+.PHONY: test
 test: test-qa
 	go test ./...
 

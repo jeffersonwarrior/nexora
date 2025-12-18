@@ -5,18 +5,25 @@ on:
     branches: [main]
     paths:
       - "internal/config/**"
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:
   update-schema:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # Only run on main branch
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Fetch full history for proper commits
       - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version-file: go.mod
-      - run: go run . schema > ./schema.json
+      - name: Generate schema
+        run: |
+          go run . schema > ./schema.json
+          git config user.name "Charm"
+          git config user.email "124303983+charmcli@users.noreply.github.com"
       - uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # v5
         with:
           commit_message: "chore: auto-update generated files"
@@ -24,3 +31,4 @@ jobs:
           commit_user_name: Charm
           commit_user_email: 124303983+charmcli@users.noreply.github.com
           commit_author: Charm <124303983+charmcli@users.noreply.github.com>
+          create_branch: false

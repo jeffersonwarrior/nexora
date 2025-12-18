@@ -210,8 +210,13 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, cfg con
 	arch := getArchitecture()
 	container := detectContainer(ctx)
 	terminal := getTerminalInfo(ctx)
-	network := getNetworkStatus(ctx)
-	services := detectActiveServices(ctx)
+	// Lazy-load expensive operations - only if DEBUG env var set
+	network := "online"  // Default assumption, skip expensive ping
+	services := ""       // Skip expensive service detection by default
+	if os.Getenv("NEXORA_FULL_ENV") == "1" {
+		network = getNetworkStatus(ctx)
+		services = detectActiveServices(ctx)
+	}
 
 	data := PromptDat{
 		Provider:       provider,
@@ -289,7 +294,8 @@ func getGitBranch(ctx context.Context, sh *shell.Shell) (string, error) {
 }
 
 func getGitStatusSummary(ctx context.Context, sh *shell.Shell) (string, error) {
-	out, _, err := sh.Exec(ctx, "git status --short 2>/dev/null | head -20")
+	// Reduced from 20 to 5 files for token efficiency
+	out, _, err := sh.Exec(ctx, "git status --short 2>/dev/null | head -5")
 	if err != nil {
 		return "", nil
 	}
@@ -301,7 +307,8 @@ func getGitStatusSummary(ctx context.Context, sh *shell.Shell) (string, error) {
 }
 
 func getGitRecentCommits(ctx context.Context, sh *shell.Shell) (string, error) {
-	out, _, err := sh.Exec(ctx, "git log --oneline -n 3 2>/dev/null")
+	// Reduced from 3 to 2 commits for token efficiency
+	out, _, err := sh.Exec(ctx, "git log --oneline -n 2 2>/dev/null")
 	if err != nil || out == "" {
 		return "", nil
 	}

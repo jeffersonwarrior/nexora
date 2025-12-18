@@ -39,7 +39,205 @@ Transform Nexora into a production-grade AI coding assistant with:
 
 ## 🚨 CRITICAL PRIORITIES (This Week)
 
-### 0. Fix Turbo Mode Implementation 🔥 **BROKEN BUILD**
+### 0. Reduce Session Startup Token Cost 💰 **EFFICIENCY**
+**Priority**: P0 - Critical  
+**Effort**: 4-6 hours  
+**Impact**: 30k 	 22k tokens (27% reduction), faster responses, lower costs
+
+**Issue**: New sessions consume ~30,000 tokens before first user message
+- Tool descriptions: 16KB (edit.md: 9.3KB, bash.tpl: 5.2KB, multiedit.md: 5KB)
+- System prompt template: 6.5KB with repetitive sections
+- Environment data: 2KB including expensive operations (ping, systemctl, git log)
+- Total templates: 35KB across 10 files
+
+**Solution - Three Phases**:
+
+**Phase 1: Compress Documentation (-5,000 tokens / 2-3h)**
+```
+1. edit.md: 9.3KB 	 3KB
+   - Remove verbose examples (keep 2 max)
+   - Condense recovery steps to 5 bullets
+   - Move troubleshooting guide to external docs
+   
+2. bash.tpl: 5.2KB 	 2KB
+   - Git commit section: 42 lines 	 10 lines
+   - PR creation: 38 lines 	 8 lines
+   - Link to detailed docs for complex workflows
+   
+3. multiedit.md: 5KB 	 2KB
+   - Reference edit.md shared guidelines
+   - Remove duplicated whitespace rules
+   
+4. coder.md.tpl: 6.5KB 	 4.5KB
+   - Remove VIEW 100-line section (duplicates tool docs)
+   - Remove quick reference (duplicates tool tips)
+```
+
+**Phase 2: Optimize Runtime Data (-1,500 tokens / 1-2h)**
+```
+5. Lazy-load expensive environment data:
+   - NetworkStatus (ping 8.8.8.8) - optional flag
+   - ActiveServices (systemctl) - optional flag
+   - Git recent commits: 20 	 3 commits
+   - Git status: 20 	 5 files
+   
+6. agentic_fetch.md: 2.1KB 	 1KB
+   - Compress when-to-use section
+   - Reduce limitations/tips verbosity
+```
+
+**Phase 3: Consolidate (-300 tokens / 30m)**
+```
+7. Merge job_output.md + job_kill.md into bash.tpl
+8. Remove redundant "Use with other tools" tips
+```
+
+**Files to Modify**:
+- `internal/agent/tools/edit.md` (compress 9.3KB 	 3KB)
+- `internal/agent/tools/bash.tpl` (compress 5.2KB 	 2KB)
+- `internal/agent/tools/multiedit.md` (deduplicate 5KB 	 2KB)
+- `internal/agent/templates/coder.md.tpl` (reduce 6.5KB 	 4.5KB)
+- `internal/agent/prompt/prompt.go` (lazy-load environment data)
+- `internal/agent/tools/agentic_fetch.md` (compress 2.1KB 	 1KB)
+
+**Metrics**:
+- Current: ~30,000 tokens
+- Target: ~22,000 tokens
+- Savings: 6,800-8,500 tokens (23-28%)
+
+**Testing**: 
+- Verify all tool descriptions still comprehensible
+- Test edit tool with compressed docs (success rate >90%)
+- Benchmark session startup token count
+
+---
+
+### 1. Background Job Monitoring & TODO System 🔔 **INFRASTRUCTURE**
+**Priority**: P0 - Critical  
+**Effort**: 2-3 weeks (incremental)  
+**Impact**: Persistent task tracking, error recovery, long-term memory
+
+**Problem**: Long-running background jobs fail silently
+- No notification when nohup-style jobs error
+- No persistent TODO system for tracking work
+- No memory system for context across sessions
+- Background jobs lost on restart (in-memory only)
+
+**Current State**:
+- ✅ BackgroundShellManager (50 jobs, in-memory, 8h retention)
+- ✅ PubSub infrastructure (sessions, messages, permissions)
+- ✅ SQLite persistence (sessions, messages)
+- ❌ No job	agent error notification
+- ❌ No persistent TODO tracking
+- ❌ No long-term memory system
+
+**Research Findings**:
+- **Memory**: claude-mem uses SQLite+FTS5 with token budgeting, auto-summarization
+- **Jobs**: Asynq (Redis) or River (Postgres) - production-ready with monitoring
+- **IPC**: Can extend existing PubSub or use Redis pub/sub
+
+**Proposed Architecture**:
+
+**1. Three-Tier TODO System**
+```
+- Ephemeral Tasks: Current in-memory (internal/task/agent_tool.go)
+- Persistent TODOs: New SQLite table with priorities, session links
+- Background Jobs: Migrate to River (Postgres LISTEN/NOTIFY)
+```
+
+**2. Error Notification Pipeline**
+```go
+// Extend internal/pubsub/broker.go
+type JobEvent struct {
+    JobID     string
+    SessionID uuid.UUID  // Link back to originating session
+    Status    JobStatus  // Running, Failed, Completed
+    Error     error
+    Output    string
+}
+
+// Job fails 	 Event published 	 Agent creates TODO 	 Queued in session
+```
+
+**3. Memory System (SQLite + FTS5)**
+```
+- Store: tool responses, preferences, project context
+- FTS5 search: keyword-based retrieval
+- Token budgeting: summarize old memories to fit context
+- Auto-expire: 90-day TTL with importance scaling
+- Integration: Auto-load into PrepareStep prompt
+```
+
+**4. Background Job 	 TODO Flow**
+```
+1. BackgroundShell fails 	 JobEvent published
+2. Agent JobEventHandler creates TODO: "Fix error in job X"
+3. TODO queued in session's messageQueue
+4. Next agent invocation sees TODO in context
+5. Agent works on TODO, marks complete
+```
+
+**Implementation Phases**:
+
+**Week 1: TODO Foundation**
+- Add `todos` table to SQLite (id, session_id, priority, deadline, status)
+- CRUD operations in `internal/todo/` service
+- Subscribe to PubSub events
+
+**Week 2: Job Monitoring**
+- Extend BackgroundShellManager to publish JobEvents
+- Add job failure detection
+- Link jobs to originating sessions
+
+**Week 3: Agent Integration**
+- Agent auto-loads TODOs in PrepareStep
+- Job errors create TODOs automatically
+- TODO completion tracking
+
+**Week 4: Memory System**
+- Add `memories` table with FTS5
+- Token budgeting for context fitting
+- Auto-expire with importance scoring
+
+**Week 5: Production Hardening**
+- Migrate BackgroundShellManager to River (optional)
+- Add monitoring dashboard
+- Comprehensive testing
+
+**Files to Create**:
+- `internal/todo/todo.go` (service with PubSub)
+- `internal/todo/queries.sql` (TODO CRUD)
+- `internal/memory/memory.go` (FTS5 memory service)
+- `internal/memory/queries.sql` (memory storage)
+
+**Files to Modify**:
+- `internal/shell/background.go` (publish JobEvents)
+- `internal/agent/agent.go` (load TODOs in PrepareStep)
+- `internal/db/schema.sql` (add todos + memories tables)
+
+**Open Questions**:
+1. **Persistence**: SQLite (simpler) or Redis (distributed)?
+2. **Notification**: Interrupt agent or queue for next idle?
+3. **Memory**: Build our own or integrate claude-mem MCP server?
+4. **Jobs**: Extend current system or migrate to River/Asynq?
+5. **Scope**: Per-session, global, or project-scoped TODOs?
+
+**Suggestions**:
+1. Start with SQLite for consistency with existing architecture
+2. Queue notifications for next agent invocation (less disruptive)
+3. Build SQLite+FTS5 memory system (full control, no external deps)
+4. Keep current BackgroundShellManager, extend with persistence
+5. Support both per-session and global TODOs with `scope` field
+
+**Testing**: 
+- Background job failure creates TODO
+- TODO persists across restarts
+- Memory system retrieves relevant context
+- FTS5 search performance benchmarks
+
+---
+
+### 2. Fix Turbo Mode Implementation 🔥 **BROKEN BUILD**
 **Priority**: P0 - Critical  
 **Effort**: 1-2 hours  
 **Impact**: Restore broken feature
@@ -84,11 +282,7 @@ func (a *sessionAgent) PrepareStep(...) {
 
 **Status**: ⚠️ Reverted to commit 9f39ceb (clean state)
 
----
-
-### 1. Memory Leak Prevention ⚠️ **BLOCKER**
-**Priority**: P0 - Critical  
-**Effort**: 30 minutes  
+### 3. Memory Leak Prevention ⚠️ **BLOCKER**
 **Impact**: Prevents OOM in production
 
 **Issue**: Unbounded slices in loop detection
@@ -116,11 +310,7 @@ if len(a.recentCalls) >= maxRecentCalls {
 
 **Testing**: Add unit test verifying bounds enforcement
 
----
-
-### 2. Provider Options Bug 🐛 **HIGH PRIORITY**
-**Priority**: P0 - Critical  
-**Effort**: 1 hour  
+### 4. Provider Options Bug 🐛 **HIGH PRIORITY**
 **Impact**: Lost configuration when switching models
 
 **Issue**: Summarization clears provider options for Cerebras
