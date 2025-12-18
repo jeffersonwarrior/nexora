@@ -404,7 +404,7 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 				slog.Error("Panic caught while building tools", "error", r)
 			}
 		}()
-		
+
 		tools, err := c.buildTools(ctx, agent)
 		if err != nil {
 			return err
@@ -423,13 +423,13 @@ func (c *coordinator) safeCreateTool(createFunc func() fantasy.AgentTool) fantas
 			slog.Error("Panic caught during tool creation", "error", r)
 		}
 	}()
-	
+
 	tool := createFunc()
 	if tool == nil {
 		slog.Warn("Tool creation returned nil")
 		return nil
 	}
-	
+
 	// Validate the tool can at least return basic info (still inside panic protection)
 	var info fantasy.ToolInfo
 	func() {
@@ -440,12 +440,12 @@ func (c *coordinator) safeCreateTool(createFunc func() fantasy.AgentTool) fantas
 		}()
 		info = tool.Info()
 	}()
-	
+
 	if info.Name == "" {
 		slog.Warn("Tool has empty name, skipping")
 		return nil
 	}
-	
+
 	return tool
 }
 
@@ -537,14 +537,14 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 		if tool == nil {
 			continue
 		}
-		
+
 		// Safely get tool info
 		info := tool.Info()
 		if info.Name == "" {
 			slog.Warn("Skipping tool with empty name")
 			continue
 		}
-		
+
 		if slices.Contains(agent.AllowedTools, info.Name) {
 			filteredTools = append(filteredTools, tool)
 		}
@@ -557,7 +557,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 			slog.Warn("Skipping nil tool during timeout wrapping")
 			continue
 		}
-		
+
 		// Safely wrap tool and catch any panics
 		wrappedTool := c.wrapToolWithTimeout(tool)
 		if wrappedTool != nil {
@@ -566,7 +566,7 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 			slog.Warn("Tool wrapping returned nil, skipping", "tool", tool.Info().Name)
 		}
 	}
-	
+
 	// Replace filtered tools with safe ones
 	filteredTools = safeTools
 
@@ -575,13 +575,13 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 			slog.Warn("Skipping nil MCP tool")
 			continue
 		}
-		
+
 		// Safely get MCP tool info
 		if toolName := tool.Name(); toolName == "" {
 			slog.Warn("Skipping MCP tool with empty name")
 			continue
 		}
-		
+
 		if agent.AllowedMCP == nil {
 			// No MCP restrictions
 			filteredTools = append(filteredTools, tool)

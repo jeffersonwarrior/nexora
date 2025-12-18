@@ -27,23 +27,23 @@ import (
 func TestPanicProtection_SafeCreateTool(t *testing.T) {
 	// Create test environment
 	env := setupPanicTestEnv(t)
-	
+
 	// Create coordinator with minimal config
 	coordinator := setupPanicTestCoordinator(t, env)
-	
+
 	// Test 1: Normal tool creation should work
 	t.Run("NormalToolCreation", func(t *testing.T) {
 		tool := coordinator.safeCreateTool(func() fantasy.AgentTool {
 			return tools.NewViewTool(nil, env.permissions, env.workingDir)
 		})
-		
+
 		assert.NotNil(t, tool, "safeCreateTool should return a tool")
-		
+
 		// Verify the tool works
 		info := tool.Info()
 		assert.NotEmpty(t, info.Name, "tool should have a name")
 	})
-	
+
 	// Test 2: Panicking tool creation should be caught
 	t.Run("PanickingToolCreation", func(t *testing.T) {
 		panicked := false
@@ -51,17 +51,17 @@ func TestPanicProtection_SafeCreateTool(t *testing.T) {
 			panicked = true
 			panic("intentional panic during tool creation")
 		})
-		
+
 		assert.True(t, panicked, "creation function should have been called")
 		assert.Nil(t, tool, "safeCreateTool should return nil for panicking creation")
 	})
-	
+
 	// Test 3: Tool creation returning nil should be handled
 	t.Run("NilToolCreation", func(t *testing.T) {
 		tool := coordinator.safeCreateTool(func() fantasy.AgentTool {
 			return nil
 		})
-		
+
 		assert.Nil(t, tool, "safeCreateTool should return nil for nil creation result")
 	})
 }
@@ -71,36 +71,36 @@ func TestPanicProtection_SafeCreateTool(t *testing.T) {
 func TestPanicProtection_WrapToolWithTimeout(t *testing.T) {
 	env := setupPanicTestEnv(t)
 	coordinator := setupPanicTestCoordinator(t, env)
-	
+
 	// Test 1: Wrap normal tool should work
 	t.Run("NormalTool", func(t *testing.T) {
 		// Create a simple working tool using the same pattern as in buildTools
 		tool := coordinator.safeCreateTool(func() fantasy.AgentTool {
 			return tools.NewViewTool(nil, env.permissions, env.workingDir)
 		})
-		
+
 		assert.NotNil(t, tool, "safeCreateTool should return a tool")
-		
+
 		// Wrap with timeout - should not panic
 		wrappedTool := coordinator.wrapToolWithTimeout(tool)
 		assert.NotNil(t, wrappedTool, "wrapToolWithTimeout should return a wrapped tool")
-		
+
 		// Verify the tool still works
 		info := wrappedTool.Info()
 		assert.NotEmpty(t, info.Name, "wrapped tool should have a name")
 	})
-	
+
 	// Test 2: Wrap nil tool should be handled
 	t.Run("NilTool", func(t *testing.T) {
 		wrappedTool := coordinator.wrapToolWithTimeout(nil)
 		assert.Nil(t, wrappedTool, "wrapToolWithTimeout should return nil for nil input")
 	})
-	
+
 	// Test 3: Wrap panicky tool should be caught
 	t.Run("PanickyTool", func(t *testing.T) {
 		// Create a tool that panics when Info() is called
 		panickyTool := &PanickyAgentTool{}
-		
+
 		// This should not panic - the panic should be caught
 		wrappedTool := coordinator.wrapToolWithTimeout(panickyTool)
 		assert.Nil(t, wrappedTool, "wrapToolWithTimeout should return nil for panicky tool")
@@ -112,21 +112,21 @@ func TestPanicProtection_WrapToolWithTimeout(t *testing.T) {
 func TestPanicProtection_BuildTools(t *testing.T) {
 	env := setupPanicTestEnv(t)
 	coordinator := setupPanicTestCoordinator(t, env)
-	
+
 	// Test 1: Build tools with normal agent config should succeed
 	t.Run("NormalAgent", func(t *testing.T) {
 		agentConfig := config.Agent{
-			Name:          "test-agent",
-			Model:         "test-model",
-			AllowedTools:  []string{"bash", "view", "write"},
-			AllowedMCP:    nil,
+			Name:         "test-agent",
+			Model:        "test-model",
+			AllowedTools: []string{"bash", "view", "write"},
+			AllowedMCP:   nil,
 		}
-		
+
 		// This should not panic
 		tools, err := coordinator.buildTools(context.Background(), agentConfig)
 		assert.NoError(t, err, "buildTools should not return an error")
 		assert.NotNil(t, tools, "tools should not be nil")
-		
+
 		// Verify that valid tools are included and invalid ones are filtered out
 		var validTools []string
 		for _, tool := range tools {
@@ -137,20 +137,20 @@ func TestPanicProtection_BuildTools(t *testing.T) {
 				}
 			}
 		}
-		
+
 		// Should have at least some tools
 		assert.Greater(t, len(validTools), 0, "Should have at least some valid tools")
 	})
-	
+
 	// Test 2: Build tools with various tools that might cause panics
 	t.Run("PanicRecovery", func(t *testing.T) {
 		agentConfig := config.Agent{
-			Name:          "panic-test-agent", 
-			Model:         "test-model",
-			AllowedTools:  []string{"bash", "view", "write", "edit", "multiedit", "fetch"},
-			AllowedMCP:    nil,
+			Name:         "panic-test-agent",
+			Model:        "test-model",
+			AllowedTools: []string{"bash", "view", "write", "edit", "multiedit", "fetch"},
+			AllowedMCP:   nil,
 		}
-		
+
 		// Capture any panic
 		defer func() {
 			if r := recover(); r != nil {
@@ -158,12 +158,12 @@ func TestPanicProtection_BuildTools(t *testing.T) {
 				t.Errorf("Stack trace: %s", debug.Stack())
 			}
 		}()
-		
+
 		// This should not panic even if individual tools fail
 		tools, err := coordinator.buildTools(context.Background(), agentConfig)
 		assert.NoError(t, err, "buildTools should not return an error even with panicky tools")
 		assert.NotNil(t, tools, "tools should not be nil")
-		
+
 		// Should get some working tools
 		var workingTools []string
 		for _, tool := range tools {
@@ -174,7 +174,7 @@ func TestPanicProtection_BuildTools(t *testing.T) {
 				}
 			}
 		}
-		
+
 		assert.Greater(t, len(workingTools), 0, "Should have some working tools")
 	})
 }
@@ -185,14 +185,14 @@ func TestPanicProtection_Integration(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}
-	
+
 	env := setupPanicTestEnv(t)
 	coordinator := setupPanicTestCoordinator(t, env)
-	
+
 	// Test with agent config that includes tools with potentially nil schemas
 	agentConfig := config.Agent{
-		Name:         "integration-test-agent",
-		Model:        "test-model", 
+		Name:  "integration-test-agent",
+		Model: "test-model",
 		AllowedTools: []string{
 			"bash", "view", "write", "edit", "multiedit",
 			"fetch", "grep", "glob", "ls", "download",
@@ -200,7 +200,7 @@ func TestPanicProtection_Integration(t *testing.T) {
 		},
 		AllowedMCP: nil,
 	}
-	
+
 	// This is the exact scenario that was causing the panic
 	defer func() {
 		if r := recover(); r != nil {
@@ -208,12 +208,12 @@ func TestPanicProtection_Integration(t *testing.T) {
 			t.Errorf("Stack trace: %s", debug.Stack())
 		}
 	}()
-	
+
 	// This should complete without panic
 	tools, err := coordinator.buildTools(context.Background(), agentConfig)
 	assert.NoError(t, err, "buildTools should not error in integration test")
 	assert.NotNil(t, tools, "tools should not be nil in integration test")
-	
+
 	// Verify we got some working tools
 	var workingTools []string
 	for _, tool := range tools {
@@ -224,9 +224,9 @@ func TestPanicProtection_Integration(t *testing.T) {
 			}
 		}
 	}
-	
+
 	assert.Greater(t, len(workingTools), 0, "Should have working tools after panic protection")
-	
+
 	// Verify specific expected tools are present
 	expectedTools := []string{"bash", "view", "write"}
 	for _, expected := range expectedTools {
@@ -247,31 +247,31 @@ func TestPanicProtection_Performance(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping performance test in short mode")
 	}
-	
+
 	env := setupPanicTestEnv(t)
 	coordinator := setupPanicTestCoordinator(t, env)
-	
+
 	agentConfig := config.Agent{
-		Name:          "performance-test-agent",
-		AllowedTools:  []string{"bash", "view", "write"},
-		AllowedMCP:    nil,
+		Name:         "performance-test-agent",
+		AllowedTools: []string{"bash", "view", "write"},
+		AllowedMCP:   nil,
 	}
-	
+
 	// Run multiple iterations to test performance
 	iterations := 10 // Reduced for test performance
 	start := time.Now()
-	
+
 	for i := 0; i < iterations; i++ {
 		tools, err := coordinator.buildTools(context.Background(), agentConfig)
 		assert.NoError(t, err)
 		assert.NotNil(t, tools)
 	}
-	
+
 	duration := time.Since(start)
 	averageTime := duration / time.Duration(iterations)
-	
+
 	t.Logf("Average buildTools time with panic protection: %v", averageTime)
-	
+
 	// Should complete reasonably quickly (adjust threshold as needed)
 	assert.Less(t, averageTime, 500*time.Millisecond, "Panic protection should not make tool building too slow")
 }
@@ -316,7 +316,7 @@ func setupPanicTestCoordinator(t *testing.T, env fakeEnv) *coordinator {
 		Models: map[config.SelectedModelType]config.SelectedModel{
 			"large": {
 				Provider: "test",
-				Model:    "test-model", 
+				Model:    "test-model",
 			},
 		},
 		Options: &config.Options{
@@ -326,7 +326,7 @@ func setupPanicTestCoordinator(t *testing.T, env fakeEnv) *coordinator {
 			},
 		},
 	}
-	
+
 	// Create coordinator directly using the private struct constructor
 	c := &coordinator{
 		cfg:             cfg,
@@ -339,7 +339,7 @@ func setupPanicTestCoordinator(t *testing.T, env fakeEnv) *coordinator {
 		sessionLog:      nil, // sessionlog
 		resourceMonitor: nil, // resourceMonitor
 	}
-	
+
 	return c
 }
 
