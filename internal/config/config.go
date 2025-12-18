@@ -226,6 +226,7 @@ type Options struct {
 	DisabledTools             []string     `json:"disabled_tools" jsonschema:"description=Tools to disable"`
 	DisableProviderAutoUpdate bool         `json:"disable_provider_auto_update,omitempty" jsonschema:"description=Disable providers auto-update,default=false"`
 	Attribution               *Attribution `json:"attribution,omitempty" jsonschema:"description=Attribution settings for generated content"`
+	IsTurboMode               bool         `json:"is_turbo_mode,omitempty" jsonschema:"description=Enable turbo mode for faster performance,default=false"`
 
 	InitializeAs string `json:"initialize_as,omitempty" jsonschema:"description=Name of the context file to create/update during project initialization,default=AGENTS.md,example=AGENTS.md,example=NEXORA.md,example=CLAUDE.md,example=docs/LLMs.md"`
 }

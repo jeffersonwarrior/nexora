@@ -367,3 +367,96 @@ func TestModelList_AllRecentsInvalid(t *testing.T) {
 	require.True(t, ok, "large key should be nil or array")
 	require.Empty(t, largeAny, "persisted recents should be empty after pruning all invalid entries")
 }
+
+func TestModelList_LocalProviderInRecents(t *testing.T) {
+	// Pre-initialize logger to os.DevNull to prevent file lock on Windows.
+	log.Setup(os.DevNull, false)
+
+	// Isolate config/data paths
+	cfgDir := t.TempDir()
+	dataDir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", cfgDir)
+	t.Setenv("XDG_DATA_HOME", dataDir)
+
+	// Pre-seed config with a local provider and a recent local model
+	confPath := filepath.Join(cfgDir, "nexora", "nexora.json")
+	require.NoError(t, os.MkdirAll(filepath.Dir(confPath), 0o755))
+	initial := map[string]any{
+		"options": map[string]any{
+			"disable_provider_auto_update": true,
+		},
+		"models": map[string]any{
+			"large": map[string]any{
+				"model":    "llama3.2:latest",
+				"provider": "local",
+			},
+		},
+		"providers": map[string]any{
+			"local": map[string]any{
+				"id":       "local",
+				"name":     "Local Models",
+				"type":     "openai-compat",
+				"base_url": "https://example.ngrok.dev",
+				"api_key":  "sk-123",
+				"models": []any{
+					map[string]any{
+						"id":   "llama3.2:latest",
+						"name": "Llama 3.2 Latest",
+					},
+				},
+			},
+		},
+		"recent_models": map[string]any{
+			"large": []any{
+				map[string]any{"model": "llama3.2:latest", "provider": "local"},
+			},
+		},
+	}
+	bts, err := json.Marshal(initial)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(confPath, bts, 0o644))
+
+	// Create empty providers.json to prevent loading real providers
+	dataConfDir := filepath.Join(dataDir, "nexora")
+	require.NoError(t, os.MkdirAll(dataConfDir, 0o755))
+	emptyProviders := []byte("[]")
+	require.NoError(t, os.WriteFile(filepath.Join(dataConfDir, "providers.json"), emptyProviders, 0o644))
+
+	// Initialize global config instance
+	cfg, err := config.Init(cfgDir, dataDir, false)
+	require.NoError(t, err)
+
+	// Verify local provider is in config
+	localProvider, exists := cfg.Providers.Get("local")
+	require.True(t, exists, "local provider should exist in config")
+	require.NotEmpty(t, localProvider.Models, "local provider should have models")
+
+	// Create and initialize the component with empty provider set (no known providers)
+	listKeyMap := list.DefaultKeyMap()
+	cmp := NewModelListComponent(listKeyMap, "Find your fave", false)
+	cmp.providers = []catwalk.Provider{} // No known providers
+	execCmdML(t, cmp, cmp.Init())
+
+	// Find all groups and items
+	groups := cmp.list.Groups()
+
+	// Find all recent items (IDs prefixed with "recent::")
+	var recentItems []list.CompletionItem[ModelOption]
+	for _, g := range groups {
+		for _, it := range g.Items {
+			if strings.HasPrefix(it.ID(), "recent::") {
+				recentItems = append(recentItems, it)
+			}
+		}
+	}
+
+	// The recent local model should be present
+	require.NotEmpty(t, recentItems, "recent items should include the local model")
+	foundLocalRecent := false
+	for _, it := range recentItems {
+		if it.ID() == "recent::local:llama3.2:latest" {
+			foundLocalRecent = true
+		}
+	}
+	require.True(t, foundLocalRecent, "recent local model should be found (expected recent::local:llama3.2:latest)")
+}

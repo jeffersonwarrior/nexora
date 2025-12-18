@@ -165,13 +165,20 @@ func cleanEndpoint(endpoint string) (string, string) {
 	endpoint = strings.TrimSpace(endpoint)
 	apiKey := ""
 
-	// Extract API key from query params
-	if strings.Contains(endpoint, "?key=") {
+	// Extract API key from query params (support both ?key= and ?api_key=)
+	if strings.Contains(endpoint, "?") {
 		u, err := url.Parse(endpoint)
-		if err == nil && u.Query().Get("key") != "" {
-			apiKey = u.Query().Get("key")
-			// Remove query params from endpoint
-			endpoint = u.Scheme + "://" + u.Host + u.Path
+		if err == nil {
+			// Try api_key first, then key
+			if apiKeyVal := u.Query().Get("api_key"); apiKeyVal != "" {
+				apiKey = apiKeyVal
+			} else if keyVal := u.Query().Get("key"); keyVal != "" {
+				apiKey = keyVal
+			}
+			// Remove query params from endpoint if we found a key
+			if apiKey != "" {
+				endpoint = u.Scheme + "://" + u.Host + u.Path
+			}
 		}
 	}
 
@@ -275,7 +282,7 @@ func (m *LocalModelsDialog) renderIPInput() string {
 	t := styles.CurrentTheme()
 	return lipgloss.NewStyle().Foreground(t.Primary).Render("Enter server endpoint:") + "\n\n" +
 		m.endpointInput.View() + "\n\n" +
-		lipgloss.NewStyle().Foreground(t.FgMuted).Render("Examples:\n  127.0.0.1:11434 (Ollama)\n  192.168.1.10:1234 (LM-Studio)\n  https://your-tunnel.trycloudflare.com?key=sk-... (OpenAI API)\n\nNow supports paste! Ctrl+V in terminal OR right-click.\nEnter to detect, Escape to cancel")
+		lipgloss.NewStyle().Foreground(t.FgMuted).Render("Examples:\n  127.0.0.1:11434 (Ollama)\n  192.168.1.10:1234 (LM-Studio)\n  https://your-tunnel.ngrok-free.dev?api_key=sk-... (with API key)\n\nNow supports paste! Ctrl+V in terminal OR right-click.\nEnter to detect, Escape to cancel")
 }
 
 func (m *LocalModelsDialog) renderKeyInput() string {

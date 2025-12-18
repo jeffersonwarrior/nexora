@@ -37,10 +37,12 @@ func AddLocalProvider(provider *providers.LocalProvider) error {
 	}
 
 	// Convert LocalProvider to config.ProviderConfig
+	// Use openai-compat type since all local servers (Ollama, vLLM, LM-Studio) 
+	// use OpenAI-compatible APIs
 	providerConfig := ProviderConfig{
 		ID:      "local",
 		Name:    provider.Name,
-		Type:    catwalk.Type(provider.Type),
+		Type:    catwalk.TypeOpenAICompat,
 		BaseURL: provider.BaseURL,
 		APIKey:  provider.APIKey,
 	}

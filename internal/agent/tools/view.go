@@ -197,14 +197,30 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 
 			// Read the file content
 			content, lineCount, err := readTextFile(filePath, params.Offset, params.Limit)
-			isValidUt8 := utf8.ValidString(content)
+		// Validate and sanitize UTF-8 content to prevent crashes
+		if !utf8.ValidString(content) {
+			// Fix invalid UTF-8 sequences instead of failing
+			content = strings.ToValidUTF8(content, "�")
+			if !utf8.ValidString(content) {
+				fmt.Fprintf(os.Stderr, "Warning: Content still contains invalid UTF-8 after repair attempts")
+				// As a last resort, filter out all invalid sequences
+				content = strings.ToValidUTF8(content, "")
+				if !utf8.ValidString(content) {
+					fmt.Fprintf(os.Stderr, "Warning: Using fallback UTF-8 sanitization")
+					// Final fallback - remove all non-ASCII characters
+					content = strings.Map(func(r rune) rune {
+						if r < 128 {
+							return r
+						}
+						return '�'
+					}, content)
+				}
+			}
 			LogViewError(ViewDiagnosticsInfo{
 				FilePath: filePath,
 				FileSize: fileInfo.Size(),
-			}, "invalid UTF-8")
-			if !isValidUt8 {
-				return fantasy.NewTextErrorResponse("File content is not valid UTF-8"), nil
-			}
+			}, "invalid UTF-8 sanitized")
+		}
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error reading file: %w", err)
 			}

@@ -15,6 +15,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"charm.land/fantasy"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
@@ -22,6 +23,7 @@ import (
 	"github.com/nexora/cli/internal/agent/tools"
 	"github.com/nexora/cli/internal/aiops"
 	"github.com/nexora/cli/internal/config"
+	"github.com/nexora/cli/internal/resources"
 	"github.com/nexora/cli/internal/csync"
 	"github.com/nexora/cli/internal/history"
 	"github.com/nexora/cli/internal/log"
@@ -43,6 +45,13 @@ import (
 	"github.com/qjebbs/go-jsons"
 )
 
+const (
+	// Tool execution timeouts
+	defaultToolTimeout  = 5 * time.Minute
+	criticalToolTimeout = 10 * time.Minute
+	maxToolTimeout      = 30 * time.Minute
+)
+
 type Coordinator interface {
 	// INFO: (kujtim) this is not used yet we will use this when we have multiple agents
 	// SetMainAgent(string)
@@ -59,14 +68,15 @@ type Coordinator interface {
 }
 
 type coordinator struct {
-	cfg         *config.Config
-	sessions    session.Service
-	messages    message.Service
-	permissions permission.Service
-	history     history.Service
-	lspClients  *csync.Map[string, *lsp.Client]
-	aiops       aiops.Ops
-	sessionLog  *sessionlog.Manager
+	cfg             *config.Config
+	sessions        session.Service
+	messages        message.Service
+	permissions     permission.Service
+	history         history.Service
+	lspClients      *csync.Map[string, *lsp.Client]
+	aiops           aiops.Ops
+	sessionLog      *sessionlog.Manager
+	resourceMonitor *resources.Monitor
 
 	currentAgent SessionAgent
 	agents       map[string]SessionAgent
@@ -84,17 +94,19 @@ func NewCoordinator(
 	lspClients *csync.Map[string, *lsp.Client],
 	aiops aiops.Ops,
 	sessionLog *sessionlog.Manager,
+	resourceMonitor *resources.Monitor,
 ) (Coordinator, error) {
 	c := &coordinator{
-		cfg:         cfg,
-		sessions:    sessions,
-		messages:    messages,
-		permissions: permissions,
-		history:     history,
-		lspClients:  lspClients,
-		aiops:       aiops,
-		sessionLog:  sessionLog,
-		agents:      make(map[string]SessionAgent),
+		cfg:             cfg,
+		sessions:        sessions,
+		messages:        messages,
+		permissions:     permissions,
+		history:         history,
+		lspClients:      lspClients,
+		aiops:           aiops,
+		sessionLog:      sessionLog,
+		resourceMonitor: resourceMonitor,
+		agents:          make(map[string]SessionAgent),
 	}
 
 	agentCfg, ok := cfg.Agents[config.AgentCoder]
@@ -329,12 +341,12 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 		SmallModel:           small,
 		SystemPromptPrefix:   largeProviderCfg.SystemPromptPrefix,
 		SystemPrompt:         systemPrompt,
-		DisableAutoSummarize: c.cfg.Options.DisableAutoSummarize,
-		IsYolo:               c.permissions.SkipRequests(),
 		Sessions:             c.sessions,
 		Messages:             c.messages,
-		Tools:                nil,
-		AIOPS:                c.aiops,
+
+		Tools:           nil,
+		AIOPS:           c.aiops,
+		ResourceMonitor: c.resourceMonitor,
 	})
 	c.readyWg.Go(func() error {
 		tools, err := c.buildTools(ctx, agent)
@@ -399,6 +411,11 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 		if slices.Contains(agent.AllowedTools, tool.Info().Name) {
 			filteredTools = append(filteredTools, tool)
 		}
+	}
+
+	// Apply timeout enforcement to all tools
+	for i, tool := range filteredTools {
+		filteredTools[i] = c.wrapToolWithTimeout(tool)
 	}
 
 	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg.WorkingDir()) {
@@ -512,6 +529,71 @@ func (s *SequentialEditSolver) OrderEdits(edits []tools.EditParams, filePath str
 	}
 
 	return orderedEdits
+}
+
+// wrapToolWithTimeout wraps a tool function with timeout enforcement
+func (c *coordinator) wrapToolWithTimeout(tool fantasy.AgentTool) fantasy.AgentTool {
+	info := tool.Info()
+	
+	// Store the original tool for internal use
+	originalTool := tool
+	
+	// Create wrapper based on tool name
+	timeout := c.getToolTimeout(info.Name)
+	
+	return fantasy.NewAgentTool(
+		info.Name,
+		info.Description,
+		func(ctx context.Context, params interface{}, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			// Create timeout context
+			timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+			defer cancel()
+
+			// Channel to capture result
+			type result struct {
+				resp fantasy.ToolResponse
+				err  error
+			}
+			resultChan := make(chan result, 1)
+
+			// Execute tool in goroutine
+			go func() {
+				resp, err := originalTool.Run(timeoutCtx, call)
+				resultChan <- result{resp: resp, err: err}
+			}()
+
+			// Wait for completion or timeout
+			select {
+			case res := <-resultChan:
+				return res.resp, res.err
+			case <-timeoutCtx.Done():
+				if timeoutCtx.Err() == context.DeadlineExceeded {
+					return fantasy.ToolResponse{}, fmt.Errorf("tool execution timed out after %v", timeout)
+				}
+				return fantasy.ToolResponse{}, timeoutCtx.Err()
+			}
+		},
+	)
+}
+
+// getToolTimeout returns the appropriate timeout for a tool based on its name
+func (c *coordinator) getToolTimeout(toolName string) time.Duration {
+	switch toolName {
+	case "bash":
+		// Bash commands can run longer, especially for builds/tests
+		return criticalToolTimeout
+	case "agentic_fetch", "fetch":
+		// Network operations need longer timeouts
+		return criticalToolTimeout
+	case "view", "grep", "ls", "glob":
+		// Read-only operations are fast
+		return defaultToolTimeout
+	case "edit", "multiedit", "write":
+		// File operations can take some time for large files
+		return 2 * time.Minute
+	default:
+		return defaultToolTimeout
+	}
 }
 
 // TODO: when we support multiple agents we need to change this so that we pass in the agent specific model config

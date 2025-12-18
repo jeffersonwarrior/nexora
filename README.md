@@ -1,6 +1,17 @@
 # Nexora - 🚀 AI-Powered CLI Agent
 
-> **Production-Ready AI Terminal Assistant** with **tool execution**, **multi-provider support**, **vision MCP**, and **zero-config setup**.
+> **Production-Ready AI Terminal Assistant** with **intelligent state management**, **adaptive resource monitoring**, and **self-healing execution**.
+
+## ⚠️ Architecture Notice
+
+**Nexora is the EXECUTION layer** - not the "thinking" layer.
+
+- **YOLO mode by default**: No permission prompts, no safeguards
+- **Designed for dedicated environments**: Run on isolated VM or dedicated hardware
+- **Orchestration-ready**: Built to be controlled by higher-level systems (e.g., **Zackor**)
+- **Direct execution**: AI commands run immediately without human approval
+
+**⚡ This is intentional** - Nexora executes, orchestrators think.
 
 ## ✨ Quick Start
 
@@ -12,28 +23,33 @@ curl -fsSL https://nexora.land/install.sh | sh
 git clone https://github.com/nexora/cli.git && cd cli
 make build && make setup
 
-# Start chatting
-nexora chat
+# First run launches TUI for setup
+nexora chat  # Interactive TUI for API keys & provider configuration
 ```
 
 ## 🎯 Features
 
 | 🛠️ **Tools** | 🔗 **Providers** | ✨ **AI Features** |
 |-------------|------------------|-------------------|
-| `edit/write` files | **OpenAI** (GPT-5.2, 4o, o1) | Auto-summarization |
-| `bash/git` shell | **Anthropic** (Claude 4.5 Opus/Sonnet) | Context-aware titles |
+| `edit/write` files | **OpenAI** (GPT-5.2, 4o, o1) | **Intelligent state management** |
+| `bash/git` shell | **Anthropic** (Claude 4.5 Opus/Sonnet) | **Adaptive resource monitoring** |
 | `grep/glob/ls` search | **xAI** (Grok 4.1 Fast) | Loop/drift detection |
-| **Z.AI Vision MCP** | **Mistral** (Devstral, Codestral) | Thread-safe queuing |
-| `agent` (sub-agents) | **Local** (Ollama/LM-Studio) | **Vision analysis** |
-| **Web Reader/Search** | **9+ APIs** | Image support |
+| **Z.AI Vision MCP** | **Mistral** (Devstral, Codestral) | Progress tracking |
+| `agent` (sub-agents) | **Local** (Ollama/LM-Studio) | Self-healing execution |
+| **Web Reader/Search** | **9+ APIs** | Auto-summarization |
 
-## ⚙️ Production Setup (`make setup`)
+## ⚙️ Setup & Configuration
 
-**One-command config** with **9 real providers** + **Z.AI Vision MCP**:
+**Interactive TUI by default** - First run launches guided setup:
+```bash
+nexora chat  # Opens TUI for API key input & provider configuration
+```
+
+**Or use `make setup`** for one-command config with **9 real providers** + **Z.AI Vision MCP**:
 ```
 ✅ xAI Grok-4.1, Cerebras GLM-4.6, Anthropic Claude 4.5
 ✅ OpenAI GPT, Z.AI Vision MCP, MiniMax Kimi  
-✅ Auto-loads .env API keys → Zero prompts → Production ready
+✅ Auto-loads .env API keys → Production ready
 ```
 
 ## 📦 Installation Options
@@ -82,13 +98,13 @@ nexora chat  # → edit files, run bash, git commit, etc.
 
 ## 🚀 Why Nexora?
 
-| ✅ **Production Ready** | ❌ **Avoid** |
+| ✅ **Execution Layer** | ❌ **Not for** |
 |-----------------------|-------------|
-| **Zero-config** (`make setup`) | Manual JSON editing |
-| **9 API keys** + **Vision MCP** | Copy-paste configs |
-| **All tests pass** (`make test-qa`) | Untested edge cases |
-| **Thread-safe** agent queue | Race conditions |
-| **Smart fallbacks** | Hard crashes |
+| **YOLO mode**: Immediate execution | Human-in-the-loop workflows |
+| **Orchestration-ready**: API-first design | Standalone end-user apps |
+| **Dedicated environments**: VM/container isolation | Shared development machines |
+| **Intelligent state management** | Ad-hoc execution |
+| **Adaptive resource monitoring** | Runaway processes |
 
 ## 📊 Benchmarks
 
@@ -98,6 +114,20 @@ nexora chat  # → edit files, run bash, git commit, etc.
 🔄 Concurrency: 50+ queued requests
 🛡️ Reliability: 99.9% (token validation + fallbacks)
 ```
+
+## 🎭 Architecture: Nexora vs Zackor
+
+**Nexora** = **Execution Layer**
+- Direct CLI execution with AI
+- YOLO mode (no safeguards)
+- State management & resource monitoring
+- Runs on dedicated/isolated environments
+
+**Zackor** = **Orchestration Layer** _(coming soon)_
+- High-level planning & strategy
+- Multi-agent coordination
+- Safety policies & approval workflows
+- Manages multiple Nexora instances
 
 ## 🔬 ModelScan Tool
 
@@ -154,6 +184,13 @@ nexora chat  # Test your changes!
 
 MIT © Nexora Team
 
+## 👨‍💻 Credits
+
+Built by **Jefferson Nunn** with the help of:
+- Claude Opus, Sonnet, Haiku
+- Synthetic, GLM, Kimi
+- GPT, OSS, Cerebras GLM
+
 ---
 
-**v0.28.6** - **Production hardened** with **bulletproof token validation**, **auto-updating titles**, **Z.AI Vision MCP**, and **one-command setup**.
+**v0.29.0** - **Intelligent agent management** with **adaptive resource monitoring**, **self-healing execution**, and **local model improvements**.

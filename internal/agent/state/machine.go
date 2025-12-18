@@ -16,6 +16,7 @@ type StateMachine struct {
 	currentState AgentState
 	sessionID    string
 	startTime    time.Time
+	pauseReason  string // Reason for being in paused state
 
 	// Progress tracking
 	progressTracker *ProgressTracker
@@ -109,6 +110,9 @@ func (sm *StateMachine) TransitionTo(newState AgentState) error {
 
 	// Transition
 	sm.currentState = newState
+	if newState != StateResourcePaused {
+		sm.pauseReason = "" // Clear pause reason when leaving paused state
+	}
 
 	// Record state entry
 	metric := StateMetrics{
@@ -136,6 +140,27 @@ func (sm *StateMachine) TransitionTo(newState AgentState) error {
 	}
 
 	return nil
+}
+
+// CanTransitionTo checks if a transition to the target state is valid
+func (sm *StateMachine) CanTransitionTo(targetState AgentState) bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return sm.currentState.CanTransitionTo(targetState)
+}
+
+// SetPauseReason sets the reason for being in paused state
+func (sm *StateMachine) SetPauseReason(reason string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.pauseReason = reason
+}
+
+// GetPauseReason returns the reason for being in paused state
+func (sm *StateMachine) GetPauseReason() string {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return sm.pauseReason
 }
 
 // GetState returns the current state.

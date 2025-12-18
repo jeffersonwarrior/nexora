@@ -29,6 +29,7 @@ import (
 	"github.com/nexora/cli/internal/message"
 	"github.com/nexora/cli/internal/permission"
 	"github.com/nexora/cli/internal/pubsub"
+	"github.com/nexora/cli/internal/resources"
 	"github.com/nexora/cli/internal/session"
 	"github.com/nexora/cli/internal/sessionlog"
 	"github.com/nexora/cli/internal/shell"
@@ -46,8 +47,9 @@ type App struct {
 
 	AgentCoordinator agent.Coordinator
 
-	LSPClients *csync.Map[string, *lsp.Client]
-	AIOPS      aiops.Ops
+	LSPClients       *csync.Map[string, *lsp.Client]
+	AIOPS            aiops.Ops
+	ResourceMonitor  *resources.Monitor
 
 	config *config.Config
 
@@ -108,6 +110,13 @@ func New(ctx context.Context, conn *sql.DB, cfg *config.Config) (*App, error) {
 		mcp.Initialize(ctx, app.Permissions, cfg)
 	}()
 
+	// Initialize resource monitor
+	app.ResourceMonitor = resources.NewMonitor(resources.DefaultConfig())
+	app.cleanupFuncs = append(app.cleanupFuncs, func() error {
+		app.ResourceMonitor.Stop()
+		return nil
+	})
+
 	// cleanup database upon app shutdown
 	app.cleanupFuncs = append(app.cleanupFuncs, conn.Close, mcp.Close)
 
@@ -116,6 +125,13 @@ func New(ctx context.Context, conn *sql.DB, cfg *config.Config) (*App, error) {
 		slog.Warn("No agent configuration found")
 		return app, nil
 	}
+	// Start resource monitor
+	if err := app.ResourceMonitor.Start(ctx); err != nil {
+		slog.Warn("Failed to start resource monitor", "error", err)
+	} else {
+		slog.Info("Resource monitor started successfully")
+	}
+
 	if err := app.InitCoderAgent(ctx); err != nil {
 		return nil, fmt.Errorf("failed to initialize coder agent: %w", err)
 	}
@@ -351,6 +367,7 @@ func (app *App) InitCoderAgent(ctx context.Context) error {
 		app.LSPClients,
 		app.AIOPS,
 		sessionLogMgr,
+		app.ResourceMonitor,
 	)
 	if err != nil {
 		slog.Error("Failed to create coder agent", "err", err)

@@ -11,6 +11,24 @@ import (
 	"github.com/nexora/cli/internal/csync"
 )
 
+// syncWriter wraps a bytes.Buffer with mutex protection for concurrent writes.
+type syncWriter struct {
+	buf *bytes.Buffer
+	mu  *sync.RWMutex
+}
+
+func (sw *syncWriter) Write(p []byte) (n int, err error) {
+	sw.mu.Lock()
+	defer sw.mu.Unlock()
+	return sw.buf.Write(p)
+}
+
+func (sw *syncWriter) String() string {
+	sw.mu.RLock()
+	defer sw.mu.RUnlock()
+	return sw.buf.String()
+}
+
 const (
 	// MaxBackgroundJobs is the maximum number of concurrent background jobs allowed
 	MaxBackgroundJobs = 50
@@ -27,8 +45,8 @@ type BackgroundShell struct {
 	WorkingDir  string
 	ctx         context.Context
 	cancel      context.CancelFunc
-	stdout      *bytes.Buffer
-	stderr      *bytes.Buffer
+	stdout      *syncWriter // thread-safe output buffer
+	stderr      *syncWriter // thread-safe output buffer
 	done        chan struct{}
 	exitErr     error
 	completedAt int64 // Unix timestamp when job completed (0 if still running)
@@ -71,6 +89,9 @@ func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, b
 
 	shellCtx, cancel := context.WithCancel(ctx)
 
+	// Create shared mutex for thread-safe buffer access
+	var bufMu sync.RWMutex
+
 	bgShell := &BackgroundShell{
 		ID:          id,
 		Command:     command,
@@ -79,8 +100,8 @@ func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, b
 		Shell:       shell,
 		ctx:         shellCtx,
 		cancel:      cancel,
-		stdout:      &bytes.Buffer{},
-		stderr:      &bytes.Buffer{},
+		stdout:      &syncWriter{buf: &bytes.Buffer{}, mu: &bufMu},
+		stderr:      &syncWriter{buf: &bytes.Buffer{}, mu: &bufMu},
 		done:        make(chan struct{}),
 	}
 

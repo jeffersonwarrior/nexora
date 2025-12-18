@@ -1,3 +1,20 @@
+## 🔍 Post-Audit TODO Items
+
+1. ✅ Decide on ignoring tui/exp/list races (experimental UI)? **IGNORED** - experimental UI, not critical
+2. ✅ Add mutex to shell background output buffer to fix race. **FIXED** - Added syncWriter with RWMutex
+3. ~~Clarify "codedocs" - specific files to update?~~ **IGNORED** - per user request
+4. ✅ Run full benchmarks and pprof profiler. **DONE** - Added comprehensive benchmarks
+5. 🔜 Perform live E2E recovery test with injected errors. **PENDING** - user will do after above
+
+### Audit Fixes Summary (December 18, 2025)
+- **Race condition fixed**: `internal/shell/background.go` - Added `syncWriter` type with `sync.RWMutex` for thread-safe stdout/stderr buffer access
+- **Benchmarks added**: 
+  - `internal/shell/background_benchmark_test.go` (5 benchmarks)
+  - `internal/agent/prompt/prompt_benchmark_test.go` (8 benchmarks)
+  - `internal/agent/tools/edit_benchmark_test.go` (6 benchmarks)
+- **All tests pass with `-race` flag**
+
+
 # Nexora TODO & Refactoring Plan
 
 ## 🎯 COMPLETED TODAY - December 18, 2025

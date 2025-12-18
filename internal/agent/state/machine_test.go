@@ -55,14 +55,14 @@ func TestStateTransitions(t *testing.T) {
 func TestProgressTrackerLoop(t *testing.T) {
 	pt := NewProgressTracker()
 
-	// Simulate same file, same error, 3 times
-	for i := 0; i < 3; i++ {
+	// Simulate same file, same error, 5 times (new threshold)
+	for i := 0; i < 5; i++ {
 		pt.RecordAction("edit", "test.go", "", "old_string not found", false)
 	}
 
 	stuck, reason := pt.IsStuck()
 	if !stuck {
-		t.Error("expected stuck condition after 3 identical errors")
+		t.Error("expected stuck condition after 5 identical errors")
 	}
 	if reason == "" {
 		t.Error("expected reason for stuck condition")
@@ -133,7 +133,8 @@ func TestProgressReset(t *testing.T) {
 	pt := NewProgressTracker()
 
 	// Create error history
-	for i := 0; i < 3; i++ {
+	// Record 5 identical errors (new threshold)
+	for i := 0; i < 5; i++ {
 		pt.RecordAction("edit", "test.go", "", "error", false)
 	}
 
@@ -288,8 +289,8 @@ func TestStateMachineCallbacks(t *testing.T) {
 		t.Error("expected state change callback to be called")
 	}
 
-	// Trigger stuck condition
-	for i := 0; i < 3; i++ {
+	// Trigger stuck condition (5 errors needed now)
+	for i := 0; i < 5; i++ {
 		sm.RecordToolCall("edit", "test.go", "", "same error", false)
 	}
 
@@ -384,14 +385,14 @@ func TestStateMachineStuckDetection(t *testing.T) {
 		Context:   context.Background(),
 	})
 
-	// Simulate stuck loop: same error 3 times
-	for i := 0; i < 3; i++ {
+	// Simulate stuck loop: same error 5 times (new threshold)
+	for i := 0; i < 5; i++ {
 		sm.RecordToolCall("edit", "stuck.go", "", "old_string not found", false)
 	}
 
 	stuck, reason := sm.IsStuck()
 	if !stuck {
-		t.Error("expected stuck condition after 3 identical errors")
+		t.Error("expected stuck condition after 5 identical errors")
 	}
 	t.Logf("✅ Stuck detected: %s", reason)
 

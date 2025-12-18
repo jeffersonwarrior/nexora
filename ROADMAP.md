@@ -1,8 +1,4 @@
-# Nexora Development Roadmap
-**Last Updated**: December 17, 2025  
-**Version**: 0.28.7
-
----
+**Version**: 0.29.0
 
 ## 🎯 Mission Statement
 

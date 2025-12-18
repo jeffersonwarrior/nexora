@@ -193,8 +193,9 @@ func (pt *ProgressTracker) IsStuck() (bool, string) {
 	pt.mu.RLock()
 	defer pt.mu.RUnlock()
 
-	// Check 1: Consecutive identical errors (same file, same error, 3+ times)
-	if pt.consecutiveErrors >= 3 {
+	// Check 1: Consecutive identical errors (same file, same error, 5+ times)
+	// Increased threshold to reduce false positives
+	if pt.consecutiveErrors >= 5 {
 		if stuck, reason := pt.hasSameFileError(); stuck {
 			return true, reason
 		}
@@ -206,8 +207,11 @@ func (pt *ProgressTracker) IsStuck() (bool, string) {
 	}
 
 	// Check 3: No progress (same actions, no file changes)
-	if stuck, reason := pt.hasNoProgress(); stuck {
-		return true, reason
+	// Only check if we have enough actions and no recent success
+	if len(pt.recentActions) >= 15 { // Increased from 10
+		if stuck, reason := pt.hasNoProgress(); stuck {
+			return true, reason
+		}
 	}
 
 	return false, ""
@@ -265,30 +269,52 @@ func (pt *ProgressTracker) hasOscillatingActions() (bool, string) {
 // hasNoProgress checks if there's been no meaningful progress.
 func (pt *ProgressTracker) hasNoProgress() (bool, string) {
 	// Only check if we have enough actions
-	if len(pt.recentActions) < 10 {
+	if len(pt.recentActions) < 15 {
 		return false, ""
 	}
 
-	// Get last 10 actions
-	recent := pt.recentActions[max(0, len(pt.recentActions)-10):]
+	// Get last 15 actions to match the error message
+	recent := pt.recentActions[max(0, len(pt.recentActions)-15):]
 
-	// Count unique successful operations
+	// Count successful operations and analyze progress patterns
 	uniqueTargets := make(map[string]bool)
 	successCount := 0
+	meaningfulSuccessCount := 0 // Only counts edits, writes, etc. (not just views)
+	successfulOps := make([]ActionFingerprint, 0)
+	
 	for _, action := range recent {
 		if action.Success {
 			target := getTarget(action.TargetFile, action.Command)
 			if target != "" {
 				uniqueTargets[target] = true
-				successCount++
 			}
+			successCount++
+			
+			// Count only meaningful operations as progress (not just viewing)
+			if action.ToolName != "view" && action.ToolName != "ls" && action.ToolName != "grep" {
+				meaningfulSuccessCount++
+			}
+			
+			successfulOps = append(successfulOps, action)
 		}
 	}
 
-	// If less than 3 unique targets with success in last 10 actions, might be stuck
-	// But this is lenient - we want to allow retries
-	if len(uniqueTargets) < 2 && successCount < 3 {
-		return true, "No meaningful progress in last 10 actions"
+	// More sophisticated progress detection:
+	// Only declare stuck if we have very few meaningful successes AND very little variety
+	// AND no meaningful file modifications in recent actions
+	
+	// Check if we've made any actual file modifications (strong progress indicator)
+	hasFileMods := len(pt.filesModified) > 0
+	
+	// Check for variety in successful operations (different tools, targets, etc.)
+	uniqueTools := make(map[string]bool)
+	for _, op := range successfulOps {
+		uniqueTools[op.ToolName] = true
+	}
+	
+	// More lenient conditions: need both low meaningful success rate AND low variety
+	if meaningfulSuccessCount < 2 && len(uniqueTargets) < 3 && len(uniqueTools) < 2 && !hasFileMods {
+		return true, fmt.Sprintf("No meaningful progress in last 15 actions (%d meaningful successes, %d unique targets)", meaningfulSuccessCount, len(uniqueTargets))
 	}
 
 	return false, ""

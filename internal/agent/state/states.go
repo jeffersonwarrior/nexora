@@ -103,6 +103,7 @@ var validTransitions = map[AgentState][]AgentState{
 		StateStreamingResponse,
 		StateErrorRecovery,
 		StateHalted,
+		StateProcessingPrompt, // Allow re-prompting for better recovery
 	},
 	StateStreamingResponse: {
 		StateExecutingTool,

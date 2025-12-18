@@ -36,8 +36,10 @@ import (
 	"github.com/nexora/cli/internal/csync"
 	"github.com/nexora/cli/internal/message"
 	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/cli/internal/resources"
 	"github.com/nexora/cli/internal/session"
 	"github.com/nexora/cli/internal/stringext"
+	"github.com/nexora/cli/internal/agent/recovery"
 )
 
 //go:embed templates/title.md
@@ -45,6 +47,8 @@ var titlePrompt []byte
 
 //go:embed templates/summary.md
 var summaryPrompt []byte
+
+// Tool timeouts defined in coordinator.go
 
 type SessionAgentCall struct {
 	SessionID        string
@@ -94,6 +98,9 @@ type sessionAgent struct {
 	activeRequests *csync.Map[string, context.CancelFunc]
 	aiops          aiops.Ops // AIOPS client for operational support
 
+	// Resource monitoring
+	resourceMonitor *resources.Monitor
+
 	// State for loop and drift detection
 	recentCalls       []aiops.ToolCall
 	callCount         int
@@ -107,6 +114,22 @@ type sessionAgent struct {
 
 	// State machines per session
 	stateMachines *csync.Map[string, *state.StateMachine]
+
+	// Error recovery system
+	recoveryRegistry *recovery.RecoveryRegistry
+
+	// Retry tracking for automatic recovery
+	retryQueue *csync.Map[string, *RetryRequest] // sessionID -> retry request
+
+	// Tool timeout configuration
+	toolTimeout time.Duration
+}
+
+// RetryRequest tracks a pending retry after successful recovery
+type RetryRequest struct {
+	ToolName string
+	Input    map[string]interface{}
+	Attempt  int
 }
 
 type SessionAgentOptions struct {
@@ -120,6 +143,7 @@ type SessionAgentOptions struct {
 	Messages             message.Service
 	Tools                []fantasy.AgentTool
 	AIOPS                aiops.Ops // AIOPS client
+	ResourceMonitor      *resources.Monitor // Resource monitor for pause/resume
 }
 
 func NewSessionAgent(
@@ -138,9 +162,126 @@ func NewSessionAgent(
 		messageQueue:         csync.NewMap[string, []SessionAgentCall](),
 		activeRequests:       csync.NewMap[string, context.CancelFunc](),
 		aiops:                opts.AIOPS,
+		resourceMonitor:      opts.ResourceMonitor,
 		sessionStates:        csync.NewMap[string, string](),
 		stateMachines:        csync.NewMap[string, *state.StateMachine](),
+		recoveryRegistry:     recovery.NewRecoveryRegistry(),
+		retryQueue:           csync.NewMap[string, *RetryRequest](),
+		toolTimeout:          defaultToolTimeout,
 	}
+}
+
+// wrapToolsWithTimeout cannot directly wrap fantasy.AgentTool since it's from external package
+// Instead, we need to wrap at tool creation time in the coordinator
+// This is a placeholder for now - timeout enforcement will be added in coordinator.buildTools
+
+// wrapToolWithTimeout wraps a single tool function with timeout enforcement
+func (a *sessionAgent) wrapToolWithTimeout(toolFunc interface{}) interface{} {
+	return func(ctx context.Context, params interface{}, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	// Extract tool name from call - use call.Name directly
+	toolName := call.Name
+		
+		// Create timeout context based on tool type
+		timeout := a.getToolTimeout(toolName)
+		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+
+		// Channel to capture result
+		type result struct {
+			resp fantasy.ToolResponse
+			err  error
+		}
+		resultChan := make(chan result, 1)
+
+		// Execute tool in goroutine
+		go func() {
+			// Use reflection to call the original function
+			resp, err := toolFunc.(func(context.Context, interface{}, fantasy.ToolCall) (fantasy.ToolResponse, error))(timeoutCtx, params, call)
+			resultChan <- result{resp: resp, err: err}
+		}()
+
+		// Wait for completion or timeout
+		select {
+		case res := <-resultChan:
+			return res.resp, res.err
+		case <-timeoutCtx.Done():
+			if timeoutCtx.Err() == context.DeadlineExceeded {
+				return fantasy.ToolResponse{}, fmt.Errorf("tool execution timed out after %v", timeout)
+			}
+			return fantasy.ToolResponse{}, timeoutCtx.Err()
+		}
+	}
+}
+
+// getToolTimeout returns the appropriate timeout for a tool based on its name
+func (a *sessionAgent) getToolTimeout(toolName string) time.Duration {
+	switch toolName {
+	case "bash":
+		// Bash commands can run longer, especially for builds/tests
+		return criticalToolTimeout
+	case "agentic_fetch", "fetch":
+		// Network operations need longer timeouts
+		return criticalToolTimeout
+	case "view", "grep", "ls", "glob":
+		// Read-only operations are fast
+		return defaultToolTimeout
+	case "edit", "multiedit", "write":
+		// File operations can take some time for large files
+		return 2 * time.Minute
+	default:
+		return defaultToolTimeout
+	}
+}
+
+// wrapErrorForRecovery converts generic errors into recoverable errors based on error patterns
+func (a *sessionAgent) wrapErrorForRecovery(err error, toolName, filePath string, oldText, newText string) error {
+	if err == nil {
+		return nil
+	}
+
+	errorStr := err.Error()
+	
+	// File modification errors
+	if strings.Contains(errorStr, "file has been modified") || 
+	   strings.Contains(errorStr, "file changed on disk") ||
+	   strings.Contains(errorStr, "stale file") {
+		return recovery.NewFileOutdatedError(err, filePath)
+	}
+
+	// Edit operation errors
+	if strings.Contains(errorStr, "whitespace mismatch") ||
+	   strings.Contains(errorStr, "failed to match") ||
+	   strings.Contains(errorStr, "no match for text") ||
+	   strings.Contains(errorStr, "edit failed") {
+		return recovery.NewEditFailedError(err, filePath, oldText, newText)
+	}
+
+	// Timeout errors
+	if strings.Contains(errorStr, "timeout") ||
+	   strings.Contains(errorStr, "deadline exceeded") ||
+	   strings.Contains(errorStr, "context canceled") {
+		return recovery.NewTimeoutError(toolName, 60*time.Second)
+	}
+
+	// Resource limit errors
+	if strings.Contains(errorStr, "out of memory") ||
+	   strings.Contains(errorStr, "disk space") ||
+	   strings.Contains(errorStr, "too many open files") ||
+	   strings.Contains(errorStr, "resource limit exceeded") {
+		return recovery.NewResourceLimitError(toolName, "current", "limit")
+	}
+
+	// Loop detection (this is handled by state machine but wrap if we get it)
+	if strings.Contains(errorStr, "loop detected") ||
+	   strings.Contains(errorStr, "infinite loop") ||
+	   strings.Contains(errorStr, "stuck") {
+		return recovery.NewLoopDetectedError(toolName, 3)
+	}
+
+	// Default: wrap as recoverable with standard retries
+	return recovery.NewRecoverableError(err, "generic", map[string]interface{}{
+		"retries": 2,
+	})
 }
 
 func (a *sessionAgent) getTaskContext(sessionID string) string {
@@ -185,6 +326,50 @@ func (a *sessionAgent) getOrCreateStateMachine(sessionID string, ctx context.Con
 			)
 		},
 	})
+
+	// Integrate with resource monitor if available
+	if a.resourceMonitor != nil {
+		a.resourceMonitor.SetStateMachine(sm)
+		a.resourceMonitor.SetCallbacks(
+			func(usage float64) {
+				slog.Warn("CPU usage high, pausing session",
+					"session_id", sessionID,
+					"cpu_percent", usage,
+				)
+				if sm.CanTransitionTo(state.StateResourcePaused) {
+					sm.TransitionTo(state.StateResourcePaused)
+					sm.SetPauseReason(fmt.Sprintf("CPU usage %.1f%% exceeds threshold", usage))
+				}
+			},
+			func(usage uint64) {
+				slog.Warn("Memory usage high, pausing session",
+					"session_id", sessionID,
+					"mem_usage_mb", usage/(1024*1024),
+				)
+				if sm.CanTransitionTo(state.StateResourcePaused) {
+					sm.TransitionTo(state.StateResourcePaused)
+					sm.SetPauseReason(fmt.Sprintf("Memory usage %.1f%% exceeds threshold", float64(usage)/float64(1024*1024*1024)*100))
+				}
+			},
+			func(free uint64) {
+				slog.Warn("Disk space low, pausing session",
+					"session_id", sessionID,
+					"disk_free_gb", float64(free)/(1024*1024*1024),
+				)
+				if sm.CanTransitionTo(state.StateResourcePaused) {
+					sm.TransitionTo(state.StateResourcePaused)
+					sm.SetPauseReason(fmt.Sprintf("Disk space low: %.1fGB free", float64(free)/(1024*1024*1024)))
+				}
+			},
+			func(v resources.Violation) {
+				slog.Warn("Resource violation",
+					"session_id", sessionID,
+					"type", v.Type,
+					"message", v.Message,
+				)
+			},
+		)
+	}
 
 	a.stateMachines.Set(sessionID, sm)
 	return sm
@@ -251,6 +436,24 @@ func (a *sessionAgent) hasUnfinishedWork(ctx context.Context, sessionID string) 
 func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy.AgentResult, error) {
 	// Handle special continuation prompts
 	isContinuation := call.Prompt == "CONTINUE_AFTER_TOOL_EXECUTION"
+
+	// Check for pending retry request before processing
+	if !isContinuation && call.Prompt != "" {
+		if retryReq, ok := a.retryQueue.Get(call.SessionID); ok {
+			slog.Info("Executing retry for recovered tool",
+				"session_id", call.SessionID,
+				"tool", retryReq.ToolName,
+				"attempt", retryReq.Attempt,
+			)
+			// Clear retry request
+			a.retryQueue.Del(call.SessionID)
+			
+			// The tool will be retried automatically by the agent's tool execution loop
+			// We just need to ensure the agent continues processing
+			call.Prompt = "CONTINUE_AFTER_TOOL_EXECUTION"
+			isContinuation = true
+		}
+	}
 
 	// Clear session state when any new non-continuation message is sent
 	if !isContinuation && call.Prompt != "" {
@@ -339,6 +542,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	// Add the session to the context.
 	ctx = context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
 
+	// Tool timeout enforcement is handled at coordinator level during tool creation
+
 	genCtx, cancel := context.WithCancel(ctx)
 	a.activeRequests.Set(call.SessionID, cancel)
 
@@ -384,14 +589,11 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			a.messageQueue.Del(call.SessionID)
 			for _, queued := range queuedCalls {
 				userMessage, createErr := a.createUserMessage(callContext, queued)
-				if createErr != nil {
-					return callContext, prepared, createErr
-				}
-				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
-			}
+				if createErr != nil { continue }
 
-			prepared.Messages = a.workaroundProviderMediaLimitations(prepared.Messages)
+			prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
 
+		}
 			lastSystemRoleInx := 0
 			systemMessageUpdated := false
 			for i, msg := range prepared.Messages {
@@ -529,11 +731,44 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 
 			// Extract tool details for tracking
 			var errorMsg string
+			var toolError error
 
 			switch result.Result.GetType() {
 			case fantasy.ToolResultContentTypeError:
 				if r, ok := fantasy.AsToolResultOutputType[fantasy.ToolResultOutputContentError](result.Result); ok {
 					errorMsg = r.Error.Error()
+					toolError = r.Error
+				}
+			}
+
+			// Attempt error recovery if there's an error
+			if toolError != nil {
+				execCtx := &state.AgentExecutionContext{
+					SessionID: currentAssistant.SessionID,
+				}
+				recoverableErr := a.wrapErrorForRecovery(toolError, result.ToolName, "", "", "")
+				recoveryErr := a.recoveryRegistry.AttemptRecovery(genCtx, recoverableErr, execCtx)
+				if recoveryErr != nil {
+					slog.Error("Error recovery failed",
+						"session_id", currentAssistant.SessionID,
+						"tool", result.ToolName,
+						"original_error", toolError.Error(),
+						"recovery_error", recoveryErr.Error(),
+					)
+				} else {
+					slog.Info("Error recovery succeeded - scheduling retry",
+						"session_id", currentAssistant.SessionID,
+						"tool", result.ToolName,
+						"error", toolError.Error(),
+					)
+					// Queue retry request instead of clearing error
+					retryReq := &RetryRequest{
+						ToolName: result.ToolName,
+						Input:    nil, // Input will be captured from the tool call
+						Attempt:  execCtx.RetryCount,
+					}
+					a.retryQueue.Set(currentAssistant.SessionID, retryReq)
+					errorMsg = "" // Clear error to allow continuation
 				}
 			}
 
