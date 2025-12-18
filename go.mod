@@ -7,7 +7,7 @@ replace github.com/nexora/cli => ./
 require (
 	charm.land/bubbles/v2 v2.0.0-rc.1
 	charm.land/bubbletea/v2 v2.0.0-rc.2.0.20251202162339-5fa38b798f16
-	charm.land/fantasy v0.5.3
+	charm.land/fantasy v0.5.4
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251119143523-0334bb4562ca
 	charm.land/x/vcr v0.1.1
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
