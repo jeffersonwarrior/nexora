@@ -22,6 +22,9 @@ jobs:
         with:
           fetch-depth: 0
       
+      - name: Check disk space
+        run: df -h
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -37,15 +40,21 @@ jobs:
           key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+      - name: Clean before building
+        run: |
+          # Clean Go cache and mod cache to prevent disk space issues
+          go clean -cache -testcache -modcache
+          # Limit Go build cache size to prevent filling /tmp
+          go env -w GOCACHE=/tmp/go-cache
+          mkdir -p /tmp/go-cache
+          du -sh ~/.cache/go-build 2>/dev/null || echo "No go-build cache found"
       
       - name: Download dependencies
         run: go mod download && go mod verify
       
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
-      
-      - name: Run QA tests
-        run: go test -v ./qa/...
       
       - name: Build binary
         run: |
@@ -63,3 +72,12 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+      
+      - name: Final cleanup and disk check
+        if: always()
+        run: |
+          echo "Final disk space:"
+          df -h
+          echo "Cleaning up after build..."
+          go clean -cache -testcache -modcache
+          rm -rf /tmp/go-cache
