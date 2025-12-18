@@ -265,12 +265,12 @@ func TestContainsAnyPerformance(t *testing.T) {
 	}
 	// Put a match at the beginning
 	largeArgs[0] = "match"
-	
+
 	result := ContainsAny("this string contains a match", largeArgs...)
 	if !result {
 		t.Error("Expected to find match")
 	}
-	
+
 	// Now test with match at the end
 	largeArgs[0] = "nonexistent"
 	largeArgs[9999] = "match"
@@ -290,7 +290,7 @@ func BenchmarkCapitalize(b *testing.B) {
 		{"medium", "hello world this is a test"},
 		{"long", "the quick brown fox jumps over the lazy dog multiple times in this longer sentence"},
 	}
-	
+
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
@@ -312,7 +312,7 @@ func BenchmarkContainsAny(b *testing.B) {
 		{"match_last", "hello world", []string{"foo", "bar", "world"}},
 		{"no_match", "hello world", []string{"foo", "bar", "baz"}},
 	}
-	
+
 	for _, tc := range testCases {
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()

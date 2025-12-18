@@ -219,9 +219,9 @@ func TestGenerateDiffEdgeCases(t *testing.T) {
 		longLine := strings.Repeat("a", 10000)
 		before := longLine + "\n"
 		after := strings.Repeat("b", 10000) + "\n"
-		
+
 		diff, additions, removals := GenerateDiff(before, after, "long.txt")
-		
+
 		if additions != 1 {
 			t.Errorf("Expected 1 addition, got %d", additions)
 		}
@@ -243,9 +243,9 @@ func TestGenerateDiffEdgeCases(t *testing.T) {
 	t.Run("unicode content", func(t *testing.T) {
 		before := "Hello 世界\n"
 		after := "Hello World\n"
-		
+
 		diff, additions, removals := GenerateDiff(before, after, "unicode.txt")
-		
+
 		if additions != 1 {
 			t.Errorf("Expected 1 addition, got %d", additions)
 		}
@@ -260,9 +260,9 @@ func TestGenerateDiffEdgeCases(t *testing.T) {
 	t.Run("lines with plus and minus but not diff markers", func(t *testing.T) {
 		before := "normal line\n"
 		after := "normal line\n+ this is content, not diff\n- also content\n"
-		
+
 		diff, additions, removals := GenerateDiff(before, after, "test.txt")
-		
+
 		// Should count actual additions (the two new lines)
 		if additions != 2 {
 			t.Errorf("Expected 2 additions, got %d", additions)
@@ -280,9 +280,9 @@ func TestGenerateDiffEdgeCases(t *testing.T) {
 func TestGenerateDiffCountAccuracy(t *testing.T) {
 	before := "line1\nline2\nline3\n"
 	after := "line1\nmodified\nline3\n"
-	
+
 	diff, additions, removals := GenerateDiff(before, after, "test.txt")
-	
+
 	// Should have exactly 1 addition and 1 removal
 	if additions != 1 {
 		t.Errorf("Expected 1 addition, got %d", additions)
@@ -290,7 +290,7 @@ func TestGenerateDiffCountAccuracy(t *testing.T) {
 	if removals != 1 {
 		t.Errorf("Expected 1 removal, got %d", removals)
 	}
-	
+
 	// Verify the diff contains the header markers but they're not counted
 	if !strings.Contains(diff, "+++") {
 		t.Error("Expected diff to contain +++ header")

@@ -49,7 +49,7 @@ func TestEnvironmentCache(t *testing.T) {
 		cache := NewEnvironmentCache(100 * time.Millisecond)
 
 		// First call
-		_ , err := cache.Get(ctx, "/tmp", false)
+		_, err := cache.Get(ctx, "/tmp", false)
 		if err != nil {
 			t.Fatalf("Get failed: %v", err)
 		}

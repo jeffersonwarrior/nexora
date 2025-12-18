@@ -103,7 +103,7 @@ func TestCheck(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		client := testClient{tag: "v1.2.3"}
 		info, err := Check(context.Background(), "v1.0.0", client)
-		
+
 		require.NoError(t, err)
 		require.Equal(t, "1.0.0", info.Current)
 		require.Equal(t, "1.2.3", info.Latest)
@@ -114,7 +114,7 @@ func TestCheck(t *testing.T) {
 	t.Run("same version", func(t *testing.T) {
 		client := testClient{tag: "v1.0.0"}
 		info, err := Check(context.Background(), "v1.0.0", client)
-		
+
 		require.NoError(t, err)
 		require.Equal(t, "1.0.0", info.Current)
 		require.Equal(t, "1.0.0", info.Latest)
@@ -124,7 +124,7 @@ func TestCheck(t *testing.T) {
 	t.Run("no v prefix", func(t *testing.T) {
 		client := testClient{tag: "1.2.3"}
 		info, err := Check(context.Background(), "1.0.0", client)
-		
+
 		require.NoError(t, err)
 		require.Equal(t, "1.0.0", info.Current)
 		require.Equal(t, "1.2.3", info.Latest)
@@ -133,7 +133,7 @@ func TestCheck(t *testing.T) {
 	t.Run("client error", func(t *testing.T) {
 		client := errorClient{err: errors.New("network error")}
 		info, err := Check(context.Background(), "1.0.0", client)
-		
+
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to fetch latest release")
 		require.Equal(t, "1.0.0", info.Current)
@@ -153,14 +153,14 @@ func TestGoInstallRegexp(t *testing.T) {
 		{"v1.2.3", false},
 		{"1.2.3-beta.1", false},
 		{"devel", false},
-		{"v0.0.0-0.20251231235959", false}, // Missing commit hash
+		{"v0.0.0-0.20251231235959", false},                    // Missing commit hash
 		{"v0.0.0-0.20251231235959-06c807842604-extra", false}, // Extra suffix
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
 			if got := goInstallRegexp.MatchString(tt.version); got != tt.matches {
-				t.Errorf("goInstallRegexp.MatchString(%q) = %v, want %v", 
+				t.Errorf("goInstallRegexp.MatchString(%q) = %v, want %v",
 					tt.version, got, tt.matches)
 			}
 		})
@@ -196,7 +196,7 @@ func TestReleaseStruct(t *testing.T) {
 // TestDefaultClient verifies the default client is set
 func TestDefaultClient(t *testing.T) {
 	require.NotNil(t, Default)
-	
+
 	// Verify it implements Client interface
 	var _ Client = Default
 }
@@ -207,7 +207,7 @@ func TestCheckWithContext(t *testing.T) {
 		ctx := context.Background()
 		client := testClient{tag: "v1.0.0"}
 		info, err := Check(ctx, "v1.0.0", client)
-		
+
 		require.NoError(t, err)
 		require.NotNil(t, info)
 	})
@@ -215,10 +215,10 @@ func TestCheckWithContext(t *testing.T) {
 	t.Run("context with timeout", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately
-		
+
 		client := cancelClient{}
 		_, err := Check(ctx, "v1.0.0", client)
-		
+
 		// Should get context cancelled error
 		require.Error(t, err)
 	})
@@ -253,4 +253,3 @@ func (c cancelClient) Latest(ctx context.Context) (*Release, error) {
 		return &Release{TagName: "v1.0.0", HTMLURL: "https://example.org"}, nil
 	}
 }
-

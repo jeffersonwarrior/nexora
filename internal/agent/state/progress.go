@@ -22,8 +22,8 @@ type ProgressTracker struct {
 	maxRecentActions int // Keep last 10-20 actions
 
 	// Error tracking
-	recentErrors     []ErrorFingerprint
-	maxRecentErrors  int
+	recentErrors      []ErrorFingerprint
+	maxRecentErrors   int
 	consecutiveErrors int
 
 	// Message deduplication
@@ -281,7 +281,7 @@ func (pt *ProgressTracker) hasNoProgress() (bool, string) {
 	successCount := 0
 	meaningfulSuccessCount := 0 // Only counts edits, writes, etc. (not just views)
 	successfulOps := make([]ActionFingerprint, 0)
-	
+
 	for _, action := range recent {
 		if action.Success {
 			target := getTarget(action.TargetFile, action.Command)
@@ -289,12 +289,12 @@ func (pt *ProgressTracker) hasNoProgress() (bool, string) {
 				uniqueTargets[target] = true
 			}
 			successCount++
-			
+
 			// Count only meaningful operations as progress (not just viewing)
 			if action.ToolName != "view" && action.ToolName != "ls" && action.ToolName != "grep" {
 				meaningfulSuccessCount++
 			}
-			
+
 			successfulOps = append(successfulOps, action)
 		}
 	}
@@ -302,16 +302,16 @@ func (pt *ProgressTracker) hasNoProgress() (bool, string) {
 	// More sophisticated progress detection:
 	// Only declare stuck if we have very few meaningful successes AND very little variety
 	// AND no meaningful file modifications in recent actions
-	
+
 	// Check if we've made any actual file modifications (strong progress indicator)
 	hasFileMods := len(pt.filesModified) > 0
-	
+
 	// Check for variety in successful operations (different tools, targets, etc.)
 	uniqueTools := make(map[string]bool)
 	for _, op := range successfulOps {
 		uniqueTools[op.ToolName] = true
 	}
-	
+
 	// More lenient conditions: need both low meaningful success rate AND low variety
 	if meaningfulSuccessCount < 2 && len(uniqueTargets) < 3 && len(uniqueTools) < 2 && !hasFileMods {
 		return true, fmt.Sprintf("No meaningful progress in last 15 actions (%d meaningful successes, %d unique targets)", meaningfulSuccessCount, len(uniqueTargets))

@@ -195,7 +195,7 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, cfg con
 
 	// Gather environment information using cache
 	now := p.now()
-	
+
 	// Get cached environment data (uses parallel execution internally)
 	fullEnv := os.Getenv("NEXORA_FULL_ENV") == "1"
 	envData, err := envCache.Get(ctx, workingDir, fullEnv)

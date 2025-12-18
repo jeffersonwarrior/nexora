@@ -22,7 +22,7 @@ func TestStateTransitions(t *testing.T) {
 		{"Streaming to ProgressCheck", StateStreamingResponse, StateProgressCheck, true},
 		{"ProgressCheck to PhaseTransition", StateProgressCheck, StatePhaseTransition, true},
 		{"PhaseTransition to Processing", StatePhaseTransition, StateProcessingPrompt, true},
-		
+
 		// Invalid transitions
 		{"Idle to Executing", StateIdle, StateExecutingTool, false},
 		{"Halted to anything", StateHalted, StateProcessingPrompt, false},

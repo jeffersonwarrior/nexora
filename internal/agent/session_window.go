@@ -2,19 +2,19 @@ package agent
 
 import (
 	"sync"
-	
+
 	"github.com/nexora/cli/internal/message"
 )
 
 type SessionWindow struct {
-	ID         string                 `json:"id"`
-	Title      string                 `json:"title"`
-	Agent      SessionAgent           `json:"-"`
-	History    []message.Message      `json:"history,omitempty"`
-	State      *ConversationState     `json:"state,omitempty"`
-	ForkParent string                 `json:"fork_parent,omitempty"`
-	IsActive   bool                   `json:"is_active"`
-	
+	ID         string             `json:"id"`
+	Title      string             `json:"title"`
+	Agent      SessionAgent       `json:"-"`
+	History    []message.Message  `json:"history,omitempty"`
+	State      *ConversationState `json:"state,omitempty"`
+	ForkParent string             `json:"fork_parent,omitempty"`
+	IsActive   bool               `json:"is_active"`
+
 	mu sync.RWMutex
 }
 

@@ -202,8 +202,8 @@ func TestSmartJoinWithAbsolutePaths(t *testing.T) {
 func TestCrossPlatformPaths(t *testing.T) {
 	// These should work on both Unix and Windows
 	testCases := []struct {
-		one      string
-		two      string
+		one        string
+		two        string
 		shouldJoin bool
 	}{
 		{"base", "relative", true},
@@ -215,15 +215,15 @@ func TestCrossPlatformPaths(t *testing.T) {
 	for _, tc := range testCases {
 		result := SmartJoin(tc.one, tc.two)
 		isAbs := SmartIsAbs(tc.two)
-		
+
 		if !tc.shouldJoin && !isAbs {
 			t.Errorf("Expected %q to be absolute, but SmartIsAbs returned false", tc.two)
 		}
-		
+
 		if tc.shouldJoin && isAbs && tc.two != "" {
 			t.Errorf("Expected %q to be relative, but SmartIsAbs returned true", tc.two)
 		}
-		
+
 		if !tc.shouldJoin && result != tc.two {
 			t.Errorf("SmartJoin(%q, %q) = %q, expected absolute path %q",
 				tc.one, tc.two, result, tc.two)

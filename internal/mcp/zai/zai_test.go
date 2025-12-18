@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/nexora/cli/internal/config"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsVisionTool(t *testing.T) {
@@ -188,12 +188,12 @@ func TestManager(t *testing.T) {
 		os.Setenv("ZAI_API_KEY", "")
 		cfg := config.Config{}
 		manager := NewManager(cfg)
-		
+
 		// Check initial status
 		status := manager.GetStatus()
 		assert.Equal(t, StateNotConfigured, status.State)
 		assert.Contains(t, status.Message, "ZAI_API_KEY not set")
-		
+
 		// Try to start
 		err := manager.Start(nil)
 		assert.Error(t, err)
@@ -204,16 +204,16 @@ func TestManager(t *testing.T) {
 		os.Setenv("ZAI_API_KEY", "valid_api_key_for_testing")
 		cfg := config.Config{}
 		manager := NewManager(cfg)
-		
+
 		// Check initial status
 		status := manager.GetStatus()
 		assert.Equal(t, StateStopped, status.State)
-		
+
 		// Try to get client before start
 		_, err := manager.GetClient()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "not initialized")
-		
+
 		// Start manager
 		err = manager.Start(nil)
 		// Note: This will fail in mock mode, but we can still test the structure
@@ -227,11 +227,11 @@ func TestManager(t *testing.T) {
 		os.Setenv("ZAI_API_KEY", "valid_api_key_for_testing")
 		cfg := config.Config{}
 		manager := NewManager(cfg)
-		
+
 		// Stop manager (should not error even if not started)
 		err := manager.Stop()
 		assert.NoError(t, err)
-		
+
 		// Check status after stop
 		status := manager.GetStatus()
 		assert.Equal(t, StateStopped, status.State)

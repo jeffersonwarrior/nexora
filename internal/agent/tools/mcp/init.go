@@ -28,9 +28,9 @@ import (
 )
 
 var (
-	sessions = csync.NewMap[string, *mcp.ClientSession]()
-	states   = csync.NewMap[string, ClientInfo]()
-	broker   = pubsub.NewBroker[Event]()
+	sessions   = csync.NewMap[string, *mcp.ClientSession]()
+	states     = csync.NewMap[string, ClientInfo]()
+	broker     = pubsub.NewBroker[Event]()
 	zaiManager *zai.Manager
 )
 
@@ -117,7 +117,7 @@ func Close() error {
 		}
 		zaiManager = nil
 	}
-	
+
 	var errs []error
 	var wg sync.WaitGroup
 	for name, session := range sessions.Seq2() {
@@ -150,28 +150,28 @@ func initializeZAI(ctx context.Context, cfg *config.Config) {
 		slog.Debug("Z.ai MCP not configured", "error", err)
 		return
 	}
-	
+
 	slog.Info("initializing Z.ai Vision MCP")
-	
+
 	// Create Z.ai manager
 	zaiManager = zai.NewManager(*cfg)
-	
+
 	// Start the manager (non-blocking)
 	go func() {
 		if err := zaiManager.Start(ctx); err != nil {
 			slog.Error("failed to start Z.ai MCP manager", "error", err)
 			return
 		}
-		
+
 		// Get available tools and register them
 		tools, err := zaiManager.GetAvailableTools()
 		if err != nil {
 			slog.Error("failed to get Z.ai tools", "error", err)
 			return
 		}
-		
+
 		slog.Info("Z.ai Vision MCP initialized successfully", "tools_count", len(tools))
-		
+
 		// Convert MCP tools to our format
 		mcpTools := make([]*mcp.Tool, len(tools))
 		for i, toolName := range tools {
@@ -184,7 +184,7 @@ func initializeZAI(ctx context.Context, cfg *config.Config) {
 				},
 			}
 		}
-		
+
 		// Register tools with the MCP system
 		updateTools("zai-vision", mcpTools)
 		updateState("zai-vision", StateConnected, nil, nil, Counts{
@@ -209,12 +209,12 @@ func RunZAITool(ctx context.Context, toolName string, arguments map[string]inter
 	if zaiManager == nil {
 		return nil, fmt.Errorf("Z.ai MCP manager not initialized")
 	}
-	
+
 	client, err := zaiManager.GetClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Z.ai MCP client: %w", err)
 	}
-	
+
 	return client.CallTool(ctx, &mcp.CallToolParams{
 		Name:      toolName,
 		Arguments: arguments,
@@ -224,10 +224,10 @@ func RunZAITool(ctx context.Context, toolName string, arguments map[string]inter
 // Initialize initializes MCP clients based on the provided configuration.
 func Initialize(ctx context.Context, permissions permission.Service, cfg *config.Config) {
 	var wg sync.WaitGroup
-	
+
 	// Initialize Z.ai Vision MCP if API key is available
 	initializeZAI(ctx, cfg)
-	
+
 	// Initialize states for all configured MCPs
 	for name, m := range cfg.MCP {
 		if m.Disabled {

@@ -47,9 +47,9 @@ type App struct {
 
 	AgentCoordinator agent.Coordinator
 
-	LSPClients       *csync.Map[string, *lsp.Client]
-	AIOPS            aiops.Ops
-	ResourceMonitor  *resources.Monitor
+	LSPClients      *csync.Map[string, *lsp.Client]
+	AIOPS           aiops.Ops
+	ResourceMonitor *resources.Monitor
 
 	config *config.Config
 

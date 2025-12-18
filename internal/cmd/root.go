@@ -108,16 +108,11 @@ nexora -y
 		}
 		defer app.Shutdown()
 
-		// Set up the TUI.
-		var env uv.Environ = os.Environ()
+		// Set up the TUI with minimal configuration to avoid epoll issues
 		ui := tui.New(app)
-		ui.QueryVersion = shouldQueryTerminalVersion(env)
+		ui.QueryVersion = shouldQueryTerminalVersion(os.Environ())
 
-		program := tea.NewProgram(
-			ui,
-			tea.WithEnvironment(env),
-			tea.WithContext(cmd.Context()),
-			tea.WithFilter(tui.MouseEventFilter)) // Filter mouse events based on focus state
+		program := tea.NewProgram(ui)
 		go app.Subscribe(program)
 
 		if _, err := program.Run(); err != nil {
@@ -147,6 +142,18 @@ var heartbit = lipgloss.NewStyle().Foreground(charmtone.Dolly).SetString(`
 // copied from cobra:
 const defaultVersionTemplate = `{{with .DisplayName}}{{printf "%s " .}}{{end}}{{printf "version %s" .Version}}
 `
+
+// isInputAvailable checks if stdin is available for reading
+func isInputAvailable() bool {
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+
+	// Check if it's a character device (terminal) or other valid input
+	return (stat.Mode()&os.ModeCharDevice) != 0 ||
+		(stat.Mode()&os.ModeNamedPipe) != 0
+}
 
 func Execute() error {
 	// NOTE: very hacky: we create a colorprofile writer with STDOUT, then make

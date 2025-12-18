@@ -23,13 +23,13 @@ import (
 	"github.com/nexora/cli/internal/agent/tools"
 	"github.com/nexora/cli/internal/aiops"
 	"github.com/nexora/cli/internal/config"
-	"github.com/nexora/cli/internal/resources"
 	"github.com/nexora/cli/internal/csync"
 	"github.com/nexora/cli/internal/history"
 	"github.com/nexora/cli/internal/log"
 	"github.com/nexora/cli/internal/lsp"
 	"github.com/nexora/cli/internal/message"
 	"github.com/nexora/cli/internal/permission"
+	"github.com/nexora/cli/internal/resources"
 	"github.com/nexora/cli/internal/session"
 	"github.com/nexora/cli/internal/sessionlog"
 	"golang.org/x/sync/errgroup"
@@ -65,6 +65,56 @@ type Coordinator interface {
 	Summarize(context.Context, string) error
 	Model() Model
 	UpdateModels(ctx context.Context) error
+}
+
+// timeoutWrappedTool is a tool that wraps another tool with timeout enforcement
+type timeoutWrappedTool struct {
+	original fantasy.AgentTool
+	timeout  time.Duration
+	info     fantasy.ToolInfo
+}
+
+// Info returns the original tool info
+func (t *timeoutWrappedTool) Info() fantasy.ToolInfo {
+	return t.info
+}
+
+// Run executes the original tool with timeout enforcement
+func (t *timeoutWrappedTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	// Create timeout context
+	timeoutCtx, cancel := context.WithTimeout(ctx, t.timeout)
+	defer cancel()
+
+	// Channel to capture result
+	type result struct {
+		resp fantasy.ToolResponse
+		err  error
+	}
+	resultChan := make(chan result, 1)
+
+	// Execute original tool in goroutine
+	go func() {
+		resp, err := t.original.Run(timeoutCtx, call)
+		resultChan <- result{resp: resp, err: err}
+	}()
+
+	// Wait for result or timeout
+	select {
+	case res := <-resultChan:
+		return res.resp, res.err
+	case <-timeoutCtx.Done():
+		return fantasy.NewTextErrorResponse(fmt.Sprintf("tool timed out after %v", t.timeout)), timeoutCtx.Err()
+	}
+}
+
+// ProviderOptions returns the original tool's provider options
+func (t *timeoutWrappedTool) ProviderOptions() fantasy.ProviderOptions {
+	return t.original.ProviderOptions()
+}
+
+// SetProviderOptions sets the provider options on the original tool
+func (t *timeoutWrappedTool) SetProviderOptions(opts fantasy.ProviderOptions) {
+	t.original.SetProviderOptions(opts)
 }
 
 type coordinator struct {
@@ -337,18 +387,24 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 
 	largeProviderCfg, _ := c.cfg.Providers.Get(large.ModelCfg.Provider)
 	result := NewSessionAgent(SessionAgentOptions{
-		LargeModel:           large,
-		SmallModel:           small,
-		SystemPromptPrefix:   largeProviderCfg.SystemPromptPrefix,
-		SystemPrompt:         systemPrompt,
-		Sessions:             c.sessions,
-		Messages:             c.messages,
+		LargeModel:         large,
+		SmallModel:         small,
+		SystemPromptPrefix: largeProviderCfg.SystemPromptPrefix,
+		SystemPrompt:       systemPrompt,
+		Sessions:           c.sessions,
+		Messages:           c.messages,
 
 		Tools:           nil,
 		AIOPS:           c.aiops,
 		ResourceMonitor: c.resourceMonitor,
 	})
 	c.readyWg.Go(func() error {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("Panic caught while building tools", "error", r)
+			}
+		}()
+		
 		tools, err := c.buildTools(ctx, agent)
 		if err != nil {
 			return err
@@ -360,6 +416,39 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 	return result, nil
 }
 
+// safeCreateTool safely creates a tool and catches any panics
+func (c *coordinator) safeCreateTool(createFunc func() fantasy.AgentTool) fantasy.AgentTool {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("Panic caught during tool creation", "error", r)
+		}
+	}()
+	
+	tool := createFunc()
+	if tool == nil {
+		slog.Warn("Tool creation returned nil")
+		return nil
+	}
+	
+	// Validate the tool can at least return basic info (still inside panic protection)
+	var info fantasy.ToolInfo
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("Panic caught while getting tool info during validation", "error", r)
+			}
+		}()
+		info = tool.Info()
+	}()
+	
+	if info.Name == "" {
+		slog.Warn("Tool has empty name, skipping")
+		return nil
+	}
+	
+	return tool
+}
+
 func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fantasy.AgentTool, error) {
 	var allTools []fantasy.AgentTool
 	if slices.Contains(agent.AllowedTools, AgentToolName) {
@@ -367,7 +456,9 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 		if err != nil {
 			return nil, err
 		}
-		allTools = append(allTools, agentTool)
+		if agentTool != nil {
+			allTools = append(allTools, agentTool)
+		}
 	}
 
 	if slices.Contains(agent.AllowedTools, tools.AgenticFetchToolName) {
@@ -375,7 +466,9 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 		if err != nil {
 			return nil, err
 		}
-		allTools = append(allTools, agenticFetchTool)
+		if agenticFetchTool != nil {
+			allTools = append(allTools, agenticFetchTool)
+		}
 	}
 
 	// Get the model name for the agent
@@ -387,38 +480,108 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 	}
 
 	allTools = append(allTools,
-		tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Options.Attribution, modelName),
-		tools.NewJobOutputTool(),
-		tools.NewJobKillTool(),
-		tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil),
-		tools.NewEditTool(c.lspClients, c.permissions, c.history, c.cfg.WorkingDir(), c.aiops),
-		tools.NewMultiEditTool(c.lspClients, c.permissions, c.history, c.cfg.WorkingDir(), c.aiops),
-		tools.NewFetchTool(c.permissions, c.cfg.WorkingDir(), nil),
-		tools.NewGlobTool(c.cfg.WorkingDir()),
-		tools.NewGrepTool(c.cfg.WorkingDir()),
-		tools.NewLsTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Tools.Ls),
-		tools.NewSourcegraphTool(nil),
-		tools.NewViewTool(c.lspClients, c.permissions, c.cfg.WorkingDir()),
-		tools.NewWriteTool(c.lspClients, c.permissions, c.history, c.cfg.WorkingDir()),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewBashTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Options.Attribution, modelName)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewJobOutputTool()
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewJobKillTool()
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewDownloadTool(c.permissions, c.cfg.WorkingDir(), nil)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewEditTool(c.lspClients, c.permissions, c.history, c.cfg.WorkingDir(), c.aiops)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewMultiEditTool(c.lspClients, c.permissions, c.history, c.cfg.WorkingDir(), c.aiops)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewFetchTool(c.permissions, c.cfg.WorkingDir(), nil)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewGlobTool(c.cfg.WorkingDir())
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewGrepTool(c.cfg.WorkingDir())
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewLsTool(c.permissions, c.cfg.WorkingDir(), c.cfg.Tools.Ls)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewSourcegraphTool(nil)
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewViewTool(c.lspClients, c.permissions, c.cfg.WorkingDir())
+		}),
+		c.safeCreateTool(func() fantasy.AgentTool {
+			return tools.NewWriteTool(c.lspClients, c.permissions, c.history, c.cfg.WorkingDir())
+		}),
 	)
 
 	if len(c.cfg.LSP) > 0 {
-		allTools = append(allTools, tools.NewDiagnosticsTool(c.lspClients), tools.NewReferencesTool(c.lspClients))
+		allTools = append(allTools,
+			c.safeCreateTool(func() fantasy.AgentTool {
+				return tools.NewDiagnosticsTool(c.lspClients)
+			}),
+			c.safeCreateTool(func() fantasy.AgentTool {
+				return tools.NewReferencesTool(c.lspClients)
+			}),
+		)
 	}
 
 	var filteredTools []fantasy.AgentTool
 	for _, tool := range allTools {
-		if slices.Contains(agent.AllowedTools, tool.Info().Name) {
+		if tool == nil {
+			continue
+		}
+		
+		// Safely get tool info
+		info := tool.Info()
+		if info.Name == "" {
+			slog.Warn("Skipping tool with empty name")
+			continue
+		}
+		
+		if slices.Contains(agent.AllowedTools, info.Name) {
 			filteredTools = append(filteredTools, tool)
 		}
 	}
 
-	// Apply timeout enforcement to all tools
-	for i, tool := range filteredTools {
-		filteredTools[i] = c.wrapToolWithTimeout(tool)
+	// Apply timeout enforcement to all tools with safety checks
+	safeTools := make([]fantasy.AgentTool, 0, len(filteredTools))
+	for _, tool := range filteredTools {
+		if tool == nil {
+			slog.Warn("Skipping nil tool during timeout wrapping")
+			continue
+		}
+		
+		// Safely wrap tool and catch any panics
+		wrappedTool := c.wrapToolWithTimeout(tool)
+		if wrappedTool != nil {
+			safeTools = append(safeTools, wrappedTool)
+		} else {
+			slog.Warn("Tool wrapping returned nil, skipping", "tool", tool.Info().Name)
+		}
 	}
+	
+	// Replace filtered tools with safe ones
+	filteredTools = safeTools
 
 	for _, tool := range tools.GetMCPTools(c.permissions, c.cfg.WorkingDir()) {
+		if tool == nil {
+			slog.Warn("Skipping nil MCP tool")
+			continue
+		}
+		
+		// Safely get MCP tool info
+		if toolName := tool.Name(); toolName == "" {
+			slog.Warn("Skipping MCP tool with empty name")
+			continue
+		}
+		
 		if agent.AllowedMCP == nil {
 			// No MCP restrictions
 			filteredTools = append(filteredTools, tool)
@@ -430,18 +593,29 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 			break
 		}
 
-		for mcp, tools := range agent.AllowedMCP {
+		for mcp, toolList := range agent.AllowedMCP {
 			if mcp != tool.MCP() {
 				continue
 			}
-			if len(tools) == 0 || slices.Contains(tools, tool.MCPToolName()) {
+			if len(toolList) == 0 || slices.Contains(toolList, tool.MCPToolName()) {
 				filteredTools = append(filteredTools, tool)
 			}
+			break
 		}
-		slog.Debug("MCP not allowed", "tool", tool.Name(), "agent", agent.Name)
+		if agent.AllowedMCP != nil {
+			slog.Debug("MCP not allowed", "tool", tool.Name(), "agent", agent.Name)
+		}
 	}
 	slices.SortFunc(filteredTools, func(a, b fantasy.AgentTool) int {
-		return strings.Compare(a.Info().Name, b.Info().Name)
+		if a == nil || b == nil {
+			return 0
+		}
+		aInfo := a.Info()
+		bInfo := b.Info()
+		if aInfo.Name == "" || bInfo.Name == "" {
+			return 0
+		}
+		return strings.Compare(aInfo.Name, bInfo.Name)
 	})
 	return filteredTools, nil
 }
@@ -533,47 +707,39 @@ func (s *SequentialEditSolver) OrderEdits(edits []tools.EditParams, filePath str
 
 // wrapToolWithTimeout wraps a tool function with timeout enforcement
 func (c *coordinator) wrapToolWithTimeout(tool fantasy.AgentTool) fantasy.AgentTool {
-	info := tool.Info()
-	
-	// Store the original tool for internal use
-	originalTool := tool
-	
-	// Create wrapper based on tool name
+	// Defensive: check if tool is nil to prevent panic
+	if tool == nil {
+		slog.Error("Attempted to wrap nil tool")
+		return nil
+	}
+
+	// Get tool info safely with panic protection
+	var info fantasy.ToolInfo
+	panicked := true
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				slog.Error("Panic caught while getting tool info", "error", r)
+			}
+		}()
+		info = tool.Info()
+		panicked = false
+	}()
+
+	if panicked || info.Name == "" {
+		slog.Error("Tool has empty name or panicked", "tool", tool)
+		return nil
+	}
+
+	// Create timeout wrapper
 	timeout := c.getToolTimeout(info.Name)
-	
-	return fantasy.NewAgentTool(
-		info.Name,
-		info.Description,
-		func(ctx context.Context, params interface{}, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-			// Create timeout context
-			timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
-			defer cancel()
 
-			// Channel to capture result
-			type result struct {
-				resp fantasy.ToolResponse
-				err  error
-			}
-			resultChan := make(chan result, 1)
-
-			// Execute tool in goroutine
-			go func() {
-				resp, err := originalTool.Run(timeoutCtx, call)
-				resultChan <- result{resp: resp, err: err}
-			}()
-
-			// Wait for completion or timeout
-			select {
-			case res := <-resultChan:
-				return res.resp, res.err
-			case <-timeoutCtx.Done():
-				if timeoutCtx.Err() == context.DeadlineExceeded {
-					return fantasy.ToolResponse{}, fmt.Errorf("tool execution timed out after %v", timeout)
-				}
-				return fantasy.ToolResponse{}, timeoutCtx.Err()
-			}
-		},
-	)
+	// Return a new tool that wraps the original with timeout logic
+	return &timeoutWrappedTool{
+		original: tool,
+		timeout:  timeout,
+		info:     info,
+	}
 }
 
 // getToolTimeout returns the appropriate timeout for a tool based on its name
@@ -682,13 +848,13 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 	// Log detected models with their context windows
 	slog.Info("Models successfully initialized",
 		"large_model", map[string]any{
-			"id": largeModelCfg.Model,
-			"provider": largeModelCfg.Provider,
+			"id":             largeModelCfg.Model,
+			"provider":       largeModelCfg.Provider,
 			"context_window": largeCatwalkModel.ContextWindow,
 		},
 		"small_model", map[string]any{
-			"id": smallModelCfg.Model,
-			"provider": smallModelCfg.Provider,
+			"id":             smallModelCfg.Model,
+			"provider":       smallModelCfg.Provider,
 			"context_window": smallCatwalkModel.ContextWindow,
 		})
 

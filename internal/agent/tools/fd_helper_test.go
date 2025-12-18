@@ -9,23 +9,23 @@ import (
 // TestGetFDCmd verifies fd command detection
 func TestGetFDCmd(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Test the function (behavior depends on system)
 	cmd := getFDCmd(ctx)
-	
+
 	// Verify command is valid if returned
 	if cmd != nil {
 		if cmd.Path == "" {
 			t.Error("getFDCmd returned command with empty path")
 		}
-		
+
 		// Verify it's one of the expected commands
 		cmdName := cmd.Path[len(cmd.Path)-2:]
 		if cmdName != "fd" && cmd.Path[len(cmd.Path)-6:] != "fdfind" {
 			t.Errorf("unexpected command: %s", cmd.Path)
 		}
 	}
-	
+
 	// If cmd is nil, verify fd/fdfind are not in PATH
 	if cmd == nil {
 		if _, err := exec.LookPath("fd"); err == nil {
@@ -41,9 +41,9 @@ func TestGetFDCmd(t *testing.T) {
 func TestGetFDCmdContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
-	
+
 	cmd := getFDCmd(ctx)
-	
+
 	// If command is returned, it should have been created with the context
 	// We can't directly test the internal context, but we verified it's created correctly
 	if cmd != nil {
@@ -56,7 +56,7 @@ func TestGetFDCmdContext(t *testing.T) {
 // TestIsFDInstalled verifies fd installation detection
 func TestIsFDInstalled(t *testing.T) {
 	installed := isFDInstalled()
-	
+
 	// Verify consistency with actual PATH lookup
 	fdExists := false
 	if _, err := exec.LookPath("fd"); err == nil {
@@ -65,7 +65,7 @@ func TestIsFDInstalled(t *testing.T) {
 	if _, err := exec.LookPath("fdfind"); err == nil {
 		fdExists = true
 	}
-	
+
 	if installed != fdExists {
 		t.Errorf("isFDInstalled() = %v, but PATH lookup says %v", installed, fdExists)
 	}
@@ -74,14 +74,14 @@ func TestIsFDInstalled(t *testing.T) {
 // TestIsFDInstalledConsistency verifies getFDCmd and isFDInstalled agree
 func TestIsFDInstalledConsistency(t *testing.T) {
 	ctx := context.Background()
-	
+
 	installed := isFDInstalled()
 	cmd := getFDCmd(ctx)
-	
+
 	if installed && cmd == nil {
 		t.Error("isFDInstalled() is true but getFDCmd() returned nil")
 	}
-	
+
 	if !installed && cmd != nil {
 		t.Error("isFDInstalled() is false but getFDCmd() returned a command")
 	}
@@ -91,13 +91,13 @@ func TestIsFDInstalledConsistency(t *testing.T) {
 func TestGetFDCmdReturnValue(t *testing.T) {
 	ctx := context.Background()
 	cmd := getFDCmd(ctx)
-	
+
 	if cmd != nil {
 		// Verify command path is set
 		if cmd.Path == "" {
 			t.Error("returned command has empty Path")
 		}
-		
+
 		// Verify it's an executable path
 		if !isExecutable(cmd.Path) {
 			t.Errorf("command path is not executable: %s", cmd.Path)
@@ -115,18 +115,18 @@ func TestFDCommandNames(t *testing.T) {
 		{"fd exists", "fd", "fd"},
 		{"fdfind exists", "fdfind", "fdfind"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if _, err := exec.LookPath(tt.checkCmd); err == nil {
 				ctx := context.Background()
 				cmd := getFDCmd(ctx)
-				
+
 				if cmd == nil {
 					t.Errorf("%s is in PATH but getFDCmd returned nil", tt.checkCmd)
 					return
 				}
-				
+
 				// Verify the command name matches
 				if !contains(cmd.Path, tt.wantName) {
 					t.Errorf("expected command to contain %s, got %s", tt.wantName, cmd.Path)
@@ -142,22 +142,22 @@ func TestFDCommandNames(t *testing.T) {
 func TestFDPrecedence(t *testing.T) {
 	fdExists := false
 	fdfindExists := false
-	
+
 	if _, err := exec.LookPath("fd"); err == nil {
 		fdExists = true
 	}
 	if _, err := exec.LookPath("fdfind"); err == nil {
 		fdfindExists = true
 	}
-	
+
 	if fdExists && fdfindExists {
 		ctx := context.Background()
 		cmd := getFDCmd(ctx)
-		
+
 		if cmd == nil {
 			t.Fatal("both fd and fdfind exist but getFDCmd returned nil")
 		}
-		
+
 		// Verify "fd" is preferred (should be in the path)
 		if !contains(cmd.Path, "fd") {
 			t.Errorf("both fd and fdfind exist, but command is %s (expected fd)", cmd.Path)
@@ -175,7 +175,7 @@ func isExecutable(path string) bool {
 
 // Helper function to check if string contains substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		(s[len(s)-len(substr):] == substr || 
-		 len(s) > len(substr) && s[len(s)-len(substr)-1:len(s)-len(substr)] == "/")
+	return len(s) >= len(substr) &&
+		(s[len(s)-len(substr):] == substr ||
+			len(s) > len(substr) && s[len(s)-len(substr)-1:len(s)-len(substr)] == "/")
 }

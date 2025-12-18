@@ -15,26 +15,26 @@ import (
 func TestRecoveryStrategies(t *testing.T) {
 	ctx := context.Background()
 	execCtx := &state.AgentExecutionContext{
-		RetryCount:   0,
-		ErrorCount:   0,
-		LastError:    nil,
+		RetryCount: 0,
+		ErrorCount: 0,
+		LastError:  nil,
 	}
 
 	t.Run("FileOutdatedStrategy", func(t *testing.T) {
 		strategy := &FileOutdatedStrategy{}
-		
+
 		// Test CanRecover
 		err := NewFileOutdatedError(errors.New("file modified"), "/tmp/test.txt")
 		if !strategy.CanRecover(err) {
 			t.Error("FileOutdatedStrategy should recover from file outdated errors")
 		}
-		
+
 		// Test generic error detection
 		genericErr := errors.New("file has been modified externally")
 		if !strategy.CanRecover(genericErr) {
 			t.Error("FileOutdatedStrategy should recover from generic file modified errors")
 		}
-		
+
 		// Test recovery
 		recoveryErr := strategy.Recover(ctx, err, execCtx)
 		if recoveryErr != nil {
@@ -44,13 +44,13 @@ func TestRecoveryStrategies(t *testing.T) {
 
 	t.Run("EditFailedStrategy", func(t *testing.T) {
 		strategy := &EditFailedStrategy{}
-		
+
 		// Test CanRecover
 		err := NewEditFailedError(errors.New("whitespace mismatch"), "/tmp/test.txt", "old", "new")
 		if !strategy.CanRecover(err) {
 			t.Error("EditFailedStrategy should recover from edit failed errors")
 		}
-		
+
 		// Test recovery with missing context
 		badErr := errors.New("edit failed")
 		recoveryErr := strategy.Recover(ctx, badErr, execCtx)
@@ -61,18 +61,18 @@ func TestRecoveryStrategies(t *testing.T) {
 
 	t.Run("LoopDetectedStrategy", func(t *testing.T) {
 		strategy := &LoopDetectedStrategy{}
-		
+
 		// Test CanRecover
 		err := NewLoopDetectedError("processing", 100)
 		if !strategy.CanRecover(err) {
 			t.Error("LoopDetectedStrategy should recover from loop detected errors")
 		}
-		
+
 		// Test MaxRetries
 		if strategy.MaxRetries() != 0 {
 			t.Error("LoopDetectedStrategy should have 0 max retries")
 		}
-		
+
 		// Test recovery
 		recoveryErr := strategy.Recover(ctx, err, execCtx)
 		if recoveryErr == nil {
@@ -82,13 +82,13 @@ func TestRecoveryStrategies(t *testing.T) {
 
 	t.Run("TimeoutStrategy", func(t *testing.T) {
 		strategy := &TimeoutStrategy{}
-		
+
 		// Test CanRecover
 		err := NewTimeoutError("operation", 30*time.Second)
 		if !strategy.CanRecover(err) {
 			t.Error("TimeoutStrategy should recover from timeout errors")
 		}
-		
+
 		// Test MaxRetries
 		if strategy.MaxRetries() != 1 {
 			t.Error("TimeoutStrategy should have 1 max retry")
@@ -97,13 +97,13 @@ func TestRecoveryStrategies(t *testing.T) {
 
 	t.Run("ResourceLimitStrategy", func(t *testing.T) {
 		strategy := &ResourceLimitStrategy{}
-		
+
 		// Test CanRecover
 		err := NewResourceLimitError("memory", "8GB", "16GB")
 		if !strategy.CanRecover(err) {
 			t.Error("ResourceLimitStrategy should recover from resource limit errors")
 		}
-		
+
 		// Test MaxRetries
 		if strategy.MaxRetries() != 5 {
 			t.Error("ResourceLimitStrategy should have 5 max retries")
@@ -112,13 +112,13 @@ func TestRecoveryStrategies(t *testing.T) {
 
 	t.Run("PanicStrategy", func(t *testing.T) {
 		strategy := &PanicStrategy{}
-		
+
 		// Test CanRecover
 		err := NewPanicError(errors.New("runtime panic"), "stack trace here")
 		if !strategy.CanRecover(err) {
 			t.Error("PanicStrategy should recover from panic errors")
 		}
-		
+
 		// Test MaxRetries
 		if strategy.MaxRetries() != 1 {
 			t.Error("PanicStrategy should have 1 max retry")
@@ -129,9 +129,9 @@ func TestRecoveryStrategies(t *testing.T) {
 func TestRecoveryRegistry(t *testing.T) {
 	registry := NewRecoveryRegistry()
 	execCtx := &state.AgentExecutionContext{
-		RetryCount:   0,
-		ErrorCount:   0,
-		LastError:    nil,
+		RetryCount: 0,
+		ErrorCount: 0,
+		LastError:  nil,
 	}
 
 	t.Run("FindStrategy", func(t *testing.T) {
@@ -156,7 +156,7 @@ func TestRecoveryRegistry(t *testing.T) {
 	t.Run("AttemptRecovery", func(t *testing.T) {
 		// Test successful recovery
 		fileErr := NewFileOutdatedError(errors.New("file modified"), "/tmp/test.txt")
-		
+
 		// Create temporary file for testing
 		tmpFile := "/tmp/test_recovery.txt"
 		err := []byte("test content")
@@ -164,7 +164,7 @@ func TestRecoveryRegistry(t *testing.T) {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
 		defer os.Remove(tmpFile)
-		
+
 		ctx := context.Background()
 		recoveryErr := registry.AttemptRecovery(ctx, fileErr, execCtx)
 		if recoveryErr != nil {
@@ -190,7 +190,7 @@ func TestRecoveryRegistry(t *testing.T) {
 		initialCount := len(registry.GetAllStrategies())
 		customStrategy := &CustomTestStrategy{}
 		registry.AddStrategy(customStrategy)
-		
+
 		newCount := len(registry.GetAllStrategies())
 		if newCount != initialCount+1 {
 			t.Errorf("Expected %d strategies, got %d", initialCount+1, newCount)
@@ -220,17 +220,17 @@ func (s *CustomTestStrategy) Name() string {
 func TestRecoverableError(t *testing.T) {
 	originalErr := errors.New("original error")
 	context := map[string]interface{}{
-		"key": "value",
+		"key":       "value",
 		"timestamp": time.Now(),
 	}
-	
+
 	recoverableErr := NewRecoverableError(originalErr, "test_type", context)
-	
+
 	// Test Error method
 	if !strings.Contains(recoverableErr.Error(), "test_type") {
 		t.Error("Error string should contain error type")
 	}
-	
+
 	// Test Unwrap method
 	if errors.Unwrap(recoverableErr) != originalErr {
 		t.Error("Unwrap should return original error")
@@ -241,7 +241,7 @@ func TestRecoverableError(t *testing.T) {
 func BenchmarkFindStrategy(b *testing.B) {
 	registry := NewRecoveryRegistry()
 	err := NewEditFailedError(errors.New("test"), "/tmp/test", "old", "new")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		registry.FindStrategy(err)
@@ -252,12 +252,12 @@ func BenchmarkAttemptRecovery(b *testing.B) {
 	registry := NewRecoveryRegistry()
 	ctx := context.Background()
 	execCtx := &state.AgentExecutionContext{
-		RetryCount:   0,
-		ErrorCount:   0,
-		LastError:    nil,
+		RetryCount: 0,
+		ErrorCount: 0,
+		LastError:  nil,
 	}
 	err := NewFileOutdatedError(errors.New("test"), "/tmp/test")
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		registry.AttemptRecovery(ctx, err, execCtx)

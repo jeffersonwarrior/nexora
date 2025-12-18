@@ -8,27 +8,27 @@ import (
 // AgentExecutionContext tracks the execution context of an agent session
 type AgentExecutionContext struct {
 	// Core state tracking
-	State           AgentState
-	SessionID       string
-	CancelFunc      context.CancelFunc
-	StartTime       time.Time
-	
+	State      AgentState
+	SessionID  string
+	CancelFunc context.CancelFunc
+	StartTime  time.Time
+
 	// Operation counters
-	ToolCallCount   int
-	ErrorCount      int
-	RetryCount      int
-	LastError       error
-	
+	ToolCallCount int
+	ErrorCount    int
+	RetryCount    int
+	LastError     error
+
 	// Resource tracking
-	CPUUsage        float64
-	MemoryUsage     uint64
-	DiskFree        uint64
-	
+	CPUUsage    float64
+	MemoryUsage uint64
+	DiskFree    uint64
+
 	// Progress tracking
-	LastProgress    *ProgressStats
-	StuckCount      int
-	CurrentPhase    string
-	
+	LastProgress *ProgressStats
+	StuckCount   int
+	CurrentPhase string
+
 	// Recovery context
 	InRecovery      bool
 	RecoveryAttempt int

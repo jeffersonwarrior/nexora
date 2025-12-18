@@ -189,8 +189,8 @@ func TestResourceSnapshotSummary(t *testing.T) {
 	}
 
 	summary := snapshot.Summary()
-	require.Contains(t, summary, "45.5%")   // CPU
-	require.Contains(t, summary, "50.0%")   // Memory
+	require.Contains(t, summary, "45.5%")    // CPU
+	require.Contains(t, summary, "50.0%")    // Memory
 	require.Contains(t, summary, "400.00GB") // Disk free
 
 	t.Logf("Summary: %s", summary)

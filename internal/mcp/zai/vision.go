@@ -19,11 +19,11 @@ type VisionResponse struct {
 // AnalyzeDataVisualization performs data visualization analysis
 func (c *Client) AnalyzeDataVisualization(ctx context.Context, imageSource, analysisFocus, prompt string) (*VisionResponse, error) {
 	arguments := map[string]interface{}{
-		"image_source":     imageSource,
-		"analysis_focus":   analysisFocus,
-		"prompt":           prompt,
+		"image_source":   imageSource,
+		"analysis_focus": analysisFocus,
+		"prompt":         prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_analyze_data_visualization", arguments)
 }
 
@@ -33,7 +33,7 @@ func (c *Client) AnalyzeImage(ctx context.Context, imageSource, prompt string) (
 		"image_source": imageSource,
 		"prompt":       prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_analyze_image", arguments)
 }
 
@@ -44,7 +44,7 @@ func (c *Client) ExtractTextFromScreenshot(ctx context.Context, imageSource, pro
 		"programming_language": programmingLanguage,
 		"prompt":               prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_extract_text_from_screenshot", arguments)
 }
 
@@ -55,7 +55,7 @@ func (c *Client) UIToArtifact(ctx context.Context, imageSource, outputType, prom
 		"output_type":  outputType,
 		"prompt":       prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_ui_to_artifact", arguments)
 }
 
@@ -66,18 +66,18 @@ func (c *Client) DiagnoseErrorScreenshot(ctx context.Context, imageSource, conte
 		"context":      context,
 		"prompt":       prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_diagnose_error_screenshot", arguments)
 }
 
 // UnderstandTechnicalDiagram analyzes technical diagrams
 func (c *Client) UnderstandTechnicalDiagram(ctx context.Context, imageSource, diagramType, prompt string) (*VisionResponse, error) {
 	arguments := map[string]interface{}{
-		"image_source":  imageSource,
-		"diagram_type":  diagramType,
-		"prompt":        prompt,
+		"image_source": imageSource,
+		"diagram_type": diagramType,
+		"prompt":       prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_understand_technical_diagram", arguments)
 }
 
@@ -88,7 +88,7 @@ func (c *Client) UIDiffCheck(ctx context.Context, expectedImageSource, actualIma
 		"actual_image_source":   actualImageSource,
 		"prompt":                prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_ui_diff_check", arguments)
 }
 
@@ -98,14 +98,14 @@ func (c *Client) AnalyzeVideo(ctx context.Context, videoSource, prompt string) (
 		"video_source": videoSource,
 		"prompt":       prompt,
 	}
-	
+
 	return c.executeVisionTool(ctx, "mcp_vision_analyze_video", arguments)
 }
 
 // executeVisionTool is a helper method to execute vision tools and convert responses
 func (c *Client) executeVisionTool(ctx context.Context, toolName string, arguments map[string]interface{}) (*VisionResponse, error) {
 	c.logger.Info("executing Z.ai vision tool", "tool", toolName)
-	
+
 	result, err := c.CallTool(ctx, &mcp.CallToolParams{
 		Name:      toolName,
 		Arguments: arguments,
@@ -113,7 +113,7 @@ func (c *Client) executeVisionTool(ctx context.Context, toolName string, argumen
 	if err != nil {
 		return nil, fmt.Errorf("failed to call vision tool %s: %w", toolName, err)
 	}
-	
+
 	return c.convertMCPResult(result)
 }
 
@@ -125,11 +125,11 @@ func (c *Client) convertMCPResult(result *mcp.CallToolResult) (*VisionResponse, 
 			Content: "",
 		}, nil
 	}
-	
+
 	var textContent string
 	var data []byte
 	var mediaType string
-	
+
 	for _, content := range result.Content {
 		switch c := content.(type) {
 		case *mcp.TextContent:
@@ -142,12 +142,12 @@ func (c *Client) convertMCPResult(result *mcp.CallToolResult) (*VisionResponse, 
 			mediaType = c.MIMEType
 		}
 	}
-	
+
 	response := &VisionResponse{
 		Content: textContent,
 		Data:    data,
 	}
-	
+
 	if mediaType != "" {
 		response.MediaType = mediaType
 		if mediaType == "image/png" || mediaType == "image/jpeg" || mediaType == "image/webp" {
@@ -160,7 +160,7 @@ func (c *Client) convertMCPResult(result *mcp.CallToolResult) (*VisionResponse, 
 	} else {
 		response.Type = "text"
 	}
-	
+
 	return response, nil
 }
 
@@ -203,11 +203,11 @@ func ValidateVisionInput(input *VisionInput, requiredType string) error {
 			return fmt.Errorf("expected_image_source and actual_image_source are required for UI diff comparison")
 		}
 	}
-	
+
 	if input.Prompt == "" {
 		return fmt.Errorf("prompt is required")
 	}
-	
+
 	return nil
 }
 

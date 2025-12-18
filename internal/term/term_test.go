@@ -7,11 +7,11 @@ import (
 
 func TestSupportsProgressBar(t *testing.T) {
 	tests := []struct {
-		name             string
-		termProgram      string
-		wtSession        string
-		setWtSession     bool
-		expectedSupport  bool
+		name            string
+		termProgram     string
+		wtSession       string
+		setWtSession    bool
+		expectedSupport bool
 	}{
 		{
 			name:            "Windows Terminal with WT_SESSION",
@@ -97,7 +97,7 @@ func TestSupportsProgressBar(t *testing.T) {
 			// Save original env vars
 			origTermProgram := os.Getenv("TERM_PROGRAM")
 			origWtSession, origWtSessionSet := os.LookupEnv("WT_SESSION")
-			
+
 			// Restore after test
 			defer func() {
 				if origTermProgram != "" {
@@ -105,7 +105,7 @@ func TestSupportsProgressBar(t *testing.T) {
 				} else {
 					os.Unsetenv("TERM_PROGRAM")
 				}
-				
+
 				if origWtSessionSet {
 					os.Setenv("WT_SESSION", origWtSession)
 				} else {
@@ -139,13 +139,13 @@ func TestSupportsProgressBar(t *testing.T) {
 func TestSupportsProgressBarRealEnvironment(t *testing.T) {
 	// This test just ensures the function doesn't panic
 	result := SupportsProgressBar()
-	
+
 	termProgram := os.Getenv("TERM_PROGRAM")
 	_, wtSession := os.LookupEnv("WT_SESSION")
-	
+
 	t.Logf("Real environment: TERM_PROGRAM=%q, WT_SESSION=%v, supports=%v",
 		termProgram, wtSession, result)
-	
+
 	// Just ensure it returns a boolean (which it always will)
 	if result != true && result != false {
 		t.Error("SupportsProgressBar() must return a boolean")
@@ -163,14 +163,14 @@ func TestSupportsProgressBarEdgeCases(t *testing.T) {
 				os.Unsetenv("TERM_PROGRAM")
 			}
 		}()
-		
+
 		os.Setenv("TERM_PROGRAM", "  ghostty  ")
 		result := SupportsProgressBar()
 		if !result {
 			t.Error("Expected support for TERM_PROGRAM with whitespace and 'ghostty'")
 		}
 	})
-	
+
 	t.Run("TERM_PROGRAM with ghost (partial match)", func(t *testing.T) {
 		origTermProgram := os.Getenv("TERM_PROGRAM")
 		defer func() {
@@ -180,7 +180,7 @@ func TestSupportsProgressBarEdgeCases(t *testing.T) {
 				os.Unsetenv("TERM_PROGRAM")
 			}
 		}()
-		
+
 		os.Setenv("TERM_PROGRAM", "ghost")
 		result := SupportsProgressBar()
 		if result {

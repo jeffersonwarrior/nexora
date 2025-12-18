@@ -35,7 +35,7 @@ func RunTool(ctx context.Context, name, toolName string, input string) (ToolResu
 	if IsZAITool(toolName) {
 		return runZAITool(ctx, toolName, input)
 	}
-	
+
 	var args map[string]any
 	if err := json.Unmarshal([]byte(input), &args); err != nil {
 		return ToolResult{}, fmt.Errorf("error parsing parameters: %s", err)

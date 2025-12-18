@@ -44,7 +44,7 @@ func TestConfigSchemaUsesNexora(t *testing.T) {
 	require.NoError(t, err)
 
 	lines := strings.Split(string(content), "\n")
-	
+
 	for i, line := range lines {
 		// Check jsonschema tags and comments
 		if (strings.Contains(line, "jsonschema") || strings.Contains(line, "example=")) &&
@@ -59,7 +59,7 @@ func TestAgentsMarkdownUsesNexora(t *testing.T) {
 	t.Parallel()
 
 	agentsPath := filepath.Join("..", "..", "AGENTS.md")
-	
+
 	// Skip if AGENTS.md doesn't exist
 	if _, err := os.Stat(agentsPath); os.IsNotExist(err) {
 		t.Skip("AGENTS.md not found, skipping")
@@ -70,10 +70,10 @@ func TestAgentsMarkdownUsesNexora(t *testing.T) {
 	require.NoError(t, err)
 
 	lines := strings.Split(string(content), "\n")
-	
+
 	for i, line := range lines {
 		if strings.Contains(strings.ToUpper(line), "CRUSH.MD") {
-			t.Errorf("AGENTS.md line %d references CRUSH.md: %s\nShould use NEXORA.md instead", 
+			t.Errorf("AGENTS.md line %d references CRUSH.md: %s\nShould use NEXORA.md instead",
 				i+1, strings.TrimSpace(line))
 		}
 	}
@@ -84,7 +84,7 @@ func TestTaskfileUsesNexora(t *testing.T) {
 	t.Parallel()
 
 	taskfilePath := filepath.Join("..", "..", "Taskfile.yaml")
-	
+
 	// Skip if Taskfile.yaml doesn't exist
 	if _, err := os.Stat(taskfilePath); os.IsNotExist(err) {
 		t.Skip("Taskfile.yaml not found, skipping")

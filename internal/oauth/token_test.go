@@ -68,12 +68,12 @@ func TestTokenSetExpiresAt(t *testing.T) {
 			// Verify it's approximately ExpiresIn seconds from now
 			actualDuration := time.Unix(token.ExpiresAt, 0).Sub(beforeSet)
 			expectedDuration := time.Duration(tt.expiresIn) * time.Second
-			
+
 			diff := actualDuration - expectedDuration
 			if diff < 0 {
 				diff = -diff
 			}
-			
+
 			if diff > tt.tolerance {
 				t.Errorf("SetExpiresAt() duration difference too large: got %v, expected ~%v (diff: %v)",
 					actualDuration, expectedDuration, diff)
@@ -84,10 +84,10 @@ func TestTokenSetExpiresAt(t *testing.T) {
 
 func TestTokenIsExpired(t *testing.T) {
 	tests := []struct {
-		name          string
-		setupToken    func() *Token
+		name            string
+		setupToken      func() *Token
 		expectedExpired bool
-		description   string
+		description     string
 	}{
 		{
 			name: "fresh token",
@@ -212,7 +212,7 @@ func TestTokenIsExpired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			token := tt.setupToken()
 			result := token.IsExpired()
-			
+
 			if result != tt.expectedExpired {
 				t.Errorf("IsExpired() = %v, want %v - %s (ExpiresIn: %d, ExpiresAt: %d, Now: %d)",
 					result, tt.expectedExpired, tt.description,
@@ -280,9 +280,9 @@ func TestTokenFields(t *testing.T) {
 func TestTokenExpiryCalculation(t *testing.T) {
 	// Test the 10% buffer calculation
 	testCases := []struct {
-		expiresIn          int
-		expectedBuffer     int64
-		description        string
+		expiresIn      int
+		expectedBuffer int64
+		description    string
 	}{
 		{3600, 360, "1 hour with 6 minute buffer"},
 		{60, 6, "1 minute with 6 second buffer"},
@@ -307,7 +307,7 @@ func BenchmarkSetExpiresAt(b *testing.B) {
 		RefreshToken: "test",
 		ExpiresIn:    3600,
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		token.SetExpiresAt()
@@ -322,7 +322,7 @@ func BenchmarkIsExpired(b *testing.B) {
 		ExpiresIn:    3600,
 	}
 	token.SetExpiresAt()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		token.IsExpired()

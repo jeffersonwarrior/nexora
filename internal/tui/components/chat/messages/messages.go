@@ -413,7 +413,7 @@ func (m *assistantSectionModel) View() string {
 	infoMsg := t.S().Subtle.Render(duration.String())
 	icon := t.S().Subtle.Render(styles.ModelIcon)
 	model := config.Get().GetModel(m.message.Provider, m.message.Model)
-	
+
 	var modelName string
 	if model != nil {
 		// Found model in config - use its display name
@@ -430,7 +430,7 @@ func (m *assistantSectionModel) View() string {
 		// No provider/model info available
 		modelName = "Unknown Model"
 	}
-	
+
 	modelFormatted := t.S().Muted.Render(modelName)
 	assistant := fmt.Sprintf("%s %s %s", icon, modelFormatted, infoMsg)
 	return t.S().Base.PaddingLeft(2).Render(

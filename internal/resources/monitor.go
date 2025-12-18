@@ -28,9 +28,9 @@ type Monitor struct {
 	lastSnapshot ResourceSnapshot
 
 	// Callbacks
-	onCPUHigh  func(usage float64)
-	onMemHigh  func(usage uint64)
-	onDiskLow  func(free uint64)
+	onCPUHigh   func(usage float64)
+	onMemHigh   func(usage uint64)
+	onDiskLow   func(free uint64)
 	onViolation func(v Violation)
 
 	// State machine integration (optional)

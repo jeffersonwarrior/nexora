@@ -61,7 +61,29 @@ build-full: clean test-qa
 
 .PHONY: test
 test: test-qa
-	go test ./...
+	go test ./... -coverprofile=coverage.out
+
+# Quick unit tests (no integration)
+.PHONY: test-quick
+test-quick:
+	go test ./internal/... -short -coverprofile=coverage-quick.out
+
+# Full test suite with coverage analysis
+.PHONY: test-full
+test-full: 
+	go test ./... -v -coverprofile=coverage-full.out
+	go tool cover -html=coverage-full.out -o coverage-full.html
+	@echo "Full coverage report: coverage-full.html"
+
+# Coverage check - ensure we meet target
+.PHONY: test-coverage
+test-coverage: test
+	@echo "Current coverage:"
+	@go tool cover -func=coverage.out | tail -1
+	@echo "Package coverage breakdown:"
+	@go tool cover -func=coverage.out | grep "%" | sort -nk3 | head -20
+
+# Updated testing infrastructure with coverage targets
 
 # Install development tools
 .PHONY: install-tools
@@ -81,7 +103,11 @@ help:
 	@echo "  install      - Install to /usr/local/bin (may require sudo)"
 	@echo "  install-user - Install to ~/.local/bin (no sudo required)"
 	@echo "  clean        - Clean build artifacts"
-	@echo "  test         - Run tests"
+	@echo "  test         - Run tests with coverage"
+	@echo "  test-qa      - Run QA tests only"
+	@echo "  test-quick   - Run quick unit tests"
+	@echo "  test-full    - Run full test suite with HTML coverage"
+	@echo "  test-coverage - Show current coverage statistics"
 	@echo "  install-tools- Install development tools"
 	@echo "  version      - Show version"
 	@echo "  help         - Show this help"

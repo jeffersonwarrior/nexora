@@ -5,6 +5,8 @@
 // Re-enable when multi-session support is ready
 
 package chat
+
+import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/nexora/cli/internal/agent"
@@ -46,7 +48,7 @@ func (w *WindowsSwitcher) updateList() {
 func (w *WindowsSwitcher) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	w.list, cmd = w.list.Update(msg)
-	
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {

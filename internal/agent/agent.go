@@ -28,6 +28,7 @@ import (
 	"charm.land/fantasy/providers/openai"
 	"charm.land/fantasy/providers/openrouter"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
+	"github.com/nexora/cli/internal/agent/recovery"
 	"github.com/nexora/cli/internal/agent/state"
 	"github.com/nexora/cli/internal/agent/tools"
 	"github.com/nexora/cli/internal/agent/utils"
@@ -39,7 +40,6 @@ import (
 	"github.com/nexora/cli/internal/resources"
 	"github.com/nexora/cli/internal/session"
 	"github.com/nexora/cli/internal/stringext"
-	"github.com/nexora/cli/internal/agent/recovery"
 )
 
 //go:embed templates/title.md
@@ -142,7 +142,7 @@ type SessionAgentOptions struct {
 	Sessions             session.Service
 	Messages             message.Service
 	Tools                []fantasy.AgentTool
-	AIOPS                aiops.Ops // AIOPS client
+	AIOPS                aiops.Ops          // AIOPS client
 	ResourceMonitor      *resources.Monitor // Resource monitor for pause/resume
 }
 
@@ -178,9 +178,9 @@ func NewSessionAgent(
 // wrapToolWithTimeout wraps a single tool function with timeout enforcement
 func (a *sessionAgent) wrapToolWithTimeout(toolFunc interface{}) interface{} {
 	return func(ctx context.Context, params interface{}, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-	// Extract tool name from call - use call.Name directly
-	toolName := call.Name
-		
+		// Extract tool name from call - use call.Name directly
+		toolName := call.Name
+
 		// Create timeout context based on tool type
 		timeout := a.getToolTimeout(toolName)
 		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -240,41 +240,41 @@ func (a *sessionAgent) wrapErrorForRecovery(err error, toolName, filePath string
 	}
 
 	errorStr := err.Error()
-	
+
 	// File modification errors
-	if strings.Contains(errorStr, "file has been modified") || 
-	   strings.Contains(errorStr, "file changed on disk") ||
-	   strings.Contains(errorStr, "stale file") {
+	if strings.Contains(errorStr, "file has been modified") ||
+		strings.Contains(errorStr, "file changed on disk") ||
+		strings.Contains(errorStr, "stale file") {
 		return recovery.NewFileOutdatedError(err, filePath)
 	}
 
 	// Edit operation errors
 	if strings.Contains(errorStr, "whitespace mismatch") ||
-	   strings.Contains(errorStr, "failed to match") ||
-	   strings.Contains(errorStr, "no match for text") ||
-	   strings.Contains(errorStr, "edit failed") {
+		strings.Contains(errorStr, "failed to match") ||
+		strings.Contains(errorStr, "no match for text") ||
+		strings.Contains(errorStr, "edit failed") {
 		return recovery.NewEditFailedError(err, filePath, oldText, newText)
 	}
 
 	// Timeout errors
 	if strings.Contains(errorStr, "timeout") ||
-	   strings.Contains(errorStr, "deadline exceeded") ||
-	   strings.Contains(errorStr, "context canceled") {
+		strings.Contains(errorStr, "deadline exceeded") ||
+		strings.Contains(errorStr, "context canceled") {
 		return recovery.NewTimeoutError(toolName, 60*time.Second)
 	}
 
 	// Resource limit errors
 	if strings.Contains(errorStr, "out of memory") ||
-	   strings.Contains(errorStr, "disk space") ||
-	   strings.Contains(errorStr, "too many open files") ||
-	   strings.Contains(errorStr, "resource limit exceeded") {
+		strings.Contains(errorStr, "disk space") ||
+		strings.Contains(errorStr, "too many open files") ||
+		strings.Contains(errorStr, "resource limit exceeded") {
 		return recovery.NewResourceLimitError(toolName, "current", "limit")
 	}
 
 	// Loop detection (this is handled by state machine but wrap if we get it)
 	if strings.Contains(errorStr, "loop detected") ||
-	   strings.Contains(errorStr, "infinite loop") ||
-	   strings.Contains(errorStr, "stuck") {
+		strings.Contains(errorStr, "infinite loop") ||
+		strings.Contains(errorStr, "stuck") {
 		return recovery.NewLoopDetectedError(toolName, 3)
 	}
 
@@ -459,7 +459,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			)
 			// Clear retry request
 			a.retryQueue.Del(call.SessionID)
-			
+
 			// The tool will be retried automatically by the agent's tool execution loop
 			// We just need to ensure the agent continues processing
 			call.Prompt = "CONTINUE_AFTER_TOOL_EXECUTION"
@@ -601,11 +601,13 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			a.messageQueue.Del(call.SessionID)
 			for _, queued := range queuedCalls {
 				userMessage, createErr := a.createUserMessage(callContext, queued)
-				if createErr != nil { continue }
+				if createErr != nil {
+					continue
+				}
 
-			prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
+				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
 
-		}
+			}
 			lastSystemRoleInx := 0
 			systemMessageUpdated := false
 			for i, msg := range prepared.Messages {
@@ -646,6 +648,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			if (a.largeModel.ModelCfg.Provider == "cerebras" || a.largeModel.ModelCfg.Provider == string(catwalk.InferenceProviderZAI)) && len(prepared.Tools) > 0 {
 				toolChoice := fantasy.ToolChoiceAuto
 				prepared.ToolChoice = &toolChoice
+			} else if (a.largeModel.ModelCfg.Provider == "cerebras" || a.largeModel.ModelCfg.Provider == string(catwalk.InferenceProviderZAI)) && len(prepared.Tools) == 0 {
+				prepared.ToolChoice = nil // Explicitly set to nil
 			}
 
 			return callContext, prepared, err
@@ -1482,7 +1486,7 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 		},
 	})
 	if err != nil {
-		slog.Error("error generating title", 
+		slog.Error("error generating title",
 			"err", err,
 			"session_id", session.ID,
 			"model", a.smallModel.ModelCfg.Model,
@@ -1511,7 +1515,7 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 
 	title = strings.TrimSpace(title)
 	if title == "" {
-		slog.Warn("failed to generate title", 
+		slog.Warn("failed to generate title",
 			"warn", "empty title",
 			"session_id", session.ID,
 			"original_response", resp.Response.Content.Text())
@@ -1540,7 +1544,7 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 	a.updateSessionUsage(a.smallModel, session, resp.TotalUsage, openrouterCost)
 	_, saveErr := a.sessions.Save(ctx, *session)
 	if saveErr != nil {
-		slog.Error("failed to save session title & usage", 
+		slog.Error("failed to save session title & usage",
 			"error", saveErr,
 			"session_id", session.ID,
 			"title", title)

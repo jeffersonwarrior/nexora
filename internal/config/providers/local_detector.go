@@ -156,12 +156,12 @@ func (d *LocalDetector) detectOpenAICompatible(ctx context.Context, provider *Lo
 
 	var openaiResp struct {
 		Data []struct {
-			ID           string `json:"id"`
-			Object       string `json:"object"`
-			Created      int64  `json:"created"`
-			OwnedBy      string `json:"owned_by"`
-			Context      int    `json:"context_window,omitempty"` // Some providers
-			MaxModelLen  int    `json:"max_model_len,omitempty"`  // vLLM uses this
+			ID          string `json:"id"`
+			Object      string `json:"object"`
+			Created     int64  `json:"created"`
+			OwnedBy     string `json:"owned_by"`
+			Context     int    `json:"context_window,omitempty"` // Some providers
+			MaxModelLen int    `json:"max_model_len,omitempty"`  // vLLM uses this
 		} `json:"data"`
 	}
 
@@ -240,8 +240,8 @@ func (d *LocalDetector) getOllamaModelDetails(ctx context.Context, provider *Loc
 	var showResp struct {
 		ModelInfo struct {
 			// Ollama returns model parameters in different fields
-			ContextLength  int `json:"context_length"`
-			NumCtx         int `json:"num_ctx"`
+			ContextLength int `json:"context_length"`
+			NumCtx        int `json:"num_ctx"`
 		} `json:"model_info"`
 		Details struct {
 			// Alternative location for context info

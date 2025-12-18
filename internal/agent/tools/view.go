@@ -2,6 +2,7 @@ package tools
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	_ "embed"
 	"encoding/base64"
@@ -197,30 +198,30 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 
 			// Read the file content
 			content, lineCount, err := readTextFile(filePath, params.Offset, params.Limit)
-		// Validate and sanitize UTF-8 content to prevent crashes
-		if !utf8.ValidString(content) {
-			// Fix invalid UTF-8 sequences instead of failing
-			content = strings.ToValidUTF8(content, "�")
+			// Validate and sanitize UTF-8 content to prevent crashes
 			if !utf8.ValidString(content) {
-				fmt.Fprintf(os.Stderr, "Warning: Content still contains invalid UTF-8 after repair attempts")
-				// As a last resort, filter out all invalid sequences
-				content = strings.ToValidUTF8(content, "")
+				// Fix invalid UTF-8 sequences instead of failing
+				content = strings.ToValidUTF8(content, "�")
 				if !utf8.ValidString(content) {
-					fmt.Fprintf(os.Stderr, "Warning: Using fallback UTF-8 sanitization")
-					// Final fallback - remove all non-ASCII characters
-					content = strings.Map(func(r rune) rune {
-						if r < 128 {
-							return r
-						}
-						return '�'
-					}, content)
+					fmt.Fprintf(os.Stderr, "Warning: Content still contains invalid UTF-8 after repair attempts")
+					// As a last resort, filter out all invalid sequences
+					content = strings.ToValidUTF8(content, "")
+					if !utf8.ValidString(content) {
+						fmt.Fprintf(os.Stderr, "Warning: Using fallback UTF-8 sanitization")
+						// Final fallback - remove all non-ASCII characters
+						content = strings.Map(func(r rune) rune {
+							if r < 128 {
+								return r
+							}
+							return '�'
+						}, content)
+					}
 				}
+				LogViewError(ViewDiagnosticsInfo{
+					FilePath: filePath,
+					FileSize: fileInfo.Size(),
+				}, "invalid UTF-8 sanitized")
 			}
-			LogViewError(ViewDiagnosticsInfo{
-				FilePath: filePath,
-				FileSize: fileInfo.Size(),
-			}, "invalid UTF-8 sanitized")
-		}
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error reading file: %w", err)
 			}
@@ -306,46 +307,42 @@ func readTextFile(filePath string, offset, limit int) (string, int, error) {
 
 	lineCount := 0
 
-	scanner := NewLineScanner(file)
-	if offset > 0 {
-		for lineCount < offset && scanner.Scan() {
-			lineCount++
-		}
-		if err = scanner.Err(); err != nil {
-			return "", 0, err
-		}
-	}
-
-	if offset == 0 {
-		_, err = file.Seek(0, io.SeekStart)
-		if err != nil {
-			return "", 0, err
-		}
-	}
-
-	// Pre-allocate slice with expected capacity
-	lines := make([]string, 0, limit)
-	lineCount = offset
-
-	for scanner.Scan() && len(lines) < limit {
-		lineCount++
-		lineText := scanner.Text()
-		if len(lineText) > MaxLineLength {
-			lineText = lineText[:MaxLineLength] + "..."
-		}
-		lines = append(lines, lineText)
-	}
-
-	// Continue scanning to get total line count
-	for scanner.Scan() {
-		lineCount++
-	}
-
-	if err := scanner.Err(); err != nil {
+	// Read entire file with UTF-8 handling
+	content, err := io.ReadAll(file)
+	if err != nil {
 		return "", 0, err
 	}
 
-	return strings.Join(lines, "\n"), lineCount, nil
+	// Ensure UTF-8 validity
+	if !utf8.Valid(content) {
+		// Fix invalid UTF-8 sequences
+		content = bytes.ToValidUTF8(content, []byte("�"))
+	}
+
+	// Split into lines
+	lines := strings.Split(string(content), "\n")
+	lineCount = len(lines)
+
+	// Validate each line and truncate if necessary
+	for i := range lines {
+		if len(lines[i]) > MaxLineLength {
+			lines[i] = lines[i][:MaxLineLength] + "..."
+		}
+	}
+
+	// Apply offset and limit
+	start := offset
+	if start >= lineCount {
+		return "", lineCount, nil
+	}
+
+	end := start + limit
+	if end > lineCount {
+		end = lineCount
+	}
+
+	resultLines := lines[start:end]
+	return strings.Join(resultLines, "\n"), lineCount, nil
 }
 
 func getImageMimeType(filePath string) (bool, string) {

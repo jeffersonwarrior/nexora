@@ -164,11 +164,11 @@ func (e *TransitionError) Error() string {
 
 // StateMetrics tracks metrics for a particular state.
 type StateMetrics struct {
-	State         AgentState
-	EnterTime     time.Time
-	ExitTime      time.Time
-	Duration      time.Duration
-	TransitionTo  AgentState
-	ErrorCount    int
-	LastError     error
+	State        AgentState
+	EnterTime    time.Time
+	ExitTime     time.Time
+	Duration     time.Duration
+	TransitionTo AgentState
+	ErrorCount   int
+	LastError    error
 }

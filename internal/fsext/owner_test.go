@@ -11,7 +11,7 @@ func TestOwner(t *testing.T) {
 	// Create a temporary file for testing
 	tmpDir := t.TempDir()
 	tmpFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	err := os.WriteFile(tmpFile, []byte("test"), 0644)
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
@@ -34,14 +34,14 @@ func TestOwner(t *testing.T) {
 			if uid < 0 {
 				t.Errorf("Owner() = %d, want non-negative UID", uid)
 			}
-			
+
 			// Should match current user's UID
 			currentUID := os.Getuid()
 			if uid != currentUID {
 				t.Logf("Owner() = %d, current UID = %d (may differ if running as different user)", uid, currentUID)
 			}
 		}
-		
+
 		t.Logf("Platform: %s, Owner UID: %d", runtime.GOOS, uid)
 	})
 
@@ -68,7 +68,7 @@ func TestOwner(t *testing.T) {
 		if err == nil {
 			t.Error("Owner() for nonexistent file should return error")
 		}
-		
+
 		if !os.IsNotExist(err) {
 			t.Errorf("Owner() error should be IsNotExist, got: %v", err)
 		}
@@ -90,7 +90,7 @@ func TestOwnerCurrentDirectory(t *testing.T) {
 		if uid < 0 {
 			t.Errorf("Owner() = %d, want non-negative UID", uid)
 		}
-		
+
 		// Should be owned by current user (in most cases)
 		currentUID := os.Getuid()
 		t.Logf("Current directory owner: %d, current user: %d", uid, currentUID)
@@ -155,13 +155,13 @@ func TestOwnerSymlink(t *testing.T) {
 	if uid < 0 {
 		t.Errorf("Owner() = %d, want non-negative UID", uid)
 	}
-	
+
 	t.Logf("Symlink owner UID: %d", uid)
 }
 
 func TestOwnerPermissions(t *testing.T) {
 	tmpDir := t.TempDir()
-	
+
 	tests := []struct {
 		name string
 		perm os.FileMode

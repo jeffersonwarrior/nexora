@@ -11,25 +11,25 @@ import (
 type RecoveryStrategy interface {
 	// CanRecover returns true if this strategy can handle the given error
 	CanRecover(err error) bool
-	
+
 	// Recover attempts to recover from the error
 	Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error
-	
+
 	// MaxRetries returns the maximum number of times this strategy should be attempted
 	MaxRetries() int
-	
+
 	// Name returns a human-readable name for this recovery strategy
 	Name() string
 }
 
 // Error types
 const (
-	ErrorTypeFileOutdated   = "file_outdated"
-	ErrorTypeEditFailed     = "edit_failed"
-	ErrorTypeLoopDetected   = "loop_detected"
-	ErrorTypeTimeout        = "timeout"
-	ErrorTypeResourceLimit  = "resource_limit"
-	ErrorTypePanic           = "panic"
+	ErrorTypeFileOutdated  = "file_outdated"
+	ErrorTypeEditFailed    = "edit_failed"
+	ErrorTypeLoopDetected  = "loop_detected"
+	ErrorTypeTimeout       = "timeout"
+	ErrorTypeResourceLimit = "resource_limit"
+	ErrorTypePanic         = "panic"
 )
 
 // RecoverableError wraps errors to indicate they are recoverable

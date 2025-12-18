@@ -68,23 +68,23 @@ func (rr *RecoveryRegistry) AttemptRecovery(ctx context.Context, err error, exec
 	if strategy == nil {
 		return fmt.Errorf("no recovery strategy found for error: %w", err)
 	}
-	
+
 	// Check both global and strategy-specific retry limits
 	if execCtx.RetryCount >= rr.maxAttempts {
 		return fmt.Errorf("global retry limit (%d) exceeded: %w", rr.maxAttempts, err)
 	}
-	
+
 	if execCtx.RetryCount >= strategy.MaxRetries() {
-		return fmt.Errorf("strategy retry limit (%d) exceeded for %s: %w", 
+		return fmt.Errorf("strategy retry limit (%d) exceeded for %s: %w",
 			strategy.MaxRetries(), strategy.Name(), err)
 	}
-	
+
 	// Attempt recovery
 	recoveryErr := strategy.Recover(ctx, err, execCtx)
 	if recoveryErr != nil {
 		return fmt.Errorf("recovery failed using %s: %w", strategy.Name(), recoveryErr)
 	}
-	
+
 	// Increment retry count
 	execCtx.RetryCount++
 	return nil
@@ -146,12 +146,12 @@ func (rr *RecoveryRegistry) GetDiagnostics() RecoveryDiagnostics {
 
 // CreateRecoveryStatistics tracks recovery attempts and outcomes
 type RecoveryStatistics struct {
-	TotalAttempts    int                        `json:"total_attempts"`
-	SuccessCount     int                        `json:"success_count"`
-	FailureCount     int                        `json:"failure_count"`
-	StrategyCounts   map[string]int             `json:"strategy_counts"`
-	ErrorTypeCounts  map[string]int             `json:"error_type_counts"`
-	AverageRetries   float64                    `json:"average_retries"`
+	TotalAttempts   int            `json:"total_attempts"`
+	SuccessCount    int            `json:"success_count"`
+	FailureCount    int            `json:"failure_count"`
+	StrategyCounts  map[string]int `json:"strategy_counts"`
+	ErrorTypeCounts map[string]int `json:"error_type_counts"`
+	AverageRetries  float64        `json:"average_retries"`
 }
 
 // NewRecoveryStatistics creates empty statistics
@@ -170,10 +170,10 @@ func (rs *RecoveryStatistics) RecordAttempt(strategy string, errorType string, s
 	} else {
 		rs.FailureCount++
 	}
-	
+
 	rs.StrategyCounts[strategy]++
 	rs.ErrorTypeCounts[errorType]++
-	
+
 	// Update average retries
 	rs.AverageRetries = float64(retryCount)
 }

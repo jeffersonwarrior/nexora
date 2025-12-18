@@ -37,7 +37,7 @@ func AddLocalProvider(provider *providers.LocalProvider) error {
 	}
 
 	// Convert LocalProvider to config.ProviderConfig
-	// Use openai-compat type since all local servers (Ollama, vLLM, LM-Studio) 
+	// Use openai-compat type since all local servers (Ollama, vLLM, LM-Studio)
 	// use OpenAI-compatible APIs
 	providerConfig := ProviderConfig{
 		ID:      "local",
@@ -67,8 +67,8 @@ func AddLocalProvider(provider *providers.LocalProvider) error {
 			"matched", m.Matched,
 			"context", m.Context)
 	}
-	slog.Info("Added local provider", 
-		"name", provider.Name, 
+	slog.Info("Added local provider",
+		"name", provider.Name,
 		"models", len(models),
 		"endpoint", provider.BaseURL)
 	providerConfig.Models = models

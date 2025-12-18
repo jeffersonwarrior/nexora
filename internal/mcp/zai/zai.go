@@ -47,23 +47,23 @@ func NewClient(cfg config.Config) (*Client, error) {
 // Connect establishes connection to Z.ai MCP server
 func (c *Client) Connect(ctx context.Context) error {
 	c.logger.Info("connecting to Z.ai vision MCP server")
-	
+
 	// Mock session creation for now - in real implementation this would create
 	// an actual connection to a Z.ai MCP server
 	c.session = &mcp.ClientSession{}
-	
+
 	return nil
 }
 
 // Disconnect closes the connection to Z.ai MCP server
 func (c *Client) Disconnect(ctx context.Context) error {
 	c.logger.Info("disconnecting from Z.ai vision MCP server")
-	
+
 	if c.session != nil {
 		// Close session in real implementation
 		c.session = nil
 	}
-	
+
 	return nil
 }
 
@@ -244,10 +244,10 @@ func (c *Client) GetTools() []*mcp.Tool {
 // CallTool executes a Z.ai vision tool with the given parameters
 func (c *Client) CallTool(ctx context.Context, params *mcp.CallToolParams) (*mcp.CallToolResult, error) {
 	c.logger.Info("calling Z.ai vision tool", "tool", params.Name)
-	
-	// Mock implementations for all tools - in real implementation these would 
+
+	// Mock implementations for all tools - in real implementation these would
 	// make actual API calls to Z.ai vision services
-	
+
 	switch params.Name {
 	case "mcp_vision_analyze_data_visualization":
 		return c.analyzeDataVisualization(ctx, params.Arguments)
@@ -274,7 +274,7 @@ func (c *Client) CallTool(ctx context.Context, params *mcp.CallToolParams) (*mcp
 func (c *Client) analyzeDataVisualization(ctx context.Context, args any) (*mcp.CallToolResult, error) {
 	// In real implementation, this would analyze the data visualization
 	// using Z.ai's computer vision capabilities
-	
+
 	response := map[string]any{
 		"insights": []string{
 			"Data shows an upward trend over time",
@@ -288,9 +288,9 @@ func (c *Client) analyzeDataVisualization(ctx context.Context, args any) (*mcp.C
 		},
 		"analysis": "The visualization shows clear patterns indicating growth with seasonal variations",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -311,9 +311,9 @@ func (c *Client) analyzeImage(ctx context.Context, args any) (*mcp.CallToolResul
 		},
 		"style": "Minimalist design with good contrast",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -327,13 +327,13 @@ func (c *Client) analyzeImage(ctx context.Context, args any) (*mcp.CallToolResul
 func (c *Client) extractTextFromScreenshot(ctx context.Context, args any) (*mcp.CallToolResult, error) {
 	response := map[string]any{
 		"extracted_text": "This is the extracted text from the screenshot",
-		"confidence": 0.95,
-		"format": "plain_text",
-		"language": "en",
+		"confidence":     0.95,
+		"format":         "plain_text",
+		"language":       "en",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -346,7 +346,7 @@ func (c *Client) extractTextFromScreenshot(ctx context.Context, args any) (*mcp.
 // analyzeVideo is a mock implementation of video analysis
 func (c *Client) analyzeVideo(ctx context.Context, args any) (*mcp.CallToolResult, error) {
 	response := map[string]any{
-		"summary": "Video shows a demonstration of a software application",
+		"summary":  "Video shows a demonstration of a software application",
 		"duration": "2:30",
 		"key_frames": []string{
 			"0:00 - Opening screen with logo",
@@ -356,9 +356,9 @@ func (c *Client) analyzeVideo(ctx context.Context, args any) (*mcp.CallToolResul
 		},
 		"content": "The video presents a step-by-step guide to using the application",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -371,14 +371,14 @@ func (c *Client) analyzeVideo(ctx context.Context, args any) (*mcp.CallToolResul
 // uiToArtifact is a mock implementation of UI to artifact conversion
 func (c *Client) uiToArtifact(ctx context.Context, args any) (*mcp.CallToolResult, error) {
 	response := map[string]any{
-		"artifact_type": "code",
+		"artifact_type":  "code",
 		"generated_code": "<div class=\"container\">\n  <h1>Generated UI</h1>\n  <button>Click me</button>\n</div>",
-		"framework": "HTML/CSS",
-		"description": "Generated HTML/CSS code matching the UI design",
+		"framework":      "HTML/CSS",
+		"description":    "Generated HTML/CSS code matching the UI design",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -391,15 +391,15 @@ func (c *Client) uiToArtifact(ctx context.Context, args any) (*mcp.CallToolResul
 // diagnoseErrorScreenshot is a mock implementation of error diagnosis
 func (c *Client) diagnoseErrorScreenshot(ctx context.Context, args any) (*mcp.CallToolResult, error) {
 	response := map[string]any{
-		"error_type": "SyntaxError",
+		"error_type":     "SyntaxError",
 		"error_location": "line 42, column 15",
-		"diagnosis": "Missing closing parenthesis in function call",
-		"solution": "Add closing parenthesis: functionName(arg1, arg2)",
-		"confidence": 0.92,
+		"diagnosis":      "Missing closing parenthesis in function call",
+		"solution":       "Add closing parenthesis: functionName(arg1, arg2)",
+		"confidence":     0.92,
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -416,7 +416,7 @@ func (c *Client) understandTechnicalDiagram(ctx context.Context, args any) (*mcp
 		"components": []string{
 			"API Gateway",
 			"Microservice A",
-			"Microservice B", 
+			"Microservice B",
 			"Database",
 			"Cache layer",
 		},
@@ -428,9 +428,9 @@ func (c *Client) understandTechnicalDiagram(ctx context.Context, args any) (*mcp
 		},
 		"summary": "The diagram shows a microservices architecture with API gateway pattern",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -456,9 +456,9 @@ func (c *Client) uiDiffCheck(ctx context.Context, args any) (*mcp.CallToolResult
 		},
 		"recommendation": "Adjust button color, font size, and add missing border to match design specifications",
 	}
-	
+
 	responseBytes, _ := json.Marshal(response)
-	
+
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{
@@ -485,7 +485,7 @@ func (c *Client) ServerInfo() mcp.Implementation {
 func IsVisionTool(toolName string) bool {
 	visionTools := []string{
 		"mcp_vision_analyze_data_visualization",
-		"mcp_vision_analyze_image", 
+		"mcp_vision_analyze_image",
 		"mcp_vision_extract_text_from_screenshot",
 		"mcp_vision_ui_to_artifact",
 		"mcp_vision_diagnose_error_screenshot",
@@ -493,7 +493,7 @@ func IsVisionTool(toolName string) bool {
 		"mcp_vision_ui_diff_check",
 		"mcp_vision_analyze_video",
 	}
-	
+
 	for _, tool := range visionTools {
 		if toolName == tool {
 			return true
@@ -505,16 +505,16 @@ func IsVisionTool(toolName string) bool {
 // GetToolDescription returns a user-friendly description for a vision tool
 func GetToolDescription(toolName string) string {
 	descriptions := map[string]string{
-		"mcp_vision_analyze_data_visualization": "Analyze charts, graphs, and data visualizations to extract insights",
-		"mcp_vision_analyze_image":              "General-purpose image analysis for any visual content",
+		"mcp_vision_analyze_data_visualization":   "Analyze charts, graphs, and data visualizations to extract insights",
+		"mcp_vision_analyze_image":                "General-purpose image analysis for any visual content",
 		"mcp_vision_extract_text_from_screenshot": "Extract and recognize text from screenshots using OCR",
-		"mcp_vision_ui_to_artifact":             "Convert UI screenshots to code, prompts, or specifications",
-		"mcp_vision_diagnose_error_screenshot": "Diagnose and analyze error messages and stack traces",
-		"mcp_vision_understand_technical_diagram": "Analyze technical diagrams, flowcharts, and architecture diagrams", 
-		"mcp_vision_ui_diff_check":              "Compare two UI screenshots to identify differences",
-		"mcp_vision_analyze_video":              "Analyze video content and extract key information",
+		"mcp_vision_ui_to_artifact":               "Convert UI screenshots to code, prompts, or specifications",
+		"mcp_vision_diagnose_error_screenshot":    "Diagnose and analyze error messages and stack traces",
+		"mcp_vision_understand_technical_diagram": "Analyze technical diagrams, flowcharts, and architecture diagrams",
+		"mcp_vision_ui_diff_check":                "Compare two UI screenshots to identify differences",
+		"mcp_vision_analyze_video":                "Analyze video content and extract key information",
 	}
-	
+
 	if desc, ok := descriptions[toolName]; ok {
 		return desc
 	}

@@ -18,8 +18,8 @@ func (s *FileOutdatedStrategy) CanRecover(err error) bool {
 		return re.ErrorType == ErrorTypeFileOutdated
 	}
 	return strings.Contains(err.Error(), "file has been modified") ||
-		   strings.Contains(err.Error(), "file outdated") ||
-		   strings.Contains(err.Error(), "stale data")
+		strings.Contains(err.Error(), "file outdated") ||
+		strings.Contains(err.Error(), "stale data")
 }
 
 func (s *FileOutdatedStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {
@@ -30,24 +30,24 @@ func (s *FileOutdatedStrategy) Recover(ctx context.Context, err error, execCtx *
 			filePath = path.(string)
 		}
 	}
-	
+
 	if filePath == "" {
 		return fmt.Errorf("cannot recover from file outdated error: no file path provided")
 	}
-	
+
 	// Validate file exists
 	if _, statErr := os.Stat(filePath); os.IsNotExist(statErr) {
 		return fmt.Errorf("file %s no longer exists: %w", filePath, statErr)
 	}
-	
+
 	// Record recovery attempt
 	execCtx.LastError = fmt.Errorf("file %s was outdated, re-reading file", filePath)
-	
+
 	// In a real implementation, we would:
 	// 1. Re-read the file content
 	// 2. Update any cached content
 	// 3. Signal to retry the operation with fresh data
-	
+
 	return nil
 }
 
@@ -67,9 +67,9 @@ func (s *EditFailedStrategy) CanRecover(err error) bool {
 		return re.ErrorType == ErrorTypeEditFailed
 	}
 	return strings.Contains(err.Error(), "edit failed") ||
-		   strings.Contains(err.Error(), "whitespace mismatch") ||
-		   strings.Contains(err.Error(), "text not found") ||
-		   strings.Contains(err.Error(), "edit tool failed")
+		strings.Contains(err.Error(), "whitespace mismatch") ||
+		strings.Contains(err.Error(), "text not found") ||
+		strings.Contains(err.Error(), "edit tool failed")
 }
 
 func (s *EditFailedStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {
@@ -79,37 +79,37 @@ func (s *EditFailedStrategy) Recover(ctx context.Context, err error, execCtx *st
 		filePath, _ = re.Context["file_path"].(string)
 		oldText, _ = re.Context["old_text"].(string)
 	}
-	
+
 	if filePath == "" {
 		return fmt.Errorf("cannot recover from edit failure: no file path provided")
 	}
-	
+
 	// Record recovery attempt
 	execCtx.LastError = fmt.Errorf("edit failed on %s, attempting recovery", filePath)
-	
+
 	// Recovery strategies:
 	// 1. Try to read the current file content
 	// 2. If we have oldText and newText, attempt a more robust edit
 	// 3. Fall back to AIOPS-powered fix if available
-	
+
 	content, readErr := os.ReadFile(filePath)
 	if readErr != nil {
 		return fmt.Errorf("cannot read file for recovery: %w", readErr)
 	}
-	
+
 	currentContent := string(content)
-	
+
 	// Try to find exact match with normalized whitespace
 	if oldText != "" {
 		normalizedCurrent := normalizeWhitespace(currentContent)
 		normalizedOld := normalizeWhitespace(oldText)
-		
+
 		if strings.Contains(normalizedCurrent, normalizedOld) {
 			// We can potentially recover, signal to retry
 			return nil
 		}
 	}
-	
+
 	// Fall back: suggest using write tool to replace entire file
 	return fmt.Errorf("edit recovery failed - suggest using write tool to replace entire file")
 }
@@ -130,19 +130,19 @@ func (s *LoopDetectedStrategy) CanRecover(err error) bool {
 		return re.ErrorType == ErrorTypeLoopDetected
 	}
 	return strings.Contains(err.Error(), "loop detected") ||
-		   strings.Contains(err.Error(), "infinite loop") ||
-		   strings.Contains(err.Error(), "stuck in loop")
+		strings.Contains(err.Error(), "infinite loop") ||
+		strings.Contains(err.Error(), "stuck in loop")
 }
 
 func (s *LoopDetectedStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {
 	// For loop detection, recovery means stopping the loop and returning control
 	execCtx.LastError = fmt.Errorf("loop detected, halting execution and returning to user")
-	
+
 	// In a complete implementation, this would:
 	// 1. Transition state machine to StateHalted
 	// 2. Provide a summary of what was being done
 	// 3. Suggest next steps to the user
-	
+
 	return fmt.Errorf("loop detected - execution halted to prevent infinite loop")
 }
 
@@ -162,8 +162,8 @@ func (s *TimeoutStrategy) CanRecover(err error) bool {
 		return re.ErrorType == ErrorTypeTimeout
 	}
 	return strings.Contains(err.Error(), "timeout") ||
-		   strings.Contains(err.Error(), "deadline exceeded") ||
-		   strings.Contains(err.Error(), "context deadline exceeded")
+		strings.Contains(err.Error(), "deadline exceeded") ||
+		strings.Contains(err.Error(), "context deadline exceeded")
 }
 
 func (s *TimeoutStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {
@@ -172,18 +172,18 @@ func (s *TimeoutStrategy) Recover(ctx context.Context, err error, execCtx *state
 	if re, ok := err.(*RecoverableError); ok && re.Context != nil {
 		operation, _ = re.Context["operation"].(string)
 	}
-	
+
 	if operation == "" {
 		operation = "operation"
 	}
-	
+
 	execCtx.LastError = fmt.Errorf("%s timed out", operation)
-	
+
 	// For timeout recovery:
 	// 1. Check if operation can be retried with longer timeout
 	// 2. Suggest breaking down into smaller operations
 	// 3. For long-running operations, suggest background execution
-	
+
 	return fmt.Errorf("%s timed out - try with longer timeout or break into smaller steps", operation)
 }
 
@@ -203,9 +203,9 @@ func (s *ResourceLimitStrategy) CanRecover(err error) bool {
 		return re.ErrorType == ErrorTypeResourceLimit
 	}
 	return strings.Contains(err.Error(), "resource limit") ||
-		   strings.Contains(err.Error(), "memory") && strings.Contains(err.Error(), "insufficient") ||
-		   strings.Contains(err.Error(), "disk space") ||
-		   strings.Contains(err.Error(), "cpu usage")
+		strings.Contains(err.Error(), "memory") && strings.Contains(err.Error(), "insufficient") ||
+		strings.Contains(err.Error(), "disk space") ||
+		strings.Contains(err.Error(), "cpu usage")
 }
 
 func (s *ResourceLimitStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {
@@ -214,18 +214,18 @@ func (s *ResourceLimitStrategy) Recover(ctx context.Context, err error, execCtx 
 	if re, ok := err.(*RecoverableError); ok && re.Context != nil {
 		resourceType, _ = re.Context["resource_type"].(string)
 	}
-	
+
 	if resourceType == "" {
 		resourceType = "system resource"
 	}
-	
+
 	execCtx.LastError = fmt.Errorf("%s limit reached", resourceType)
-	
+
 	// Resource recovery strategies:
 	// 1. Transition to paused state if not already
 	// 2. Wait for resources to become available
 	// 3. Suggest freeing up resources
-	
+
 	return fmt.Errorf("%s limit reached - system will pause and retry when resources are available", resourceType)
 }
 
@@ -245,20 +245,20 @@ func (s *PanicStrategy) CanRecover(err error) bool {
 		return re.ErrorType == ErrorTypePanic
 	}
 	return strings.Contains(err.Error(), "panic") ||
-		   strings.Contains(err.Error(), "runtime panic")
+		strings.Contains(err.Error(), "runtime panic")
 }
 
 func (s *PanicStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {
 	execCtx.LastError = fmt.Errorf("panic recovered: %v", err)
-	
+
 	// Panic recovery:
 	// 1. Log the panic and stack trace
 	// 2. Transition to recovery state
 	// 3. Attempt graceful shutdown or restart
-	
+
 	// In a complete implementation, this would capture the stack trace
 	// and perform more sophisticated recovery
-	
+
 	return fmt.Errorf("panic occurred - system recovered and continuing safely")
 }
 
@@ -290,43 +290,43 @@ func NewFileOutdatedError(err error, filePath string) error {
 func NewEditFailedError(err error, filePath, oldText, newText string) error {
 	return NewRecoverableError(err, ErrorTypeEditFailed, map[string]interface{}{
 		"file_path": filePath,
-		"old_text": oldText,
-		"new_text": newText,
+		"old_text":  oldText,
+		"new_text":  newText,
 		"timestamp": time.Now(),
 	})
 }
 
 func NewLoopDetectedError(operation string, iterations int) error {
-	return NewRecoverableError(fmt.Errorf("loop detected after %d iterations in %s", iterations, operation), 
+	return NewRecoverableError(fmt.Errorf("loop detected after %d iterations in %s", iterations, operation),
 		ErrorTypeLoopDetected, map[string]interface{}{
-			"operation": operation,
+			"operation":  operation,
 			"iterations": iterations,
-			"timestamp": time.Now(),
+			"timestamp":  time.Now(),
 		})
 }
 
 func NewTimeoutError(operation string, timeout time.Duration) error {
-	return NewRecoverableError(fmt.Errorf("%s timed out after %v", operation, timeout), 
+	return NewRecoverableError(fmt.Errorf("%s timed out after %v", operation, timeout),
 		ErrorTypeTimeout, map[string]interface{}{
 			"operation": operation,
-			"timeout": timeout,
+			"timeout":   timeout,
 			"timestamp": time.Now(),
 		})
 }
 
 func NewResourceLimitError(resourceType string, current, limit interface{}) error {
-	return NewRecoverableError(fmt.Errorf("%s limit reached (current: %v, limit: %v)", resourceType, current, limit), 
+	return NewRecoverableError(fmt.Errorf("%s limit reached (current: %v, limit: %v)", resourceType, current, limit),
 		ErrorTypeResourceLimit, map[string]interface{}{
 			"resource_type": resourceType,
-			"current": current,
-			"limit": limit,
-			"timestamp": time.Now(),
+			"current":       current,
+			"limit":         limit,
+			"timestamp":     time.Now(),
 		})
 }
 
 func NewPanicError(err error, stackTrace string) error {
 	return NewRecoverableError(err, ErrorTypePanic, map[string]interface{}{
 		"stack_trace": stackTrace,
-		"timestamp": time.Now(),
+		"timestamp":   time.Now(),
 	})
 }
