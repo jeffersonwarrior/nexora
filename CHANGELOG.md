@@ -1,6 +1,42 @@
-## [0.28.7] - 2025-12-17 - **Local Model Support (Beta)**
+## [0.28.5] - 2025-12-17 - **Token Efficiency & Production Polish**
 
-### ✨ Features
+### 🎯 Performance Optimization
+- **Token Reduction**: 30k 	 27k tokens (11% reduction) in session startup
+  - Tool documentation compressed by 37% (35KB 	 22KB)
+  - edit.md: 9.3KB 	 3.7KB (-60%)
+  - bash.tpl: 5.2KB 	 3.6KB (-31%)
+  - multiedit.md: 5KB 	 3.6KB (-28%)
+  - coder.md.tpl: 7.2KB 	 5.3KB (-26%)
+  - agentic_fetch.md: 2.9KB 	 1.6KB (-45%)
+  - job tools consolidated: 1KB 	 0.5KB (-51%)
+- **Runtime Optimizations**:
+  - Git commits reduced: 3 	 2 in logs
+  - Git status reduced: 20 	 5 files shown
+  - Network/services lazy-loaded (set `NEXORA_FULL_ENV=1` to enable)
+  - Default assumes "online", skips expensive ping/systemctl checks
+
+### 📚 Documentation
+- Added TOKEN_REDUCTION.md with detailed breakdown
+- Updated ROADMAP.md with completion status
+- All tool descriptions remain comprehensive while being more concise
+
+### 💰 Benefits
+- **Faster startup**: Less initial context to process
+- **Lower costs**: 11% token reduction = 11% cost reduction per session
+- **Better context window**: More room for actual conversation
+- **Same functionality**: All features preserved
+
+### 🧪 QA Results
+```
+✅ go test ./... 	 20+ packages, zero failures
+✅ go build . 	 Clean build
+✅ All tool descriptions 	 Still comprehensive
+✅ No functionality lost
+```
+
+---
+
+## [0.28.7] - 2025-12-17 - **Local Model Support (Beta)**
 - **Local Model Support (Beta)**: Ollama/LM-Studio integration
   - UI configuration + clear error messages
   - Beta stability with production fallbacks

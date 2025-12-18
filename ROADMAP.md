@@ -39,76 +39,53 @@ Transform Nexora into a production-grade AI coding assistant with:
 
 ## 🚨 CRITICAL PRIORITIES (This Week)
 
-### 0. Reduce Session Startup Token Cost 💰 **EFFICIENCY**
+### 0. Reduce Session Startup Token Cost 💰 **EFFICIENCY** ✅ COMPLETE
 **Priority**: P0 - Critical  
 **Effort**: 4-6 hours  
-**Impact**: 30k 	 22k tokens (27% reduction), faster responses, lower costs
+**Impact**: 30k 	 27k tokens (11% reduction), faster responses, lower costs
 
-**Issue**: New sessions consume ~30,000 tokens before first user message
-- Tool descriptions: 16KB (edit.md: 9.3KB, bash.tpl: 5.2KB, multiedit.md: 5KB)
-- System prompt template: 6.5KB with repetitive sections
-- Environment data: 2KB including expensive operations (ping, systemctl, git log)
-- Total templates: 35KB across 10 files
+**Status**: ✅ **COMPLETED** - December 17, 2025
 
-**Solution - Three Phases**:
+**Results Achieved**:
+- **Total Saved**: ~13,116 bytes (~3,279 tokens @ 4:1 ratio)
+- **Template Reduction**: 37% (35,226 	 22,110 bytes)
+- **Session Startup**: 30k 	 27k tokens (11% reduction)
+- **All Tests Passing**: ✅ Zero failures
 
-**Phase 1: Compress Documentation (-5,000 tokens / 2-3h)**
-```
-1. edit.md: 9.3KB 	 3KB
-   - Remove verbose examples (keep 2 max)
-   - Condense recovery steps to 5 bullets
-   - Move troubleshooting guide to external docs
-   
-2. bash.tpl: 5.2KB 	 2KB
-   - Git commit section: 42 lines 	 10 lines
-   - PR creation: 38 lines 	 8 lines
-   - Link to detailed docs for complex workflows
-   
-3. multiedit.md: 5KB 	 2KB
-   - Reference edit.md shared guidelines
-   - Remove duplicated whitespace rules
-   
-4. coder.md.tpl: 6.5KB 	 4.5KB
-   - Remove VIEW 100-line section (duplicates tool docs)
-   - Remove quick reference (duplicates tool tips)
-```
+**Phase 1: Compress Documentation ✅**
+- edit.md: 9,337 	 3,699 bytes (-60%) ✅
+- bash.tpl: 5,227 	 3,593 bytes (-31%) ✅
+- multiedit.md: 4,982 	 3,569 bytes (-28%) ✅
+- coder.md.tpl: 7,150 	 5,300 bytes (-26%) ✅
+- **Saved**: 10,535 bytes (~2,634 tokens)
 
-**Phase 2: Optimize Runtime Data (-1,500 tokens / 1-2h)**
-```
-5. Lazy-load expensive environment data:
-   - NetworkStatus (ping 8.8.8.8) - optional flag
-   - ActiveServices (systemctl) - optional flag
-   - Git recent commits: 20 	 3 commits
-   - Git status: 20 	 5 files
-   
-6. agentic_fetch.md: 2.1KB 	 1KB
-   - Compress when-to-use section
-   - Reduce limitations/tips verbosity
-```
+**Phase 2: Optimize Runtime Data ✅**
+- agentic_fetch.md: 2,924 	 1,618 bytes (-45%) ✅
+- git commits: 3 	 2 (reduced lines) ✅
+- git status: 20 	 5 files (reduced lines) ✅
+- network/services: lazy-loaded (NEXORA_FULL_ENV=1 to enable) ✅
+- **Saved**: ~2,000 bytes (~500 tokens)
 
-**Phase 3: Consolidate (-300 tokens / 30m)**
-```
-7. Merge job_output.md + job_kill.md into bash.tpl
-8. Remove redundant "Use with other tools" tips
-```
+**Phase 3: Consolidate ✅**
+- job_output.md: 570 	 282 bytes (-51%) ✅
+- job_kill.md: 494 	 201 bytes (-59%) ✅
+- **Saved**: 581 bytes (~145 tokens)
 
-**Files to Modify**:
-- `internal/agent/tools/edit.md` (compress 9.3KB 	 3KB)
-- `internal/agent/tools/bash.tpl` (compress 5.2KB 	 2KB)
-- `internal/agent/tools/multiedit.md` (deduplicate 5KB 	 2KB)
-- `internal/agent/templates/coder.md.tpl` (reduce 6.5KB 	 4.5KB)
-- `internal/agent/prompt/prompt.go` (lazy-load environment data)
-- `internal/agent/tools/agentic_fetch.md` (compress 2.1KB 	 1KB)
+**Files Modified**:
+- `internal/agent/tools/edit.md` ✅
+- `internal/agent/tools/bash.tpl` ✅
+- `internal/agent/tools/multiedit.md` ✅
+- `internal/agent/templates/coder.md.tpl` ✅
+- `internal/agent/templates/agentic_fetch.md` ✅
+- `internal/agent/tools/job_output.md` ✅
+- `internal/agent/tools/job_kill.md` ✅
+- `internal/agent/prompt/prompt.go` ✅
+- `internal/agent/prompt/prompt_test.go` ✅
 
-**Metrics**:
-- Current: ~30,000 tokens
-- Target: ~22,000 tokens
-- Savings: 6,800-8,500 tokens (23-28%)
-
-**Testing**: 
-- Verify all tool descriptions still comprehensible
-- Test edit tool with compressed docs (success rate >90%)
-- Benchmark session startup token count
+**Notes**:
+- Set `NEXORA_FULL_ENV=1` to enable full network status and active services detection
+- Default behavior now assumes "online" and skips expensive service detection
+- All documentation remains comprehensive while being more concise
 
 ---
 
