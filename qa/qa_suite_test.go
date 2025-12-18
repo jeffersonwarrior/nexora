@@ -19,14 +19,21 @@ func TestAll(t *testing.T) {
 
 func testGoTest(t *testing.T) {
 	// Test all packages, handling missing test files gracefully
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current working directory: %v", err)
+	}
+	
+	// Move up one directory from qa to project root
+	projectRoot := filepath.Dir(cwd)
 	cmd := exec.Command("sh", "-c", "go test ./... 2>&1 || true")
-	cmd.Dir = "/home/nexora"
+	cmd.Dir = projectRoot
 	output, err := cmd.CombinedOutput()
 
 	// Check for actual failures vs "no test files" warnings
 	outputStr := string(output)
 	if err != nil && len(outputStr) > 0 && !containsOnlyNoTestFileWarnings(outputStr) {
-		t.Fatalf("go test failed:\n%s\nError: %v", output, err)
+		t.Fatalf("go test failed (from %s):\n%s\nError: %v", projectRoot, output, err)
 	}
 	t.Log("✅ go test passed")
 }
@@ -51,11 +58,19 @@ func contains(slice []string, item string) bool {
 }
 
 func testCompile(t *testing.T) {
-	// Use current working directory for flexibility
+	// Explicitly set the working directory to the project root
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current working directory: %v", err)
+	}
+	
+	// Move up one directory from qa to project root
+	projectRoot := filepath.Dir(cwd)
 	cmd := exec.Command("go", "build", "-o", "/tmp/nexora-test", ".")
+	cmd.Dir = projectRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("compile failed:\n%s\nError: %v", output, err)
+		t.Fatalf("compile failed (from %s):\n%s\nError: %v", projectRoot, output, err)
 	}
 
 	// Cleanup
