@@ -300,7 +300,7 @@
             "type": "string",
             "examples": [
               ".cursorrules",
-              "CRUSH.md"
+              "NEXORA.md"
             ]
           },
           "type": "array",
@@ -349,13 +349,18 @@
           "$ref": "#/$defs/Attribution",
           "description": "Attribution settings for generated content"
         },
+        "is_turbo_mode": {
+          "type": "boolean",
+          "description": "Enable turbo mode for faster performance",
+          "default": false
+        },
         "initialize_as": {
           "type": "string",
           "description": "Name of the context file to create/update during project initialization",
           "default": "AGENTS.md",
           "examples": [
             "AGENTS.md",
-            "CRUSH.md",
+            "NEXORA.md",
             "CLAUDE.md",
             "docs/LLMs.md"
           ]
