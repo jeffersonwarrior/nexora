@@ -60,10 +60,18 @@ func TestConfigValidation(t *testing.T) {
 }
 
 func TestModelDialogLaunches(t *testing.T) {
+	// Initialize config first
+	workingDir, _ := os.Getwd()
+	dataDir := filepath.Join(home.Dir(), ".local", "share", "nexora")
+	_, err := config.Init(workingDir, dataDir, false)
+	if err != nil {
+		t.Fatalf("Failed to initialize config: %v", err)
+	}
+
 	// Test basic config loading
 	cfg := config.Get()
 	if cfg == nil {
-		t.Error("Failed to load config")
+		t.Fatal("Failed to load config")
 	}
 
 	t.Log("✅ Model dialog initializes successfully")
