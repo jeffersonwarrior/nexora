@@ -1,4 +1,8 @@
-go 1.22
+module github.com/nexora/cli
+
+go 1.25.5
+
+replace github.com/nexora/cli => ./
 
 require (
 	charm.land/bubbles/v2 v2.0.0-rc.1

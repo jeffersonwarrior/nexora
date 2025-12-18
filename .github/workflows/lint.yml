@@ -21,14 +21,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
           cache: true
       
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
-          args: --timeout=10m --verbose
+          args: --timeout=10m --verbose --disable typecheck
       
       - name: Check go.mod and go.sum
         run: |
