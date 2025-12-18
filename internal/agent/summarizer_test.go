@@ -10,8 +10,12 @@ import (
 func TestDetectFastestSummarizer(t *testing.T) {
 	t.Run("Cerebras prioritized", func(t *testing.T) {
 		providers := csync.NewMap[string, config.ProviderConfig]()
-		providers.Set("cerebras", config.ProviderConfig{})
-		providers.Set("xai", config.ProviderConfig{})
+		providers.Set("cerebras", config.ProviderConfig{
+			APIKey: "test-key",
+		})
+		providers.Set("xai", config.ProviderConfig{
+			APIKey: "test-key",
+		})
 
 		cfg := config.Config{
 			Providers: providers,
@@ -28,7 +32,9 @@ func TestDetectFastestSummarizer(t *testing.T) {
 
 	t.Run("xAI fallback", func(t *testing.T) {
 		providers := csync.NewMap[string, config.ProviderConfig]()
-		providers.Set("xai", config.ProviderConfig{})
+		providers.Set("xai", config.ProviderConfig{
+			APIKey: "test-key",
+		})
 
 		cfg := config.Config{
 			Providers: providers,

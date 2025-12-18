@@ -28,6 +28,7 @@ import (
 	"charm.land/fantasy/providers/openai"
 	"charm.land/fantasy/providers/openrouter"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
+	"github.com/nexora/cli/internal/agent/state"
 	"github.com/nexora/cli/internal/agent/tools"
 	"github.com/nexora/cli/internal/agent/utils"
 	"github.com/nexora/cli/internal/aiops"
@@ -103,6 +104,9 @@ type sessionAgent struct {
 
 	// Session state tracking
 	sessionStates *csync.Map[string, string] // Track session states like "awaiting_continuation"
+
+	// State machines per session
+	stateMachines *csync.Map[string, *state.StateMachine]
 }
 
 type SessionAgentOptions struct {
@@ -135,6 +139,7 @@ func NewSessionAgent(
 		activeRequests:       csync.NewMap[string, context.CancelFunc](),
 		aiops:                opts.AIOPS,
 		sessionStates:        csync.NewMap[string, string](),
+		stateMachines:        csync.NewMap[string, *state.StateMachine](),
 	}
 }
 
@@ -153,6 +158,36 @@ func (a *sessionAgent) getTaskContext(sessionID string) string {
 		}
 	}
 	return ""
+}
+
+// getOrCreateStateMachine gets or creates a state machine for a session.
+func (a *sessionAgent) getOrCreateStateMachine(sessionID string, ctx context.Context) *state.StateMachine {
+	if sm, ok := a.stateMachines.Get(sessionID); ok {
+		return sm
+	}
+
+	// Create new state machine
+	sm := state.NewStateMachine(state.Config{
+		SessionID: sessionID,
+		Context:   ctx,
+		OnStuck: func(reason string) {
+			slog.Warn("session stuck - loop detected",
+				"session_id", sessionID,
+				"reason", reason,
+			)
+		},
+		OnProgress: func(stats state.ProgressStats) {
+			slog.Debug("session progress",
+				"session_id", sessionID,
+				"files_modified", stats.FilesModified,
+				"successes", stats.RecentSuccesses,
+				"failures", stats.RecentFailures,
+			)
+		},
+	})
+
+	a.stateMachines.Set(sessionID, sm)
+	return sm
 }
 
 func (a *sessionAgent) getOriginalPrompt(sessionID string) string {
@@ -235,6 +270,14 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	}
 	if call.SessionID == "" {
 		return nil, ErrSessionMissing
+	}
+
+	// Get or create state machine for this session
+	sm := a.getOrCreateStateMachine(call.SessionID, ctx)
+
+	// Transition to processing state
+	if err := sm.TransitionTo(state.StateProcessingPrompt); err != nil {
+		slog.Warn("failed to transition to processing state", "error", err, "session_id", call.SessionID)
 	}
 
 	// Queue the message if busy
@@ -481,10 +524,50 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			return a.messages.Update(genCtx, *currentAssistant)
 		},
 		OnToolResult: func(result fantasy.ToolResultContent) error {
-			// Track tool call for loop detection
+			// Get state machine for this session
+			sm := a.getOrCreateStateMachine(currentAssistant.SessionID, genCtx)
+
+			// Extract tool details for tracking
+			var errorMsg string
+
+			switch result.Result.GetType() {
+			case fantasy.ToolResultContentTypeError:
+				if r, ok := fantasy.AsToolResultOutputType[fantasy.ToolResultOutputContentError](result.Result); ok {
+					errorMsg = r.Error.Error()
+				}
+			}
+
+			// Record tool call in state machine
+			// Note: We don't have file_path/command from ToolResultContent, but tool name is tracked
+			success := errorMsg == ""
+			sm.RecordToolCall(result.ToolName, "", "", errorMsg, success)
+
+			// Check for stuck condition after each tool call
+			if stuck, reason := sm.IsStuck(); stuck {
+				slog.Warn("session stuck - halting",
+					"session_id", currentAssistant.SessionID,
+					"reason", reason,
+					"tool_calls", sm.GetToolCallCount(),
+				)
+
+				// Create system message about being stuck
+				_, _ = a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
+					Role: message.System,
+					Parts: []message.ContentPart{
+						message.TextContent{
+							Text: fmt.Sprintf("🛑 Loop detected: %s\n\nStopping execution to prevent infinite loop. Please review the error and try a different approach.", reason),
+						},
+					},
+				})
+
+				// Return error to halt execution
+				return fmt.Errorf("loop detected: %s", reason)
+			}
+
+			// Track tool call for loop detection (existing AIOPS code)
 			if a.aiops != nil {
 				var content string
-				var errorMsg string
+				var aiopsErrorMsg string
 
 				switch result.Result.GetType() {
 				case fantasy.ToolResultContentTypeText:
@@ -493,7 +576,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 					}
 				case fantasy.ToolResultContentTypeError:
 					if r, ok := fantasy.AsToolResultOutputType[fantasy.ToolResultOutputContentError](result.Result); ok {
-						errorMsg = r.Error.Error()
+						aiopsErrorMsg = r.Error.Error()
 					}
 				case fantasy.ToolResultContentTypeMedia:
 					if r, ok := fantasy.AsToolResultOutputType[fantasy.ToolResultOutputContentMedia](result.Result); ok {
@@ -501,8 +584,8 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 					}
 				}
 
-				if errorMsg != "" {
-					content = errorMsg // Track error messages for loop detection
+				if aiopsErrorMsg != "" {
+					content = aiopsErrorMsg // Track error messages for loop detection
 				}
 
 				// Convert to AIOPS ToolCall for tracking
@@ -510,7 +593,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 					ID:        result.ToolCallID,
 					Name:      result.ToolName,
 					Result:    content,
-					Error:     errorMsg,
+					Error:     aiopsErrorMsg,
 					Timestamp: time.Now(),
 				}
 				if len(aiopsCall.Result) > 10000 {
@@ -566,7 +649,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 							Name:      result.ToolName,
 							Params:    map[string]any{}, // We don't have access to the original params in ToolResultContent
 							Result:    content,
-							Error:     errorMsg,
+							Error:     aiopsErrorMsg,
 							Timestamp: time.Now(),
 						},
 					},

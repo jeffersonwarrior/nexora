@@ -585,7 +585,8 @@ func replaceContent(edit editContext, params EditParams, filePath, oldString, ne
 					}
 				}
 			}
-			// Try fuzzy matching with confidence scoring
+			// Try fuzzy matching with confidence scoring (skip for very large files)
+		if len(oldContent) <= 50000 { // 50KB threshold to avoid O(n²) performance issues
 			if match := findBestMatch(oldContent, oldString); match != nil && match.confidence >= 0.90 {
 				slog.Info("fuzzy match found (replaceAll)",
 					"strategy", match.matchStrategy,
@@ -600,6 +601,7 @@ func replaceContent(edit editContext, params EditParams, filePath, oldString, ne
 						goto foundReplaceAll
 					}
 				}
+		}
 			}
 
 			// Try AIOPS edit resolution first if available
@@ -646,7 +648,8 @@ func replaceContent(edit editContext, params EditParams, filePath, oldString, ne
 	} else {
 		index := strings.Index(oldContent, oldString)
 		if index == -1 {
-			// Try fuzzy matching with confidence scoring
+			// Try fuzzy matching with confidence scoring (skip for very large files)
+			if len(oldContent) <= 50000 { // 50KB threshold to avoid O(n²) performance issues
 			if match := findBestMatch(oldContent, oldString); match != nil && match.confidence >= 0.90 {
 				slog.Info("fuzzy match found",
 					"strategy", match.matchStrategy,
@@ -658,6 +661,7 @@ func replaceContent(edit editContext, params EditParams, filePath, oldString, ne
 					// Successfully resolved with fuzzy matching
 					goto found
 				}
+			}
 			}
 
 			// Try AIOPS edit resolution first if available

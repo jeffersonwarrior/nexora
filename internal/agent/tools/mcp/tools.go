@@ -31,6 +31,11 @@ func Tools() iter.Seq2[string, []*Tool] {
 
 // RunTool runs an MCP tool with the given input parameters.
 func RunTool(ctx context.Context, name, toolName string, input string) (ToolResult, error) {
+	// Check if this is a Z.ai vision tool
+	if IsZAITool(toolName) {
+		return runZAITool(ctx, toolName, input)
+	}
+	
 	var args map[string]any
 	if err := json.Unmarshal([]byte(input), &args); err != nil {
 		return ToolResult{}, fmt.Errorf("error parsing parameters: %s", err)
@@ -95,6 +100,57 @@ func RunTool(ctx context.Context, name, toolName string, input string) (ToolResu
 			Content:   textContent,
 			Data:      audioData,
 			MediaType: audioMimeType,
+		}, nil
+	}
+
+	return ToolResult{
+		Type:    "text",
+		Content: textContent,
+	}, nil
+}
+
+// runZAITool specifically handles Z.ai vision tools
+func runZAITool(ctx context.Context, toolName string, input string) (ToolResult, error) {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(input), &args); err != nil {
+		return ToolResult{}, fmt.Errorf("error parsing Z.ai tool parameters: %s", err)
+	}
+
+	result, err := RunZAITool(ctx, toolName, args)
+	if err != nil {
+		return ToolResult{}, err
+	}
+
+	if len(result.Content) == 0 {
+		return ToolResult{Type: "text", Content: ""}, nil
+	}
+
+	var textParts []string
+	var imageData []byte
+	var imageMimeType string
+
+	for _, v := range result.Content {
+		switch content := v.(type) {
+		case *mcp.TextContent:
+			textParts = append(textParts, content.Text)
+		case *mcp.ImageContent:
+			if imageData == nil {
+				imageData = content.Data
+				imageMimeType = content.MIMEType
+			}
+		default:
+			textParts = append(textParts, fmt.Sprintf("%v", v))
+		}
+	}
+
+	textContent := strings.Join(textParts, "\n")
+
+	if imageData != nil {
+		return ToolResult{
+			Type:      "image",
+			Content:   textContent,
+			Data:      imageData,
+			MediaType: imageMimeType,
 		}, nil
 	}
 

@@ -17,7 +17,8 @@ func TestAll(t *testing.T) {
 }
 
 func testGoTest(t *testing.T) {
-	cmd := exec.Command("go", "test", "./...")
+	// Test all packages except qa (to avoid recursion)
+	cmd := exec.Command("sh", "-c", "go test $(go list ./... | grep -v '/qa$')")
 	cmd.Dir = "/home/nexora"
 	output, err := cmd.CombinedOutput()
 	if err != nil {

@@ -128,7 +128,7 @@ nexora/
 ├── go.mod / go.sum           # Dependencies
 ├── .golangci.yml             # Linter configuration
 ├── Taskfile.yaml             # Task definitions
-├── CRUSH.md                  # Architecture and code style guide
+├── NEXORA.md                  # Architecture and code style guide
 ├── PROJECT_OPERATIONS.md     # Operational procedures
 ├── CODEDOCS.md               # Code reference index
 └── README.md                 # Project overview
@@ -502,7 +502,7 @@ The proxy at `/home/renter/devstral-proxy/devstral_proxy/utils.py` now:
 - Converts them to Mistral format with `tool_call_id` matching
 - Includes them in request body so LLM sees execution results
 
-See `CRUSH.md` for detailed explanation.
+See `NEXORA.md` for detailed explanation.
 
 ### 7. Provider Configuration
 
@@ -656,7 +656,7 @@ The CI will run the same checks on pull requests, so local verification prevents
 
 The project has comprehensive documentation:
 
-- **CRUSH.md** (this directory): Architecture, code style, testing patterns
+- **NEXORA.md** (this directory): Architecture, code style, testing patterns
 - **PROJECT_OPERATIONS.md**: Version management, build processes, release procedures
 - **CODEDOCS.md**: Index of 40,000+ lines of code with symbol references
 - **README.md**: Project overview, features, installation
@@ -664,7 +664,7 @@ The project has comprehensive documentation:
 
 When investigating the codebase:
 1. Check CODEDOCS.md for symbol locations
-2. Read CRUSH.md for style and pattern examples
+2. Read NEXORA.md for style and pattern examples
 3. Review PROJECT_OPERATIONS.md for procedural guidance
 4. Check todo.md for known issues affecting your work
 

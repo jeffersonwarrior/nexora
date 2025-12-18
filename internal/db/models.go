@@ -8,6 +8,19 @@ import (
 	"database/sql"
 )
 
+type ContextArchive struct {
+	ID           int64        `json:"id"`
+	Project      string       `json:"project"`
+	SessionID    string       `json:"session_id"`
+	MessageID    string       `json:"message_id"`
+	ReferenceUri string       `json:"reference_uri"`
+	Summary      string       `json:"summary"`
+	TokenCount   int64        `json:"token_count"`
+	Metadata     interface{}  `json:"metadata"`
+	CreatedAt    sql.NullTime `json:"created_at"`
+	UpdatedAt    sql.NullTime `json:"updated_at"`
+}
+
 type File struct {
 	ID        string `json:"id"`
 	SessionID string `json:"session_id"`

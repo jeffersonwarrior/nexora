@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -17,6 +18,16 @@ import (
 	"github.com/nexora/cli/internal/home"
 	"github.com/nexora/cli/internal/shell"
 )
+
+// gitConfigCache caches git user configuration to avoid repeated shell commands
+var gitConfigCache struct {
+	sync.Once
+	userName  string
+	userEmail string
+}
+
+// envCache is a global environment cache with 5-minute TTL
+var envCache = NewEnvironmentCache(5 * time.Minute)
 
 // Prompt represents a template-based prompt generator.
 type Prompt struct {
@@ -182,40 +193,31 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, cfg con
 
 	isGit := isGitRepo(cfg.WorkingDir())
 
-	// Gather environment information
+	// Gather environment information using cache
 	now := p.now()
-	currentUser := getCurrentUser()
-	localIP := getLocalIP(ctx)
-	pythonVer := getRuntimeVersion(ctx, "python3 --version")
-	nodeVer := getRuntimeVersion(ctx, "node --version")
-	goVer := getRuntimeVersion(ctx, "go version")
+	
+	// Get cached environment data (uses parallel execution internally)
+	fullEnv := os.Getenv("NEXORA_FULL_ENV") == "1"
+	envData, err := envCache.Get(ctx, workingDir, fullEnv)
+	if err != nil {
+		return PromptDat{}, fmt.Errorf("failed to get environment data: %w", err)
+	}
+
+	// Extract Go version number from "go version go1.x.x ..."
+	goVer := envData.GoVersion
 	if goVer != "not installed" {
-		// Extract just the version number from "go version go1.x.x ..."
 		parts := strings.Fields(goVer)
 		if len(parts) >= 3 {
 			goVer = parts[2]
 		}
 	}
+
 	shellType := "bash (mvdan/sh)"
 	gitUserName := ""
 	gitUserEmail := ""
 	if isGit {
-		gitUserName = getGitConfig(ctx, "user.name")
-		gitUserEmail = getGitConfig(ctx, "user.email")
-	}
-	memInfo := getMemoryInfo(ctx)
-	diskInfo := getDiskInfo(ctx, workingDir)
-
-	// New environment detection
-	arch := getArchitecture()
-	container := detectContainer(ctx)
-	terminal := getTerminalInfo(ctx)
-	// Lazy-load expensive operations - only if DEBUG env var set
-	network := "online"  // Default assumption, skip expensive ping
-	services := ""       // Skip expensive service detection by default
-	if os.Getenv("NEXORA_FULL_ENV") == "1" {
-		network = getNetworkStatus(ctx)
-		services = detectActiveServices(ctx)
+		gitUserName = envData.GitUserName
+		gitUserEmail = envData.GitUserEmail
 	}
 
 	data := PromptDat{
@@ -227,21 +229,21 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, cfg con
 		Platform:       platform,
 		Date:           now.Format("1/2/2006"),
 		DateTime:       now.Format("2006-01-02 15:04:05 MST"),
-		CurrentUser:    currentUser,
-		LocalIP:        localIP,
-		PythonVersion:  pythonVer,
-		NodeVersion:    nodeVer,
+		CurrentUser:    envData.CurrentUser,
+		LocalIP:        envData.LocalIP,
+		PythonVersion:  envData.PythonVersion,
+		NodeVersion:    envData.NodeVersion,
 		GoVersion:      goVer,
 		ShellType:      shellType,
 		GitUserName:    gitUserName,
 		GitUserEmail:   gitUserEmail,
-		MemoryInfo:     memInfo,
-		DiskInfo:       diskInfo,
-		Architecture:   arch,
-		ContainerType:  container,
-		TerminalInfo:   terminal,
-		NetworkStatus:  network,
-		ActiveServices: services,
+		MemoryInfo:     envData.MemoryInfo,
+		DiskInfo:       envData.DiskInfo,
+		Architecture:   envData.Architecture,
+		ContainerType:  envData.ContainerType,
+		TerminalInfo:   envData.TerminalInfo,
+		NetworkStatus:  envData.NetworkStatus,
+		ActiveServices: envData.ActiveServices,
 	}
 	if isGit {
 		var err error

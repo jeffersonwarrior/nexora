@@ -301,10 +301,10 @@ func (d *LocalDetector) getOllamaContext(modelName string) int {
 	if strings.Contains(name, "120b") {
 		return 131072 // Large models like GPT-OSS-120B
 	}
-	if strings.Contains(name, "70b") {
+	if strings.Contains(name, "72b") || strings.Contains(name, "70b") {
 		return 131072 // 128k
 	}
-	if strings.Contains(name, "34b") {
+	if strings.Contains(name, "34b") || strings.Contains(name, "33b") {
 		return 131072 // 128k
 	}
 	if strings.Contains(name, "22b") {

@@ -21,6 +21,7 @@ import (
 	"github.com/nexora/cli/internal/config"
 	"github.com/nexora/cli/internal/csync"
 	"github.com/nexora/cli/internal/home"
+	"github.com/nexora/cli/internal/mcp/zai"
 	"github.com/nexora/cli/internal/permission"
 	"github.com/nexora/cli/internal/pubsub"
 	"github.com/nexora/cli/internal/version"
@@ -30,6 +31,7 @@ var (
 	sessions = csync.NewMap[string, *mcp.ClientSession]()
 	states   = csync.NewMap[string, ClientInfo]()
 	broker   = pubsub.NewBroker[Event]()
+	zaiManager *zai.Manager
 )
 
 // State represents the current state of an MCP client
@@ -108,6 +110,14 @@ func GetState(name string) (ClientInfo, bool) {
 
 // Close closes all MCP clients. This should be called during application shutdown.
 func Close() error {
+	// Close Z.ai manager if initialized
+	if zaiManager != nil {
+		if err := zaiManager.Stop(); err != nil {
+			slog.Error("error stopping Z.ai MCP manager", "error", err)
+		}
+		zaiManager = nil
+	}
+	
 	var errs []error
 	var wg sync.WaitGroup
 	for name, session := range sessions.Seq2() {
@@ -133,9 +143,91 @@ func Close() error {
 	return errors.Join(errs...)
 }
 
+// initializeZAI initializes the Z.ai Vision MCP if configured
+func initializeZAI(ctx context.Context, cfg *config.Config) {
+	// Check if Z.ai API key is available
+	if err := zai.ValidateConfig(); err != nil {
+		slog.Debug("Z.ai MCP not configured", "error", err)
+		return
+	}
+	
+	slog.Info("initializing Z.ai Vision MCP")
+	
+	// Create Z.ai manager
+	zaiManager = zai.NewManager(*cfg)
+	
+	// Start the manager (non-blocking)
+	go func() {
+		if err := zaiManager.Start(ctx); err != nil {
+			slog.Error("failed to start Z.ai MCP manager", "error", err)
+			return
+		}
+		
+		// Get available tools and register them
+		tools, err := zaiManager.GetAvailableTools()
+		if err != nil {
+			slog.Error("failed to get Z.ai tools", "error", err)
+			return
+		}
+		
+		slog.Info("Z.ai Vision MCP initialized successfully", "tools_count", len(tools))
+		
+		// Convert MCP tools to our format
+		mcpTools := make([]*mcp.Tool, len(tools))
+		for i, toolName := range tools {
+			mcpTools[i] = &mcp.Tool{
+				Name:        toolName,
+				Description: zai.GetToolDescription(toolName),
+				// In a full implementation, we'd include the actual input schema
+				InputSchema: map[string]any{
+					"type": "object",
+				},
+			}
+		}
+		
+		// Register tools with the MCP system
+		updateTools("zai-vision", mcpTools)
+		updateState("zai-vision", StateConnected, nil, nil, Counts{
+			Tools:   len(mcpTools),
+			Prompts: 0,
+		})
+	}()
+}
+
+// GetZAIManager returns the Z.ai MCP manager
+func GetZAIManager() *zai.Manager {
+	return zaiManager
+}
+
+// IsZAITool checks if a tool name is a Z.ai vision tool
+func IsZAITool(toolName string) bool {
+	return zai.IsVisionTool(toolName)
+}
+
+// RunZAITool executes a Z.ai vision tool
+func RunZAITool(ctx context.Context, toolName string, arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+	if zaiManager == nil {
+		return nil, fmt.Errorf("Z.ai MCP manager not initialized")
+	}
+	
+	client, err := zaiManager.GetClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Z.ai MCP client: %w", err)
+	}
+	
+	return client.CallTool(ctx, &mcp.CallToolParams{
+		Name:      toolName,
+		Arguments: arguments,
+	})
+}
+
 // Initialize initializes MCP clients based on the provided configuration.
 func Initialize(ctx context.Context, permissions permission.Service, cfg *config.Config) {
 	var wg sync.WaitGroup
+	
+	// Initialize Z.ai Vision MCP if API key is available
+	initializeZAI(ctx, cfg)
+	
 	// Initialize states for all configured MCPs
 	for name, m := range cfg.MCP {
 		if m.Disabled {
