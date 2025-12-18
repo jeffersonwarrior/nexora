@@ -25,9 +25,9 @@ jobs:
           cache: true
       
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v4
         with:
-          version: v1.62
+          version: latest
           args: --timeout=10m --verbose
       
       - name: Check go.mod and go.sum
