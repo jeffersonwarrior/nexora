@@ -1,0 +1,43 @@
+{
+  "name": "nexora-cli",
+  "version": "0.28.1",
+  "description": "A powerful terminal-based AI assistant for developers",
+  "main": "index.js",
+  "bin": {
+    "nexora": "./bin/nexora"
+  },
+  "scripts": {
+    "install": "node scripts/install.js",
+    "postinstall": "node scripts/postinstall.js",
+    "preuninstall": "node scripts/preuninstall.js",
+    "test": "echo 'Error: no test specified' && exit 1"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexora/cli.git"
+  },
+  "keywords": [
+    "ai",
+    "cli",
+    "assistant",
+    "development",
+    "terminal",
+    "coding"
+  ],
+  "author": "Nexora Team",
+  "license": "FSL-1.1-MIT",
+  "bugs": {
+    "url": "https://github.com/nexora/cli/issues"
+  },
+  "homepage": "https://charm.sh/nexora",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

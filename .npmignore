@@ -1,0 +1,33 @@
+# Source files
+*.go
+go.mod
+go.sum
+Makefile
+.DS_Store
+
+# Test files
+*_test.go
+
+# Temporary files
+*.tmp
+*.temp
+
+# GitHub
+.github/
+.git/
+.gitignore
+
+# CI/CD
+coverage.out
+
+# Internal docs
+internal/
+cmd/
+docs/
+
+# Local development
+.local/
+
+# Logs
+*.log
+logs/
