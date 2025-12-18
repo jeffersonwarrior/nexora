@@ -1,12 +1,65 @@
 name: lint
+
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   lint:
-    uses: charmbracelet/meta/.github/workflows/lint.yml@main
-    with:
-      golangci_path: .golangci.yml
-      golangci_version: v2.4
-      timeout: 10m
+    name: Lint & Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+      
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.4
+          args: --timeout=10m --verbose
+      
+      - name: Check go.mod and go.sum
+        run: |
+          go mod tidy
+          if [[ -n $(git status --porcelain go.mod go.sum) ]]; then
+            echo "go.mod and go.sum are out of sync"
+            exit 1
+          fi
+      
+      - name: Check formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "Code is not properly formatted:"
+            gofmt -s -l .
+            exit 1
+          fi
+      
+      - name: Check for go vet issues
+        run: go vet ./...
+      
+      - name: Run staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
+      
+      - name: Run ineffassign
+        run: |
+          go install github.com/gordonklaus/ineffassign@latest
+          ineffassign ./...
+      
+      - name: Run misspell
+        run: |
+          go install github.com/client9/misspell/cmd/misspell@latest
+          misspell -error .
