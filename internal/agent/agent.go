@@ -328,10 +328,13 @@ func (a *sessionAgent) getOrCreateStateMachine(sessionID string, ctx context.Con
 	})
 
 	// Integrate with resource monitor if available
-	if a.resourceMonitor != nil {
+	if a.resourceMonitor != nil && sm != nil {
 		a.resourceMonitor.SetStateMachine(sm)
 		a.resourceMonitor.SetCallbacks(
 			func(usage float64) {
+				if sm == nil {
+					return
+				}
 				slog.Warn("CPU usage high, pausing session",
 					"session_id", sessionID,
 					"cpu_percent", usage,
@@ -342,6 +345,9 @@ func (a *sessionAgent) getOrCreateStateMachine(sessionID string, ctx context.Con
 				}
 			},
 			func(usage uint64) {
+				if sm == nil {
+					return
+				}
 				slog.Warn("Memory usage high, pausing session",
 					"session_id", sessionID,
 					"mem_usage_mb", usage/(1024*1024),
@@ -352,6 +358,9 @@ func (a *sessionAgent) getOrCreateStateMachine(sessionID string, ctx context.Con
 				}
 			},
 			func(free uint64) {
+				if sm == nil {
+					return
+				}
 				slog.Warn("Disk space low, pausing session",
 					"session_id", sessionID,
 					"disk_free_gb", float64(free)/(1024*1024*1024),
@@ -362,6 +371,9 @@ func (a *sessionAgent) getOrCreateStateMachine(sessionID string, ctx context.Con
 				}
 			},
 			func(v resources.Violation) {
+				if sm == nil {
+					return
+				}
 				slog.Warn("Resource violation",
 					"session_id", sessionID,
 					"type", v.Type,

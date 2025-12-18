@@ -270,11 +270,22 @@ func (p *chatPage) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 		p.editor = u.(editor.Editor)
 		return p, cmd
 	case pubsub.Event[session.Session]:
+		// Update main session if it matches current session
+		if msg.Type == pubsub.UpdatedEvent && p.session.ID == msg.Payload.ID {
+			p.session = msg.Payload
+		}
 		u, cmd := p.header.Update(msg)
 		p.header = u.(header.Header)
 		cmds = append(cmds, cmd)
 		u, cmd = p.sidebar.Update(msg)
 		p.sidebar = u.(sidebar.Sidebar)
+		cmds = append(cmds, cmd)
+		// Also update chat and editor components
+		u, cmd = p.chat.Update(msg)
+		p.chat = u.(chat.MessageListCmp)
+		cmds = append(cmds, cmd)
+		u, cmd = p.editor.Update(msg)
+		p.editor = u.(editor.Editor)
 		cmds = append(cmds, cmd)
 		return p, tea.Batch(cmds...)
 	case chat.SessionClearedMsg:
