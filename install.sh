@@ -213,23 +213,34 @@ build_nexora() {
     # Set up build flags
     LDFLAGS="-X github.com/nexora/cli/internal/version.Version=${VERSION}"
     
-    # Debug output
-    print_status "Building with output path: $HOME/.local/bin/nexora"
-    print_status "Current directory: $(pwd)"
-    print_status "HOME is set to: $HOME"
+    # Create output directory and ensure permissions
+    mkdir -p "$HOME/.local/bin"
     
-    # Build the binary directly to the installation directory
-    if ! go build -ldflags="${LDFLAGS}" -o "$HOME/.local/bin/nexora" .; then
-        return 1
+    # Build using absolute path and explicit GOPATH/bin override
+    BUILD_OUTPUT="$HOME/.local/bin/nexora"
+    
+    print_status "Building to: $BUILD_OUTPUT"
+    
+    # Try building with explicit output
+    if ! go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" .; then
+        print_error "Build failed, trying alternative method..."
+        # Fallback: build in current directory then move
+        if ! go build -ldflags="${LDFLAGS}" -o nexora .; then
+            return 1
+        fi
+        if ! mv nexora "$BUILD_OUTPUT"; then
+            return 1
+        fi
     fi
     
     # Check if binary was created
-    if [ ! -f "$HOME/.local/bin/nexora" ]; then
+    if [ ! -f "$BUILD_OUTPUT" ]; then
+        print_error "Binary not found at $BUILD_OUTPUT"
         return 1
     fi
     
     # Return the path to the built binary
-    echo "$HOME/.local/bin/nexora"
+    echo "$BUILD_OUTPUT"
 }
 
 # Remove any existing Nexora installations
