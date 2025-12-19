@@ -71,6 +71,19 @@ nexora*
 !nexora.md
 !nexora.go
 
+# Build output directories
+build/
+dist/
+
+# Backup files
+*.backup
+*.bak
+install.sh.bak
+go.mod.backup
+
+# Coverage reports (keep small ones, but exclude large ones)
+coverage.out
+
 # Local modelscan tool
 .local/tools/modelscan/
 
@@ -79,10 +92,6 @@ nexora*
 *.sqlite
 *.sqlite3
 :NEXO:*
-
-# Archived working documents and test files
-archives/
-archive/
 *.wip
 
 # Example configurations
