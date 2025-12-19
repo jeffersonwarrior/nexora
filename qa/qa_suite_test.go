@@ -26,7 +26,7 @@ func testGoTest(t *testing.T) {
 
 	// Move up one directory from qa to project root
 	projectRoot := filepath.Dir(cwd)
-	cmd := exec.Command("sh", "-c", "go test ./... 2>&1 || true")
+	cmd := exec.Command("sh", "-c", "go test ./... -timeout=5m 2>&1 || true")
 	cmd.Dir = projectRoot
 	output, err := cmd.CombinedOutput()
 

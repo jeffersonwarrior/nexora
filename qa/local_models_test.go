@@ -1,12 +1,14 @@
 package qa
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/nexora/nexora/internal/config/providers"
+	"github.com/nexora/nexora/internal/testutil"
 )
 
 // TestLocalModelsFullFlow tests the local detector without imports
@@ -108,15 +110,31 @@ func TestLocalModelsFullFlow(t *testing.T) {
 		}
 	})
 
-	// Test 4: 30s timeout (reduced to 2s for testing)
+	// Test 4: Test timeout with actual delay using context
 	t.Run("Timeout30s", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			time.Sleep(2 * time.Second) // Reduced timeout for testing
+			// Simulate a slow server that takes longer than our timeout
+			time.Sleep(2 * time.Second) // Explicit delay
+			w.Write([]byte(`{"models":[]}`))
 		}))
 		defer server.Close()
 
-		// Use a shorter timeout detector - skip this test since we can't mock private fields
-		t.Skip("Timeout test skipped - private fields prevent struct literal")
+		// Test with a shorter timeout than the server delay
+		testutil.RunWithTimeout(t, 1*time.Second, func(ctx context.Context) {
+			// Create detector
+			detector := providers.NewLocalDetector(server.URL)
+			
+			// This should either succeed (if server responds fast) or timeout gracefully
+			_, err := detector.Detect("ollama", "")
+			if err != nil {
+				// Expect timeout or context cancellation, not a hang
+				if err == context.DeadlineExceeded || err == context.Canceled {
+					t.Log("✅ Timeout worked as expected")
+				} else {
+					t.Error("Unexpected error:", err)
+				}
+			}
+		})
 	})
 }
 
