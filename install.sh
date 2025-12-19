@@ -235,7 +235,9 @@ build_nexora() {
     mkdir -p "$HOME/.local/bin"
     
     # Build using absolute path and explicit GOPATH/bin override
-print_status "Building to: $BUILD_OUTPUT"
+    BUILD_OUTPUT="$HOME/.local/bin/nexora"
+    
+    print_status "Building to: $BUILD_OUTPUT"
     print_status "Current directory: $(pwd)"
     print_status "Go version: $(go version)"
     print_status "Environment: HOME=$HOME, USER=$USER"
