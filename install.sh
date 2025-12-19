@@ -9,11 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Configuration
-BINARY_NAME="nexora"
-DEFAULT_VERSION="0.28.5"
-INSTALL_DIR="$HOME/.local/bin"
-TEMP_DIR="/tmp/nexora-install"
+DEFAULT_VERSION="0.29.0"
 
 # Function to print colored output
 print_status() {
