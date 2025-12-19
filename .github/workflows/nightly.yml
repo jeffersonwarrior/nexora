@@ -27,5 +27,9 @@ jobs:
     needs: check
     if: needs.check.outputs.should_run == 'true'
     uses: charmbracelet/meta/.github/workflows/nightly.yml@main
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     secrets:
       goreleaser_key: ${{ secrets.GORELEASER_KEY }}
