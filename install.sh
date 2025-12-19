@@ -217,15 +217,15 @@ build_nexora() {
     mkdir -p "$HOME/.local/bin"
     
     # Build using absolute path and explicit GOPATH/bin override
-    BUILD_OUTPUT="$HOME/.local/bin/nexora"
-    
-    print_status "Building to: $BUILD_OUTPUT"
-    
-    # Try building with explicit output
-    if ! go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" .; then
+print_status "Building to: $BUILD_OUTPUT"
+    print_status "Current directory: $(pwd)"
+    print_status "Go version: $(go version)"
+    print_status "Environment: HOME=$HOME, USER=$USER"
+    if ! go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" . 2>&1; then
         print_error "Build failed, trying alternative method..."
         # Fallback: build in current directory then move
-        if ! go build -ldflags="${LDFLAGS}" -o nexora .; then
+        if ! go build -ldflags="${LDFLAGS}" -o nexora . 2>&1; then
+            print_error "Both build methods failed"
             return 1
         fi
         if ! mv nexora "$BUILD_OUTPUT"; then
@@ -467,8 +467,9 @@ main() {
     # Build Nexora directly to the install directory
     print_status "Building Nexora with version: ${VERSION}..."
     print_status "Updating dependencies to latest versions..."
-    if ! BINARY_PATH=$(build_nexora); then
+    if ! BINARY_PATH=$(build_nexora 2>&1); then
         print_error "Failed to build Nexora binary"
+        print_error "Error details: $BINARY_PATH"
         return 1
     fi
     
