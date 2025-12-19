@@ -1,8 +1,8 @@
 package providers
 
-import "testing"
-
 import (
+	"testing"
+
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 	"github.com/stretchr/testify/require"
 )

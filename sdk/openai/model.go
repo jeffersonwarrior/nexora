@@ -1,7 +1,6 @@
 package openai
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/nexora/sdk/base"

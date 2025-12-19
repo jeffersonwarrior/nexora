@@ -17,7 +17,9 @@ import (
 	"fmt"
 	"sync"
 
+	"charm.land/fantasy"
 	"github.com/google/uuid"
+	"github.com/nexora/nexora/internal/agent/prompt"
 	"github.com/nexora/nexora/internal/config"
 	"github.com/nexora/nexora/internal/message"
 	"github.com/nexora/nexora/internal/session"

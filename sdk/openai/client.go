@@ -1,9 +1,9 @@
 package openai
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/nexora/sdk/base"
 )

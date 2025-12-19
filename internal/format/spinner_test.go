@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"image/color"
+
 	"github.com/nexora/nexora/internal/tui/components/anim"
 	"github.com/stretchr/testify/assert"
-	"image/color"
 )
 
 func TestNewSpinner(t *testing.T) {

@@ -123,7 +123,7 @@ func TestLocalModelsFullFlow(t *testing.T) {
 		testutil.RunWithTimeout(t, 1*time.Second, func(ctx context.Context) {
 			// Create detector
 			detector := providers.NewLocalDetector(server.URL)
-			
+
 			// This should either succeed (if server responds fast) or timeout gracefully
 			_, err := detector.Detect("ollama", "")
 			if err != nil {

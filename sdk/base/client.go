@@ -6,11 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
 	"time"
 
-	"go.uber.org/ratelimit"
 	"golang.org/x/time/rate"
 )
 

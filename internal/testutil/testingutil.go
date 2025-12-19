@@ -9,15 +9,16 @@ import (
 
 // RunWithTimeout runs a test function with a timeout, preventing tests from running forever
 // Example usage:
-//   func TestLongRunningOperation(t *testing.T) {
-//       testingutil.RunWithTimeout(t, 10*time.Second, func(ctx context.Context) {
-//           // Your test code here, using ctx.Context() for cancellation support
-//           result := doLongOperation(ctx.Context())
-//           if result != expected {
-//               t.Error("unexpected result")
-//           }
-//       })
-//   }
+//
+//	func TestLongRunningOperation(t *testing.T) {
+//	    testingutil.RunWithTimeout(t, 10*time.Second, func(ctx context.Context) {
+//	        // Your test code here, using ctx.Context() for cancellation support
+//	        result := doLongOperation(ctx.Context())
+//	        if result != expected {
+//	            t.Error("unexpected result")
+//	        }
+//	    })
+//	}
 func RunWithTimeout(t *testing.T, timeout time.Duration, testFunc func(ctx context.Context)) {
 	t.Helper()
 
@@ -25,7 +26,7 @@ func RunWithTimeout(t *testing.T, timeout time.Duration, testFunc func(ctx conte
 	defer cancel()
 
 	done := make(chan struct{})
-	
+
 	// Run the test in a goroutine
 	go func() {
 		defer close(done)
@@ -56,7 +57,7 @@ func RunWithTimeoutAndDeadline(t *testing.T, timeout time.Duration, deadline tim
 	}
 
 	done := make(chan struct{})
-	
+
 	// Run the test in a goroutine
 	go func() {
 		defer close(done)

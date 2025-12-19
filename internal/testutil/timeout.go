@@ -7,10 +7,10 @@ import (
 
 const (
 	// Default test timeout durations
-	DefaultShortTestTimeout  = 30 * time.Second  // For unit tests
-	DefaultMediumTestTimeout = 5 * time.Minute   // For integration tests
-	DefaultLongTestTimeout   = 10 * time.Minute  // For full suite tests
-	DefaultQATestTimeout     = 5 * time.Minute   // For QA tests
+	DefaultShortTestTimeout  = 30 * time.Second // For unit tests
+	DefaultMediumTestTimeout = 5 * time.Minute  // For integration tests
+	DefaultLongTestTimeout   = 10 * time.Minute // For full suite tests
+	DefaultQATestTimeout     = 5 * time.Minute  // For QA tests
 )
 
 // Environment variable names for customizing timeouts

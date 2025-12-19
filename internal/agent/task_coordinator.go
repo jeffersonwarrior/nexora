@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/nexora/nexora/internal/agent/prompt"
 	"github.com/nexora/nexora/internal/agent/tools"
-	"log/slog"
 )
 
 // TaskExecutionContext holds context for task execution
