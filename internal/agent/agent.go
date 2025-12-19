@@ -96,8 +96,8 @@ type sessionAgent struct {
 
 	messageQueue   *csync.Map[string, []SessionAgentCall]
 	activeRequests *csync.Map[string, context.CancelFunc]
-	aiops          aiops.Ops // AIOPS client for operational support
-	convoMgr            *ConversationManager // Manages conversation state
+	aiops          aiops.Ops            // AIOPS client for operational support
+	convoMgr       *ConversationManager // Manages conversation state
 
 	// Resource monitoring
 	resourceMonitor *resources.Monitor
@@ -151,7 +151,7 @@ func NewSessionAgent(
 	opts SessionAgentOptions,
 ) SessionAgent {
 	return &sessionAgent{
-		convoMgr:            NewConversationManager(),
+		convoMgr:             NewConversationManager(),
 		largeModel:           opts.LargeModel,
 		smallModel:           opts.SmallModel,
 		systemPromptPrefix:   opts.SystemPromptPrefix,
@@ -1197,16 +1197,16 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		// If we just completed tool calls, continue the conversation
 		// Also check if the AI response indicates unfinished work
 		shouldContinue := hasToolResults && currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0
-	if !shouldContinue && a.convoMgr.IsConversationCompleted(call.SessionID) {
-		// Don/'t continue - conversation is marked as completed
-		cancel()
-		return result, err
-	}
+		if !shouldContinue && a.convoMgr.IsConversationCompleted(call.SessionID) {
+			// Don/'t continue - conversation is marked as completed
+			cancel()
+			return result, err
+		}
 
-	// Record the assistant message and let the manager handle state
-	if currentAssistant != nil {
-		a.convoMgr.RecordMessage(call.SessionID, *currentAssistant)
-	}
+		// Record the assistant message and let the manager handle state
+		if currentAssistant != nil {
+			a.convoMgr.RecordMessage(call.SessionID, *currentAssistant)
+		}
 
 		if !shouldContinue && a.shouldContinueAfterTool(ctx, call.SessionID, currentAssistant) {
 			// Auto-continue if the AI response suggests unfinished work

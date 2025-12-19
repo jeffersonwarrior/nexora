@@ -174,5 +174,3 @@ func (tec *TaskExecutionCoordinator) readSimpleFile(path string) (string, error)
 	}
 	return string(content), nil
 }
-
-

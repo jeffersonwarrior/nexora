@@ -636,12 +636,12 @@ func (m *modelDialogCmp) saveAPIKeyAndContinue(apiKey any, close bool) tea.Cmd {
 	if err != nil {
 		return util.ReportError(fmt.Errorf("failed to save API key: %w", err))
 	}
-	
+
 	// Auto-configure Z.ai MCP servers when ZAI key is set
 	if string(m.selectedModel.Provider.ID) == "zai" {
 		zaiAPIKey := apiKey.(string)
 		zaiAuthHeader := fmt.Sprintf("Bearer %s", zaiAPIKey)
-		
+
 		// Add web-reader MCP
 		cfg.SetConfigField("mcp.web-reader", map[string]interface{}{
 			"url":     "https://api.z.ai/api/mcp/web_reader/mcp",
@@ -651,7 +651,7 @@ func (m *modelDialogCmp) saveAPIKeyAndContinue(apiKey any, close bool) tea.Cmd {
 				"Authorization": zaiAuthHeader,
 			},
 		})
-		
+
 		// Add web-search-prime MCP
 		cfg.SetConfigField("mcp.web-search-prime", map[string]interface{}{
 			"url":     "https://api.z.ai/api/mcp/web_search_prime/mcp",
@@ -661,7 +661,7 @@ func (m *modelDialogCmp) saveAPIKeyAndContinue(apiKey any, close bool) tea.Cmd {
 				"Authorization": zaiAuthHeader,
 			},
 		})
-		
+
 		// Add vision MCP (stdio npx)
 		cfg.SetConfigField("mcp.vision", map[string]interface{}{
 			"type":    "stdio",
@@ -673,11 +673,11 @@ func (m *modelDialogCmp) saveAPIKeyAndContinue(apiKey any, close bool) tea.Cmd {
 			},
 			"timeout": 30,
 		})
-		
+
 		// Add vision tools to allowed_tools (ensure they exist)
 		visionTools := []string{
 			"mcp_vision_analyze_data_visualization",
-			"mcp_vision_analyze_image", 
+			"mcp_vision_analyze_image",
 			"mcp_vision_extract_text_from_screenshot",
 			"mcp_vision_ui_to_artifact",
 			"mcp_vision_diagnose_error_screenshot",
@@ -688,7 +688,7 @@ func (m *modelDialogCmp) saveAPIKeyAndContinue(apiKey any, close bool) tea.Cmd {
 		// Append vision tools to existing allowed_tools
 		cfg.SetConfigField("permissions.allowed_tools.append", visionTools)
 	}
-	
+
 	// Reset API key state and continue with model selection
 	selectedModel := *m.selectedModel
 	var cmds []tea.Cmd

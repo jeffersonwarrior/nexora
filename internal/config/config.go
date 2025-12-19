@@ -1,9 +1,6 @@
-func CalculateDefaultMaxTokens(ctx int64) int64 {
-	if ctx <= 8192 {
-		return ctx / 2
-	}
-	return int64(float64(ctx) * 0.4) // 40% dynamic rule
-}
+package config
+
+import (
 	"cmp"
 	"context"
 	"fmt"
