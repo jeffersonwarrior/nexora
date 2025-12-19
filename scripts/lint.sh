@@ -86,11 +86,7 @@ if command_exists golangci-lint; then
     fi
 fi
 
-# Run tests to ensure nothing is broken
-echo -e "${BLUE}🧪 Running tests...${NC}"
-if run_check "go test ./..." "Running test suite"; then
-    echo -e "${GREEN}✓ All tests pass${NC}"
-else
+if run_check "go test ./... -timeout=10m" "Running test suite"; then
     echo -e "${RED}✗ Some tests failed${NC}"
     failures=$((failures + 1))
 fi

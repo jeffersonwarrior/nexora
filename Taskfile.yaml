@@ -47,9 +47,19 @@ tasks:
       - go run . {{.CLI_ARGS}}
 
   test:
-    desc: Run tests
+    desc: Run tests with timeout protection
     cmds:
-      - go test ./... {{.CLI_ARGS}}
+      - go test ./... -timeout=10m {{.CLI_ARGS}}
+
+  test:limited:
+    desc: Run tests with resource limits
+    cmds:
+      - ./scripts/run-tests-with-limits.sh ./... -timeout=10m {{.CLI_ARGS}}
+
+  test:qa:
+    desc: Run QA tests with timeout
+    cmds:
+      - go test ./qa/... -timeout=5m {{.CLI_ARGS}}
 
 
 

@@ -2,14 +2,14 @@ version: "3"
 
 tasks:
   test:
-    desc: Run tests
+    desc: Run tests with timeout protection
     cmds:
-      - go test ./... {{.CLI_ARGS}}
+      - go test ./... -timeout=5m {{.CLI_ARGS}}
 
   test:update:
-    desc: Run tests and update golden files
+    desc: Run tests and update golden files with timeout
     cmds:
-      - go test ./... -update {{.CLI_ARGS}}
+      - go test ./... -timeout=5m -update {{.CLI_ARGS}}
 
   test:print:
     desc: Print golden files for debugging

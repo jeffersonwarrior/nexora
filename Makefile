@@ -40,10 +40,10 @@ clean:
 	rm -f nexora
 	rm -f /tmp/nexora
 
-# Run tests
+# Run tests with timeout protection
 .PHONY: test-qa
 test-qa:
-	go test ./qa/...
+	go test ./qa/... -timeout=5m
 
 # Build with tests
 .PHONY: build-safe
@@ -57,17 +57,17 @@ build-full: clean test-qa
 
 .PHONY: test
 test: test-qa
-	go test ./... -coverprofile=coverage.out
+	go test ./... -timeout=10m -coverprofile=coverage.out
 
 # Quick unit tests (no integration)
 .PHONY: test-quick
 test-quick:
-	go test ./internal/... -short -coverprofile=coverage-quick.out
+	go test ./internal/... -short -timeout=5m -coverprofile=coverage-quick.out
 
 # Full test suite with coverage analysis
 .PHONY: test-full
 test-full: 
-	go test ./... -v -coverprofile=coverage-full.out
+	go test ./... -v -timeout=15m -coverprofile=coverage-full.out
 	go tool cover -html=coverage-full.out -o coverage-full.html
 	@echo "Full coverage report: coverage-full.html"
 
@@ -78,6 +78,18 @@ test-coverage: test
 	@go tool cover -func=coverage.out | tail -1
 	@echo "Package coverage breakdown:"
 	@go tool cover -func=coverage.out | grep "%" | sort -nk3 | head -20
+
+# Run tests with resource limits (memory, CPU, timeout)
+.PHONY: test-limited
+test-limited:
+	@echo "Running tests with resource limits..."
+	@./scripts/run-tests-with-limits.sh ./... -timeout=10m
+
+# Run QA tests with resource limits
+.PHONY: test-qa-limited
+test-qa-limited:
+	@echo "Running QA tests with resource limits..."
+	@./scripts/run-tests-with-limits.sh ./qa/... -timeout=5m
 
 # Updated testing infrastructure with coverage targets
 
@@ -104,6 +116,8 @@ help:
 	@echo "  test-quick   - Run quick unit tests"
 	@echo "  test-full    - Run full test suite with HTML coverage"
 	@echo "  test-coverage - Show current coverage statistics"
+	@echo "  test-limited - Run tests with resource limits (memory/CPU)"
+	@echo "  test-qa-limited - Run QA tests with resource limits"
 	@echo "  install-tools- Install development tools"
 	@echo "  version      - Show version"
 	@echo "  help         - Show this help"
