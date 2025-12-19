@@ -10,6 +10,9 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 DEFAULT_VERSION="0.29.0"
+BINARY_NAME="nexora"
+INSTALL_DIR="$HOME/.local/bin"
+TEMP_DIR="/tmp/nexora-install"
 
 # Function to print colored output
 print_status() {
@@ -24,15 +27,7 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Parse command line arguments
-VERSION=${1:-$DEFAULT_VERSION}
-
-print_status "Installing Nexora v${VERSION} to $INSTALL_DIR..."
-
-# Ensure the installation directory exists
-mkdir -p "$INSTALL_DIR"
-
-# Add to PATH if not already there
+mkdir -p "$HOME/.local/bin"
 # Check both current PATH and shell config files
 CONFIG_FILE=""
 NEEDS_UPDATE=false
@@ -67,11 +62,7 @@ fi
 
 # Store whether we updated the PATH for later use
 PATH_UPDATED=false
-
-# Check if PATH needs updating (both current session and config file)
-if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    NEEDS_UPDATE=true
-elif [ -f "$CONFIG_FILE" ] && ! grep -q "$INSTALL_DIR" "$CONFIG_FILE"; then
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     NEEDS_UPDATE=true
 fi
 
@@ -79,18 +70,14 @@ if [ "$NEEDS_UPDATE" = true ]; then
     # Add PATH export to the appropriate config file
     echo "" >> "$CONFIG_FILE"
     echo "# Nexora PATH addition" >> "$CONFIG_FILE"
-    echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> "$CONFIG_FILE"
+    echo "export PATH=\"\$PATH:$HOME/.local/bin\"" >> "$CONFIG_FILE"
     
-    print_status "Added $INSTALL_DIR to PATH in $CONFIG_FILE"
+    print_status "Added $HOME/.local/bin to PATH in $CONFIG_FILE"
     print_status "You need to restart your terminal or run 'source $CONFIG_FILE' to use nexora"
     PATH_UPDATED=true
     
-    # Export for current session if not already there
-    if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-        export PATH="$PATH:$INSTALL_DIR"
-    fi
-else
-    print_status "$INSTALL_DIR is already in PATH"
+export PATH="$PATH:$HOME/.local/bin"
+    print_status "$HOME/.local/bin is already in PATH"
 fi
 
 # Check if Go is installed
@@ -222,17 +209,17 @@ build_nexora() {
     LDFLAGS="-X github.com/nexora/cli/internal/version.Version=${VERSION}"
     
     # Build the binary directly to the installation directory
-    if ! go build -ldflags="${LDFLAGS}" -o "$INSTALL_DIR/nexora" .; then
+    if ! go build -ldflags="${LDFLAGS}" -o "$HOME/.local/bin/nexora" .; then
         return 1
     fi
     
     # Check if binary was created
-    if [ ! -f "$INSTALL_DIR/nexora" ]; then
+    if [ ! -f "$HOME/.local/bin/nexora" ]; then
         return 1
     fi
     
     # Return the path to the built binary
-    echo "$INSTALL_DIR/nexora"
+    echo "$HOME/.local/bin/nexora"
 }
 
 # Remove any existing Nexora installations
@@ -240,8 +227,8 @@ remove_existing() {
     print_status "Removing any existing Nexora installations..."
     
     # Remove from installation directory
-    if [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
-        rm -f "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null || true
+    if [ -f "$HOME/.local/bin/nexora" ]; then
+        rm -f "$HOME/.local/bin/nexora" 2>/dev/null || true
     fi
     
     # Get GOPATH safely
@@ -267,10 +254,10 @@ remove_existing() {
 install_binary() {
     local binary_path="$1"
     
-    print_status "Installing $BINARY_NAME to $INSTALL_DIR..."
+    print_status "Installing nexora to $HOME/.local/bin..."
     
     # Ensure the install directory exists
-    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$HOME/.local/bin"
     
     # Set executable permissions - fix issue with colored output
     # Remove any ANSI escape codes from the path
@@ -285,8 +272,8 @@ verify_installation() {
     print_status "Verifying installation..."
     
     # First check if the binary exists in the install directory
-    if [ ! -f "$INSTALL_DIR/$BINARY_NAME" ]; then
-        print_error "Binary not found at $INSTALL_DIR/$BINARY_NAME"
+    if [ ! -f "$HOME/.local/bin/nexora" ]; then
+        print_error "Binary not found at $HOME/.local/bin/nexora"
         return 1
     fi
     
@@ -302,16 +289,16 @@ verify_installation() {
         
         # Show PATH for debugging
         print_status "Current PATH: $PATH"
-        print_status "Installation directory: $INSTALL_DIR"
+        print_status "Installation directory: $HOME/.local/bin"
         
         # Check if binary exists where we installed it
         if [ -f "$INSTALL_DIR/$BINARY_NAME" ]; then
-            print_warning "Binary exists at $INSTALL_DIR/$BINARY_NAME but not in PATH."
+            print_warning "Binary exists at $HOME/.local/bin/nexora but not in PATH."
             print_status "Please restart your terminal or run 'source ~/.bashrc' (or ~/.zshrc for zsh users)"
-            print_status "Alternatively, run: export PATH=\"\$PATH:$INSTALL_DIR\""
+            print_status "Alternatively, run: export PATH=\"\$PATH:$HOME/.local/bin\""
             
             # Try to add it to PATH for this session
-            export PATH="$PATH:$INSTALL_DIR"
+            export PATH="$PATH:$HOME/.local/bin"
             
             # Verify again after adding to PATH
             if command -v "$BINARY_NAME" >/dev/null 2>&1; then
