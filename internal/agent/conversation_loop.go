@@ -1,14 +1,12 @@
 package agent
 
 import (
-	"log/slog"
-
 	"charm.land/fantasy"
 	"github.com/nexora/nexora/internal/message"
 )
 
-// ConversationState tracks the flow of a multi-step conversation
-type ConversationState struct {
+// ConversationFlowState tracks the flow of a multi-step conversation
+type ConversationFlowState struct {
 	sessionID      string
 	pendingTool    string
 	toolResults    []fantasy.ToolResultContent
@@ -18,37 +16,25 @@ type ConversationState struct {
 
 // ConversationLoopManager manages automatic continuation of agent workflows
 type ConversationLoopManager struct {
-	states map[string]*ConversationState
+	states map[string]*ConversationFlowState
 }
 
 func NewConversationLoopManager() *ConversationLoopManager {
 	return &ConversationLoopManager{
-		states: make(map[string]*ConversationState),
+		states: make(map[string]*ConversationFlowState),
 	}
 }
 
 // ShouldAutoContinue determines if the conversation should automatically continue
 func (c *ConversationLoopManager) ShouldAutoContinue(sessionID string, msg message.Message) bool {
-	state, exists := c.states[sessionID]
-	if !exists {
-		return false
-	}
-
-	// Check if we have tool results and the message finished naturally
-	if len(state.toolResults) > 0 {
-		slog.Debug("auto-continuing conversation",
-			"session_id", sessionID,
-			"tool_results", len(state.toolResults))
-		return true
-	}
-
+	// Don't use auto-continue based on tool results alone
+	// Let the conversation manager handle state-based continuation
 	return false
 }
 
-// RecordToolResult tracks a completed tool operation
 func (c *ConversationLoopManager) RecordToolResult(sessionID string, toolName string, result fantasy.ToolResultContent) {
 	if _, exists := c.states[sessionID]; !exists {
-		c.states[sessionID] = &ConversationState{
+		c.states[sessionID] = &ConversationFlowState{
 			sessionID: sessionID,
 		}
 	}
@@ -63,7 +49,7 @@ func (c *ConversationLoopManager) RecordToolResult(sessionID string, toolName st
 // RecordToolUse tracks when a tool is being used
 func (c *ConversationLoopManager) RecordToolUse(sessionID string, toolName string) {
 	if _, exists := c.states[sessionID]; !exists {
-		c.states[sessionID] = &ConversationState{
+		c.states[sessionID] = &ConversationFlowState{
 			sessionID: sessionID,
 		}
 	}

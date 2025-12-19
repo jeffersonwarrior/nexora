@@ -97,6 +97,7 @@ type sessionAgent struct {
 	messageQueue   *csync.Map[string, []SessionAgentCall]
 	activeRequests *csync.Map[string, context.CancelFunc]
 	aiops          aiops.Ops // AIOPS client for operational support
+	convoMgr            *ConversationManager // Manages conversation state
 
 	// Resource monitoring
 	resourceMonitor *resources.Monitor
@@ -150,6 +151,7 @@ func NewSessionAgent(
 	opts SessionAgentOptions,
 ) SessionAgent {
 	return &sessionAgent{
+		convoMgr:            NewConversationManager(),
 		largeModel:           opts.LargeModel,
 		smallModel:           opts.SmallModel,
 		systemPromptPrefix:   opts.SystemPromptPrefix,
@@ -1195,6 +1197,17 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		// If we just completed tool calls, continue the conversation
 		// Also check if the AI response indicates unfinished work
 		shouldContinue := hasToolResults && currentAssistant != nil && len(currentAssistant.ToolCalls()) > 0
+	if !shouldContinue && a.convoMgr.IsConversationCompleted(call.SessionID) {
+		// Don/'t continue - conversation is marked as completed
+		cancel()
+		return result, err
+	}
+
+	// Record the assistant message and let the manager handle state
+	if currentAssistant != nil {
+		a.convoMgr.RecordMessage(call.SessionID, *currentAssistant)
+	}
+
 		if !shouldContinue && a.shouldContinueAfterTool(ctx, call.SessionID, currentAssistant) {
 			// Auto-continue if the AI response suggests unfinished work
 			shouldContinue = true
@@ -1835,38 +1848,8 @@ func (a *sessionAgent) workaroundProviderMediaLimitations(messages []fantasy.Mes
 	return convertedMessages
 }
 
-// shouldContinueAfterTool checks if the last AI response suggests unfinished work
+// shouldContinueAfterTool checks if the conversation should continue based on state
 func (a *sessionAgent) shouldContinueAfterTool(ctx context.Context, sessionID string, currentAssistant *message.Message) bool {
-	// Check if the last AI message indicates unfinished work
-	messages, err := a.messages.List(ctx, sessionID)
-	if err != nil {
-		return false
-	}
-
-	if len(messages) == 0 {
-		return false
-	}
-
-	lastAI := messages[len(messages)-1]
-	if lastAI.Role == message.Assistant {
-		content := lastAI.Content().Text
-		// Continuation indicators - phrases that suggest more work to be done
-		continuationSignals := []string{
-			"now let me", "next, i'll", "let me create", "i'll now",
-			"let's", "let me check", "let me examine", "let me review",
-			"let me implement", "now i'll", "moving on to", "i will now",
-			"i need to", "i should", "we should", "we need to",
-			"let me also", "additionally", "furthermore", "next step",
-			"let me update", "let me modify", "let me add", "let me fix",
-			"let me test", "let me verify", "let me validate",
-		}
-
-		contentLower := strings.ToLower(content)
-		for _, signal := range continuationSignals {
-			if strings.Contains(contentLower, signal) {
-				return true
-			}
-		}
-	}
-	return false
+	// Use the conversation manager to determine continuation based on state
+	return a.convoMgr.ShouldContinue(sessionID)
 }

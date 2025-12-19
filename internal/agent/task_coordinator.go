@@ -15,6 +15,14 @@ import (
 	"github.com/nexora/nexora/internal/agent/tools"
 )
 
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // TaskExecutionContext holds context for task execution
 type TaskExecutionContext struct {
 	ID             string
@@ -42,8 +50,6 @@ func NewTaskExecutionCoordinator() *TaskExecutionCoordinator {
 // ExecuteTask executes a task with the given instructions
 func (tec *TaskExecutionCoordinator) ExecuteTask(ctx context.Context, directory, instructions string) (*TaskExecutionContext, error) {
 	slog.Info("🎯 Executing task", "directory", directory, "instructions", instructions[:min(len(instructions), 100)])
-
-	// Create execution context
 	taskID := fmt.Sprintf("task_%d", time.Now().UnixNano())
 	taskCtx := &TaskExecutionContext{
 		ID:           taskID,
@@ -169,10 +175,4 @@ func (tec *TaskExecutionCoordinator) readSimpleFile(path string) (string, error)
 	return string(content), nil
 }
 
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+

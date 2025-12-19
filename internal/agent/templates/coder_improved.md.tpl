@@ -242,6 +242,14 @@ System Resources:
 Terminal: {{.TerminalInfo}}
 Network: {{.NetworkStatus}}
 Active Services: {{.ActiveServices}}
+
+## Nexora System Settings
+Nexora client system settings are stored in `~/.local/share/nexora`. This directory contains two important files:
+
+1. **`nexora.db`** - SQLite database containing session history, configuration settings, and conversation state
+2. **`mcp.json`** - JSON configuration file for MCP (Model Context Protocol) settings and server configurations
+
+MCP-related files and configurations are stored in the `mcp.json` file, which defines available MCP servers and their connection parameters.
 {{if .GitStatus}}
 
 Git Status:
