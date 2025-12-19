@@ -26,7 +26,14 @@ func testGoTest(t *testing.T) {
 
 	// Move up one directory from qa to project root
 	projectRoot := filepath.Dir(cwd)
-	cmd := exec.Command("sh", "-c", "go test ./... -timeout=5m 2>&1 || true")
+	
+	// Check if we're already in a nested test run to avoid infinite recursion
+	if os.Getenv("NESTED_TEST_RUN") == "1" {
+		t.Skip("skipping nested test run to avoid infinite recursion")
+	}
+	
+	// Set environment variable to detect nested test runs
+	cmd := exec.Command("sh", "-c", "NESTED_TEST_RUN=1 go test ./... -timeout=5m 2>&1 || true")
 	cmd.Dir = projectRoot
 	output, err := cmd.CombinedOutput()
 

@@ -12,19 +12,53 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'  # Only run on main branch
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0  # Fetch full history for proper commits
-      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Generate schema
+      - name: Generate schema with auto-fix
         run: |
-          go run . schema > ./schema.json
+          echo "🔍 Generating schema..."
+          
+          # Try to generate schema with error handling
+          set +e
+          SCHEMA_OUTPUT=$(go run . schema 2>&1)
+          SCHEMA_EXIT_CODE=$?
+          
+          if [ $SCHEMA_EXIT_CODE -ne 0 ]; then
+            echo "💥 Schema generation failed, attempting auto-fixes..."
+            echo "$SCHEMA_OUTPUT"
+            
+            # Try common fixes for schema generation issues
+            if echo "$SCHEMA_OUTPUT" | grep -q "cannot find"; then
+              echo "🔧 Tidying modules..."
+              go mod tidy
+              go mod download
+            fi
+            
+            if echo "$SCHEMA_OUTPUT" | grep -q "build constraints"; then
+              echo "🔧 Fixing build constraints..."
+              go mod tidy
+            fi
+            
+            # Retry schema generation
+            echo "🔄 Retrying schema generation..."
+            go run . schema > ./schema.json 2>/dev/null || {
+              echo "❌ Schema generation still failed after auto-fixes"
+              exit 1
+            }
+          else
+            echo "$SCHEMA_OUTPUT" > ./schema.json
+          fi
+          
           git config user.name "Charm"
           git config user.email "124303983+charmcli@users.noreply.github.com"
-      - uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # v5
+          
+          echo "✅ Schema generated successfully"
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: auto-update generated files"
           branch: main

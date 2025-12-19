@@ -1,0 +1,207 @@
+name: Auto-Fix Issues
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  schedule:
+    # Run every hour to check for fixable issues
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  auto-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js for automation scripts
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Auto-fix dependency issues
+        if: contains(github.event.issue.body, 'dependency') || contains(github.event.issue.body, 'go.mod') || contains(github.event.comment.body, '/fix-deps')
+        run: |
+          echo "🔧 Auto-fixing dependency issues..."
+          
+          # Update go.mod if outdated
+          if [[ -f go.mod ]]; then
+            go mod tidy
+            go mod download
+            
+            # Check if go.mod was modified
+            if [[ -n $(git status --porcelain go.mod go.sum) ]]; then
+              echo "✅ Dependencies updated"
+              
+              # Create a PR with dependency updates
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b autofix/deps-update-$(date +%s)
+              git add go.mod go.sum
+              git commit -m "autofix: update dependencies"
+              git push origin autofix/deps-update-$(date +%s)
+              
+              # Create PR using GitHub CLI
+              gh pr create --title "autofix: update dependencies" --body "This PR automatically updates project dependencies to fix the reported issue." --assignee ${{ github.actor }} --label "autofix,dependencies" || echo "PR already exists"
+              
+              # Comment on issue
+              gh issue comment ${{ github.event.issue.number }} --body "🤖 I've automatically updated the dependencies and created PR #$(gh pr list --head "autofix/deps-update-$(date +%s)" --json number --jq '.[0].number || "unknown"')"
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-fix formatting issues
+        if: contains(github.event.issue.body, 'formatting') || contains(github.event.issue.body, 'gofmt') || contains(github.event.comment.body, '/fix-format')
+        run: |
+          echo "🎨 Auto-fixing formatting issues..."
+          
+          # Format Go code
+          if [[ -f go.mod ]]; then
+            go fmt ./...
+            
+            # Check if any files were reformatted
+            if [[ -n $(git status --porcelain) ]]; then
+              echo "✅ Code formatted"
+              
+              # Create PR with formatting fixes
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b autofix/formatting-$(date +%s)
+              git add .
+              git commit -m "autofix: fix code formatting"
+              git push origin autofix/formatting-$(date +%s)
+              
+              # Create PR
+              gh pr create --title "autofix: fix code formatting" --body "This PR automatically fixes code formatting issues." --assignee ${{ github.actor }} --label "autofix,formatting" || echo "PR already exists"
+              
+              # Comment on issue
+              gh issue comment ${{ github.event.issue.number }} --body "🤖 I've automatically fixed the formatting and created PR #$(gh pr list --head "autofix/formatting-$(date +%s)" --json number --jq '.[0].number || "unknown"')"
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-fix go.sum issues
+        if: contains(github.event.issue.body, 'go.sum') || contains(github.event.issue.body, 'checksum') || contains(github.event.comment.body, '/fix-go-sum')
+        run: |
+          echo "🔐 Auto-fixing go.sum issues..."
+          
+          if [[ -f go.mod ]]; then
+            go mod tidy
+            
+            # Regenerate go.sum
+            rm -f go.sum
+            go mod download
+            go mod verify
+            
+            # Check if go.sum was recreated
+            if [[ -n $(git status --porcelain go.sum) ]]; then
+              echo "✅ go.sum regenerated"
+              
+              # Create PR with go.sum fix
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b autofix/go-sum-$(date +%s)
+              git add go.sum
+              git commit -m "autofix: regenerate go.sum"
+              git push origin autofix/go-sum-$(date +%s)
+              
+              # Create PR
+              gh pr create --title "autofix: regenerate go.sum" --body "This PR automatically regenerates go.sum to fix checksum issues." --assignee ${{ github.actor }} --label "autofix,dependencies" || echo "PR already exists"
+              
+              # Comment on issue
+              gh issue comment ${{ github.event.issue.number }} --body "🤖 I've automatically regenerated go.sum and created PR #$(gh pr list --head "autofix/go-sum-$(date +%s)" --json number --jq '.[0].number || "unknown"')"
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-fix lint issues
+        if: contains(github.event.issue.body, 'lint') || contains(github.event.issue.body, 'golangci') || contains(github.event.comment.body, '/fix-lint')
+        run: |
+          echo "🔍 Auto-fixing lint issues..."
+          
+          if [[ -f go.mod ]]; then
+            # Run golangci-lint with auto-fix
+            golangci-lint run --fix
+            
+            # Check if any files were changed
+            if [[ -n $(git status --porcelain) ]]; then
+              echo "✅ Lint issues fixed"
+              
+              # Create PR with lint fixes
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b autofix/lint-$(date +%s)
+              git add .
+              git commit -m "autofix: fix lint issues"
+              git push origin autofix/lint-$(date +%s)
+              
+              # Create PR
+              gh pr create --title "autofix: fix lint issues" --body "This PR automatically fixes golangci-lint issues." --assignee ${{ github.actor }} --label "autofix,linting" || echo "PR already exists"
+              
+              # Comment on issue
+              gh issue comment ${{ github.event.issue.number }} --body "🤖 I've automatically fixed lint issues and created PR #$(gh pr list --head "autofix/lint-$(date +%s)" --json number --jq '.[0].number || "unknown"')"
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-fix import issues
+        if: contains(github.event.issue.body, 'import') || contains(github.event.issue.body, 'unused') || contains(github.event.comment.body, '/fix-imports')
+        run: |
+          echo "📦 Auto-fixing import issues..."
+          
+          if [[ -f go.mod ]]; then
+            # Tidy imports and remove unused dependencies
+            go mod tidy
+            
+            # Use goimports to fix imports if available
+            if command -v goimports &> /dev/null; then
+              find . -name "*.go" -exec goimports -w {} \;
+            fi
+            
+            # Check if any files were changed
+            if [[ -n $(git status --porcelain) ]]; then
+              echo "✅ Import issues fixed"
+              
+              # Create PR with import fixes
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git checkout -b autofix/imports-$(date +%s)
+              git add .
+              git commit -m "autofix: fix import issues"
+              git push origin autofix/imports-$(date +%s)
+              
+              # Create PR
+              gh pr create --title "autofix: fix import issues" --body "This PR automatically fixes import and dependency issues." --assignee ${{ github.actor }} --label "autofix,dependencies" || echo "PR already exists"
+              
+              # Comment on issue
+              gh issue comment ${{ github.event.issue.number }} --body "🤖 I've automatically fixed import issues and created PR #$(gh pr list --head "autofix/imports-$(date +%s)" --json number --jq '.[0].number || "unknown"')"
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-close fixed issues
+        if: success()
+        run: |
+          echo "🔍 Checking if issue can be auto-closed..."
+          
+          # Check if any fixes were applied and comment created
+          # This is handled in the steps above by commenting on the issue
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # For scheduled runs, check for stale issues that might be auto-fixable
+            echo "Checking for fixable stale issues..."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -14,7 +14,7 @@ jobs:
     
     strategy:
       matrix:
-        go-version: ['1.25']
+        go-version: ['1.25.5']
     
     steps:
       - name: Checkout repository
@@ -54,15 +54,82 @@ jobs:
         run: go mod download && go mod verify
       
       - name: Run tests
-        run: go test -v -race -timeout=10m -coverprofile=coverage.out $(go list ./... | grep -v '/qa$')
+        run: |
+          # Capture test output for analysis
+          set +e
+          TEST_OUTPUT=$(go test -v -race -timeout=10m -coverprofile=coverage.out $(go list ./... | grep -v '/qa$') 2>&1)
+          TEST_EXIT_CODE=$?
+          echo "$TEST_OUTPUT"
+          
+          # If tests failed, try auto-fixes
+          if [ $TEST_EXIT_CODE -ne 0 ]; then
+            echo "💥 Tests failed, attempting auto-fixes..."
+            
+            # Auto-fix common issues
+            if echo "$TEST_OUTPUT" | grep -q "no matching versions"; then
+              echo "🔧 Updating dependencies..."
+              go get -u ./...
+              go mod tidy
+            fi
+            
+            if echo "$TEST_OUTPUT" | grep -q "build constraints exclude all Go files"; then
+              echo "🔧 Tidying modules..."
+              go mod tidy
+            fi
+            
+            if echo "$TEST_OUTPUT" | grep -q "cannot find"; then
+              echo "🔧 Downloading missing modules..."
+              go mod download
+            fi
+            
+            # Retry tests after auto-fixes
+            echo "🔄 Retrying tests after auto-fixes..."
+            go test -v -race -timeout=10m -coverprofile=coverage.out $(go list ./... | grep -v '/qa$')
+          fi
+      
+      - name: Set Go version
+        run: echo "VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')" >> $GITHUB_ENV
       
       - name: Build binary
         run: |
-          go build -ldflags="-X github.com/nexora/nexora/internal/version.Version=$VERSION" -o nexora .
+          # Capture build output for analysis
+          set +e
+          BUILD_OUTPUT=$(go build -ldflags="-X github.com/nexora/nexora/internal/version.Version=$VERSION" -o nexora . 2>&1)
+          BUILD_EXIT_CODE=$?
+          
+          # If build failed, try auto-fixes
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "💥 Build failed, attempting auto-fixes..."
+            echo "$BUILD_OUTPUT"
+            
+            # Auto-fix common build issues
+            if echo "$BUILD_OUTPUT" | grep -q "no matching versions"; then
+              echo "🔧 Updating dependencies..."
+              go get -u ./...
+              go mod tidy
+            fi
+            
+            if echo "$BUILD_OUTPUT" | grep -q "package .* is not in GOROOT"; then
+              echo "🔧 Fixing module issues..."
+              go mod download
+              go mod tidy
+            fi
+            
+            if echo "$BUILD_OUTPUT" | grep -q "undefined: .*"; then
+              echo "🔧 Checking for missing dependencies..."
+              go mod tidy
+              go get ./...
+            fi
+            
+            # Retry build after auto-fixes
+            echo "🔄 Retrying build after auto-fixes..."
+            go build -ldflags="-X github.com/nexora/nexora/internal/version.Version=$VERSION" -o nexora .
+          fi
+          
           ./nexora version || echo "Version command not available"
       
       - name: Upload coverage to Codecov
-        if: matrix.go-version == '1.25'
+        if: matrix.go-version == '1.25.5'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out
@@ -70,11 +137,48 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
       
-      - name: Final cleanup and disk check
-        if: always()
+      - name: Auto-fix and create PR if needed
+        if: failure()
         run: |
-          echo "Final disk space:"
-          df -h
-          echo "Cleaning up after build..."
-          go clean -cache -testcache -modcache
-          rm -rf /tmp/go-cache
+          echo "🔍 Checking if auto-fixes can be committed as PR..."
+          
+          # Check if any changes were made during auto-fixes
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "✅ Auto-fixes applied, creating PR..."
+            
+            # Configure git
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            
+            # Create branch
+            BRANCH_NAME="autofix/build-$(date +%s)"
+            git checkout -b "$BRANCH_NAME"
+            
+            # Commit fixes
+            git add .
+            git commit -m "autofix: resolve build/test failures
+            
+            - Updated dependencies
+            - Fixed module issues
+            - Cleaned go.mod/go.sum"
+            
+            # Push branch
+            git push origin "$BRANCH_NAME"
+            
+            # Create PR if GitHub CLI is available
+            if command -v gh &> /dev/null; then
+              PR_URL=$(gh pr create --title "🤖 Auto-fix: Resolve build failures" --body "This PR was auto-generated to fix build/test failures detected in the CI pipeline.
+
+**Auto-fixes applied:**
+- Dependency updates
+- Module cleanup
+- Import resolution
+
+Please review and merge if the fixes look correct." --label "autofix,build" --assignee ${{ github.actor }} || echo "PR creation failed")
+              echo "🔗 Auto-fix PR created: $PR_URL"
+            fi
+          else
+            echo "ℹ️ No auto-fixes were needed"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

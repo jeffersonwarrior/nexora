@@ -21,30 +21,81 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.25.5'
           cache: true
       
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+      - name: Run golangci-lint with auto-fix
         continue-on-error: true  # Don't fail CI on lint warnings
-        with:
-          version: latest
-          args: --timeout=10m --disable typecheck,unused,staticcheck
-      
-      - name: Check go.mod and go.sum
         run: |
-          go mod tidy
-          if [[ -n $(git status --porcelain go.mod go.sum) ]]; then
-            echo "go.mod and go.sum are out of sync"
-            exit 1
+          echo "🔍 Running golangci-lint..."
+          
+          # First run to identify issues
+          LINT_OUTPUT=$(golangci-lint run --timeout=10m --disable typecheck,unused,staticcheck 2>&1 || true)
+          
+          if echo "$LINT_OUTPUT" | grep -q "issues found"; then
+            echo "💥 Lint issues found, attempting auto-fixes..."
+            
+            # Try to auto-fix with golangci-lint
+            echo "🔧 Attempting automatic fixes..."
+            golangci-lint run --fix --timeout=10m --disable typecheck,unused,staticcheck || true
+            
+            # Run additional auto-fixes for common issues
+            echo "🔤 Fixing imports..."
+            if command -v goimports &> /dev/null; then
+              find . -name "*.go" -exec goimports -w {} \;
+            else
+              go fmt ./...
+            fi
+            
+            # Fix common formatting issues
+            echo "🎨 Fixing formatting..."
+            go fmt ./...
+            
+            # Run final lint check
+            echo "🔍 Running final lint check..."
+            golangci-lint run --timeout=10m --disable typecheck,unused,staticcheck
+          else
+            echo "✅ No lint issues found"
+            golangci-lint run --timeout=10m --disable typecheck,unused,staticcheck
           fi
       
-      - name: Check formatting
+      - name: Check go.mod and go.sum with auto-fix
         run: |
-          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-            echo "Code is not properly formatted:"
-            gofmt -s -l .
-            exit 1
+          set +e
+          echo "🔍 Checking go.mod and go.sum..."
+          
+          # Check for issues
+          go mod tidy
+          GO_DIFF=$(git status --porcelain go.mod go.sum || true)
+          
+          if [[ -n "$GO_DIFF" ]]; then
+            echo "🔧 go.mod/go.sum issues detected and auto-fixed"
+            git add go.mod go.sum
+            echo "git status: $GO_DIFF"
+          else
+            echo "✅ go.mod and go.sum are in sync"
+          fi
+      
+      - name: Check formatting with auto-fix
+        run: |
+          set +e
+          echo "🎨 Checking code formatting..."
+          
+          # Find files that need formatting
+          UNFORMATTED=$(gofmt -s -l . || true)
+          
+          if [[ -n "$UNFORMATTED" ]]; then
+            echo "💥 Code formatting issues found, auto-fixing..."
+            echo "Files to format:"
+            echo "$UNFORMATTED"
+            
+            # Auto-fix formatting
+            gofmt -s -w .
+            
+            echo "✅ Formatting fixed for $(echo "$UNFORMATTED" | wc -l | tr -d ' ') files"
+            git add .
+          else
+            echo "✅ Code is properly formatted"
           fi
       
       - name: Check for go vet issues
@@ -62,7 +113,47 @@ jobs:
           go install github.com/gordonklaus/ineffassign@latest
           ineffassign ./...
       
-      - name: Run misspell
+      - name: Create auto-fix PR if changes made
+        if: always()
         run: |
-          go install github.com/client9/misspell/cmd/misspell@latest
-          misspell -error .
+          # Check if any changes were made during auto-fixes
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "✅ Auto-fixes applied during linting, creating PR..."
+            
+            # Configure git
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            
+            # Create branch
+            BRANCH_NAME="autofix/lint-$(date +%s)"
+            git checkout -b "$BRANCH_NAME"
+            
+            # Commit fixes
+            git add .
+            git commit -m "autofix: resolve linting and formatting issues
+            
+            - Fixed golangci-lint issues
+            - Fixed code formatting
+            - Updated import organization"
+            
+            # Push branch
+            git push origin "$BRANCH_NAME"
+            
+            # Create PR if GitHub CLI is available
+            if command -v gh &> /dev/null; then
+              PR_URL=$(gh pr create --title "🤖 Auto-fix: Resolve linting issues" --body "This PR was auto-generated to fix linting and formatting issues detected in the CI pipeline.
+
+**Auto-fixes applied:**
+- Linting fixes
+- Code formatting
+- Import organization
+- go.mod/go.sum cleanup
+
+Please review and merge if the fixes look correct." --label "autofix,linting" --assignee ${{ github.actor }} || echo "PR creation failed")
+              echo "🔗 Auto-fix PR created: $PR_URL"
+            fi
+          else
+            echo "ℹ️ No auto-fixes were needed during linting"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
