@@ -203,8 +203,19 @@ install_go() {
 
 # Build Nexora
 build_nexora() {
-    # Ensure we're in the project directory
-    cd "$(dirname "$0")"
+    # Ensure we're in the project directory (find go.mod file)
+    SCRIPT_DIR="$(dirname "$0")"
+    if [ -f "$SCRIPT_DIR/go.mod" ]; then
+        cd "$SCRIPT_DIR"
+    else
+        # If go.mod not in script dir, try current directory
+        if [ -f "./go.mod" ]; then
+            cd "."
+        else
+            print_error "Could not find go.mod file. Make sure you're running this script from the project directory."
+            return 1
+        fi
+    fi
     
     # Update dependencies before building (suppress output)
     if ! go mod tidy >/dev/null 2>&1 && go get -u ./... >/dev/null 2>&1 && go mod tidy >/dev/null 2>&1; then
