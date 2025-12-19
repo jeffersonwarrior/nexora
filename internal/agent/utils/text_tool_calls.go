@@ -143,7 +143,8 @@ func ParseTextToolCalls(text string) []TextToolCall {
 			Name:      name,
 			Arguments: arguments,
 		})
-		searchText = searchText[startIdx+endIdx+len(xaiCallEnd):]
+		// Fix x.ai indexing bug: use correct end position
+		searchText = searchText[(startIdx+tagEnd+1)+endIdx+len(xaiCallEnd):]
 	}
 
 	return calls
