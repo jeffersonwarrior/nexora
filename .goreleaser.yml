@@ -70,7 +70,7 @@ builds:
       - goos: windows
         goarch: arm
     ldflags:
-      - -s -w -X github.com/charmbracelet/nexora/internal/version.Version={{.Version}}
+      - -s -w -X github.com/nexora/nexora/internal/version.Version={{.Version}}
     flags:
       - -trimpath
 
