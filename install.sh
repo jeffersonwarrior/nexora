@@ -107,6 +107,9 @@ check_go() {
 install_go() {
     print_status "Installing Go..."
     
+    # Save current directory
+    ORIGINAL_DIR="$(pwd)"
+    
     # Detect OS and architecture
     GO_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
     GO_ARCH=$(uname -m)
@@ -138,15 +141,18 @@ install_go() {
     if command -v wget >/dev/null 2>&1; then
         if ! wget -q --show-progress "$GO_URL"; then
             print_error "Failed to download Go using wget"
+            cd "$ORIGINAL_DIR"
             return 1
         fi
     elif command -v curl >/dev/null 2>&1; then
         if ! curl -fsSL "$GO_URL" -o "$GO_TAR"; then
             print_error "Failed to download Go using curl"
+            cd "$ORIGINAL_DIR"
             return 1
         fi
     else
         print_error "Neither wget nor curl is available. Cannot download Go."
+        cd "$ORIGINAL_DIR"
         return 1
     fi
     
@@ -160,6 +166,7 @@ install_go() {
     print_status "Extracting Go to $GO_INSTALL_DIR..."
     if ! tar -C "$HOME/.local" -xzf "$GO_TAR"; then
         print_error "Failed to extract Go"
+        cd "$ORIGINAL_DIR"
         return 1
     fi
     
@@ -182,9 +189,13 @@ install_go() {
     if [ -x "$GO_BIN_DIR/go" ]; then
         INSTALLED_VERSION=$("$GO_BIN_DIR/go" version | awk '{print $3}' | sed 's/go//')
         print_status "Go $INSTALLED_VERSION installed successfully!"
+        # Restore original directory
+        cd "$ORIGINAL_DIR"
         return 0
     else
         print_error "Go installation verification failed"
+        # Restore original directory
+        cd "$ORIGINAL_DIR"
         return 1
     fi
 }
