@@ -6,6 +6,34 @@
 
 ---
 
+## 🐛 Known Issues
+
+### Session Title Re-generation
+**Issue**: Sessions that already have "New Session" as title are not retitled when first message is sent.
+
+**Current Behavior**:
+- New sessions get "New Session" as default title
+- When first message is sent, `generateTitle()` runs but only updates the session object
+- If the session already exists with "New Session", it's not properly detected as needing a title
+
+**Expected Behavior**:
+- First message should always generate a proper title
+- "New Session" should be treated as placeholder that needs replacement
+
+**Root Cause**:
+- `generateTitle()` checks `MessageCount == 0` but doesn't check if current title is placeholder
+- Race condition possible: session created 	 title set to "New Session" 	 message added 	 count becomes 1
+
+**Possible Solutions**:
+1. Check both `MessageCount == 0 OR title == "New Session"` 
+2. Add `needs_title` boolean flag to session schema
+3. Check if title equals any default placeholder values
+4. Always regenerate title if it matches default patterns
+
+**Priority**: Medium (UX issue, not blocking)
+
+---
+
 ## Phase 0: ModelScan Integration Priority (Week 0-2)
 
 ### Rethinking: ModelScan First
