@@ -179,7 +179,7 @@ install_go() {
     rm -f "$GO_TAR"
     
     # Add Go to PATH in shell config
-    GO_BIN_DIR="$GO_INSTALL_DIR/go/bin"
+    GO_BIN_DIR="$GO_INSTALL_DIR/bin"
     if ! grep -q "$GO_BIN_DIR" "$CONFIG_FILE"; then
         echo "" >> "$CONFIG_FILE"
         echo "# Go PATH addition" >> "$CONFIG_FILE"
@@ -191,8 +191,8 @@ install_go() {
     export PATH="$PATH:$GO_BIN_DIR"
     
     # Verify installation
-    if command -v go >/dev/null 2>&1; then
-        INSTALLED_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+    if [ -x "$GO_BIN_DIR/go" ]; then
+        INSTALLED_VERSION=$("$GO_BIN_DIR/go" version | awk '{print $3}' | sed 's/go//')
         print_status "Go $INSTALLED_VERSION installed successfully!"
         return 0
     else
