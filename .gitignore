@@ -82,6 +82,7 @@ nexora*
 
 # Archived working documents and test files
 archives/
+archive/
 *.wip
 
 # Example configurations
