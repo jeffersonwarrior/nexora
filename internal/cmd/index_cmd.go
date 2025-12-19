@@ -42,8 +42,6 @@ var (
 )
 
 func init() {
-	rootCmd.AddCommand(indexCmd)
-
 	indexCmd.Flags().BoolVarP(&indexRecursive, "recursive", "r", true, "Index directories recursively")
 	indexCmd.Flags().BoolVarP(&indexEmbeddings, "embeddings", "e", true, "Generate semantic embeddings")
 	indexCmd.Flags().StringVarP(&indexOutput, "output", "o", "nexora_index.db", "Output database path")

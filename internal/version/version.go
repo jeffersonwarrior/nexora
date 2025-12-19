@@ -6,6 +6,7 @@ import (
 )
 
 var Version = "0.29.0"
+
 func init() {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {

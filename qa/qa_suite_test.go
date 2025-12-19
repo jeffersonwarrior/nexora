@@ -23,7 +23,7 @@ func testGoTest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get current working directory: %v", err)
 	}
-	
+
 	// Move up one directory from qa to project root
 	projectRoot := filepath.Dir(cwd)
 	cmd := exec.Command("sh", "-c", "go test ./... 2>&1 || true")
@@ -63,7 +63,7 @@ func testCompile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to get current working directory: %v", err)
 	}
-	
+
 	// Move up one directory from qa to project root
 	projectRoot := filepath.Dir(cwd)
 	cmd := exec.Command("go", "build", "-o", "/tmp/nexora-test", ".")

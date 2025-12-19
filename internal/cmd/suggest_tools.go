@@ -18,7 +18,3 @@ These tools provide better performance and more AI-friendly output formats for c
 		fmt.Println(suggestions)
 	},
 }
-
-func init() {
-	rootCmd.AddCommand(suggestToolsCmd)
-}
