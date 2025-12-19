@@ -115,6 +115,92 @@ check_go() {
     fi
 }
 
+# Install Go if not present
+install_go() {
+    print_status "Installing Go..."
+    
+    # Detect OS and architecture
+    GO_OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    GO_ARCH=$(uname -m)
+    
+    # Map architecture names to Go's naming convention
+    case "$GO_ARCH" in
+        x86_64) GO_ARCH="amd64" ;;
+        aarch64|arm64) GO_ARCH="arm64" ;;
+        armv7l) GO_ARCH="armv6l" ;;
+        *) 
+            print_error "Unsupported architecture: $GO_ARCH"
+            return 1
+            ;;
+    esac
+    
+    # Set Go version to install (using a recent stable version)
+    GO_VERSION="1.21.5"
+    GO_TAR="go${GO_VERSION}.${GO_OS}-${GO_ARCH}.tar.gz"
+    GO_URL="https://go.dev/dl/${GO_TAR}"
+    GO_INSTALL_DIR="$HOME/.local/go"
+    
+    print_status "Downloading Go ${GO_VERSION} for ${GO_OS}-${GO_ARCH}..."
+    
+    # Create temp directory for download
+    mkdir -p "$TEMP_DIR"
+    cd "$TEMP_DIR"
+    
+    # Download Go
+    if command -v wget >/dev/null 2>&1; then
+        if ! wget -q --show-progress "$GO_URL"; then
+            print_error "Failed to download Go using wget"
+            return 1
+        fi
+    elif command -v curl >/dev/null 2>&1; then
+        if ! curl -fsSL "$GO_URL" -o "$GO_TAR"; then
+            print_error "Failed to download Go using curl"
+            return 1
+        fi
+    else
+        print_error "Neither wget nor curl is available. Cannot download Go."
+        return 1
+    fi
+    
+    # Remove old Go installation if it exists
+    if [ -d "$GO_INSTALL_DIR" ]; then
+        print_status "Removing existing Go installation..."
+        rm -rf "$GO_INSTALL_DIR"
+    fi
+    
+    # Extract Go
+    print_status "Extracting Go to $GO_INSTALL_DIR..."
+    if ! tar -C "$HOME/.local" -xzf "$GO_TAR"; then
+        print_error "Failed to extract Go"
+        return 1
+    fi
+    
+    # Remove the downloaded tarball
+    rm -f "$GO_TAR"
+    
+    # Add Go to PATH in shell config
+    GO_BIN_DIR="$GO_INSTALL_DIR/go/bin"
+    if ! grep -q "$GO_BIN_DIR" "$CONFIG_FILE"; then
+        echo "" >> "$CONFIG_FILE"
+        echo "# Go PATH addition" >> "$CONFIG_FILE"
+        echo "export PATH=\"\$PATH:$GO_BIN_DIR\"" >> "$CONFIG_FILE"
+        print_status "Added Go to PATH in $CONFIG_FILE"
+    fi
+    
+    # Export to current session
+    export PATH="$PATH:$GO_BIN_DIR"
+    
+    # Verify installation
+    if command -v go >/dev/null 2>&1; then
+        INSTALLED_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
+        print_status "Go $INSTALLED_VERSION installed successfully!"
+        return 0
+    else
+        print_error "Go installation verification failed"
+        return 1
+    fi
+}
+
 # Build Nexora
 build_nexora() {
     # Ensure we're in the project directory
@@ -353,8 +439,11 @@ install_better_tools() {
 main() {
     # Check if Go is installed
     if ! check_go; then
-        print_error "Go is required to build Nexora. Please install Go manually and try again."
-        return 1
+        print_status "Go not found or version too old. Installing Go..."
+        if ! install_go; then
+            print_error "Go installation failed. Please install Go manually and try again."
+            return 1
+        fi
     fi
     
     # Remove any existing installations
