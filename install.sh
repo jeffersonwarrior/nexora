@@ -193,14 +193,21 @@ install_go() {
 build_nexora() {
     # Ensure we're in the project directory (find go.mod file)
     SCRIPT_DIR="$(dirname "$0")"
+    print_status "Script directory: $SCRIPT_DIR"
+    print_status "Current directory: $(pwd)"
+    print_status "Looking for go.mod in: $SCRIPT_DIR/go.mod and ./go.mod"
+    
     if [ -f "$SCRIPT_DIR/go.mod" ]; then
         cd "$SCRIPT_DIR"
+        print_status "Found go.mod in script directory, changed to: $(pwd)"
     else
         # If go.mod not in script dir, try current directory
         if [ -f "./go.mod" ]; then
             cd "."
+            print_status "Found go.mod in current directory, staying in: $(pwd)"
         else
             print_error "Could not find go.mod file. Make sure you're running this script from the project directory."
+            print_error "Script dir: $SCRIPT_DIR, Current dir: $(pwd)"
             return 1
         fi
     fi
