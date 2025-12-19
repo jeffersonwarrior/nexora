@@ -43,6 +43,7 @@ You can also trigger auto-fixes by commenting on any issue with:
 - `/fix-security` - Fix security vulnerabilities
 - `/fix-performance` - Apply performance optimizations
 - `/fix-build` - Fix build compilation issues
+- `/ai-fix` - Trigger AI-enhanced auto-fix for complex CI failures
 
 ### Additional Context
 
