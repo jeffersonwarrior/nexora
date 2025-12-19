@@ -14,7 +14,7 @@ jobs:
     
     strategy:
       matrix:
-        go-version: ['1.23']
+        go-version: ['1.25']
     
     steps:
       - name: Checkout repository
@@ -62,7 +62,7 @@ jobs:
           ./nexora version || echo "Version command not available"
       
       - name: Upload coverage to Codecov
-        if: matrix.go-version == '1.23'
+        if: matrix.go-version == '1.25'
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.out

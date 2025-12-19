@@ -597,16 +597,20 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 				prepared.Messages[i].ProviderOptions = nil
 			}
 
-			queuedCalls, _ := a.messageQueue.Get(call.SessionID)
-			a.messageQueue.Del(call.SessionID)
-			for _, queued := range queuedCalls {
-				userMessage, createErr := a.createUserMessage(callContext, queued)
-				if createErr != nil {
-					continue
+			// Only process queued messages if this is NOT an auto-continuation
+			// Auto-continuation has the special prompt "CONTINUE_AFTER_TOOL_EXECUTION"
+			if call.Prompt != "CONTINUE_AFTER_TOOL_EXECUTION" {
+				queuedCalls, _ := a.messageQueue.Get(call.SessionID)
+				a.messageQueue.Del(call.SessionID)
+				for _, queued := range queuedCalls {
+					userMessage, createErr := a.createUserMessage(callContext, queued)
+					if createErr != nil {
+						continue
+					}
+
+					prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
+
 				}
-
-				prepared.Messages = append(prepared.Messages, userMessage.ToAIMessage()...)
-
 			}
 			lastSystemRoleInx := 0
 			systemMessageUpdated := false
@@ -1486,11 +1490,27 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 		},
 	})
 	if err != nil {
-		slog.Error("error generating title",
+		slog.Error("error generating title, using prompt fallback",
 			"err", err,
 			"session_id", session.ID,
 			"model", a.smallModel.ModelCfg.Model,
 			"provider", a.smallModel.ModelCfg.Provider)
+		// Fallback: use first 50 chars of prompt
+		title := prompt
+		if len(title) > 50 {
+			title = title[:50] + "..."
+		}
+		if title == "" {
+			title = "Conversation"
+		}
+		session.Title = title
+		// Save the fallback title
+		if _, saveErr := a.sessions.Save(ctx, *session); saveErr != nil {
+			slog.Error("failed to save fallback title",
+				"error", saveErr,
+				"session_id", session.ID,
+				"title", title)
+		}
 		return
 	}
 
@@ -1515,11 +1535,19 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 
 	title = strings.TrimSpace(title)
 	if title == "" {
-		slog.Warn("failed to generate title",
+		slog.Warn("failed to generate title, using prompt fallback",
 			"warn", "empty title",
 			"session_id", session.ID,
 			"original_response", resp.Response.Content.Text())
-		return
+		// Fallback: use first 50 chars of prompt
+		title = prompt
+		if len(title) > 50 {
+			title = title[:50] + "..."
+		}
+		// If still empty, use a default
+		if title == "" {
+			title = "Conversation"
+		}
 	}
 
 	slog.Info("generateTitle: generated new title",
