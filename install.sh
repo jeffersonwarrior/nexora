@@ -27,6 +27,11 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Parse command line arguments
+VERSION=${1:-$DEFAULT_VERSION}
+
+print_status "Installing Nexora v${VERSION} to $HOME/.local/bin..."
+
 mkdir -p "$HOME/.local/bin"
 # Check both current PATH and shell config files
 CONFIG_FILE=""
@@ -207,6 +212,11 @@ build_nexora() {
     
     # Set up build flags
     LDFLAGS="-X github.com/nexora/cli/internal/version.Version=${VERSION}"
+    
+    # Debug output
+    print_status "Building with output path: $HOME/.local/bin/nexora"
+    print_status "Current directory: $(pwd)"
+    print_status "HOME is set to: $HOME"
     
     # Build the binary directly to the installation directory
     if ! go build -ldflags="${LDFLAGS}" -o "$HOME/.local/bin/nexora" .; then
