@@ -7,18 +7,18 @@ replace github.com/nexora/nexora => ./
 require (
 	charm.land/bubbles/v2 v2.0.0-rc.1
 	charm.land/bubbletea/v2 v2.0.0-rc.2.0.20251202162339-5fa38b798f16
-	charm.land/fantasy v0.5.4
+	charm.land/fantasy v0.5.5
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251119143523-0334bb4562ca
 	charm.land/x/vcr v0.1.1
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/PuerkitoBio/goquery v1.11.0
-	github.com/alecthomas/chroma/v2 v2.21.0
+	github.com/alecthomas/chroma/v2 v2.21.1
 	github.com/atotto/clipboard v0.1.4
 	github.com/aymanbagabas/go-udiff v0.3.1
 	github.com/bmatcuk/doublestar/v4 v4.9.1
 	github.com/charlievieth/fastwalk v1.0.14
-	github.com/charmbracelet/catwalk v0.10.2
+	github.com/charmbracelet/catwalk v0.11.2
 	github.com/charmbracelet/colorprofile v0.4.1
 	github.com/charmbracelet/fang v0.4.4
 	github.com/charmbracelet/glamour/v2 v2.0.0-20251106195642-800eb8175930
@@ -40,7 +40,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.3.0
 	github.com/modelcontextprotocol/go-sdk v1.1.0
 	github.com/muesli/termenv v0.16.0
-	github.com/ncruces/go-sqlite3 v0.30.3
+	github.com/ncruces/go-sqlite3 v0.30.4
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nxadm/tail v1.4.11
 	github.com/openai/openai-go/v2 v2.7.1
@@ -150,7 +150,7 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sourcegraph/jsonrpc2 v0.2.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	github.com/tetratelabs/wazero v1.10.1 // indirect
+	github.com/tetratelabs/wazero v1.11.0 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
