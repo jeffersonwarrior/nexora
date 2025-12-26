@@ -253,6 +253,7 @@ func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 		// Existing providers
 		providers.XAIProvider,
 		providers.MiniMaxProvider,
+		providers.SyntheticProvider,
 	}
 
 	// Collect injected providers
