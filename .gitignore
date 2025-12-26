@@ -101,3 +101,4 @@ internal/session/:memory*
 *.example.json
 setup-config.sh
 setup-config.sh
+NEXORA.*.md
