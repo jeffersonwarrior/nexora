@@ -1,6 +1,83 @@
+## [0.29.1-RC1] - 2025-12-26 - **Tool Consolidation & Natural Language Support**
+
+### 🎯 Tool Aliasing System
+- **47 natural language aliases** for intuitive tool invocation
+- Supports common CLI tool names: curl, wget, cat, ls, rg, shell, exec, etc.
+- Seamless integration - aliases resolved before tool dispatch
+- Added aliases: curl/wget/http-get 	 fetch, read/cat/open 	 view, dir 	 ls, modify/change/replace/update 	 edit, create/make/new 	 write, search/find/rg 	 grep, shell/exec/execute/run/command 	 bash, web-search/websearch 	 web_search, sg/code-search 	 sourcegraph, job_kill/job_output 	 bash
+
+### 🌐 Smart Fetch
+- **MCP Auto-Routing**: Automatically detects and uses MCP web_reader if available
+- **Context-Aware Content Handling**: Token counting with automatic tmp file fallback for large content
+- **Session-Scoped Storage**: Tmp files in `./tmp/nexora-{session-id}/`, auto-cleaned on session end
+- **Format Support**: Returns content as text, markdown, or HTML based on request
+- **Test Coverage**: 10 test functions covering all edge cases
+
+### 🐚 Bash TMUX Integration
+- **Persistent Shell Sessions**: TMUX-based session management for long-running commands
+- **Session Continuation**: Commands can continue in same shell via ShellID parameter
+- **Unified Tool**: job_kill and job_output aliased to bash tool
+- **Automatic Cleanup**: All TMUX sessions killed on session end
+- **Metadata**: Returns TMUX session/pane IDs in response for debugging
+
+### 🔒 Phase 1 Critical Safety Blockers (Phase 4.5.2)
+- **Destructive Command Protection**: Blocks rm -rf, recursive force removal variants
+- **Process Kill Protection**: Prevents killing Nexora/TMUX processes (pkill/killall nexora|tmux)
+- **Init Protection**: Blocks kill -9 1 (system init/systemd)
+- **Disk Format/Wipe Protection**: Blocks mkfs, fdisk, dd, shred commands
+- **Fork Bomb Detection**: Simple pattern matching for :(), while true, :|:
+- **Git Safety**: Blocks git push --force/-f
+- **Dangerous chmod**: Blocks chmod 777/000
+- **System Directory Protection**: Blocks rm/mv/chmod on /bin, /sbin, /usr/bin, /etc, /sys, /proc
+- **Test Coverage**: 35 comprehensive safety tests (all pass)
+
+### ✨ View Tool Improvements
+- **Context-Aware Full File Reading**: View tool now reads entire file if it fits within token budget
+  - Smart detection: Automatically reads whole file when no offset/limit specified
+  - Token limit: 30K tokens (~50-60% of typical context window)
+  - Fallback: Gracefully falls back to 2K line chunks for large files
+  - Impact: Better context for AI without manual pagination for medium-sized files
+
+### 🔧 Bug Fixes
+- **CRITICAL**: Fixed TMUX command escaping - shell metacharacters (`;`, `|`, `&`) now work correctly
+  - Root cause: `escapeTmuxKeys()` was over-escaping, turning `cmd1; cmd2` into `cmd1\;\ cmd2`
+  - Solution: Use `tmux send-keys -l` (literal mode), removed 30+ unnecessary escapes
+  - Impact: Complex bash commands with pipes, semicolons, redirects now execute properly
+- Fixed deadlock in TMUX manager (NewTmuxSession holding write lock while calling SendCommand)
+- Fixed TMUX output capture timing (added 100ms delay for command execution)
+- All bash tool tests now pass (10/10 tests)
+
+### 📦 Files
+- Created: `internal/agent/tools/aliases.go` (189 lines) - Tool alias resolution
+- Created: `internal/agent/tools/aliases_test.go` (225 lines) - 16/16 tests pass
+- Created: `internal/agent/tools/output_manager.go` (189 lines) - Context-aware output handling
+- Created: `internal/agent/tools/output_manager_test.go` (225 lines) - 13/13 tests pass
+- Created: `internal/shell/tmux.go` (400+ lines) - TMUX session manager
+- Created: `internal/agent/tools/bash_safety_test.go` (320 lines) - 35 safety tests pass
+- Created: `codedocs/TMUX-INTERACTION-PROTOCOL.md` - Complete TMUX workflow guide
+- Created: `codedocs/BASH-SAFETY-AUDIT.md` - Security audit and recommendations
+- Created: `phase4.5-tmux-simplification.12.26.todo.md` - 9-tool architecture plan
+- Modified: `internal/agent/tools/fetch.go` - Smart routing with MCP detection
+- Modified: `internal/agent/tools/fetch_smart_test.go` - Fixed test content sizes
+- Modified: `internal/agent/tools/bash.go` - TMUX integration + Phase 1 safety blockers
+- Modified: `internal/agent/tools/aliases.go` - Added job aliases
+- Modified: `internal/agent/tools/view.go` - Context-aware full file reading
+- Modified: `internal/shell/tmux.go` - Fixed command escaping with literal mode
+
+### 🧪 QA Results
+```
+✅ Alias tests: 16/16 pass
+✅ Output manager tests: 13/13 pass
+✅ Smart fetch tests: 10/10 pass
+✅ Bash tool tests: 10/10 pass
+✅ Safety blocker tests: 35/35 pass
+✅ All tool tests passing with -race flag
+✅ Zero new test failures introduced
+```
+
+---
+
 ## [0.29.0] - 2025-12-18 - **State Machine Architecture & Resource Monitoring**
-- **State Machine Implementation**: AI lifecycle management with intelligent execution flow
-  - 8 states: Idle → ProcessingPrompt → StreamingResponse → ExecutingTool → ProgressCheck → PhaseTransition → Halted/Error
   - Progress tracking with semantic analysis (file modifications, command execution, test results)
   - Loop detection via action fingerprinting and error pattern analysis
   - Phase-based execution (Planning → Implementation → Validation → Refinement)
