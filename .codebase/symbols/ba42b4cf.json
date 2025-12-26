@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_gateway/key_verification.rs",
+  "file_hash": "778442264fa999be89c591902f73d710a33e7fe3",
+  "updated_at": "2025-12-26T17:34:23.737641",
+  "symbols": {
+    "function_compute_hash_46": {
+      "name": "compute_hash",
+      "type": "function",
+      "start_line": 46,
+      "end_line": 49,
+      "content_hash": "7b91e40de663c4307f6c5e087667b848be20faff",
+      "content": "    fn compute_hash(key: &str) -> [u8; 32] {\n        Sha256::digest(key.as_bytes()).into()\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_hash_to_hex_50": {
+      "name": "hash_to_hex",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 54,
+      "content_hash": "d4fcaa300402cf59cce3565400acb159276ad35c",
+      "content": "    fn hash_to_hex(hash: &[u8; 32]) -> String {\n        hash.iter().map(|b| format!(\"{:02x}\", b)).collect()\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sha256_verify_correct_key_55": {
+      "name": "test_sha256_verify_correct_key",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 64,
+      "content_hash": "b1408a606865791aaea3f2d20680354ff4ba28d2",
+      "content": "    fn test_sha256_verify_correct_key() {\n        let test_key = \"test-api-key-12345\";\n        let hash = compute_hash(test_key);\n\n        // Verify that the hash of the same key matches\n        let provided_hash = Sha256::digest(test_key.as_bytes());\n        assert!(bool::from(provided_hash.ct_eq(&hash[..])));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sha256_verify_wrong_key_65": {
+      "name": "test_sha256_verify_wrong_key",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 75,
+      "content_hash": "945abcee747b4f557b11644dbe23746690742af5",
+      "content": "    fn test_sha256_verify_wrong_key() {\n        let test_key = \"test-api-key-12345\";\n        let wrong_key = \"wrong-api-key\";\n        let hash = compute_hash(test_key);\n\n        // Verify that wrong key fails\n        let provided_hash = Sha256::digest(wrong_key.as_bytes());\n        assert!(!bool::from(provided_hash.ct_eq(&hash[..])));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sha256_verify_empty_key_76": {
+      "name": "test_sha256_verify_empty_key",
+      "type": "function",
+      "start_line": 76,
+      "end_line": 85,
+      "content_hash": "128efe0840fa9235c82aecf52b6dbd7450fca522",
+      "content": "    fn test_sha256_verify_empty_key() {\n        let test_key = \"test-api-key-12345\";\n        let hash = compute_hash(test_key);\n\n        // Empty key should not verify\n        let provided_hash = Sha256::digest(\"\".as_bytes());\n        assert!(!bool::from(provided_hash.ct_eq(&hash[..])));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sha256_verify_similar_key_86": {
+      "name": "test_sha256_verify_similar_key",
+      "type": "function",
+      "start_line": 86,
+      "end_line": 96,
+      "content_hash": "4b24a4ee9ace1f2b362a79ba58419e57cdef369b",
+      "content": "    fn test_sha256_verify_similar_key() {\n        let test_key = \"test-api-key-12345\";\n        let similar_key = \"test-api-key-12346\"; // Off by one character\n        let hash = compute_hash(test_key);\n\n        // Similar key should not verify\n        let provided_hash = Sha256::digest(similar_key.as_bytes());\n        assert!(!bool::from(provided_hash.ct_eq(&hash[..])));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sha256_hash_format_97": {
+      "name": "test_sha256_hash_format",
+      "type": "function",
+      "start_line": 97,
+      "end_line": 109,
+      "content_hash": "b5c7f397d66b838771ced933fd0d260a5e7ae257",
+      "content": "    fn test_sha256_hash_format() {\n        let test_key = \"test-api-key\";\n        let hash = compute_hash(test_key);\n        let hex_hash = hash_to_hex(&hash);\n\n        // SHA-256 hashes are 32 bytes (64 hex characters)\n        assert_eq!(hash.len(), 32);\n        assert_eq!(hex_hash.len(), 64);\n        // Should be valid hex\n        assert!(hex_hash.chars().all(|c| c.is_ascii_hexdigit()));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hex_decode_roundtrip_110": {
+      "name": "test_hex_decode_roundtrip",
+      "type": "function",
+      "start_line": 110,
+      "end_line": 123,
+      "content_hash": "0f1ac9b9445a06b2b31ee54561bc5568e6ca92ad",
+      "content": "    fn test_hex_decode_roundtrip() {\n        let test_key = \"test-api-key\";\n        let hash = compute_hash(test_key);\n        let hex_hash = hash_to_hex(&hash);\n\n        // Decode the hex back to bytes\n        let mut decoded = [0u8; 32];\n        for (i, chunk) in hex_hash.as_bytes().chunks(2).enumerate() {\n            decoded[i] = u8::from_str_radix(std::str::from_utf8(chunk).unwrap(), 16).unwrap();\n        }\n\n        assert_eq!(hash, decoded);\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

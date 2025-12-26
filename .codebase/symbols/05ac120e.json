@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/transcript-to-markdown.ts",
+  "file_hash": "5d3e827670ee3f3c545c86659310f904fc8911ea",
+  "updated_at": "2025-12-26T17:34:23.601136",
+  "symbols": {
+    "function_truncate_23": {
+      "name": "truncate",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 26,
+      "content_hash": "aa60c94a4c83dea6774c0a0111d84a28f78411af",
+      "content": "function truncate(str: string, maxLen: number = 500): string {\n  if (str.length <= maxLen) return str;\n  return str.substring(0, maxLen) + '\\n... [truncated]';\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatToolResult_31": {
+      "name": "formatToolResult",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 60,
+      "content_hash": "12941b4ddbb187dddbcd70ecefd6f8e6fe982a06",
+      "content": "function formatToolResult(result: ToolResultContent): string {\n  if (typeof result.content === 'string') {\n    // Try to parse as JSON for better formatting\n    try {\n      const parsed = JSON.parse(result.content);\n      return JSON.stringify(parsed, null, 2);\n    } catch {\n      return truncate(result.content);\n    }\n  }\n\n  if (Array.isArray(result.content)) {\n    // Handle array of content items - extract text and parse if JSON\n    const formatted = result.content.map((item: any) => {\n      if (item.type === 'text' && item.text) {\n        try {\n          const parsed = JSON.parse(item.text);\n          return JSON.stringify(parsed, null, 2);\n        } catch {\n          return item.text;\n        }\n      }\n      return JSON.stringify(item, null, 2);\n    }).join('\\n\\n');\n\n    return formatted;\n  }\n\n  return '[unknown result type]';\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

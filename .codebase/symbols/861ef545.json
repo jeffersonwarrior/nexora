@@ -1,0 +1,293 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/utils/styled_string.rs",
+  "file_hash": "1f38a42ff9dd6712f01cdd3c9643dd3c85efaba7",
+  "updated_at": "2025-12-26T17:34:22.588000",
+  "symbols": {
+    "trait_StyledString_2": {
+      "name": "StyledString",
+      "type": "trait",
+      "start_line": 2,
+      "end_line": 2,
+      "content_hash": "16f25449e0e457ac1bdfac846cc5808e15369f71",
+      "content": "pub trait StyledString {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_black_3": {
+      "name": "black",
+      "type": "function",
+      "start_line": 3,
+      "end_line": 3,
+      "content_hash": "e08bccc129a035600e229be9aefc1ec40e7d1b69",
+      "content": "    fn black(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_red_4": {
+      "name": "red",
+      "type": "function",
+      "start_line": 4,
+      "end_line": 4,
+      "content_hash": "21e09c5ab63b4507caeee905d083f76787274f72",
+      "content": "    fn red(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_green_5": {
+      "name": "green",
+      "type": "function",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "3c36befa2100a67c20ea5528571308c1b9a374da",
+      "content": "    fn green(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_yellow_6": {
+      "name": "yellow",
+      "type": "function",
+      "start_line": 6,
+      "end_line": 6,
+      "content_hash": "9b6f580b547e95703233600ff7a002678a4d8de0",
+      "content": "    fn yellow(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_blue_7": {
+      "name": "blue",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 7,
+      "content_hash": "6ca608319ad97c24d49d258e70d7ab719d8f1f72",
+      "content": "    fn blue(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_magenta_8": {
+      "name": "magenta",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 8,
+      "content_hash": "2246b546db51986a9e9ba0bb8f9f8ed170530273",
+      "content": "    fn magenta(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cyan_9": {
+      "name": "cyan",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 9,
+      "content_hash": "5b38eaa68fcc3bacf5a012ccd013b0998a0069e4",
+      "content": "    fn cyan(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_white_10": {
+      "name": "white",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "6e8b9cbac4950a0471b04eb691de283174f45453",
+      "content": "    fn white(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_bold_11": {
+      "name": "bold",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 11,
+      "content_hash": "30d0fa57f5e86dd5fd7f9145047a745a1427968b",
+      "content": "    fn bold(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_underline_12": {
+      "name": "underline",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 12,
+      "content_hash": "c4c7edbf5990ae0a4592f829a87c46762bdbbe3a",
+      "content": "    fn underline(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_normal_13": {
+      "name": "normal",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 13,
+      "content_hash": "9646355fb44b095cd65855e7b7cf28967ad359a7",
+      "content": "    fn normal(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_bright_red_14": {
+      "name": "bright_red",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 16,
+      "content_hash": "06f7bab7b01cc419906b221611367ddeab6e927b",
+      "content": "    fn bright_red(&self) -> String;\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_StyledString_17": {
+      "name": "StyledString",
+      "type": "impl",
+      "start_line": 17,
+      "end_line": 17,
+      "content_hash": "5658eb176f5422091a15f64393e30d792f5b79e4",
+      "content": "impl StyledString for str {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_black_18": {
+      "name": "black",
+      "type": "method",
+      "start_line": 18,
+      "end_line": 21,
+      "content_hash": "3b199bce19feeb520c04ca1275b567c36d34b9bc",
+      "content": "    fn black(&self) -> String {\n        format!(\"\\x1b[30m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_red_22": {
+      "name": "red",
+      "type": "method",
+      "start_line": 22,
+      "end_line": 25,
+      "content_hash": "0627c0058469e52baec4977b03d43a868be53896",
+      "content": "    fn red(&self) -> String {\n        format!(\"\\x1b[31m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_green_26": {
+      "name": "green",
+      "type": "method",
+      "start_line": 26,
+      "end_line": 29,
+      "content_hash": "620b2016fbb9dd51b01743ea3e62bf2c6e99e84e",
+      "content": "    fn green(&self) -> String {\n        format!(\"\\x1b[32m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_yellow_30": {
+      "name": "yellow",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 33,
+      "content_hash": "836b1fe3d5bf64925d25ed9a19521456716c7d9a",
+      "content": "    fn yellow(&self) -> String {\n        format!(\"\\x1b[33m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_blue_34": {
+      "name": "blue",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 37,
+      "content_hash": "9823e73e6af310fe295025ffa52fd5dfe61e8807",
+      "content": "    fn blue(&self) -> String {\n        format!(\"\\x1b[34m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_magenta_38": {
+      "name": "magenta",
+      "type": "method",
+      "start_line": 38,
+      "end_line": 41,
+      "content_hash": "e541c9c1f3548c15758f59a009a0751cc04a9a34",
+      "content": "    fn magenta(&self) -> String {\n        format!(\"\\x1b[35m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_cyan_42": {
+      "name": "cyan",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 45,
+      "content_hash": "b701fae3d986c3e872a36aa09e8a197b59062b80",
+      "content": "    fn cyan(&self) -> String {\n        format!(\"\\x1b[36m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_white_46": {
+      "name": "white",
+      "type": "method",
+      "start_line": 46,
+      "end_line": 49,
+      "content_hash": "1a3ec2690990aa4795e3f45acc69dfe5c0e24361",
+      "content": "    fn white(&self) -> String {\n        format!(\"\\x1b[37m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_bold_50": {
+      "name": "bold",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 53,
+      "content_hash": "8b9fc395bc3d3d6e654883a47ed09affd1cc5a82",
+      "content": "    fn bold(&self) -> String {\n        format!(\"\\x1b[1m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_underline_54": {
+      "name": "underline",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 57,
+      "content_hash": "d666450ce0289c55859e750e1c5584ae9d38b7d1",
+      "content": "    fn underline(&self) -> String {\n        format!(\"\\x1b[4m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_normal_58": {
+      "name": "normal",
+      "type": "method",
+      "start_line": 58,
+      "end_line": 61,
+      "content_hash": "6cf9141c73a18b72dfa0193b14d4a958e0f58637",
+      "content": "    fn normal(&self) -> String {\n        format!(\"\\x1b[0m{self}\\x1b[0m\")\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_bright_red_62": {
+      "name": "bright_red",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 65,
+      "content_hash": "455b2a1e03581516ee98739e5f246434d053c2a3",
+      "content": "    fn bright_red(&self) -> String {\n        format!(\"\\x1b[91m{self}\\x1b[0m\")\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

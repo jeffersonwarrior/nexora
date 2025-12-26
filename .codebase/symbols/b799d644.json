@@ -1,0 +1,227 @@
+{
+  "file_path": "/work/.local/tools/modelscan/.github/workflows/ci.yml",
+  "file_hash": "7accc926a9045b37db99351960a39147a895707a",
+  "updated_at": "2025-12-26T17:34:20.420998",
+  "symbols": {
+    "key_name_1": {
+      "name": "name",
+      "type": "key",
+      "start_line": 1,
+      "end_line": 1,
+      "content_hash": "c57205350997582c63245b67fc3c8f0ba4a8cf8e",
+      "content": "name: CI",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on_3": {
+      "name": "on",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 7,
+      "content_hash": "0642642cdaa02fc2dd9822dc48495323ba3034db",
+      "content": "on:\n  push:\n    branches: [ main ]\n  pull_request:\n    branches: [ main ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.push_4": {
+      "name": "on.push",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 5,
+      "content_hash": "1353e664ab3544af5c01d913178d075666cfe380",
+      "content": "  push:\n    branches: [ main ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.push.branches_5": {
+      "name": "on.push.branches",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "3656e1e366ccf6ccb7a1ff497c7fe6e58975a801",
+      "content": "    branches: [ main ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.pull_request_6": {
+      "name": "on.pull_request",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 7,
+      "content_hash": "b4b1cb4b6ae94c1605f1b9ceaffd0eca02e6f86f",
+      "content": "  pull_request:\n    branches: [ main ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.pull_request.branches_7": {
+      "name": "on.pull_request.branches",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 7,
+      "content_hash": "3656e1e366ccf6ccb7a1ff497c7fe6e58975a801",
+      "content": "    branches: [ main ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs_9": {
+      "name": "jobs",
+      "type": "key",
+      "start_line": 9,
+      "end_line": 25,
+      "content_hash": "c1b4727f95742ca22675aefd1a48dec43e125fa0",
+      "content": "jobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-go@v5\n      with:\n        go-version: 1.23\n    - run: go mod download\n    - run: go test -v -race -coverprofile=coverage.out ./...\n    - name: Upload coverage\n      uses: codecov/codecov-action@v4\n    - name: Check coverage >90%\n      run: |\n        coverage=$(go tool cover -func=coverage.out | tail -1 | awk \\\"{print \\\\$3}\\\" | sed s/%//)\n        if [ \\\"$coverage\\\" -lt 90 ]; then exit 1; fi\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test_10": {
+      "name": "jobs.test",
+      "type": "key",
+      "start_line": 10,
+      "end_line": 25,
+      "content_hash": "05c4bc3d2a7cb5fc76e2daccf558a27836892b55",
+      "content": "  test:\n    runs-on: ubuntu-latest\n    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-go@v5\n      with:\n        go-version: 1.23\n    - run: go mod download\n    - run: go test -v -race -coverprofile=coverage.out ./...\n    - name: Upload coverage\n      uses: codecov/codecov-action@v4\n    - name: Check coverage >90%\n      run: |\n        coverage=$(go tool cover -func=coverage.out | tail -1 | awk \\\"{print \\\\$3}\\\" | sed s/%//)\n        if [ \\\"$coverage\\\" -lt 90 ]; then exit 1; fi\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.runs-on_11": {
+      "name": "jobs.test.runs-on",
+      "type": "key",
+      "start_line": 11,
+      "end_line": 11,
+      "content_hash": "af41e65e8de6d5fac9a3ffe97c9153f19e320298",
+      "content": "    runs-on: ubuntu-latest",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps_12": {
+      "name": "jobs.test.steps",
+      "type": "key",
+      "start_line": 12,
+      "end_line": 25,
+      "content_hash": "d207eae30138d2a6ecaefdd5846626519b9f7533",
+      "content": "    steps:\n    - uses: actions/checkout@v4\n    - uses: actions/setup-go@v5\n      with:\n        go-version: 1.23\n    - run: go mod download\n    - run: go test -v -race -coverprofile=coverage.out ./...\n    - name: Upload coverage\n      uses: codecov/codecov-action@v4\n    - name: Check coverage >90%\n      run: |\n        coverage=$(go tool cover -func=coverage.out | tail -1 | awk \\\"{print \\\\$3}\\\" | sed s/%//)\n        if [ \\\"$coverage\\\" -lt 90 ]; then exit 1; fi\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.uses_13": {
+      "name": "jobs.test.steps.uses",
+      "type": "key",
+      "start_line": 13,
+      "end_line": 13,
+      "content_hash": "0be78ad9d20585293471153fcb24afae4f40062e",
+      "content": "    - uses: actions/checkout@v4",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.uses_14": {
+      "name": "jobs.test.steps.uses",
+      "type": "key",
+      "start_line": 14,
+      "end_line": 14,
+      "content_hash": "7473e7a5c18a80888ca0e3b3f3f23c1d7bebb7b8",
+      "content": "    - uses: actions/setup-go@v5",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.with_15": {
+      "name": "jobs.test.steps.with",
+      "type": "key",
+      "start_line": 15,
+      "end_line": 16,
+      "content_hash": "e216c91602b293eb8d281f88cc1919d50419789b",
+      "content": "      with:\n        go-version: 1.23",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.with.go-version_16": {
+      "name": "jobs.test.steps.with.go-version",
+      "type": "key",
+      "start_line": 16,
+      "end_line": 16,
+      "content_hash": "b22b1fa51fcbf410371a8814daba62582ba2e829",
+      "content": "        go-version: 1.23",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.run_17": {
+      "name": "jobs.test.steps.run",
+      "type": "key",
+      "start_line": 17,
+      "end_line": 17,
+      "content_hash": "3ca9c7709d17b38f33698b7363aab68f08aa4b19",
+      "content": "    - run: go mod download",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.run_18": {
+      "name": "jobs.test.steps.run",
+      "type": "key",
+      "start_line": 18,
+      "end_line": 18,
+      "content_hash": "1ce203ad52086d6d526c6c662919ab7d9f887300",
+      "content": "    - run: go test -v -race -coverprofile=coverage.out ./...",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.name_19": {
+      "name": "jobs.test.steps.name",
+      "type": "key",
+      "start_line": 19,
+      "end_line": 19,
+      "content_hash": "8e4e3ccfb08f644ccfaed574d2528a9cdd748c01",
+      "content": "    - name: Upload coverage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.uses_20": {
+      "name": "jobs.test.steps.uses",
+      "type": "key",
+      "start_line": 20,
+      "end_line": 20,
+      "content_hash": "3634fdb16ca4dd2786c3e4e92e3a2a62c4dee66e",
+      "content": "      uses: codecov/codecov-action@v4",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.name_21": {
+      "name": "jobs.test.steps.name",
+      "type": "key",
+      "start_line": 21,
+      "end_line": 21,
+      "content_hash": "4d0e7effc2273644b565e6e4666232c47344b5a6",
+      "content": "    - name: Check coverage >90%",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.run_22": {
+      "name": "jobs.test.steps.run",
+      "type": "key",
+      "start_line": 22,
+      "end_line": 25,
+      "content_hash": "04497c9f96b89d45157334787146048c7bb42039",
+      "content": "      run: |\n        coverage=$(go tool cover -func=coverage.out | tail -1 | awk \\\"{print \\\\$3}\\\" | sed s/%//)\n        if [ \\\"$coverage\\\" -lt 90 ]; then exit 1; fi\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

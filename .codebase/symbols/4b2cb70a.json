@@ -1,0 +1,238 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_semantic_expansion.py",
+  "file_hash": "ecce29cbdcdc2af553c7cee86d6efd65cd2db613",
+  "updated_at": "2025-12-26T17:34:20.566685",
+  "symbols": {
+    "class_TestSemanticExpansion_36": {
+      "name": "TestSemanticExpansion",
+      "type": "class",
+      "start_line": 36,
+      "end_line": 223,
+      "content_hash": "0b3892299e36a3f70b3441d520a9ffc7e811a394",
+      "content": "class TestSemanticExpansion(unittest.TestCase):\n    \"\"\"Test semantic expansion functionality.\"\"\"\n    \n    def setUp(self):\n        \"\"\"Set up test environment.\"\"\"\n        # Clear cache before each test\n        clear_expansion_cache()\n    \n    def test_cosine_similarity(self):\n        \"\"\"Test cosine similarity calculation.\"\"\"\n        # Identical vectors\n        vec1 = [1.0, 0.0, 0.0]\n        vec2 = [1.0, 0.0, 0.0]\n        self.assertAlmostEqual(_cosine_similarity(vec1, vec2), 1.0, places=5)\n        \n        # Orthogonal vectors\n        vec3 = [1.0, 0.0, 0.0]\n        vec4 = [0.0, 1.0, 0.0]\n        self.assertAlmostEqual(_cosine_similarity(vec3, vec4), 0.0, places=5)\n        \n        # Similar vectors\n        vec5 = [1.0, 1.0, 0.0]\n        vec6 = [1.0, 0.5, 0.0]\n        similarity = _cosine_similarity(vec5, vec6)\n        self.assertGreater(similarity, 0.8)\n        self.assertLess(similarity, 1.0)\n        \n        # Empty vectors\n        self.assertEqual(_cosine_similarity([], []), 0.0)\n        self.assertEqual(_cosine_similarity([1.0], []), 0.0)\n    \n    def test_extract_code_tokens(self):\n        \"\"\"Test code token extraction.\"\"\"\n        text = \"function calculate_sum(numbers) { return numbers.reduce((a, b) => a + b, 0); }\"\n        tokens = _extract_code_tokens(text)\n        \n        # Should extract meaningful tokens (note: calculate_sum is kept as one token)\n        expected_tokens = ['function', 'calculate_sum', 'numbers', 'return', 'reduce']\n        for token in expected_tokens:\n            self.assertIn(token, tokens)\n        \n        # Should filter out common words\n        self.assertNotIn('the', tokens)\n        self.assertNotIn('and', tokens)\n        self.assertNotIn('a', tokens)\n    \n    def test_cache_key_generation(self):\n        \"\"\"Test cache key generation.\"\"\"\n        queries1 = [\"function\", \"calculate\", \"sum\"]\n        queries2 = [\"sum\", \"calculate\", \"function\"]  # Same queries, different order\n        lang1 = \"python\"\n        lang2 = None\n        \n        key1 = _get_expansion_cache_key(queries1, lang1)\n        key2 = _get_expansion_cache_key(queries2, lang1)  # Should be same after sorting\n        key3 = _get_expansion_cache_key(queries1, lang2)  # Different language\n        \n        # Same queries should generate same key regardless of order\n        self.assertEqual(key1, key2)\n        \n        # Different language should generate different key\n        self.assertNotEqual(key1, key3)\n        \n        # Keys should contain query content\n        self.assertIn(\"function\", key1)\n        self.assertIn(\"calculate\", key1)\n        self.assertIn(\"sum\", key1)\n        self.assertIn(\"lang:python\", key1)\n\n    def test_coerce_embedding_vector_handles_varied_shapes(self):\n        \"\"\"_coerce_embedding_vector should flatten nested lists and tolist() outputs.\"\"\"\n\n        class DummyVec:\n            def __init__(self, data):\n                self._data = data\n\n            def tolist(self):\n                return self._data\n\n        # Nested list\n        nested = [[0.1, 0.2, 0.3]]\n        self.assertEqual(_coerce_embedding_vector(nested), [0.1, 0.2, 0.3])\n\n        # Object with tolist()\n        obj = DummyVec((0.4, 0.5))\n        self.assertEqual(_coerce_embedding_vector(obj), [0.4, 0.5])\n\n    def test_coerce_embedding_vector_bad_input(self):\n        \"\"\"_coerce_embedding_vector should return None on invalid input.\"\"\"\n\n        class BadVec:\n            def tolist(self):\n                raise ValueError(\"nope\")\n\n        self.assertIsNone(_coerce_embedding_vector(BadVec()))\n        self.assertIsNone(_coerce_embedding_vector(None))\n\n    def test_cache_stats_hit_and_miss(self):\n        \"\"\"Cache stats should increment misses on set and hits on retrieval.\"\"\"\n        clear_expansion_cache()\n        key = _get_expansion_cache_key([\"foo\"], \"py\")\n\n        stats = get_expansion_stats()\n        self.assertEqual(stats[\"cache_hits\"], 0)\n        self.assertEqual(stats[\"cache_misses\"], 0)\n\n        _cache_expansion(key, [\"bar\"])\n        stats = get_expansion_stats()\n        self.assertEqual(stats[\"cache_hits\"], 0)\n        self.assertEqual(stats[\"cache_misses\"], 1)\n\n        self.assertEqual(_get_cached_expansion(key), [\"bar\"])\n        stats = get_expansion_stats()\n        self.assertEqual(stats[\"cache_hits\"], 1)\n        self.assertEqual(stats[\"cache_misses\"], 1)\n    \n    @patch('scripts.semantic_expansion.FASTEMBED_AVAILABLE', False)\n    def test_semantic_expansion_fallback(self):\n        \"\"\"Test semantic expansion falls back gracefully when dependencies unavailable.\"\"\"\n        queries = [\"function\", \"calculate\"]\n        expansions = expand_queries_semantically(queries)\n        \n        # Should return empty list when dependencies unavailable\n        self.assertEqual(expansions, [])\n    \n    def test_expand_queries_with_prf_fallback(self):\n        \"\"\"Test PRF expansion with lexical fallback.\"\"\"\n        queries = [\"function\", \"calculate\"]\n        \n        # Mock result objects\n        mock_result1 = Mock()\n        mock_result1.payload = {\n            'metadata': {\n                'text': 'function calculate_total(items) { return items.reduce((a, b) => a + b, 0); }',\n                'symbol': 'calculate_total',\n                'symbol_path': 'utils.calculate_total'\n            }\n        }\n        \n        mock_result2 = Mock()\n        mock_result2.payload = {\n            'metadata': {\n                'code': 'def sum_numbers(numbers): return sum(numbers)',\n                'symbol': 'sum_numbers',\n                'path': '/utils/math.py'\n            }\n        }\n        \n        results = [mock_result1, mock_result2]\n        \n        # Test without embedding model (lexical fallback)\n        expansions = expand_queries_with_prf(queries, results, model=None)\n        \n        # Should return some expansions based on lexical similarity\n        self.assertIsInstance(expansions, list)\n        # Might be empty if no lexical similarity found, but should not crash\n    \n    def test_expansion_stats(self):\n        \"\"\"Test expansion statistics tracking.\"\"\"\n        # Initially should be empty\n        stats = get_expansion_stats()\n        self.assertEqual(stats['cache_hits'], 0)\n        self.assertEqual(stats['cache_misses'], 0)\n        self.assertEqual(stats['cache_size'], 0)\n        \n        # Clear cache should reset stats\n        clear_expansion_cache()\n        stats = get_expansion_stats()\n        self.assertEqual(stats['cache_hits'], 0)\n        self.assertEqual(stats['cache_misses'], 0)\n        self.assertEqual(stats['cache_size'], 0)\n    \n    @unittest.skipUnless(HYBRID_SEARCH_AVAILABLE, \"hybrid_search module not available\")\n    def test_expand_queries_enhanced(self):\n        \"\"\"Test enhanced query expansion integration.\"\"\"\n        queries = [\"function\", \"calculate\"]\n        \n        # Mock dependencies to test integration\n        with patch('scripts.hybrid_search.SEMANTIC_EXPANSION_AVAILABLE', False):\n            # Should fall back to basic expansion\n            expansions = expand_queries_enhanced(queries, language=\"python\")\n            \n            # Should include original queries\n            self.assertIn(\"function\", expansions)\n            self.assertIn(\"calculate\", expansions)\n            \n            # Should include some synonym expansions\n            self.assertGreater(len(expansions), len(queries))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setUp_39": {
+      "name": "setUp",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 42,
+      "content_hash": "7219a7d6c131ed41349fd03c303f3af3b8a76bc9",
+      "content": "    def setUp(self):\n        \"\"\"Set up test environment.\"\"\"\n        # Clear cache before each test\n        clear_expansion_cache()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_cosine_similarity_44": {
+      "name": "test_cosine_similarity",
+      "type": "method",
+      "start_line": 44,
+      "end_line": 65,
+      "content_hash": "d086107061df64b0ea21792cd048119785b58f54",
+      "content": "    def test_cosine_similarity(self):\n        \"\"\"Test cosine similarity calculation.\"\"\"\n        # Identical vectors\n        vec1 = [1.0, 0.0, 0.0]\n        vec2 = [1.0, 0.0, 0.0]\n        self.assertAlmostEqual(_cosine_similarity(vec1, vec2), 1.0, places=5)\n        \n        # Orthogonal vectors\n        vec3 = [1.0, 0.0, 0.0]\n        vec4 = [0.0, 1.0, 0.0]\n        self.assertAlmostEqual(_cosine_similarity(vec3, vec4), 0.0, places=5)\n        \n        # Similar vectors\n        vec5 = [1.0, 1.0, 0.0]\n        vec6 = [1.0, 0.5, 0.0]\n        similarity = _cosine_similarity(vec5, vec6)\n        self.assertGreater(similarity, 0.8)\n        self.assertLess(similarity, 1.0)\n        \n        # Empty vectors\n        self.assertEqual(_cosine_similarity([], []), 0.0)\n        self.assertEqual(_cosine_similarity([1.0], []), 0.0)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_extract_code_tokens_67": {
+      "name": "test_extract_code_tokens",
+      "type": "method",
+      "start_line": 67,
+      "end_line": 80,
+      "content_hash": "be5255068672c18fe2bf7ae9ca3a0db5665441bc",
+      "content": "    def test_extract_code_tokens(self):\n        \"\"\"Test code token extraction.\"\"\"\n        text = \"function calculate_sum(numbers) { return numbers.reduce((a, b) => a + b, 0); }\"\n        tokens = _extract_code_tokens(text)\n        \n        # Should extract meaningful tokens (note: calculate_sum is kept as one token)\n        expected_tokens = ['function', 'calculate_sum', 'numbers', 'return', 'reduce']\n        for token in expected_tokens:\n            self.assertIn(token, tokens)\n        \n        # Should filter out common words\n        self.assertNotIn('the', tokens)\n        self.assertNotIn('and', tokens)\n        self.assertNotIn('a', tokens)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_cache_key_generation_82": {
+      "name": "test_cache_key_generation",
+      "type": "method",
+      "start_line": 82,
+      "end_line": 103,
+      "content_hash": "bcb9d4f4f4a68c7b6f63910c37af084b2f988882",
+      "content": "    def test_cache_key_generation(self):\n        \"\"\"Test cache key generation.\"\"\"\n        queries1 = [\"function\", \"calculate\", \"sum\"]\n        queries2 = [\"sum\", \"calculate\", \"function\"]  # Same queries, different order\n        lang1 = \"python\"\n        lang2 = None\n        \n        key1 = _get_expansion_cache_key(queries1, lang1)\n        key2 = _get_expansion_cache_key(queries2, lang1)  # Should be same after sorting\n        key3 = _get_expansion_cache_key(queries1, lang2)  # Different language\n        \n        # Same queries should generate same key regardless of order\n        self.assertEqual(key1, key2)\n        \n        # Different language should generate different key\n        self.assertNotEqual(key1, key3)\n        \n        # Keys should contain query content\n        self.assertIn(\"function\", key1)\n        self.assertIn(\"calculate\", key1)\n        self.assertIn(\"sum\", key1)\n        self.assertIn(\"lang:python\", key1)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_coerce_embedding_vector_handles_varied_shapes_105": {
+      "name": "test_coerce_embedding_vector_handles_varied_shapes",
+      "type": "method",
+      "start_line": 105,
+      "end_line": 121,
+      "content_hash": "3d2f78d53ec43520a1eee0f1acc006f5a49af22f",
+      "content": "    def test_coerce_embedding_vector_handles_varied_shapes(self):\n        \"\"\"_coerce_embedding_vector should flatten nested lists and tolist() outputs.\"\"\"\n\n        class DummyVec:\n            def __init__(self, data):\n                self._data = data\n\n            def tolist(self):\n                return self._data\n\n        # Nested list\n        nested = [[0.1, 0.2, 0.3]]\n        self.assertEqual(_coerce_embedding_vector(nested), [0.1, 0.2, 0.3])\n\n        # Object with tolist()\n        obj = DummyVec((0.4, 0.5))\n        self.assertEqual(_coerce_embedding_vector(obj), [0.4, 0.5])",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_DummyVec_108": {
+      "name": "DummyVec",
+      "type": "class",
+      "start_line": 108,
+      "end_line": 113,
+      "content_hash": "992f35ee9c286491e87edc9285f05df0a4f83686",
+      "content": "        class DummyVec:\n            def __init__(self, data):\n                self._data = data\n\n            def tolist(self):\n                return self._data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___109": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 109,
+      "end_line": 110,
+      "content_hash": "29eef00272b07c48a0158b70fcf7a0f36254bb45",
+      "content": "            def __init__(self, data):\n                self._data = data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tolist_112": {
+      "name": "tolist",
+      "type": "method",
+      "start_line": 112,
+      "end_line": 113,
+      "content_hash": "a523d3d3b117189d889ffb62c1e64f9616c77d2e",
+      "content": "            def tolist(self):\n                return self._data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_coerce_embedding_vector_bad_input_123": {
+      "name": "test_coerce_embedding_vector_bad_input",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 131,
+      "content_hash": "32557058c7b7fb0d1072038397679e59c82f637c",
+      "content": "    def test_coerce_embedding_vector_bad_input(self):\n        \"\"\"_coerce_embedding_vector should return None on invalid input.\"\"\"\n\n        class BadVec:\n            def tolist(self):\n                raise ValueError(\"nope\")\n\n        self.assertIsNone(_coerce_embedding_vector(BadVec()))\n        self.assertIsNone(_coerce_embedding_vector(None))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_BadVec_126": {
+      "name": "BadVec",
+      "type": "class",
+      "start_line": 126,
+      "end_line": 128,
+      "content_hash": "989b6dcf9196c022a835bfa6747496b2a413ba20",
+      "content": "        class BadVec:\n            def tolist(self):\n                raise ValueError(\"nope\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tolist_127": {
+      "name": "tolist",
+      "type": "method",
+      "start_line": 127,
+      "end_line": 128,
+      "content_hash": "9fd59056961932b737d38b181990fe594fca3280",
+      "content": "            def tolist(self):\n                raise ValueError(\"nope\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_cache_stats_hit_and_miss_133": {
+      "name": "test_cache_stats_hit_and_miss",
+      "type": "method",
+      "start_line": 133,
+      "end_line": 150,
+      "content_hash": "82466ed8cec43eff9043e5b8c480a93e64606cef",
+      "content": "    def test_cache_stats_hit_and_miss(self):\n        \"\"\"Cache stats should increment misses on set and hits on retrieval.\"\"\"\n        clear_expansion_cache()\n        key = _get_expansion_cache_key([\"foo\"], \"py\")\n\n        stats = get_expansion_stats()\n        self.assertEqual(stats[\"cache_hits\"], 0)\n        self.assertEqual(stats[\"cache_misses\"], 0)\n\n        _cache_expansion(key, [\"bar\"])\n        stats = get_expansion_stats()\n        self.assertEqual(stats[\"cache_hits\"], 0)\n        self.assertEqual(stats[\"cache_misses\"], 1)\n\n        self.assertEqual(_get_cached_expansion(key), [\"bar\"])\n        stats = get_expansion_stats()\n        self.assertEqual(stats[\"cache_hits\"], 1)\n        self.assertEqual(stats[\"cache_misses\"], 1)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_semantic_expansion_fallback_153": {
+      "name": "test_semantic_expansion_fallback",
+      "type": "method",
+      "start_line": 153,
+      "end_line": 159,
+      "content_hash": "34b5dadbadaed2f4162908235823fbc38c1ee1a6",
+      "content": "    def test_semantic_expansion_fallback(self):\n        \"\"\"Test semantic expansion falls back gracefully when dependencies unavailable.\"\"\"\n        queries = [\"function\", \"calculate\"]\n        expansions = expand_queries_semantically(queries)\n        \n        # Should return empty list when dependencies unavailable\n        self.assertEqual(expansions, [])",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_expand_queries_with_prf_fallback_161": {
+      "name": "test_expand_queries_with_prf_fallback",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 191,
+      "content_hash": "b6f8b893f9a7e2b6a19561a5f8cd37fba12f5df8",
+      "content": "    def test_expand_queries_with_prf_fallback(self):\n        \"\"\"Test PRF expansion with lexical fallback.\"\"\"\n        queries = [\"function\", \"calculate\"]\n        \n        # Mock result objects\n        mock_result1 = Mock()\n        mock_result1.payload = {\n            'metadata': {\n                'text': 'function calculate_total(items) { return items.reduce((a, b) => a + b, 0); }',\n                'symbol': 'calculate_total',\n                'symbol_path': 'utils.calculate_total'\n            }\n        }\n        \n        mock_result2 = Mock()\n        mock_result2.payload = {\n            'metadata': {\n                'code': 'def sum_numbers(numbers): return sum(numbers)',\n                'symbol': 'sum_numbers',\n                'path': '/utils/math.py'\n            }\n        }\n        \n        results = [mock_result1, mock_result2]\n        \n        # Test without embedding model (lexical fallback)\n        expansions = expand_queries_with_prf(queries, results, model=None)\n        \n        # Should return some expansions based on lexical similarity\n        self.assertIsInstance(expansions, list)\n        # Might be empty if no lexical similarity found, but should not crash",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_expansion_stats_193": {
+      "name": "test_expansion_stats",
+      "type": "method",
+      "start_line": 193,
+      "end_line": 206,
+      "content_hash": "d000fceb3241d7438577e6c68d1b0295cdcbe954",
+      "content": "    def test_expansion_stats(self):\n        \"\"\"Test expansion statistics tracking.\"\"\"\n        # Initially should be empty\n        stats = get_expansion_stats()\n        self.assertEqual(stats['cache_hits'], 0)\n        self.assertEqual(stats['cache_misses'], 0)\n        self.assertEqual(stats['cache_size'], 0)\n        \n        # Clear cache should reset stats\n        clear_expansion_cache()\n        stats = get_expansion_stats()\n        self.assertEqual(stats['cache_hits'], 0)\n        self.assertEqual(stats['cache_misses'], 0)\n        self.assertEqual(stats['cache_size'], 0)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_expand_queries_enhanced_209": {
+      "name": "test_expand_queries_enhanced",
+      "type": "method",
+      "start_line": 209,
+      "end_line": 223,
+      "content_hash": "fb39c61122c596280a31a7ea6f89b865a2a13df6",
+      "content": "    def test_expand_queries_enhanced(self):\n        \"\"\"Test enhanced query expansion integration.\"\"\"\n        queries = [\"function\", \"calculate\"]\n        \n        # Mock dependencies to test integration\n        with patch('scripts.hybrid_search.SEMANTIC_EXPANSION_AVAILABLE', False):\n            # Should fall back to basic expansion\n            expansions = expand_queries_enhanced(queries, language=\"python\")\n            \n            # Should include original queries\n            self.assertIn(\"function\", expansions)\n            self.assertIn(\"calculate\", expansions)\n            \n            # Should include some synonym expansions\n            self.assertGreater(len(expansions), len(queries))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestSemanticExpansionIntegration_226": {
+      "name": "TestSemanticExpansionIntegration",
+      "type": "class",
+      "start_line": 226,
+      "end_line": 279,
+      "content_hash": "0ee59f4259fbbea0c8a57f7de2f49956493038ed",
+      "content": "class TestSemanticExpansionIntegration(unittest.TestCase):\n    \"\"\"Integration tests for semantic expansion.\"\"\"\n    \n    def setUp(self):\n        \"\"\"Set up integration test environment.\"\"\"\n        # Set test environment variables\n        os.environ['SEMANTIC_EXPANSION_ENABLED'] = '1'\n        os.environ['SEMANTIC_EXPANSION_TOP_K'] = '5'\n        os.environ['SEMANTIC_EXPANSION_SIMILARITY_THRESHOLD'] = '0.7'\n        os.environ['SEMANTIC_EXPANSION_MAX_TERMS'] = '3'\n        clear_expansion_cache()\n    \n    def tearDown(self):\n        \"\"\"Clean up test environment.\"\"\"\n        # Restore default environment\n        os.environ.pop('SEMANTIC_EXPANSION_ENABLED', None)\n        os.environ.pop('SEMANTIC_EXPANSION_TOP_K', None)\n        os.environ.pop('SEMANTIC_EXPANSION_SIMILARITY_THRESHOLD', None)\n        os.environ.pop('SEMANTIC_EXPANSION_MAX_TERMS', None)\n    \n    @unittest.skipUnless(\n        os.environ.get('RUN_INTEGRATION_TESTS') == '1',\n        \"Integration tests disabled by default\"\n    )\n    def test_end_to_end_semantic_expansion(self):\n        \"\"\"End-to-end test of semantic expansion (requires real services).\"\"\"\n        # This test requires actual Qdrant and embedding model\n        # Only run when explicitly enabled\n        queries = [\"python function to calculate sum\"]\n        \n        # Test with mocked client and model\n        mock_client = Mock()\n        mock_model = Mock()\n        \n        # Mock search results\n        mock_results = [\n            Mock(payload={'metadata': {'text': 'def calculate_sum(numbers): return sum(numbers)', 'symbol': 'calculate_sum'}}),\n            Mock(payload={'metadata': {'code': 'function total(arr) { return arr.reduce((a,b) => a+b, 0); }', 'symbol': 'total'}})\n        ]\n        \n        mock_client.search.return_value = mock_results\n        mock_model.embed.return_value = iter([[[0.1, 0.2, 0.3]]])  # Mock embedding\n        \n        expansions = expand_queries_semantically(\n            queries, \n            client=mock_client, \n            model=mock_model,\n            collection=\"test-collection\"\n        )\n        \n        # Should return some expansions\n        self.assertIsInstance(expansions, list)\n        # Verify client.search was called\n        mock_client.search.assert_called_once()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setUp_229": {
+      "name": "setUp",
+      "type": "method",
+      "start_line": 229,
+      "end_line": 236,
+      "content_hash": "111d0336f866afa5063de721ba869884da2a2617",
+      "content": "    def setUp(self):\n        \"\"\"Set up integration test environment.\"\"\"\n        # Set test environment variables\n        os.environ['SEMANTIC_EXPANSION_ENABLED'] = '1'\n        os.environ['SEMANTIC_EXPANSION_TOP_K'] = '5'\n        os.environ['SEMANTIC_EXPANSION_SIMILARITY_THRESHOLD'] = '0.7'\n        os.environ['SEMANTIC_EXPANSION_MAX_TERMS'] = '3'\n        clear_expansion_cache()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tearDown_238": {
+      "name": "tearDown",
+      "type": "method",
+      "start_line": 238,
+      "end_line": 244,
+      "content_hash": "a26463dcf84c6ac8389bd738f99b83649620b06e",
+      "content": "    def tearDown(self):\n        \"\"\"Clean up test environment.\"\"\"\n        # Restore default environment\n        os.environ.pop('SEMANTIC_EXPANSION_ENABLED', None)\n        os.environ.pop('SEMANTIC_EXPANSION_TOP_K', None)\n        os.environ.pop('SEMANTIC_EXPANSION_SIMILARITY_THRESHOLD', None)\n        os.environ.pop('SEMANTIC_EXPANSION_MAX_TERMS', None)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_end_to_end_semantic_expansion_250": {
+      "name": "test_end_to_end_semantic_expansion",
+      "type": "method",
+      "start_line": 250,
+      "end_line": 279,
+      "content_hash": "0837850c9df1449e60a51beab31eeb21876f0a94",
+      "content": "    def test_end_to_end_semantic_expansion(self):\n        \"\"\"End-to-end test of semantic expansion (requires real services).\"\"\"\n        # This test requires actual Qdrant and embedding model\n        # Only run when explicitly enabled\n        queries = [\"python function to calculate sum\"]\n        \n        # Test with mocked client and model\n        mock_client = Mock()\n        mock_model = Mock()\n        \n        # Mock search results\n        mock_results = [\n            Mock(payload={'metadata': {'text': 'def calculate_sum(numbers): return sum(numbers)', 'symbol': 'calculate_sum'}}),\n            Mock(payload={'metadata': {'code': 'function total(arr) { return arr.reduce((a,b) => a+b, 0); }', 'symbol': 'total'}})\n        ]\n        \n        mock_client.search.return_value = mock_results\n        mock_model.embed.return_value = iter([[[0.1, 0.2, 0.3]]])  # Mock embedding\n        \n        expansions = expand_queries_semantically(\n            queries, \n            client=mock_client, \n            model=mock_model,\n            collection=\"test-collection\"\n        )\n        \n        # Should return some expansions\n        self.assertIsInstance(expansions, list)\n        # Verify client.search was called\n        mock_client.search.assert_called_once()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

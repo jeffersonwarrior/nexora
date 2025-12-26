@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/external-deps/helix-db/metrics/src/lib.rs",
+  "file_hash": "acc3b7255ff006d9feb5cd796e78a789207b224d",
+  "updated_at": "2025-12-26T17:34:20.229087",
+  "symbols": {
+    "struct_MetricsState_59": {
+      "name": "MetricsState",
+      "type": "struct",
+      "start_line": 59,
+      "end_line": 100,
+      "content_hash": "15da8bd41d5bce9b574eddede6e3ef775a90c464",
+      "content": "struct MetricsState {\n    events_tx: flume::Sender<Vec<events::RawEvent<events::EventData>>>,\n    events_rx: flume::Receiver<Vec<events::RawEvent<events::EventData>>>,\n    notify_tx: flume::Sender<()>,\n    notify_rx: flume::Receiver<()>,\n    shutdown_tx: flume::Sender<()>,\n    shutdown_rx: flume::Receiver<()>,\n    threshold_batches: AtomicUsize,\n    sender_handle: OnceLock<tokio::task::JoinHandle<()>>,\n}\n\nstatic METRICS_STATE: LazyLock<MetricsState> = LazyLock::new(|| {\n    let (events_tx, events_rx) = flume::unbounded();\n    let (notify_tx, notify_rx) = flume::unbounded();\n    let (shutdown_tx, shutdown_rx) = flume::unbounded();\n\n    // Read threshold from environment or use default\n    let threshold_batches = std::env::var(\"HELIX_METRICS_THRESHOLD_BATCHES\")\n        .ok()\n        .and_then(|v| v.parse::<usize>().ok())\n        .unwrap_or(num_cpus::get());\n\n    MetricsState {\n        events_tx,\n        events_rx,\n        notify_tx,\n        notify_rx,\n        shutdown_tx,\n        shutdown_rx,\n        threshold_batches: AtomicUsize::new(threshold_batches),\n        sender_handle: OnceLock::new(),\n    }\n});\n\n// Configuration constants\nconst THREAD_LOCAL_EVENT_BUFFER_LENGTH: usize = 65536;\nconst THREAD_LOCAL_FLUSH_THRESHOLD: usize = 65536;\nconst BATCH_TIMEOUT_SECS: u64 = 1;\nconst THREAD_LOCAL_FLUSH_INTERVAL_SECS: u64 = 1; // Flush thread-local buffers every second\n\n/// Initialize the metrics system with a tokio runtime\n/// This must be called once at startup with an active tokio runtime",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_init_metrics_system_101": {
+      "name": "init_metrics_system",
+      "type": "function",
+      "start_line": 101,
+      "end_line": 122,
+      "content_hash": "1ce08de136834558ba80ba3b4045a30e78f46fa8",
+      "content": "pub fn init_metrics_system() {\n    if !*METRICS_ENABLED {\n        return;\n    }\n\n    // Spawn the sender task if not already started\n    let _ = METRICS_STATE.sender_handle.get_or_init(|| {\n        tokio::spawn(sender_task(\n            METRICS_STATE.events_rx.clone(),\n            METRICS_STATE.notify_rx.clone(),\n            METRICS_STATE.shutdown_rx.clone(),\n        ))\n    });\n}\n\n// Track last flush time per thread\nthread_local! {\n    static LAST_FLUSH_TIME: RefCell<std::time::Instant> = RefCell::new(std::time::Instant::now());\n}\n\n/// Initialize thread-local buffer for the current thread\n/// Call this once per worker thread",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_init_thread_local_123": {
+      "name": "init_thread_local",
+      "type": "function",
+      "start_line": 123,
+      "end_line": 138,
+      "content_hash": "419f0670ad5c27279e4339fc03a8401d8b8765ab",
+      "content": "pub fn init_thread_local() {\n    if !*METRICS_ENABLED {\n        return;\n    }\n\n    EVENT_BUFFER.with(|buffer| {\n        buffer.borrow_mut().clear();\n    });\n\n    LAST_FLUSH_TIME.with(|time| {\n        *time.borrow_mut() = std::time::Instant::now();\n    });\n}\n\n/// Set the batch threshold for notifications\n/// When the number of batches in channel exceeds this, sender task is notified",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_set_threshold_batches_139": {
+      "name": "set_threshold_batches",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 145,
+      "content_hash": "6ee843a3f313e39ce9f199d57305b95a1b4c6566",
+      "content": "pub fn set_threshold_batches(batches: usize) {\n    METRICS_STATE\n        .threshold_batches\n        .store(batches, Ordering::Relaxed);\n}\n\n/// Get the current batch threshold",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_threshold_batches_146": {
+      "name": "get_threshold_batches",
+      "type": "function",
+      "start_line": 146,
+      "end_line": 181,
+      "content_hash": "0dc9657d6261a408e05c2b29e38651035ab65afd",
+      "content": "pub fn get_threshold_batches() -> usize {\n    METRICS_STATE.threshold_batches.load(Ordering::Relaxed)\n}\n\n/// Log an event to the metrics system\n/// Events are buffered locally per-thread and flushed in batches\npub fn log_event<D>(event_type: events::EventType, event_data: D)\nwhere\n    D: Into<events::EventData> + Serialize + std::fmt::Debug + Clone,\n{\n    if !*METRICS_ENABLED {\n        return;\n    }\n\n    let raw_event = create_raw_event(event_type, event_data.into());\n\n    EVENT_BUFFER.with(|buffer| {\n        let mut buf = buffer.borrow_mut();\n        buf.push(raw_event);\n\n        // Check if we should flush based on size or time\n        let should_flush = buf.len() >= THREAD_LOCAL_FLUSH_THRESHOLD\n            || LAST_FLUSH_TIME.with(|time| {\n                time.borrow().elapsed() >= Duration::from_secs(THREAD_LOCAL_FLUSH_INTERVAL_SECS)\n            });\n\n        if should_flush {\n            flush_local_buffer(&mut buf);\n            LAST_FLUSH_TIME.with(|time| {\n                *time.borrow_mut() = std::time::Instant::now();\n            });\n        }\n    });\n}\n\n/// Flush the thread-local buffer to the global channel",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_flush_local_buffer_182": {
+      "name": "flush_local_buffer",
+      "type": "function",
+      "start_line": 182,
+      "end_line": 201,
+      "content_hash": "e931246f3ec56f57db32643f49440cf62e56bfe7",
+      "content": "fn flush_local_buffer(buf: &mut Vec<events::RawEvent<events::EventData>>) {\n    let events = std::mem::take(buf);\n\n    if events.is_empty() {\n        return;\n    }\n\n    // Send entire vec in one operation - much faster!\n    let _ = METRICS_STATE.events_tx.send(events);\n\n    // Check if we should notify based on batch count\n    let channel_len = METRICS_STATE.events_tx.len();\n    let threshold = METRICS_STATE.threshold_batches.load(Ordering::Relaxed);\n\n    if channel_len >= threshold {\n        let _ = METRICS_STATE.notify_tx.try_send(());\n    }\n}\n\n/// Create a RawEvent with common metadata",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_raw_event_202": {
+      "name": "create_raw_event",
+      "type": "function",
+      "start_line": 202,
+      "end_line": 339,
+      "content_hash": "ea87fb61afdf98677e1e3a617b232b3f6ef4545f",
+      "content": "fn create_raw_event(\n    event_type: events::EventType,\n    event_data: events::EventData,\n) -> events::RawEvent<events::EventData> {\n    events::RawEvent {\n        os: OS,\n        user_id: Some(&HELIX_USER_ID),\n        event_type,\n        event_data,\n        timestamp: std::time::SystemTime::now()\n            .duration_since(std::time::UNIX_EPOCH)\n            .expect(\"Failed to get system time\")\n            .as_secs(),\n        email: None,\n    }\n}\n\n/// Background task that batches and sends events via HTTP\nasync fn sender_task(\n    events_rx: flume::Receiver<Vec<events::RawEvent<events::EventData>>>,\n    notify_rx: flume::Receiver<()>,\n    shutdown_rx: flume::Receiver<()>,\n) {\n    loop {\n        // Wait for notification, timeout, or shutdown signal\n        tokio::select! {\n            _ = notify_rx.recv_async() => {\n                process_batch(&events_rx).await;\n            }\n            _ = tokio::time::sleep(Duration::from_secs(BATCH_TIMEOUT_SECS)) => {\n                // Periodic flush even if threshold not reached\n                process_batch(&events_rx).await;\n            }\n            _ = shutdown_rx.recv_async() => {\n                // Shutdown signal received - process final batch and exit\n                process_batch(&events_rx).await;\n                break;\n            }\n        }\n    }\n}\n\n/// Process a batch of events from the channel\nasync fn process_batch(\n    rx: &flume::Receiver<Vec<events::RawEvent<events::EventData>>>,\n) -> Option<JoinHandle<()>> {\n    // Drain all Vec batches and flatten into single Vec\n    let events: Vec<_> = rx.drain().flatten().collect();\n\n    if events.is_empty() {\n        return None;\n    }\n\n    // Spawn new task for serialization + HTTP\n    // This allows the sender task to continue processing batches\n    Some(tokio::spawn(async move {\n        // Serialize as NDJSON (newline-delimited JSON)\n        // Each event is a separate JSON object on its own line\n        let mut ndjson = String::new();\n        for event in &events {\n            match sonic_rs::to_string(event) {\n                Ok(json) => {\n                    ndjson.push_str(&json);\n                    ndjson.push('\\n');\n                }\n                Err(e) => {\n                    eprintln!(\"Failed to serialize event: {}\", e);\n                    continue;\n                }\n            }\n        }\n\n        if ndjson.is_empty() {\n            return;\n        }\n\n        // Send batch over HTTP as NDJSON\n        match METRICS_CLIENT\n            .post(METRICS_URL)\n            .header(\"Content-Type\", \"application/x-ndjson\")\n            .body(ndjson)\n            .send()\n            .await\n        {\n            Ok(response) => {\n                if !response.status().is_success() {\n                    eprintln!(\n                        \"Metrics HTTP error: {} from {} (body: {:?})\",\n                        response.status(),\n                        METRICS_URL,\n                        response.text().await.unwrap_or_default()\n                    );\n                }\n                // Success - no need to log (metrics are silent on success)\n            }\n            Err(e) => {\n                eprintln!(\"Failed to send metrics to {}: {}\", METRICS_URL, e);\n            }\n        }\n    }))\n}\n\n/// Flush all pending events immediately\n/// Useful for graceful shutdown\npub async fn flush_all() -> Option<JoinHandle<()>> {\n    if !*METRICS_ENABLED {\n        return None;\n    }\n\n    // Flush all thread-local buffers first\n    EVENT_BUFFER.with(|buffer| {\n        let mut buf = buffer.borrow_mut();\n        if !buf.is_empty() {\n            flush_local_buffer(&mut buf);\n        }\n    });\n\n    // Process any remaining events in the channel\n    process_batch(&METRICS_STATE.events_rx).await\n}\n\n/// Shutdown the metrics system gracefully\n/// This should be called before process exit to ensure all metrics are flushed\npub async fn shutdown_metrics_system() {\n    if !*METRICS_ENABLED {\n        return;\n    }\n\n    // Send shutdown signal to sender task\n    let _ = METRICS_STATE.shutdown_tx.send(());\n\n    // Flush all remaining events\n    if let Some(handle) = flush_all().await {\n        let _ = handle.await;\n    }\n}\n\n#[derive(Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MetricError_340": {
+      "name": "MetricError",
+      "type": "struct",
+      "start_line": 340,
+      "end_line": 341,
+      "content_hash": "c38a42e5e658f23f823c2880196d6115109c7be0",
+      "content": "pub struct MetricError(String);\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_std::fmt::Display_342": {
+      "name": "std::fmt::Display",
+      "type": "impl",
+      "start_line": 342,
+      "end_line": 342,
+      "content_hash": "4b052d66ea6ae628be7f0a4e3376450c7abb5682",
+      "content": "impl std::fmt::Display for MetricError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fmt_343": {
+      "name": "fmt",
+      "type": "method",
+      "start_line": 343,
+      "end_line": 347,
+      "content_hash": "595e28eeabf19e99fef427754ca99e99a23c4602",
+      "content": "    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {\n        write!(f, \"{}\", self.0)\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_std::error::Error_348": {
+      "name": "std::error::Error",
+      "type": "impl",
+      "start_line": 348,
+      "end_line": 349,
+      "content_hash": "b31051bfeab44079bd68d2685a29fce8b13790a6",
+      "content": "impl std::error::Error for MetricError {}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_From_350": {
+      "name": "From",
+      "type": "impl",
+      "start_line": 350,
+      "end_line": 350,
+      "content_hash": "9aaf7031651101997563f37d8bd9d1b35cf77aa5",
+      "content": "impl From<sonic_rs::Error> for MetricError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_351": {
+      "name": "from",
+      "type": "method",
+      "start_line": 351,
+      "end_line": 355,
+      "content_hash": "cee8bbda9c9d81a6ad88edc4503326871af05f8d",
+      "content": "    fn from(e: sonic_rs::Error) -> Self {\n        MetricError(e.to_string())\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_From_356": {
+      "name": "From",
+      "type": "impl",
+      "start_line": 356,
+      "end_line": 356,
+      "content_hash": "b984c08255c06367d6e33be0af5ea5e52f645341",
+      "content": "impl From<reqwest::Error> for MetricError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_357": {
+      "name": "from",
+      "type": "method",
+      "start_line": 357,
+      "end_line": 370,
+      "content_hash": "578522ae01a2a055cf7a2a4c8da2b7e06c659096",
+      "content": "    fn from(e: reqwest::Error) -> Self {\n        MetricError(e.to_string())\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use std::sync::Arc;\n    use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};\n    use std::thread;\n    use std::time::Duration;\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_thread_local_buffer_initialization_371": {
+      "name": "test_thread_local_buffer_initialization",
+      "type": "method",
+      "start_line": 371,
+      "end_line": 381,
+      "content_hash": "af3a7d6deec3e31770b6ca3e7a718bee8a61704d",
+      "content": "    fn test_thread_local_buffer_initialization() {\n        init_thread_local();\n\n        // Verify buffer is initialized and empty\n        EVENT_BUFFER.with(|buffer| {\n            assert_eq!(buffer.borrow().len(), 0);\n            assert!(buffer.borrow().capacity() >= 32);\n        });\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_thread_local_buffering_382": {
+      "name": "test_thread_local_buffering",
+      "type": "method",
+      "start_line": 382,
+      "end_line": 408,
+      "content_hash": "fcdc6e57ac49bfb8a81f1ef420ffbc10664503cb",
+      "content": "    fn test_thread_local_buffering() {\n        init_thread_local();\n\n        // Log a few events (less than flush threshold)\n        for i in 0..5 {\n            log_event(\n                events::EventType::Test,\n                events::TestEvent {\n                    cluster_id: format!(\"test_{}\", i),\n                    queries_string: \"test\".to_string(),\n                    num_of_queries: 1,\n                    time_taken_sec: 1,\n                    success: true,\n                    error_messages: None,\n                },\n            );\n        }\n\n        // Buffer should have events (or be flushed if >= threshold)\n        EVENT_BUFFER.with(|buffer| {\n            let len = buffer.borrow().len();\n            // Either still in buffer or already flushed\n            assert!(len <= 5);\n        });\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_thread_local_auto_flush_409": {
+      "name": "test_thread_local_auto_flush",
+      "type": "method",
+      "start_line": 409,
+      "end_line": 444,
+      "content_hash": "d2808be8fbeaac42c7efdebdc03ae883170b922f",
+      "content": "    fn test_thread_local_auto_flush() {\n        init_thread_local();\n\n        // Clear the channel first\n        while METRICS_STATE.events_rx.try_recv().is_ok() {}\n\n        // Log exactly THREAD_LOCAL_FLUSH_THRESHOLD events to trigger flush\n        for i in 0..THREAD_LOCAL_FLUSH_THRESHOLD {\n            log_event(\n                events::EventType::Test,\n                events::TestEvent {\n                    cluster_id: format!(\"test_auto_flush_{}\", i),\n                    queries_string: \"test\".to_string(),\n                    num_of_queries: 1,\n                    time_taken_sec: 1,\n                    success: true,\n                    error_messages: None,\n                },\n            );\n        }\n\n        // Buffer should be empty after flush\n        EVENT_BUFFER.with(|buffer| {\n            assert_eq!(buffer.borrow().len(), 0);\n        });\n\n        // At least 1 batch should have been added (since we logged THREAD_LOCAL_FLUSH_THRESHOLD events)\n        let channel_count = METRICS_STATE.events_rx.len();\n        assert!(\n            channel_count >= 1,\n            \"Expected at least 1 batch in channel, got {}\",\n            channel_count\n        );\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_threshold_configuration_445": {
+      "name": "test_threshold_configuration",
+      "type": "method",
+      "start_line": 445,
+      "end_line": 457,
+      "content_hash": "75d90fd387edfbf0cc970de29d32660d005bcb17",
+      "content": "    fn test_threshold_configuration() {\n        // Test setting threshold in batches\n        set_threshold_batches(100);\n        assert_eq!(get_threshold_batches(), 100);\n\n        set_threshold_batches(500);\n        assert_eq!(get_threshold_batches(), 500);\n\n        // Reset to default\n        set_threshold_batches(num_cpus::get());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_threshold_notification_trigger_458": {
+      "name": "test_threshold_notification_trigger",
+      "type": "method",
+      "start_line": 458,
+      "end_line": 491,
+      "content_hash": "52826b914ced47e1b610ffde844b4dd1376c2ac6",
+      "content": "    fn test_threshold_notification_trigger() {\n        init_thread_local();\n\n        // Clear channels\n        while METRICS_STATE.events_rx.try_recv().is_ok() {}\n        while METRICS_STATE.notify_rx.try_recv().is_ok() {}\n\n        // Set threshold to 1 batch to trigger notification easily\n        set_threshold_batches(1);\n\n        // Log enough events to trigger a flush (which sends 1 batch)\n        for i in 0..THREAD_LOCAL_FLUSH_THRESHOLD {\n            log_event(\n                events::EventType::Test,\n                events::TestEvent {\n                    cluster_id: format!(\"test_{}\", i),\n                    queries_string: \"test\".to_string(),\n                    num_of_queries: 1,\n                    time_taken_sec: 1,\n                    success: true,\n                    error_messages: None,\n                },\n            );\n        }\n\n        // Should have triggered a notification\n        let notification_count = METRICS_STATE.notify_rx.len();\n        assert!(notification_count > 0, \"Expected notification to be sent\");\n\n        // Reset threshold\n        set_threshold_batches(num_cpus::get());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_create_raw_event_492": {
+      "name": "test_create_raw_event",
+      "type": "method",
+      "start_line": 492,
+      "end_line": 503,
+      "content_hash": "01f54befa287994140ffaf3e8e20e407c67ba5b0",
+      "content": "    fn test_create_raw_event() {\n        let event = create_raw_event(\n            events::EventType::Test,\n            events::EventData::Test(events::TestEvent::default()),\n        );\n\n        assert_eq!(event.os, OS.to_string());\n        assert_eq!(event.event_type, events::EventType::Test);\n        assert!(event.timestamp > 0);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_multi_threaded_logging_504": {
+      "name": "test_multi_threaded_logging",
+      "type": "method",
+      "start_line": 504,
+      "end_line": 650,
+      "content_hash": "a73510655ac091d0c4a212fb44104047461c8820",
+      "content": "    fn test_multi_threaded_logging() {\n        // Skip if metrics are disabled\n        if !*METRICS_ENABLED {\n            eprintln!(\"Skipping test_multi_threaded_logging: METRICS_ENABLED is false\");\n            return;\n        }\n\n        let num_threads = 4;\n        let events_per_thread = 20;\n        let counter = Arc::new(AtomicUsize::new(0));\n        let total_expected = num_threads * events_per_thread;\n\n        let handles: Vec<_> = (0..num_threads)\n            .map(|thread_id| {\n                let counter = Arc::clone(&counter);\n                thread::spawn(move || {\n                    init_thread_local();\n\n                    for i in 0..events_per_thread {\n                        log_event(\n                            events::EventType::Test,\n                            events::TestEvent {\n                                cluster_id: format!(\"thread_{}_{}\", thread_id, i),\n                                queries_string: \"test\".to_string(),\n                                num_of_queries: 1,\n                                time_taken_sec: 1,\n                                success: true,\n                                error_messages: None,\n                            },\n                        );\n                        counter.fetch_add(1, AtomicOrdering::SeqCst);\n                    }\n\n                    // Flush remaining events\n                    EVENT_BUFFER.with(|buffer| {\n                        let mut buf = buffer.borrow_mut();\n                        if !buf.is_empty() {\n                            flush_local_buffer(&mut buf);\n                        }\n                    });\n                })\n            })\n            .collect();\n\n        // Wait for all threads to complete\n        for handle in handles {\n            handle.join().unwrap();\n        }\n\n        // Verify all events were attempted to be logged\n        assert_eq!(counter.load(AtomicOrdering::SeqCst), total_expected);\n\n        // This test just verifies that multi-threaded logging doesn't crash or deadlock\n        // In parallel test execution, the sender task may consume events concurrently\n        eprintln!(\"Multi-threaded logging completed successfully\");\n    }\n\n    #[tokio::test]\n    async fn test_process_batch() {\n        // Skip if metrics are disabled\n        if !*METRICS_ENABLED {\n            eprintln!(\"Skipping test_process_batch: METRICS_ENABLED is false\");\n            return;\n        }\n\n        // Clear channel\n        while METRICS_STATE.events_rx.try_recv().is_ok() {}\n\n        // Add a batch of events to channel\n        let events: Vec<_> = (0..10)\n            .map(|i| {\n                create_raw_event(\n                    events::EventType::Test,\n                    events::EventData::Test(events::TestEvent {\n                        cluster_id: format!(\"test_batch_{}\", i),\n                        queries_string: \"test\".to_string(),\n                        num_of_queries: 1,\n                        time_taken_sec: 1,\n                        success: true,\n                        error_messages: None,\n                    }),\n                )\n            })\n            .collect();\n        METRICS_STATE.events_tx.send(events).unwrap();\n\n        // Give a moment for all events to arrive\n        tokio::time::sleep(Duration::from_millis(10)).await;\n\n        let initial_count = METRICS_STATE.events_rx.len();\n\n        // In parallel test execution, sender task might process events, so just verify we can process batches\n        if initial_count > 0 {\n            // Process batch (won't actually send HTTP in test, but will drain channel)\n            process_batch(&METRICS_STATE.events_rx).await;\n\n            // Give spawned tasks a moment to start\n            tokio::time::sleep(Duration::from_millis(50)).await;\n\n            // Channel should have fewer or equal batches\n            let _final_count = METRICS_STATE.events_rx.len();\n            \n        }\n    }\n\n    #[tokio::test]\n    async fn test_flush_all() {\n        init_thread_local();\n\n        // Clear channel\n        while METRICS_STATE.events_rx.try_recv().is_ok() {}\n\n        // Add events to thread-local buffer\n        for i in 0..5 {\n            log_event(\n                events::EventType::Test,\n                events::TestEvent {\n                    cluster_id: format!(\"test_{}\", i),\n                    queries_string: \"test\".to_string(),\n                    num_of_queries: 1,\n                    time_taken_sec: 1,\n                    success: true,\n                    error_messages: None,\n                },\n            );\n        }\n\n        // Flush all\n        flush_all().await;\n\n        // Thread-local buffer should be empty\n        EVENT_BUFFER.with(|buffer| {\n            assert_eq!(buffer.borrow().len(), 0);\n        });\n    }\n\n    #[tokio::test]\n    async fn test_init_metrics_system() {\n        // Should not panic when called multiple times\n        init_metrics_system();\n        init_metrics_system();\n\n        // Sender handle should be initialized\n        assert!(METRICS_STATE.sender_handle.get().is_some());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_event_serialization_651": {
+      "name": "test_event_serialization",
+      "type": "method",
+      "start_line": 651,
+      "end_line": 667,
+      "content_hash": "3d309e3dbdffac7ab9bc8d2d26195498e53884dc",
+      "content": "    fn test_event_serialization() {\n        let event = create_raw_event(\n            events::EventType::QuerySuccess,\n            events::EventData::QuerySuccess(events::QuerySuccessEvent {\n                cluster_id: Some(\"test_cluster\".to_string()),\n                query_name: \"test_query\".to_string(),\n                time_taken_usec: 1000,\n            }),\n        );\n\n        // Should be able to serialize\n        let json = sonic_rs::to_string(&event).unwrap();\n        assert!(json.contains(\"test_cluster\"));\n        assert!(json.contains(\"test_query\"));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_batch_serialization_668": {
+      "name": "test_batch_serialization",
+      "type": "method",
+      "start_line": 668,
+      "end_line": 695,
+      "content_hash": "74697fd3cde4247e634f6104336e0639a3a7ea69",
+      "content": "    fn test_batch_serialization() {\n        let events: Vec<_> = (0..5)\n            .map(|i| {\n                create_raw_event(\n                    events::EventType::Test,\n                    events::EventData::Test(events::TestEvent {\n                        cluster_id: format!(\"test_{}\", i),\n                        queries_string: \"test\".to_string(),\n                        num_of_queries: 1,\n                        time_taken_sec: 1,\n                        success: true,\n                        error_messages: None,\n                    }),\n                )\n            })\n            .collect();\n\n        // Should be able to serialize batch\n        let json_bytes = sonic_rs::to_vec(&events).unwrap();\n        assert!(json_bytes.len() > 0);\n\n        // Should be valid JSON array\n        let json_str = String::from_utf8(json_bytes).unwrap();\n        assert!(json_str.starts_with('['));\n        assert!(json_str.ends_with(']'));\n    }\n\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

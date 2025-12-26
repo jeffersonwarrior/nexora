@@ -1,0 +1,183 @@
+{
+  "file_path": "/work/internal/tui/components/anim/anim.go",
+  "file_hash": "945fa0e06771f0688d980046d27a7246d6d0ee34",
+  "updated_at": "2025-12-26T17:34:23.850154",
+  "symbols": {
+    "function_nextID_63": {
+      "name": "nextID",
+      "type": "function",
+      "start_line": 63,
+      "end_line": 67,
+      "content_hash": "f11b68f409b404e1b9499a4a352720e45b1c284c",
+      "content": "func nextID() int {\n\treturn int(atomic.AddInt64(&lastID, 1))\n}\n\n// Cache for expensive animation calculations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_animCache_68": {
+      "name": "animCache",
+      "type": "struct",
+      "start_line": 68,
+      "end_line": 79,
+      "content_hash": "21540313ba13c9feab8820039c59846a482a661c",
+      "content": "type animCache struct {\n\tinitialFrames  [][]string\n\tcyclingFrames  [][]string\n\twidth          int\n\tlabelWidth     int\n\tlabel          []string\n\tellipsisFrames []string\n}\n\nvar animCacheMap = csync.NewMap[string, *animCache]()\n\n// settingsHash creates a hash key for the settings to use for caching",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_settingsHash_80": {
+      "name": "settingsHash",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 87,
+      "content_hash": "fa8946737d87a86c00048022aa2679935fdef137",
+      "content": "func settingsHash(opts Settings) string {\n\th := xxh3.New()\n\tfmt.Fprintf(h, \"%d-%s-%v-%v-%v-%t\",\n\t\topts.Size, opts.Label, opts.LabelColor, opts.GradColorA, opts.GradColorB, opts.CycleColors)\n\treturn fmt.Sprintf(\"%x\", h.Sum(nil))\n}\n\n// StepMsg is a message type used to trigger the next step in the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_StepMsg_88": {
+      "name": "StepMsg",
+      "type": "struct",
+      "start_line": 88,
+      "end_line": 90,
+      "content_hash": "d431ed495ce30c64d2572a89d0540ea4425f00cf",
+      "content": "type StepMsg struct{ id int }\n\n// Settings defines settings for the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Settings_91": {
+      "name": "Settings",
+      "type": "struct",
+      "start_line": 91,
+      "end_line": 103,
+      "content_hash": "3c059f68b4f7b3c1883856d9135a9ba5617e9596",
+      "content": "type Settings struct {\n\tSize        int\n\tLabel       string\n\tLabelColor  color.Color\n\tGradColorA  color.Color\n\tGradColorB  color.Color\n\tCycleColors bool\n}\n\n// Default settings.\nconst ()\n\n// Anim is a Bubble for an animated spinner.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Anim_104": {
+      "name": "Anim",
+      "type": "struct",
+      "start_line": 104,
+      "end_line": 121,
+      "content_hash": "e6ab5907d1ffda34ecab14dc6656cc352e298f8d",
+      "content": "type Anim struct {\n\twidth            int\n\tcyclingCharWidth int\n\tlabel            *csync.Slice[string]\n\tlabelWidth       int\n\tlabelColor       color.Color\n\tstartTime        time.Time\n\tbirthOffsets     []time.Duration\n\tinitialFrames    [][]string // frames for the initial characters\n\tinitialized      atomic.Bool\n\tcyclingFrames    [][]string           // frames for the cycling characters\n\tstep             atomic.Int64         // current main frame step\n\tellipsisStep     atomic.Int64         // current ellipsis frame step\n\tellipsisFrames   *csync.Slice[string] // ellipsis animation frames\n\tid               int\n}\n\n// New creates a new Anim instance with the specified width and label.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_New_122": {
+      "name": "New",
+      "type": "function",
+      "start_line": 122,
+      "end_line": 257,
+      "content_hash": "c37aa885007708577069aa8cb12984e98f0853b8",
+      "content": "func New(opts Settings) *Anim {\n\ta := &Anim{}\n\t// Validate settings.\n\tif opts.Size < 1 {\n\t\topts.Size = defaultNumCyclingChars\n\t}\n\tif colorIsUnset(opts.GradColorA) {\n\t\topts.GradColorA = defaultGradColorA\n\t}\n\tif colorIsUnset(opts.GradColorB) {\n\t\topts.GradColorB = defaultGradColorB\n\t}\n\tif colorIsUnset(opts.LabelColor) {\n\t\topts.LabelColor = defaultLabelColor\n\t}\n\n\ta.id = nextID()\n\ta.startTime = time.Now()\n\ta.cyclingCharWidth = opts.Size\n\ta.labelColor = opts.LabelColor\n\n\t// Check cache first\n\tcacheKey := settingsHash(opts)\n\tcached, exists := animCacheMap.Get(cacheKey)\n\n\tif exists {\n\t\t// Use cached values\n\t\ta.width = cached.width\n\t\ta.labelWidth = cached.labelWidth\n\t\ta.label = csync.NewSliceFrom(cached.label)\n\t\ta.ellipsisFrames = csync.NewSliceFrom(cached.ellipsisFrames)\n\t\ta.initialFrames = cached.initialFrames\n\t\ta.cyclingFrames = cached.cyclingFrames\n\t} else {\n\t\t// Generate new values and cache them\n\t\ta.labelWidth = lipgloss.Width(opts.Label)\n\n\t\t// Total width of anim, in cells.\n\t\ta.width = opts.Size\n\t\tif opts.Label != \"\" {\n\t\t\ta.width += labelGapWidth + lipgloss.Width(opts.Label)\n\t\t}\n\n\t\t// Render the label\n\t\ta.renderLabel(opts.Label)\n\n\t\t// Pre-generate gradient.\n\t\tvar ramp []color.Color\n\t\tnumFrames := prerenderedFrames\n\t\tif opts.CycleColors {\n\t\t\tramp = makeGradientRamp(a.width*3, opts.GradColorA, opts.GradColorB, opts.GradColorA, opts.GradColorB)\n\t\t\tnumFrames = a.width * 2\n\t\t} else {\n\t\t\tramp = makeGradientRamp(a.width, opts.GradColorA, opts.GradColorB)\n\t\t}\n\n\t\t// Pre-render initial characters.\n\t\ta.initialFrames = make([][]string, numFrames)\n\t\toffset := 0\n\t\tfor i := range a.initialFrames {\n\t\t\ta.initialFrames[i] = make([]string, a.width+labelGapWidth+a.labelWidth)\n\t\t\tfor j := range a.initialFrames[i] {\n\t\t\t\tif j+offset >= len(ramp) {\n\t\t\t\t\tcontinue // skip if we run out of colors\n\t\t\t\t}\n\n\t\t\t\tvar c color.Color\n\t\t\t\tif j <= a.cyclingCharWidth {\n\t\t\t\t\tc = ramp[j+offset]\n\t\t\t\t} else {\n\t\t\t\t\tc = opts.LabelColor\n\t\t\t\t}\n\n\t\t\t\t// Also prerender the initial character with Lip Gloss to avoid\n\t\t\t\t// processing in the render loop.\n\t\t\t\ta.initialFrames[i][j] = lipgloss.NewStyle().\n\t\t\t\t\tForeground(c).\n\t\t\t\t\tRender(string(initialChar))\n\t\t\t}\n\t\t\tif opts.CycleColors {\n\t\t\t\toffset++\n\t\t\t}\n\t\t}\n\n\t\t// Prerender scrambled rune frames for the animation.\n\t\ta.cyclingFrames = make([][]string, numFrames)\n\t\toffset = 0\n\t\tfor i := range a.cyclingFrames {\n\t\t\ta.cyclingFrames[i] = make([]string, a.width)\n\t\t\tfor j := range a.cyclingFrames[i] {\n\t\t\t\tif j+offset >= len(ramp) {\n\t\t\t\t\tcontinue // skip if we run out of colors\n\t\t\t\t}\n\n\t\t\t\t// Also prerender the color with Lip Gloss here to avoid processing\n\t\t\t\t// in the render loop.\n\t\t\t\tr := availableRunes[rand.IntN(len(availableRunes))]\n\t\t\t\ta.cyclingFrames[i][j] = lipgloss.NewStyle().\n\t\t\t\t\tForeground(ramp[j+offset]).\n\t\t\t\t\tRender(string(r))\n\t\t\t}\n\t\t\tif opts.CycleColors {\n\t\t\t\toffset++\n\t\t\t}\n\t\t}\n\n\t\t// Cache the results\n\t\tlabelSlice := make([]string, a.label.Len())\n\t\tfor i, v := range a.label.Seq2() {\n\t\t\tlabelSlice[i] = v\n\t\t}\n\t\tellipsisSlice := make([]string, a.ellipsisFrames.Len())\n\t\tfor i, v := range a.ellipsisFrames.Seq2() {\n\t\t\tellipsisSlice[i] = v\n\t\t}\n\t\tcached = &animCache{\n\t\t\tinitialFrames:  a.initialFrames,\n\t\t\tcyclingFrames:  a.cyclingFrames,\n\t\t\twidth:          a.width,\n\t\t\tlabelWidth:     a.labelWidth,\n\t\t\tlabel:          labelSlice,\n\t\t\tellipsisFrames: ellipsisSlice,\n\t\t}\n\t\tanimCacheMap.Set(cacheKey, cached)\n\t}\n\n\t// Random assign a birth to each character for a stagged entrance effect.\n\ta.birthOffsets = make([]time.Duration, a.width)\n\tfor i := range a.birthOffsets {\n\t\ta.birthOffsets[i] = time.Duration(rand.N(int64(maxBirthOffset))) * time.Nanosecond\n\t}\n\n\treturn a\n}\n\n// SetLabel updates the label text and re-renders it.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetLabel_258": {
+      "name": "SetLabel",
+      "type": "method",
+      "start_line": 258,
+      "end_line": 271,
+      "content_hash": "cd883d80296f11d8a245600b7656726b2dfbc093",
+      "content": "func (a *Anim) SetLabel(newLabel string) {\n\ta.labelWidth = lipgloss.Width(newLabel)\n\n\t// Update total width\n\ta.width = a.cyclingCharWidth\n\tif newLabel != \"\" {\n\t\ta.width += labelGapWidth + a.labelWidth\n\t}\n\n\t// Re-render the label\n\ta.renderLabel(newLabel)\n}\n\n// renderLabel renders the label with the current label color.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_renderLabel_272": {
+      "name": "renderLabel",
+      "type": "method",
+      "start_line": 272,
+      "end_line": 298,
+      "content_hash": "7ce48b4be0d39ce76c8c49020a0da6e45cc18fc2",
+      "content": "func (a *Anim) renderLabel(label string) {\n\tif a.labelWidth > 0 {\n\t\t// Pre-render the label.\n\t\tlabelRunes := []rune(label)\n\t\ta.label = csync.NewSlice[string]()\n\t\tfor i := range labelRunes {\n\t\t\trendered := lipgloss.NewStyle().\n\t\t\t\tForeground(a.labelColor).\n\t\t\t\tRender(string(labelRunes[i]))\n\t\t\ta.label.Append(rendered)\n\t\t}\n\n\t\t// Pre-render the ellipsis frames which come after the label.\n\t\ta.ellipsisFrames = csync.NewSlice[string]()\n\t\tfor _, frame := range ellipsisFrames {\n\t\t\trendered := lipgloss.NewStyle().\n\t\t\t\tForeground(a.labelColor).\n\t\t\t\tRender(frame)\n\t\t\ta.ellipsisFrames.Append(rendered)\n\t\t}\n\t} else {\n\t\ta.label = csync.NewSlice[string]()\n\t\ta.ellipsisFrames = csync.NewSlice[string]()\n\t}\n}\n\n// Width returns the total width of the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Width_299": {
+      "name": "Width",
+      "type": "method",
+      "start_line": 299,
+      "end_line": 316,
+      "content_hash": "4bb9f9034dff376971a689480c5e8ed30540346d",
+      "content": "func (a *Anim) Width() (w int) {\n\tw = a.width\n\tif a.labelWidth > 0 {\n\t\tw += labelGapWidth + a.labelWidth\n\n\t\tvar widestEllipsisFrame int\n\t\tfor _, f := range ellipsisFrames {\n\t\t\tfw := lipgloss.Width(f)\n\t\t\tif fw > widestEllipsisFrame {\n\t\t\t\twidestEllipsisFrame = fw\n\t\t\t}\n\t\t}\n\t\tw += widestEllipsisFrame\n\t}\n\treturn w\n}\n\n// Init starts the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_317": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 317,
+      "end_line": 321,
+      "content_hash": "0250358065007be09c08f9f0164f8406319217df",
+      "content": "func (a *Anim) Init() tea.Cmd {\n\treturn a.Step()\n}\n\n// Update processes animation steps (or not).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_322": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 322,
+      "end_line": 350,
+      "content_hash": "6c07ac5c7d78e86191e72086d67060a06722eed6",
+      "content": "func (a *Anim) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase StepMsg:\n\t\tif msg.id != a.id {\n\t\t\t// Reject messages that are not for this instance.\n\t\t\treturn a, nil\n\t\t}\n\n\t\tstep := a.step.Add(1)\n\t\tif int(step) >= len(a.cyclingFrames) {\n\t\t\ta.step.Store(0)\n\t\t}\n\n\t\tif a.initialized.Load() && a.labelWidth > 0 {\n\t\t\t// Manage the ellipsis animation.\n\t\t\tellipsisStep := a.ellipsisStep.Add(1)\n\t\t\tif int(ellipsisStep) >= ellipsisAnimSpeed*len(ellipsisFrames) {\n\t\t\t\ta.ellipsisStep.Store(0)\n\t\t\t}\n\t\t} else if !a.initialized.Load() && time.Since(a.startTime) >= maxBirthOffset {\n\t\t\ta.initialized.Store(true)\n\t\t}\n\t\treturn a, a.Step()\n\tdefault:\n\t\treturn a, nil\n\t}\n}\n\n// View renders the current state of the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_351": {
+      "name": "View",
+      "type": "method",
+      "start_line": 351,
+      "end_line": 384,
+      "content_hash": "06a18b4794a82dbe5d6761d98f9352ae6a0771fd",
+      "content": "func (a *Anim) View() string {\n\tvar b strings.Builder\n\tstep := int(a.step.Load())\n\tfor i := range a.width {\n\t\tswitch {\n\t\tcase !a.initialized.Load() && i < len(a.birthOffsets) && time.Since(a.startTime) < a.birthOffsets[i]:\n\t\t\t// Birth offset not reached: render initial character.\n\t\t\tb.WriteString(a.initialFrames[step][i])\n\t\tcase i < a.cyclingCharWidth:\n\t\t\t// Render a cycling character.\n\t\t\tb.WriteString(a.cyclingFrames[step][i])\n\t\tcase i == a.cyclingCharWidth:\n\t\t\t// Render label gap.\n\t\t\tb.WriteString(labelGap)\n\t\tcase i > a.cyclingCharWidth:\n\t\t\t// Label.\n\t\t\tif labelChar, ok := a.label.Get(i - a.cyclingCharWidth - labelGapWidth); ok {\n\t\t\t\tb.WriteString(labelChar)\n\t\t\t}\n\t\t}\n\t}\n\t// Render animated ellipsis at the end of the label if all characters\n\t// have been initialized.\n\tif a.initialized.Load() && a.labelWidth > 0 {\n\t\tellipsisStep := int(a.ellipsisStep.Load())\n\t\tif ellipsisFrame, ok := a.ellipsisFrames.Get(ellipsisStep / ellipsisAnimSpeed); ok {\n\t\t\tb.WriteString(ellipsisFrame)\n\t\t}\n\t}\n\n\treturn b.String()\n}\n\n// Step is a command that triggers the next step in the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Step_385": {
+      "name": "Step",
+      "type": "method",
+      "start_line": 385,
+      "end_line": 392,
+      "content_hash": "d882d6c70c94b0d79bf7559dbf59d798a1890dd8",
+      "content": "func (a *Anim) Step() tea.Cmd {\n\treturn tea.Tick(time.Second/time.Duration(fps), func(t time.Time) tea.Msg {\n\t\treturn StepMsg{id: a.id}\n\t})\n}\n\n// makeGradientRamp() returns a slice of colors blended between the given keys.\n// Blending is done as Hcl to stay in gamut.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_makeGradientRamp_393": {
+      "name": "makeGradientRamp",
+      "type": "function",
+      "start_line": 393,
+      "end_line": 440,
+      "content_hash": "4ea1117624664ad70e65025fc0a1d122ed1e08c7",
+      "content": "func makeGradientRamp(size int, stops ...color.Color) []color.Color {\n\tif len(stops) < 2 {\n\t\treturn nil\n\t}\n\n\tpoints := make([]colorful.Color, len(stops))\n\tfor i, k := range stops {\n\t\tpoints[i], _ = colorful.MakeColor(k)\n\t}\n\n\tnumSegments := len(stops) - 1\n\tif numSegments == 0 {\n\t\treturn nil\n\t}\n\tblended := make([]color.Color, 0, size)\n\n\t// Calculate how many colors each segment should have.\n\tsegmentSizes := make([]int, numSegments)\n\tbaseSize := size / numSegments\n\tremainder := size % numSegments\n\n\t// Distribute the remainder across segments.\n\tfor i := range numSegments {\n\t\tsegmentSizes[i] = baseSize\n\t\tif i < remainder {\n\t\t\tsegmentSizes[i]++\n\t\t}\n\t}\n\n\t// Generate colors for each segment.\n\tfor i := range numSegments {\n\t\tc1 := points[i]\n\t\tc2 := points[i+1]\n\t\tsegmentSize := segmentSizes[i]\n\n\t\tfor j := range segmentSize {\n\t\t\tif segmentSize == 0 {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tt := float64(j) / float64(segmentSize)\n\t\t\tc := c1.BlendHcl(c2, t)\n\t\t\tblended = append(blended, c)\n\t\t}\n\t}\n\n\treturn blended\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_colorIsUnset_441": {
+      "name": "colorIsUnset",
+      "type": "function",
+      "start_line": 441,
+      "end_line": 447,
+      "content_hash": "a561df323462ecaf56dab6bf9f657574269879f8",
+      "content": "func colorIsUnset(c color.Color) bool {\n\tif c == nil {\n\t\treturn true\n\t}\n\t_, _, _, a := c.RGBA()\n\treturn a == 0\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

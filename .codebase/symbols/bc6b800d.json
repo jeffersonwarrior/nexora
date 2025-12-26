@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/fsext/expand.go",
+  "file_hash": "d32eba79feb5c03980c1445d8c2b59af3920623e",
+  "updated_at": "2025-12-26T17:34:20.955653",
+  "symbols": {
+    "function_Expand_14": {
+      "name": "Expand",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 29,
+      "content_hash": "b991a3671e835e5b90b319bce4b117a4e4e20799",
+      "content": "func Expand(s string) (string, error) {\n\tif s == \"\" {\n\t\treturn \"\", nil\n\t}\n\tp := syntax.NewParser()\n\tword, err := p.Document(strings.NewReader(s))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tcfg := &expand.Config{\n\t\tEnv:      expand.FuncEnviron(os.Getenv),\n\t\tReadDir2: os.ReadDir,\n\t\tGlobStar: true,\n\t}\n\treturn expand.Literal(cfg, word)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

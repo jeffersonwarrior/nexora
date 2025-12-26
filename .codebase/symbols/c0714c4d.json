@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/.local/tools/modelscan/storage/rate_limits.go",
+  "file_hash": "a6ff5d2a108dfdc1d5f40313201d5115d1fd9b80",
+  "updated_at": "2025-12-26T17:34:20.901571",
+  "symbols": {
+    "struct_RateLimit_14": {
+      "name": "RateLimit",
+      "type": "struct",
+      "start_line": 14,
+      "end_line": 29,
+      "content_hash": "c417e2d965c316d865b2b8b586a1f25d88198640",
+      "content": "type RateLimit struct {\n\tID                 int64\n\tProviderName       string\n\tPlanType           string // free, pay_per_go, pro, enterprise\n\tLimitType          string // rpm, tpm, rph, rpd, concurrent\n\tLimitValue         int64\n\tBurstAllowance     int64\n\tResetWindowSeconds int64\n\tAppliesTo          string         // account, model, endpoint\n\tModelID            sql.NullString // if applies_to=model\n\tEndpointPath       sql.NullString // if applies_to=endpoint\n\tSourceURL          string\n\tLastVerified       time.Time\n}\n\n// PlanMetadata stores metadata about provider pricing plans",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PlanMetadata_30": {
+      "name": "PlanMetadata",
+      "type": "struct",
+      "start_line": 30,
+      "end_line": 39,
+      "content_hash": "5dfdb0e7daec60a5047ebf9ab649e0836d16ff8e",
+      "content": "type PlanMetadata struct {\n\tProviderName     string\n\tPlanType         string\n\tOfficialName     string\n\tCostPerMonth     sql.NullFloat64\n\tHasFreeTier      bool\n\tDocumentationURL string\n}\n\n// ProviderPricing stores pricing information per model and plan",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ProviderPricing_40": {
+      "name": "ProviderPricing",
+      "type": "struct",
+      "start_line": 40,
+      "end_line": 51,
+      "content_hash": "061f00a700987d648f45478b4ec34f136830f7c8",
+      "content": "type ProviderPricing struct {\n\tProviderName  string\n\tModelID       string\n\tPlanType      string\n\tInputCost     float64\n\tOutputCost    float64\n\tUnitType      string // \"1M tokens\", \"per character\", \"per second\"\n\tCurrency      string\n\tIncludedUnits sql.NullInt64 // free tier included units\n}\n\n// PricingHistory tracks pricing changes over time",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PricingHistory_52": {
+      "name": "PricingHistory",
+      "type": "struct",
+      "start_line": 52,
+      "end_line": 65,
+      "content_hash": "6249b94b3675fdb788159738ca46d14fa2d7569f",
+      "content": "type PricingHistory struct {\n\tID            int64\n\tProviderName  string\n\tModelID       string\n\tPlanType      string\n\tOldInputCost  float64\n\tOldOutputCost float64\n\tNewInputCost  float64\n\tNewOutputCost float64\n\tChangeDate    time.Time\n\tChangeReason  string\n}\n\n// InitRateLimitDB initializes the rate limit database with WAL mode",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_InitRateLimitDB_66": {
+      "name": "InitRateLimitDB",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 90,
+      "content_hash": "5ebc0aa5596636d3fd506ad08943ff0b72201122",
+      "content": "func InitRateLimitDB(dbPath string) error {\n\tvar err error\n\trateLimitDB, err = sql.Open(\"sqlite3\", dbPath)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to open rate limit database: %w\", err)\n\t}\n\n\t// Enable WAL mode for concurrent reads during writes\n\tif _, err := rateLimitDB.Exec(\"PRAGMA journal_mode=WAL\"); err != nil {\n\t\treturn fmt.Errorf(\"failed to enable WAL mode: %w\", err)\n\t}\n\n\t// Enable foreign keys\n\tif _, err := rateLimitDB.Exec(\"PRAGMA foreign_keys=ON\"); err != nil {\n\t\treturn fmt.Errorf(\"failed to enable foreign keys: %w\", err)\n\t}\n\n\tif err := createRateLimitTables(); err != nil {\n\t\treturn fmt.Errorf(\"failed to create rate limit tables: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// CloseRateLimitDB closes the rate limit database connection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CloseRateLimitDB_91": {
+      "name": "CloseRateLimitDB",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 98,
+      "content_hash": "06a6f80bb6ec8c342a7f0edc2ba618715b1ffefb",
+      "content": "func CloseRateLimitDB() error {\n\tif rateLimitDB != nil {\n\t\treturn rateLimitDB.Close()\n\t}\n\treturn nil\n}\n\n// GetRateLimitDB returns the rate limit database connection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetRateLimitDB_99": {
+      "name": "GetRateLimitDB",
+      "type": "function",
+      "start_line": 99,
+      "end_line": 103,
+      "content_hash": "5d758fea69a5641f010d27fc21184a94741dadb9",
+      "content": "func GetRateLimitDB() *sql.DB {\n\treturn rateLimitDB\n}\n\n// createRateLimitTables creates all rate limit related tables",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createRateLimitTables_104": {
+      "name": "createRateLimitTables",
+      "type": "function",
+      "start_line": 104,
+      "end_line": 189,
+      "content_hash": "865aa8f7c0caef1f9e15f4a256099ce1161e761c",
+      "content": "func createRateLimitTables() error {\n\tqueries := []string{\n\t\t// Rate limits table\n\t\t`CREATE TABLE IF NOT EXISTS rate_limits (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\tplan_type TEXT NOT NULL,\n\t\t\tlimit_type TEXT NOT NULL,\n\t\t\tlimit_value INTEGER NOT NULL,\n\t\t\tburst_allowance INTEGER DEFAULT 0,\n\t\t\treset_window_seconds INTEGER NOT NULL,\n\t\t\tapplies_to TEXT NOT NULL,\n\t\t\tmodel_id TEXT DEFAULT '',\n\t\t\tendpoint_path TEXT DEFAULT '',\n\t\t\tsource_url TEXT,\n\t\t\tlast_verified DATETIME NOT NULL,\n\t\t\tUNIQUE(provider_name, plan_type, limit_type, model_id, endpoint_path)\n\t\t)`,\n\n\t\t// Plan metadata table\n\t\t`CREATE TABLE IF NOT EXISTS plan_metadata (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\tplan_type TEXT NOT NULL,\n\t\t\tofficial_name TEXT NOT NULL,\n\t\t\tcost_per_month REAL,\n\t\t\thas_free_tier BOOLEAN DEFAULT 0,\n\t\t\tdocumentation_url TEXT,\n\t\t\tUNIQUE(provider_name, plan_type)\n\t\t)`,\n\n\t\t// Provider pricing table\n\t\t`CREATE TABLE IF NOT EXISTS provider_pricing (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\tmodel_id TEXT NOT NULL,\n\t\t\tplan_type TEXT NOT NULL,\n\t\t\tinput_cost REAL NOT NULL,\n\t\t\toutput_cost REAL NOT NULL,\n\t\t\tunit_type TEXT NOT NULL,\n\t\t\tcurrency TEXT NOT NULL DEFAULT 'USD',\n\t\t\tincluded_units INTEGER,\n\t\t\tUNIQUE(provider_name, model_id, plan_type)\n\t\t)`,\n\n\t\t// Pricing history table (for auditing)\n\t\t`CREATE TABLE IF NOT EXISTS pricing_history (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\tmodel_id TEXT NOT NULL,\n\t\t\tplan_type TEXT NOT NULL,\n\t\t\told_input_cost REAL,\n\t\t\told_output_cost REAL,\n\t\t\tnew_input_cost REAL NOT NULL,\n\t\t\tnew_output_cost REAL NOT NULL,\n\t\t\tchange_date DATETIME NOT NULL,\n\t\t\tchange_reason TEXT\n\t\t)`,\n\n\t\t// Indexes for performance\n\t\t`CREATE INDEX IF NOT EXISTS idx_rate_limits_provider_plan \n\t\t ON rate_limits(provider_name, plan_type, limit_type)`,\n\n\t\t`CREATE INDEX IF NOT EXISTS idx_rate_limits_model \n\t\t ON rate_limits(model_id) WHERE model_id IS NOT NULL`,\n\n\t\t`CREATE INDEX IF NOT EXISTS idx_plan_metadata_provider \n\t\t ON plan_metadata(provider_name)`,\n\n\t\t`CREATE INDEX IF NOT EXISTS idx_provider_pricing_model \n\t\t ON provider_pricing(provider_name, model_id)`,\n\n\t\t`CREATE INDEX IF NOT EXISTS idx_pricing_history_date \n\t\t ON pricing_history(change_date DESC)`,\n\t}\n\n\tfor _, query := range queries {\n\t\tif _, err := rateLimitDB.Exec(query); err != nil {\n\t\t\treturn fmt.Errorf(\"failed to execute query: %w\", err)\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// InsertRateLimit inserts or updates a rate limit (upsert)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_InsertRateLimit_190": {
+      "name": "InsertRateLimit",
+      "type": "function",
+      "start_line": 190,
+      "end_line": 226,
+      "content_hash": "483c0cfe3634f178b4713a460550a9a972293e0b",
+      "content": "func InsertRateLimit(rl RateLimit) error {\n\t// Convert NULL values to empty strings for UNIQUE constraint\n\tmodelID := \"\"\n\tif rl.ModelID.Valid {\n\t\tmodelID = rl.ModelID.String\n\t}\n\tendpointPath := \"\"\n\tif rl.EndpointPath.Valid {\n\t\tendpointPath = rl.EndpointPath.String\n\t}\n\n\tquery := `\n\t\tINSERT INTO rate_limits (\n\t\t\tprovider_name, plan_type, limit_type, limit_value, \n\t\t\tburst_allowance, reset_window_seconds, applies_to, \n\t\t\tmodel_id, endpoint_path, source_url, last_verified\n\t\t) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n\t\tON CONFLICT(provider_name, plan_type, limit_type, model_id, endpoint_path)\n\t\tDO UPDATE SET\n\t\t\tlimit_value = excluded.limit_value,\n\t\t\tburst_allowance = excluded.burst_allowance,\n\t\t\treset_window_seconds = excluded.reset_window_seconds,\n\t\t\tapplies_to = excluded.applies_to,\n\t\t\tsource_url = excluded.source_url,\n\t\t\tlast_verified = excluded.last_verified\n\t`\n\n\t_, err := rateLimitDB.Exec(query,\n\t\trl.ProviderName, rl.PlanType, rl.LimitType, rl.LimitValue,\n\t\trl.BurstAllowance, rl.ResetWindowSeconds, rl.AppliesTo,\n\t\tmodelID, endpointPath, rl.SourceURL, rl.LastVerified,\n\t)\n\n\treturn err\n}\n\n// QueryRateLimit retrieves rate limits matching the criteria",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_QueryRateLimit_227": {
+      "name": "QueryRateLimit",
+      "type": "function",
+      "start_line": 227,
+      "end_line": 278,
+      "content_hash": "8c9194c2befdd5da7c86580cd4b54f90e26afc32",
+      "content": "func QueryRateLimit(providerName, planType, limitType, modelID, endpointPath string) ([]RateLimit, error) {\n\tquery := `\n\t\tSELECT id, provider_name, plan_type, limit_type, limit_value,\n\t\t       burst_allowance, reset_window_seconds, applies_to,\n\t\t       model_id, endpoint_path, source_url, last_verified\n\t\tFROM rate_limits\n\t\tWHERE provider_name = ? AND plan_type = ? AND limit_type = ?\n\t`\n\targs := []interface{}{providerName, planType, limitType}\n\n\tif modelID != \"\" {\n\t\tquery += \" AND (model_id = ? OR model_id = '')\"\n\t\targs = append(args, modelID)\n\t}\n\tif endpointPath != \"\" {\n\t\tquery += \" AND (endpoint_path = ? OR endpoint_path = '')\"\n\t\targs = append(args, endpointPath)\n\t}\n\n\tquery += \" ORDER BY applies_to DESC\" // prioritize specific over general\n\n\trows, err := rateLimitDB.Query(query, args...)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tvar results []RateLimit\n\tfor rows.Next() {\n\t\tvar rl RateLimit\n\t\tvar modelIDStr, endpointPathStr string\n\t\terr := rows.Scan(\n\t\t\t&rl.ID, &rl.ProviderName, &rl.PlanType, &rl.LimitType, &rl.LimitValue,\n\t\t\t&rl.BurstAllowance, &rl.ResetWindowSeconds, &rl.AppliesTo,\n\t\t\t&modelIDStr, &endpointPathStr, &rl.SourceURL, &rl.LastVerified,\n\t\t)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tif modelIDStr != \"\" {\n\t\t\trl.ModelID = sql.NullString{String: modelIDStr, Valid: true}\n\t\t}\n\t\tif endpointPathStr != \"\" {\n\t\t\trl.EndpointPath = sql.NullString{String: endpointPathStr, Valid: true}\n\t\t}\n\t\tresults = append(results, rl)\n\t}\n\n\treturn results, nil\n}\n\n// InsertPlanMetadata inserts or updates plan metadata",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_InsertPlanMetadata_279": {
+      "name": "InsertPlanMetadata",
+      "type": "function",
+      "start_line": 279,
+      "end_line": 301,
+      "content_hash": "5213744dd6a8267625cb7db2b3d8a95d463bfd24",
+      "content": "func InsertPlanMetadata(pm PlanMetadata) error {\n\tquery := `\n\t\tINSERT INTO plan_metadata (\n\t\t\tprovider_name, plan_type, official_name, cost_per_month,\n\t\t\thas_free_tier, documentation_url\n\t\t) VALUES (?, ?, ?, ?, ?, ?)\n\t\tON CONFLICT(provider_name, plan_type)\n\t\tDO UPDATE SET\n\t\t\tofficial_name = excluded.official_name,\n\t\t\tcost_per_month = excluded.cost_per_month,\n\t\t\thas_free_tier = excluded.has_free_tier,\n\t\t\tdocumentation_url = excluded.documentation_url\n\t`\n\n\t_, err := rateLimitDB.Exec(query,\n\t\tpm.ProviderName, pm.PlanType, pm.OfficialName, pm.CostPerMonth,\n\t\tpm.HasFreeTier, pm.DocumentationURL,\n\t)\n\n\treturn err\n}\n\n// InsertProviderPricing inserts or updates provider pricing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_InsertProviderPricing_302": {
+      "name": "InsertProviderPricing",
+      "type": "function",
+      "start_line": 302,
+      "end_line": 325,
+      "content_hash": "b259e43b279a6247f13facb1fdb59232ffc66955",
+      "content": "func InsertProviderPricing(pp ProviderPricing) error {\n\tquery := `\n\t\tINSERT INTO provider_pricing (\n\t\t\tprovider_name, model_id, plan_type, input_cost, output_cost,\n\t\t\tunit_type, currency, included_units\n\t\t) VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n\t\tON CONFLICT(provider_name, model_id, plan_type)\n\t\tDO UPDATE SET\n\t\t\tinput_cost = excluded.input_cost,\n\t\t\toutput_cost = excluded.output_cost,\n\t\t\tunit_type = excluded.unit_type,\n\t\t\tcurrency = excluded.currency,\n\t\t\tincluded_units = excluded.included_units\n\t`\n\n\t_, err := rateLimitDB.Exec(query,\n\t\tpp.ProviderName, pp.ModelID, pp.PlanType, pp.InputCost, pp.OutputCost,\n\t\tpp.UnitType, pp.Currency, pp.IncludedUnits,\n\t)\n\n\treturn err\n}\n\n// InsertPricingHistory records a pricing change",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_InsertPricingHistory_326": {
+      "name": "InsertPricingHistory",
+      "type": "function",
+      "start_line": 326,
+      "end_line": 342,
+      "content_hash": "eeb70de166e2b907f46c102e3777cd3dd8f440f9",
+      "content": "func InsertPricingHistory(ph PricingHistory) error {\n\tquery := `\n\t\tINSERT INTO pricing_history (\n\t\t\tprovider_name, model_id, plan_type, old_input_cost, old_output_cost,\n\t\t\tnew_input_cost, new_output_cost, change_date, change_reason\n\t\t) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n\t`\n\n\t_, err := rateLimitDB.Exec(query,\n\t\tph.ProviderName, ph.ModelID, ph.PlanType, ph.OldInputCost, ph.OldOutputCost,\n\t\tph.NewInputCost, ph.NewOutputCost, ph.ChangeDate, ph.ChangeReason,\n\t)\n\n\treturn err\n}\n\n// GetProviderPricing retrieves pricing for a specific model and plan",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetProviderPricing_343": {
+      "name": "GetProviderPricing",
+      "type": "function",
+      "start_line": 343,
+      "end_line": 367,
+      "content_hash": "998e6dbc631213e5e25a80d7d9ba82d6fdc4705b",
+      "content": "func GetProviderPricing(providerName, modelID, planType string) (*ProviderPricing, error) {\n\tquery := `\n\t\tSELECT provider_name, model_id, plan_type, input_cost, output_cost,\n\t\t       unit_type, currency, included_units\n\t\tFROM provider_pricing\n\t\tWHERE provider_name = ? AND model_id = ? AND plan_type = ?\n\t`\n\n\tvar pp ProviderPricing\n\terr := rateLimitDB.QueryRow(query, providerName, modelID, planType).Scan(\n\t\t&pp.ProviderName, &pp.ModelID, &pp.PlanType, &pp.InputCost, &pp.OutputCost,\n\t\t&pp.UnitType, &pp.Currency, &pp.IncludedUnits,\n\t)\n\n\tif err == sql.ErrNoRows {\n\t\treturn nil, nil\n\t}\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &pp, nil\n}\n\n// GetAllRateLimitsForProvider retrieves all rate limits for a provider and plan",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetAllRateLimitsForProvider_368": {
+      "name": "GetAllRateLimitsForProvider",
+      "type": "function",
+      "start_line": 368,
+      "end_line": 406,
+      "content_hash": "a49322bba53b8d7c930e704ef38e51a5750c8911",
+      "content": "func GetAllRateLimitsForProvider(providerName, planType string) ([]RateLimit, error) {\n\tquery := `\n\t\tSELECT id, provider_name, plan_type, limit_type, limit_value,\n\t\t       burst_allowance, reset_window_seconds, applies_to,\n\t\t       model_id, endpoint_path, source_url, last_verified\n\t\tFROM rate_limits\n\t\tWHERE provider_name = ? AND plan_type = ?\n\t\tORDER BY limit_type, applies_to\n\t`\n\n\trows, err := rateLimitDB.Query(query, providerName, planType)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tvar results []RateLimit\n\tfor rows.Next() {\n\t\tvar rl RateLimit\n\t\tvar modelIDStr, endpointPathStr string\n\t\terr := rows.Scan(\n\t\t\t&rl.ID, &rl.ProviderName, &rl.PlanType, &rl.LimitType, &rl.LimitValue,\n\t\t\t&rl.BurstAllowance, &rl.ResetWindowSeconds, &rl.AppliesTo,\n\t\t\t&modelIDStr, &endpointPathStr, &rl.SourceURL, &rl.LastVerified,\n\t\t)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tif modelIDStr != \"\" {\n\t\t\trl.ModelID = sql.NullString{String: modelIDStr, Valid: true}\n\t\t}\n\t\tif endpointPathStr != \"\" {\n\t\t\trl.EndpointPath = sql.NullString{String: endpointPathStr, Valid: true}\n\t\t}\n\t\tresults = append(results, rl)\n\t}\n\n\treturn results, nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

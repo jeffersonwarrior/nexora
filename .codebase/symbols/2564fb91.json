@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/internal/permission/permission.go",
+  "file_hash": "63e79316190a8c5042afa5ba7a3e56096f0d5f48",
+  "updated_at": "2025-12-26T17:34:23.372517",
+  "symbols": {
+    "struct_CreatePermissionRequest_18": {
+      "name": "CreatePermissionRequest",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 27,
+      "content_hash": "c73b7ba4a8c9242ac310b6d8ea3b824de7bb7444",
+      "content": "type CreatePermissionRequest struct {\n\tSessionID   string `json:\"session_id\"`\n\tToolCallID  string `json:\"tool_call_id\"`\n\tToolName    string `json:\"tool_name\"`\n\tDescription string `json:\"description\"`\n\tAction      string `json:\"action\"`\n\tParams      any    `json:\"params\"`\n\tPath        string `json:\"path\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PermissionNotification_28": {
+      "name": "PermissionNotification",
+      "type": "struct",
+      "start_line": 28,
+      "end_line": 33,
+      "content_hash": "6d42d4eb21241386f487eaf319de059e2886f5bc",
+      "content": "type PermissionNotification struct {\n\tToolCallID string `json:\"tool_call_id\"`\n\tGranted    bool   `json:\"granted\"`\n\tDenied     bool   `json:\"denied\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PermissionRequest_34": {
+      "name": "PermissionRequest",
+      "type": "struct",
+      "start_line": 34,
+      "end_line": 44,
+      "content_hash": "7e97d214e07f3c763ac6dedb3c20ea65e6b59812",
+      "content": "type PermissionRequest struct {\n\tID          string `json:\"id\"`\n\tSessionID   string `json:\"session_id\"`\n\tToolCallID  string `json:\"tool_call_id\"`\n\tToolName    string `json:\"tool_name\"`\n\tDescription string `json:\"description\"`\n\tAction      string `json:\"action\"`\n\tParams      any    `json:\"params\"`\n\tPath        string `json:\"path\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_Service_45": {
+      "name": "Service",
+      "type": "interface",
+      "start_line": 45,
+      "end_line": 56,
+      "content_hash": "2bf99db71805e23771e6f5f6fb95f3e329654cf5",
+      "content": "type Service interface {\n\tpubsub.Suscriber[PermissionRequest]\n\tGrantPersistent(permission PermissionRequest)\n\tGrant(permission PermissionRequest)\n\tDeny(permission PermissionRequest)\n\tRequest(opts CreatePermissionRequest) bool\n\tAutoApproveSession(sessionID string)\n\tSetSkipRequests(skip bool)\n\tSkipRequests() bool\n\tSubscribeNotifications(ctx context.Context) <-chan pubsub.Event[PermissionNotification]\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_permissionService_57": {
+      "name": "permissionService",
+      "type": "struct",
+      "start_line": 57,
+      "end_line": 74,
+      "content_hash": "46e066065189c8e28550059a27af21ed0ab6dc22",
+      "content": "type permissionService struct {\n\t*pubsub.Broker[PermissionRequest]\n\n\tnotificationBroker    *pubsub.Broker[PermissionNotification]\n\tworkingDir            string\n\tsessionPermissions    []PermissionRequest\n\tsessionPermissionsMu  sync.RWMutex\n\tpendingRequests       *csync.Map[string, chan bool]\n\tautoApproveSessions   map[string]bool\n\tautoApproveSessionsMu sync.RWMutex\n\tskip                  bool\n\tallowedTools          []string\n\n\t// used to make sure we only process one request at a time\n\trequestMu     sync.Mutex\n\tactiveRequest *PermissionRequest\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GrantPersistent_75": {
+      "name": "GrantPersistent",
+      "type": "method",
+      "start_line": 75,
+      "end_line": 93,
+      "content_hash": "313b003751ede1d3d5d33be27463e12998c15f2f",
+      "content": "func (s *permissionService) GrantPersistent(permission PermissionRequest) {\n\ts.notificationBroker.Publish(pubsub.CreatedEvent, PermissionNotification{\n\t\tToolCallID: permission.ToolCallID,\n\t\tGranted:    true,\n\t})\n\trespCh, ok := s.pendingRequests.Get(permission.ID)\n\tif ok {\n\t\trespCh <- true\n\t}\n\n\ts.sessionPermissionsMu.Lock()\n\ts.sessionPermissions = append(s.sessionPermissions, permission)\n\ts.sessionPermissionsMu.Unlock()\n\n\tif s.activeRequest != nil && s.activeRequest.ID == permission.ID {\n\t\ts.activeRequest = nil\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Grant_94": {
+      "name": "Grant",
+      "type": "method",
+      "start_line": 94,
+      "end_line": 108,
+      "content_hash": "7555d16968ad31f13935c1d4d862c53f11e6f320",
+      "content": "func (s *permissionService) Grant(permission PermissionRequest) {\n\ts.notificationBroker.Publish(pubsub.CreatedEvent, PermissionNotification{\n\t\tToolCallID: permission.ToolCallID,\n\t\tGranted:    true,\n\t})\n\trespCh, ok := s.pendingRequests.Get(permission.ID)\n\tif ok {\n\t\trespCh <- true\n\t}\n\n\tif s.activeRequest != nil && s.activeRequest.ID == permission.ID {\n\t\ts.activeRequest = nil\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Deny_109": {
+      "name": "Deny",
+      "type": "method",
+      "start_line": 109,
+      "end_line": 124,
+      "content_hash": "f958f6b50420961f8741c23bb8aa1f522828068d",
+      "content": "func (s *permissionService) Deny(permission PermissionRequest) {\n\ts.notificationBroker.Publish(pubsub.CreatedEvent, PermissionNotification{\n\t\tToolCallID: permission.ToolCallID,\n\t\tGranted:    false,\n\t\tDenied:     true,\n\t})\n\trespCh, ok := s.pendingRequests.Get(permission.ID)\n\tif ok {\n\t\trespCh <- false\n\t}\n\n\tif s.activeRequest != nil && s.activeRequest.ID == permission.ID {\n\t\ts.activeRequest = nil\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Request_125": {
+      "name": "Request",
+      "type": "method",
+      "start_line": 125,
+      "end_line": 204,
+      "content_hash": "fd88177948a991519927fdd689cd48dd6dd005bb",
+      "content": "func (s *permissionService) Request(opts CreatePermissionRequest) bool {\n\tif s.skip {\n\t\treturn true\n\t}\n\n\t// tell the UI that a permission was requested\n\ts.notificationBroker.Publish(pubsub.CreatedEvent, PermissionNotification{\n\t\tToolCallID: opts.ToolCallID,\n\t})\n\ts.requestMu.Lock()\n\tdefer s.requestMu.Unlock()\n\n\t// Check if the tool/action combination is in the allowlist\n\tcommandKey := opts.ToolName + \":\" + opts.Action\n\tif slices.Contains(s.allowedTools, commandKey) || slices.Contains(s.allowedTools, opts.ToolName) {\n\t\treturn true\n\t}\n\n\ts.autoApproveSessionsMu.RLock()\n\tautoApprove := s.autoApproveSessions[opts.SessionID]\n\ts.autoApproveSessionsMu.RUnlock()\n\n\tif autoApprove {\n\t\treturn true\n\t}\n\n\tfileInfo, err := os.Stat(opts.Path)\n\tdir := opts.Path\n\tif err == nil {\n\t\tif fileInfo.IsDir() {\n\t\t\tdir = opts.Path\n\t\t} else {\n\t\t\tdir = filepath.Dir(opts.Path)\n\t\t}\n\t}\n\n\tif dir == \".\" {\n\t\tdir = s.workingDir\n\t}\n\tpermission := PermissionRequest{\n\t\tID:          uuid.New().String(),\n\t\tPath:        dir,\n\t\tSessionID:   opts.SessionID,\n\t\tToolCallID:  opts.ToolCallID,\n\t\tToolName:    opts.ToolName,\n\t\tDescription: opts.Description,\n\t\tAction:      opts.Action,\n\t\tParams:      opts.Params,\n\t}\n\n\ts.sessionPermissionsMu.RLock()\n\tfor _, p := range s.sessionPermissions {\n\t\tif p.ToolName == permission.ToolName && p.Action == permission.Action && p.SessionID == permission.SessionID && p.Path == permission.Path {\n\t\t\ts.sessionPermissionsMu.RUnlock()\n\t\t\treturn true\n\t\t}\n\t}\n\ts.sessionPermissionsMu.RUnlock()\n\n\ts.sessionPermissionsMu.RLock()\n\tfor _, p := range s.sessionPermissions {\n\t\tif p.ToolName == permission.ToolName && p.Action == permission.Action && p.SessionID == permission.SessionID && p.Path == permission.Path {\n\t\t\ts.sessionPermissionsMu.RUnlock()\n\t\t\treturn true\n\t\t}\n\t}\n\ts.sessionPermissionsMu.RUnlock()\n\n\ts.activeRequest = &permission\n\n\trespCh := make(chan bool, 1)\n\ts.pendingRequests.Set(permission.ID, respCh)\n\tdefer s.pendingRequests.Del(permission.ID)\n\n\t// Publish the request\n\ts.Publish(pubsub.CreatedEvent, permission)\n\n\treturn <-respCh\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AutoApproveSession_205": {
+      "name": "AutoApproveSession",
+      "type": "method",
+      "start_line": 205,
+      "end_line": 210,
+      "content_hash": "ebeff901b826d33dcec7300d72b37958a6dfa014",
+      "content": "func (s *permissionService) AutoApproveSession(sessionID string) {\n\ts.autoApproveSessionsMu.Lock()\n\ts.autoApproveSessions[sessionID] = true\n\ts.autoApproveSessionsMu.Unlock()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SubscribeNotifications_211": {
+      "name": "SubscribeNotifications",
+      "type": "method",
+      "start_line": 211,
+      "end_line": 214,
+      "content_hash": "863149673f12459caefd743e197e3a32287c6807",
+      "content": "func (s *permissionService) SubscribeNotifications(ctx context.Context) <-chan pubsub.Event[PermissionNotification] {\n\treturn s.notificationBroker.Subscribe(ctx)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetSkipRequests_215": {
+      "name": "SetSkipRequests",
+      "type": "method",
+      "start_line": 215,
+      "end_line": 218,
+      "content_hash": "37d83f7698802bee057501416244d3cd0cb7185e",
+      "content": "func (s *permissionService) SetSkipRequests(skip bool) {\n\ts.skip = skip\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SkipRequests_219": {
+      "name": "SkipRequests",
+      "type": "method",
+      "start_line": 219,
+      "end_line": 222,
+      "content_hash": "993b9868647767cf081115496edf6648b8e66075",
+      "content": "func (s *permissionService) SkipRequests() bool {\n\treturn s.skip\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewPermissionService_223": {
+      "name": "NewPermissionService",
+      "type": "function",
+      "start_line": 223,
+      "end_line": 234,
+      "content_hash": "382fc83f2c8d2bffb4412ed53c3fe21db668f692",
+      "content": "func NewPermissionService(workingDir string, skip bool, allowedTools []string) Service {\n\treturn &permissionService{\n\t\tBroker:              pubsub.NewBroker[PermissionRequest](),\n\t\tnotificationBroker:  pubsub.NewBroker[PermissionNotification](),\n\t\tworkingDir:          workingDir,\n\t\tsessionPermissions:  make([]PermissionRequest, 0),\n\t\tautoApproveSessions: make(map[string]bool),\n\t\tskip:                skip,\n\t\tallowedTools:        allowedTools,\n\t\tpendingRequests:     csync.NewMap[string, chan bool](),\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

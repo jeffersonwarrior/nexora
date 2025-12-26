@@ -180,8 +180,9 @@ func NewSessionAgent(
 // wrapToolWithTimeout wraps a single tool function with timeout enforcement
 func (a *sessionAgent) wrapToolWithTimeout(toolFunc interface{}) interface{} {
 	return func(ctx context.Context, params interface{}, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
-		// Extract tool name from call - use call.Name directly
-		toolName := call.Name
+		// Extract tool name from call and resolve any aliases
+		// This allows models to use variations like "curl", "wget", "http-get" for fetch
+		toolName := tools.ResolveToolName(call.Name)
 
 		// Create timeout context based on tool type
 		timeout := a.getToolTimeout(toolName)
@@ -536,8 +537,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	}
 
 	var wg sync.WaitGroup
-	// Generate title if first message.
-	if currentSession.MessageCount == 0 {
+	// Generate title if first message or if title is still the default placeholder.
+	// Check both MessageCount == 0 (first message) and Title == "New Session" (placeholder)
+	if currentSession.MessageCount == 0 || currentSession.Title == "New Session" {
 		wg.Go(func() {
 			sessionLock.Lock()
 			a.generateTitle(ctx, &currentSession, call.Prompt)

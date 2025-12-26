@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/out/from_n.rs",
+  "file_hash": "da451badda3eadea84d7e8bfe2489547da6c9f05",
+  "updated_at": "2025-12-26T17:34:22.870239",
+  "symbols": {
+    "trait_FromNAdapter_6": {
+      "name": "FromNAdapter",
+      "type": "trait",
+      "start_line": 6,
+      "end_line": 9,
+      "content_hash": "193f7dbb423c6e4ae1f2ae5c82df6ab929f33561",
+      "content": "pub trait FromNAdapter<'db, 'arena, 'txn, I>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    /// Returns an iterator containing the nodes that the edges in `self.inner` originate from.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_from_n_10": {
+      "name": "from_n",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 15,
+      "content_hash": "4c25a82d2987ab67d87b268841fc72ce49cb48c9",
+      "content": "    fn from_n(\n        self,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_16": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 16,
+      "end_line": 23,
+      "content_hash": "972a525096f0043e16d7205e8ccd9fa99d916768",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    FromNAdapter<'db, 'arena, 'txn, I> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    #[inline(always)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_n_24": {
+      "name": "from_n",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 29,
+      "content_hash": "4c25a82d2987ab67d87b268841fc72ce49cb48c9",
+      "content": "    fn from_n(\n        self,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_30": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 30,
+      "end_line": 49,
+      "content_hash": "fc69ee908ed067fbb96a01cd48661c56bb6203ba",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        let iter = self.inner.filter_map(move |item| {\n            if let Ok(TraversalValue::Edge(item)) = item {\n                match self.storage.get_node(self.txn, &item.from_node, self.arena) {\n                    Ok(node) => Some(Ok(TraversalValue::Node(node))),\n                    Err(e) => Some(Err(e)),\n                }\n            } else {\n                None\n            }\n        });\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: iter,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/home/home.go",
+  "file_hash": "e675efc66fc064527776a0d3b3ba1f334fa483a1",
+  "updated_at": "2025-12-26T17:34:24.949785",
+  "symbols": {
+    "function_init_13": {
+      "name": "init",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 19,
+      "content_hash": "11411fe11b6023301f630fbd9e82f540849e53eb",
+      "content": "func init() {\n\tif homedirErr != nil {\n\t\tslog.Error(\"failed to get user home directory\", \"error\", homedirErr)\n\t}\n}\n\n// Dir returns the user home directory.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Dir_20": {
+      "name": "Dir",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 24,
+      "content_hash": "e813cc58e615159c77cd9c9014ff574f90903094",
+      "content": "func Dir() string {\n\treturn homedir\n}\n\n// Short replaces the actual home path from [Dir] with `~`.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Short_25": {
+      "name": "Short",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 32,
+      "content_hash": "c96187f8e019f00a0b9f09321a6609a031983210",
+      "content": "func Short(p string) string {\n\tif homedir == \"\" || !strings.HasPrefix(p, homedir) {\n\t\treturn p\n\t}\n\treturn filepath.Join(\"~\", strings.TrimPrefix(p, homedir))\n}\n\n// Long replaces the `~` with actual home path from [Dir].",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Long_33": {
+      "name": "Long",
+      "type": "function",
+      "start_line": 33,
+      "end_line": 38,
+      "content_hash": "dc7d8da09daa2543c8472e958c97be91522434c2",
+      "content": "func Long(p string) string {\n\tif homedir == \"\" || !strings.HasPrefix(p, \"~\") {\n\t\treturn p\n\t}\n\treturn strings.Replace(p, \"~\", homedir, 1)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

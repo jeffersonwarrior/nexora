@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/sdk/base/client.go",
+  "file_hash": "dc92119dc3634e6e72b18a9867c32d4ac4045232",
+  "updated_at": "2025-12-26T17:34:21.435508",
+  "symbols": {
+    "struct_Client_16": {
+      "name": "Client",
+      "type": "struct",
+      "start_line": 16,
+      "end_line": 21,
+      "content_hash": "a92cd817deacfc2d56771c23970db5091c0a6dbf",
+      "content": "type Client struct {\n\tconfig  ClientConfig\n\tlimiter *rate.Limiter\n}\n\n// NewClient creates a new base client with the given configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewClient_22": {
+      "name": "NewClient",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 53,
+      "content_hash": "4879d88079b5e723dc9322d2b1440bef902d21a3",
+      "content": "func NewClient(config ClientConfig) *Client {\n\t// Apply defaults\n\tif config.UserAgent == \"\" {\n\t\tconfig.UserAgent = DefaultClientConfig.UserAgent\n\t}\n\tif config.Timeout == 0 {\n\t\tconfig.Timeout = DefaultClientConfig.Timeout\n\t}\n\tif config.HTTPClient == nil {\n\t\tconfig.HTTPClient = &http.Client{\n\t\t\tTimeout: config.Timeout,\n\t\t}\n\t}\n\tif config.RetryConfig.MaxRetries == 0 {\n\t\tconfig.RetryConfig = DefaultRetryConfig\n\t}\n\n\t// Set up rate limiter if not provided\n\tif config.RateLimiter == nil {\n\t\t// Default: 60 requests per minute\n\t\tconfig.RateLimiter = rate.NewLimiter(rate.Every(time.Minute, 60))\n\t}\n\n\tclient := &Client{\n\t\tconfig:  config,\n\t\tlimiter: config.RateLimiter,\n\t}\n\n\treturn client\n}\n\n// DoRequest performs an HTTP request with retry logic",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DoRequest_54": {
+      "name": "DoRequest",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 167,
+      "content_hash": "2836ec989953a2165b4511f284ca31053cf08fcb",
+      "content": "func (c *Client) DoRequest(\n\tctx context.Context,\n\tmethod string,\n\tendpoint string,\n\tbody interface{},\n\tresult interface{},\n) error {\n\t// Apply rate limiting\n\tif err := c.limiter.Wait(ctx); err != nil {\n\t\treturn &APIError{\n\t\t\tCode:    ErrRateLimited,\n\t\t\tMessage: fmt.Sprintf(\"rate limit exceeded: %v\", err),\n\t\t\tType:    \"rate_limit_exceeded\",\n\t\t}\n\t}\n\n\t// Prepare request\n\tvar reqBody io.Reader\n\tif body != nil {\n\t\tjsonBody, err := json.Marshal(body)\n\t\tif err != nil {\n\t\t\treturn &APIError{\n\t\t\t\tCode:    ErrInvalidRequest,\n\t\t\t\tMessage: fmt.Sprintf(\"failed to marshal request body: %w\", err),\n\t\t\t\tType:    \"json_marshal_error\",\n\t\t\t}\n\t\t}\n\t\treqBody = bytes.NewBuffer(jsonBody)\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, method, c.config.BaseURL+endpoint, reqBody)\n\tif err != nil {\n\t\treturn &APIError{\n\t\t\tCode:    ErrProviderError,\n\t\t\tMessage: fmt.Sprintf(\"failed to create request: %w\", err),\n\t\t\tType:    \"request_creation_error\",\n\t\t}\n\t}\n\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\treq.Header.Set(\"User-Agent\", c.config.UserAgent)\n\n\t// Add authorization header if API key is provided\n\tif c.config.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+c.config.APIKey)\n\t}\n\n\t// Execute with retry logic\n\tvar lastErr error\n\tfor attempt := 0; attempt <= c.config.RetryConfig.MaxRetries; attempt++ {\n\t\tresp, err := c.config.HTTPClient.Do(req)\n\t\tif err != nil {\n\t\t\tlastErr = &APIError{\n\t\t\t\tCode:    ErrProviderError,\n\t\t\t\tMessage: fmt.Sprintf(\"request failed: %w\", err),\n\t\t\t\tType:    \"request_error\",\n\t\t\t}\n\n\t\t\tif !IsRetryableError(lastErr) || attempt == c.config.RetryConfig.MaxRetries {\n\t\t\t\tbreak\n\t\t\t}\n\n\t\t\t// Calculate delay for next attempt\n\t\t\tdelay := BackoffDelay(attempt,\n\t\t\t\tc.config.RetryConfig.BaseDelay,\n\t\t\t\tc.config.RetryConfig.BackoffFactor,\n\t\t\t\tc.config.RetryConfig.MaxDelay,\n\t\t\t)\n\t\t\tSleepWithJitter(delay)\n\t\t\tcontinue\n\t\t}\n\n\t\t// Check response status\n\t\tif resp.StatusCode < 200 || resp.StatusCode >= 500 {\n\t\t\t// Don't retry for 4xx errors (client errors) or 5xx errors (server errors)\n\t\t\tlastErr = &APIError{\n\t\t\t\tCode:    ErrProviderError,\n\t\t\t\tMessage: fmt.Sprintf(\"HTTP %d: %s\", resp.StatusCode, resp.Status),\n\t\t\t\tType:    \"http_error\",\n\t\t\t}\n\t\t\tif attempt == c.config.RetryConfig.MaxRetries {\n\t\t\t\tbreak\n\t\t\t}\n\n\t\t\t// Calculate delay and retry\n\t\t\tdelay := BackoffDelay(attempt,\n\t\t\t\tc.config.RetryConfig.BaseDelay,\n\t\t\t\tc.config.RetryConfig.BackoffFactor,\n\t\t\t\tc.config.RetryConfig.MaxDelay,\n\t\t\t)\n\t\t\tSleepWithJitter(delay)\n\t\t\tcontinue\n\t\t}\n\n\t\t// Success - parse response\n\t\tif result != nil {\n\t\t\tif err := json.NewDecoder(resp.Body).Decode(result); err != nil {\n\t\t\t\tlastErr = &APIError{\n\t\t\t\t\tCode:    ErrProviderError,\n\t\t\t\t\tMessage: fmt.Sprintf(\"failed to decode response: %w\", err),\n\t\t\t\t\tType:    \"json_decode_error\",\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\t// Close body and return\n\t\tresp.Body.Close()\n\t\treturn nil\n\t}\n\n\treturn lastErr\n}\n\n// DoRequestWithPagination performs a request that may return paginated results",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DoRequestWithPagination_168": {
+      "name": "DoRequestWithPagination",
+      "type": "method",
+      "start_line": 168,
+      "end_line": 245,
+      "content_hash": "b792139086b3223c9fe32d9c913d65195af12117",
+      "content": "func (c *Client) DoRequestWithPagination(\n\tctx context.Context,\n\tmethod string,\n\tendpoint string,\n\tbody interface{},\n\tresult interface{},\n) (*PaginatedResponse, error) {\n\tif err := c.limiter.Wait(ctx); err != nil {\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrRateLimited,\n\t\t\tMessage: fmt.Sprintf(\"rate limit exceeded: %v\", err),\n\t\t\tType:    \"rate_limit_exceeded\",\n\t\t}\n\t}\n\n\t// Prepare request\n\tvar reqBody io.Reader\n\tif body != nil {\n\t\tjsonBody, err := json.Marshal(body)\n\t\tif err != nil {\n\t\t\treturn nil, &APIError{\n\t\t\t\tCode:    ErrInvalidRequest,\n\t\t\t\tMessage: fmt.Sprintf(\"failed to marshal request body: %w\", err),\n\t\t\t\tType:    \"json_marshal_error\",\n\t\t\t}\n\t\t}\n\t\treqBody = bytes.NewBuffer(jsonBody)\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, method, c.config.BaseURL+endpoint, reqBody)\n\tif err != nil {\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrProviderError,\n\t\t\tMessage: fmt.Sprintf(\"failed to create request: %w\", err),\n\t\t\tType:    \"request_creation_error\",\n\t\t}\n\t}\n\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\treq.Header.Set(\"User-Agent\", c.config.UserAgent)\n\n\tif c.config.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+c.config.APIKey)\n\t}\n\n\tresp, err := c.config.HTTPClient.Do(req)\n\tif err != nil {\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrProviderError,\n\t\t\tMessage: fmt.Sprintf(\"request failed: %w\", err),\n\t\t\tType:    \"request_error\",\n\t\t}\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode < 200 || resp.StatusCode >= 300 {\n\t\tbody, _ := io.ReadAll(resp.Body)\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrProviderError,\n\t\t\tMessage: fmt.Sprintf(\"HTTP %d: %s\", resp.StatusCode, resp.Status),\n\t\t\tType:    \"http_error\",\n\t\t\tParam:   string(body),\n\t\t}\n\t}\n\n\tvar paginatedResp PaginatedResponse\n\tif err := json.NewDecoder(resp.Body).Decode(&paginatedResp); err != nil {\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrProviderError,\n\t\t\tMessage: fmt.Sprintf(\"failed to decode paginated response: %w\", err),\n\t\t\tType:    \"json_decode_error\",\n\t\t}\n\t}\n\n\treturn &paginatedRespResp, nil\n}\n\n// DoRawRequest performs an HTTP request without processing the response body",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DoRawRequest_246": {
+      "name": "DoRawRequest",
+      "type": "method",
+      "start_line": 246,
+      "end_line": 293,
+      "content_hash": "4ab7093f90b85a749ab85657d5e4ce1e7b6dbdd9",
+      "content": "func (c *Client) DoRawRequest(\n\tctx context.Context,\n\tmethod string,\n\tendpoint string,\n\tbody interface{},\n) (*http.Response, error) {\n\tif err := c.limiter.Wait(ctx); err != nil {\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrRateLimited,\n\t\t\tMessage: fmt.Sprintf(\"rate limit exceeded: %v\", err),\n\t\t\tType:    \"RateLimitExceeded\",\n\t\t}\n\t}\n\n\t// Prepare request\n\tvar reqBody io.Reader\n\tif body != nil {\n\t\tjsonBody, err := json.Marshal(body)\n\t\tif err != nil {\n\t\t\treturn nil, &APIError{\n\t\t\t\tCode:    ErrInvalidRequest,\n\t\t\t\tMessage: fmt.Sprintf(\"failed to marshal request body: %w\", err),\n\t\t\t\tType:    \"json_marshal_error\",\n\t\t\t}\n\t\t}\n\t\treqBody = bytes.NewBuffer(jsonBody)\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, method, c.config.BaseURL+endpoint, reqBody)\n\tif err != nil {\n\t\treturn nil, &APIError{\n\t\t\tCode:    ErrProviderError,\n\t\t\tMessage: fmt.Sprintf(\"failed to request: %w\", err),\n\t\t\tType:    \"request_creation_error\",\n\t\t}\n\t}\n\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\treq.Header.Set(\"User-Agent\", c.config.UserAgent)\n\n\tif c.config.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+c.config.APIKey)\n\t}\n\n\treturn c.config.HTTPClient.Do(req)\n}\n\n// PaginatedResponse contains paginated response data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PaginatedResponse_294": {
+      "name": "PaginatedResponse",
+      "type": "struct",
+      "start_line": 294,
+      "end_line": 302,
+      "content_hash": "b4abef53ef6fc83629e8dddb7c0d0b66d0805000",
+      "content": "type PaginatedResponse struct {\n\tData    interface{} `json:\"data\"`\n\tHasMore bool        `json:\"has_more\"`\n\tObject  string      `json:\"object\"`\n\tPage    int         `json:\"page\"`\n\tSize    int         `json:\"size\"`\n}\n\n// SimpleHTTPClient is a minimal HTTP client implementation for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_SimpleHTTPClient_303": {
+      "name": "SimpleHTTPClient",
+      "type": "struct",
+      "start_line": 303,
+      "end_line": 307,
+      "content_hash": "b8ac551d88ab0d4ec5e5f924f3e5a5e5b99d523f",
+      "content": "type SimpleHTTPClient struct {\n\t*http.Client\n}\n\n// NewSimpleHTTPClient creates a simple HTTP client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSimpleHTTPClient_308": {
+      "name": "NewSimpleHTTPClient",
+      "type": "function",
+      "start_line": 308,
+      "end_line": 316,
+      "content_hash": "40026b8dc07f5f6cecb467537eeea5ac8f0ff102",
+      "content": "func NewSimpleHTTPClient() *SimpleHTTPClient {\n\treturn &SimpleHTTPClient{\n\t\tClient: &http.Client{\n\t\t\tTimeout: 30 * time.Second,\n\t\t},\n\t}\n}\n\n// TestHealth tests if the client can reach the API",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_TestHealth_317": {
+      "name": "TestHealth",
+      "type": "method",
+      "start_line": 317,
+      "end_line": 339,
+      "content_hash": "6d5ab1affe08d2c1031ee883a1ae7c2b556b3254",
+      "content": "func (c *Client) TestHealth(ctx context.Context, healthEndpoint string) error {\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", healthEndpoint, nil)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create health check request: %w\", err)\n\t}\n\n\tif c.config.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+c.config.APIKey)\n\t}\n\treq.Header.Set(\"User-Agent\", c.config.UserAgent)\n\n\tresp, err := c.config.HTTPClient.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"health check failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn fmt.Errorf(\"health check failed with status %d\", resp.StatusCode)\n\t}\n\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

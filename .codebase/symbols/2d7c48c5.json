@@ -1,0 +1,227 @@
+{
+  "file_path": "/work/context-engine/scripts/rerank_recursive/scorer.py",
+  "file_hash": "9811414553fed69ba6bbbae796639a69ceed6d7d",
+  "updated_at": "2025-12-26T17:34:19.698827",
+  "symbols": {
+    "class_TinyScorer_13": {
+      "name": "TinyScorer",
+      "type": "class",
+      "start_line": 13,
+      "end_line": 369,
+      "content_hash": "5ea5400a223aeafa9d994d35dbe9fcb4ab9f959f",
+      "content": "class TinyScorer:\n    \"\"\"\n    Tiny 2-layer MLP for scoring query-document pairs.\n\n    Inspired by TRM: minimal parameters, maximum iterations.\n    Production-ready with:\n    - Collection-aware weights with atomic loading\n    - Checkpoint versioning (keep last N versions)\n    - Training metrics (loss, sample count, convergence)\n    - Learning rate decay\n    - Hot reload from background worker updates\n    \"\"\"\n\n    # Class-level configuration\n    WEIGHTS_DIR = os.environ.get(\"RERANKER_WEIGHTS_DIR\", \"/tmp/rerank_weights\")\n    WEIGHTS_RELOAD_INTERVAL = float(os.environ.get(\"RERANKER_WEIGHTS_RELOAD_INTERVAL\", \"60\"))\n    MAX_CHECKPOINTS = int(os.environ.get(\"RERANKER_MAX_CHECKPOINTS\", \"5\"))\n    LR_DECAY_STEPS = int(os.environ.get(\"RERANKER_LR_DECAY_STEPS\", \"1000\"))\n    LR_DECAY_RATE = float(os.environ.get(\"RERANKER_LR_DECAY_RATE\", \"0.95\"))\n    MIN_LR = float(os.environ.get(\"RERANKER_MIN_LR\", \"0.0001\"))\n\n    def __init__(self, dim: int = 256, hidden_dim: int = 512, lr: float = 0.001):\n        self.dim = dim\n        self.hidden_dim = hidden_dim\n        self.base_lr = lr\n        self.lr = lr\n        self._collection = \"default\"\n        self._weights_path = self._get_weights_path(\"default\")\n        self._weights_mtime = 0.0\n        self._last_reload_check = 0.0\n\n        # Training metrics\n        self._update_count = 0\n        self._total_samples = 0\n        self._cumulative_loss = 0.0\n        self._recent_losses: List[float] = []  # Rolling window for convergence detection\n        self._version = 0\n\n        # Try to load saved weights, otherwise init random\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n                return\n            except Exception as e:\n                from scripts.logger import get_logger\n                get_logger(__name__).warning(f\"TinyScorer: failed to load {self._weights_path}: {e}, using random init\")\n\n        self._init_random_weights()\n\n    def _init_random_weights(self):\n        \"\"\"Initialize weights randomly using He initialization (local RNG, deterministic).\"\"\"\n        rng = np.random.RandomState(42)\n        scale = np.float32(np.sqrt(2.0 / (self.dim * 3)))\n        self.W1 = rng.randn(self.dim * 3, self.hidden_dim).astype(np.float32) * scale\n        self.b1 = np.zeros(self.hidden_dim, dtype=np.float32)\n        w2_scale = np.float32(np.sqrt(2.0 / self.hidden_dim))\n        self.W2 = rng.randn(self.hidden_dim, 1).astype(np.float32) * w2_scale\n        self.b2 = np.zeros(1, dtype=np.float32)\n\n        # Momentum for SGD\n        self._momentum_W1 = np.zeros_like(self.W1)\n        self._momentum_b1 = np.zeros_like(self.b1)\n        self._momentum_W2 = np.zeros_like(self.W2)\n        self._momentum_b2 = np.zeros_like(self.b2)\n\n    def _update_learning_rate(self):\n        \"\"\"Decay learning rate based on update count.\"\"\"\n        if self._update_count > 0 and self._update_count % self.LR_DECAY_STEPS == 0:\n            self.lr = max(self.MIN_LR, self.lr * self.LR_DECAY_RATE)\n\n    def get_metrics(self) -> Dict[str, Any]:\n        \"\"\"Get current training metrics.\"\"\"\n        avg_loss = self._cumulative_loss / max(1, self._update_count)\n        recent_avg = np.mean(self._recent_losses) if self._recent_losses else 0.0\n        return {\n            \"collection\": self._collection,\n            \"version\": self._version,\n            \"update_count\": self._update_count,\n            \"total_samples\": self._total_samples,\n            \"cumulative_loss\": self._cumulative_loss,\n            \"avg_loss\": avg_loss,\n            \"recent_avg_loss\": float(recent_avg),\n            \"learning_rate\": self.lr,\n            \"converged\": self._is_converged(),\n        }\n\n    def _is_converged(self, window: int = 100, threshold: float = 0.01) -> bool:\n        \"\"\"Check if training has converged (loss not improving).\"\"\"\n        if len(self._recent_losses) < window:\n            return False\n        recent = self._recent_losses[-window:]\n        first_half = np.mean(recent[:window // 2])\n        second_half = np.mean(recent[window // 2:])\n        return abs(first_half - second_half) < threshold * first_half\n\n    def _get_weights_path(self, collection: str) -> str:\n        \"\"\"Get weights file path for a collection.\"\"\"\n        os.makedirs(self.WEIGHTS_DIR, exist_ok=True)\n        safe_name = \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)\n        return os.path.join(self.WEIGHTS_DIR, f\"weights_{safe_name}.npz\")\n\n    def set_collection(self, collection: str):\n        \"\"\"Set collection and load corresponding weights.\"\"\"\n        self._collection = collection\n        self._weights_path = self._get_weights_path(collection)\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n            except Exception:\n                pass\n\n    def maybe_reload_weights(self):\n        \"\"\"Check if weights file changed and reload if needed (hot reload).\"\"\"\n        now = time.time()\n        if now - self._last_reload_check < self.WEIGHTS_RELOAD_INTERVAL:\n            return\n        self._last_reload_check = now\n\n        try:\n            if os.path.exists(self._weights_path):\n                mtime = os.path.getmtime(self._weights_path)\n                if mtime > self._weights_mtime:\n                    self._load_weights_safe()\n        except Exception:\n            pass\n\n    def _load_weights_safe(self):\n        \"\"\"Load weights with advisory file locking.\"\"\"\n        import fcntl\n        lock_path = self._weights_path + \".lock\"\n        try:\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)\n                try:\n                    self._load_weights()\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n        except Exception:\n            self._load_weights()\n\n    def forward(self, query_emb: np.ndarray, doc_emb: np.ndarray, z: np.ndarray) -> np.ndarray:\n        \"\"\"Score documents given query and latent state.\"\"\"\n        self.maybe_reload_weights()\n\n        n_docs = doc_emb.shape[0]\n        q_broadcast = np.tile(query_emb, (n_docs, 1))\n        z_broadcast = np.tile(z, (n_docs, 1))\n        x = np.concatenate([q_broadcast, doc_emb, z_broadcast], axis=1)\n        h = np.maximum(0, x @ self.W1 + self.b1)\n        scores = (h @ self.W2 + self.b2).squeeze(-1)\n        return scores\n\n    def forward_with_cache(self, x: np.ndarray) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:\n        \"\"\"Forward pass with cached activations for backprop.\"\"\"\n        z1 = x @ self.W1 + self.b1\n        h1 = np.maximum(0, z1)\n        z2 = h1 @ self.W2 + self.b2\n        scores = z2.squeeze(-1)\n        cache = {\"x\": x, \"z1\": z1, \"h1\": h1}\n        return scores, cache\n\n    def backward(self, dscores: np.ndarray, cache: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:\n        \"\"\"Backward pass to compute gradients.\"\"\"\n        batch_size = dscores.shape[0]\n        dz2 = dscores.reshape(-1, 1)\n        dW2 = cache[\"h1\"].T @ dz2\n        db2 = dz2.sum(axis=0)\n        dh1 = dz2 @ self.W2.T\n        dz1 = dh1 * (cache[\"z1\"] > 0).astype(np.float32)\n        dW1 = cache[\"x\"].T @ dz1\n        db1 = dz1.sum(axis=0)\n        return {\"W1\": dW1 / batch_size, \"b1\": db1 / batch_size, \"W2\": dW2 / batch_size, \"b2\": db2 / batch_size}\n\n    def learn_from_teacher(\n        self,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        z: np.ndarray,\n        teacher_scores: np.ndarray,\n        margin: float = 0.5,\n    ) -> float:\n        \"\"\"Online learning: update weights to match ONNX teacher ranking.\"\"\"\n        n_docs = doc_embs.shape[0]\n        if n_docs < 2:\n            return 0.0\n\n        q_broadcast = np.tile(query_emb, (n_docs, 1))\n        z_broadcast = np.tile(z, (n_docs, 1))\n        x = np.concatenate([q_broadcast, doc_embs, z_broadcast], axis=1)\n        our_scores, cache = self.forward_with_cache(x)\n        teacher_order = np.argsort(-teacher_scores)\n\n        n_pairs = min(5, n_docs // 2)\n        total_loss = 0.0\n        dscores = np.zeros(n_docs, dtype=np.float32)\n\n        for i in range(n_pairs):\n            pos_idx = teacher_order[i]\n            neg_idx = teacher_order[-(i + 1)]\n            diff = our_scores[pos_idx] - our_scores[neg_idx]\n            if diff < margin:\n                loss = margin - diff\n                total_loss += loss\n                dscores[pos_idx] -= 1.0\n                dscores[neg_idx] += 1.0\n\n        self._total_samples += n_docs\n        self._cumulative_loss += total_loss\n        self._recent_losses.append(total_loss)\n        if len(self._recent_losses) > 200:\n            self._recent_losses = self._recent_losses[-200:]\n\n        if total_loss > 0:\n            grads = self.backward(dscores, cache)\n            momentum = 0.9\n            self._momentum_W1 = momentum * self._momentum_W1 - self.lr * grads[\"W1\"]\n            self._momentum_b1 = momentum * self._momentum_b1 - self.lr * grads[\"b1\"]\n            self._momentum_W2 = momentum * self._momentum_W2 - self.lr * grads[\"W2\"]\n            self._momentum_b2 = momentum * self._momentum_b2 - self.lr * grads[\"b2\"]\n            self.W1 += self._momentum_W1\n            self.b1 += self._momentum_b1\n            self.W2 += self._momentum_W2\n            self.b2 += self._momentum_b2\n            self._update_count += 1\n            self._update_learning_rate()\n\n        return total_loss\n\n    def _save_weights(self, checkpoint: bool = False):\n        \"\"\"Save weights to disk atomically.\"\"\"\n        import fcntl\n        try:\n            self._version += 1\n            tmp_base = self._weights_path.replace(\".npz\", \".tmp\")\n            np.savez(\n                tmp_base,\n                W1=self.W1, b1=self.b1, W2=self.W2, b2=self.b2,\n                momentum_W1=self._momentum_W1, momentum_b1=self._momentum_b1,\n                momentum_W2=self._momentum_W2, momentum_b2=self._momentum_b2,\n                update_count=self._update_count,\n                total_samples=self._total_samples,\n                cumulative_loss=self._cumulative_loss,\n                learning_rate=self.lr,\n                version=self._version,\n                collection=self._collection,\n            )\n            tmp_path = tmp_base + \".npz\"\n            lock_path = self._weights_path + \".lock\"\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)\n                try:\n                    os.replace(tmp_path, self._weights_path)\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n            if checkpoint or self._version % 100 == 0:\n                self._save_checkpoint()\n        except Exception:\n            pass\n\n    def _save_checkpoint(self):\n        \"\"\"Save a versioned checkpoint and prune old ones.\"\"\"\n        try:\n            import shutil\n            checkpoint_path = self._weights_path.replace(\".npz\", f\"_v{self._version}.npz\")\n            shutil.copy2(self._weights_path, checkpoint_path)\n            self._prune_old_checkpoints()\n        except Exception:\n            pass\n\n    def _prune_old_checkpoints(self):\n        \"\"\"Remove old checkpoints keeping only the most recent MAX_CHECKPOINTS.\"\"\"\n        try:\n            import glob\n            pattern = self._weights_path.replace(\".npz\", \"_v*.npz\")\n            checkpoints = sorted(glob.glob(pattern))\n            if len(checkpoints) > self.MAX_CHECKPOINTS:\n                for old_cp in checkpoints[:-self.MAX_CHECKPOINTS]:\n                    try:\n                        os.remove(old_cp)\n                    except Exception:\n                        pass\n        except Exception:\n            pass\n\n    def _load_weights(self):\n        \"\"\"Load weights from disk with dimension validation.\"\"\"\n        from scripts.logger import get_logger\n        logger = get_logger(__name__)\n\n        data = np.load(self._weights_path, allow_pickle=True)\n\n        def _get(key: str, default):\n            return data[key] if key in data.files else default\n\n        w1_loaded = data[\"W1\"]\n        w2_loaded = data[\"W2\"]\n        b1_loaded = data[\"b1\"]\n        b2_loaded = data[\"b2\"]\n\n        expected_w1 = (self.dim * 3, self.hidden_dim)\n        expected_w2 = (self.hidden_dim, 1)\n        expected_b1 = (self.hidden_dim,)\n        expected_b2 = (1,)\n\n        shape_ok = (\n            w1_loaded.shape == expected_w1 and\n            w2_loaded.shape == expected_w2 and\n            b1_loaded.shape == expected_b1 and\n            b2_loaded.shape == expected_b2\n        )\n\n        if not shape_ok:\n            logger.warning(f\"TinyScorer: shape mismatch, falling back to random init.\")\n            data.close()\n            self._init_random_weights()\n            return\n\n        self.W1 = w1_loaded.astype(np.float32, copy=False)\n        self.b1 = b1_loaded.astype(np.float32, copy=False)\n        self.W2 = w2_loaded.astype(np.float32, copy=False)\n        self.b2 = b2_loaded.astype(np.float32, copy=False)\n        self._update_count = int(_get(\"update_count\", 0))\n        self._total_samples = int(_get(\"total_samples\", 0))\n        self._cumulative_loss = float(_get(\"cumulative_loss\", 0.0))\n        self._version = int(_get(\"version\", 0))\n\n        if \"learning_rate\" in data.files:\n            self.lr = float(data[\"learning_rate\"])\n\n        if \"momentum_W1\" in data.files:\n            self._momentum_W1 = data[\"momentum_W1\"].astype(np.float32, copy=False)\n            self._momentum_b1 = data[\"momentum_b1\"].astype(np.float32, copy=False)\n            self._momentum_W2 = data[\"momentum_W2\"].astype(np.float32, copy=False)\n            self._momentum_b2 = data[\"momentum_b2\"].astype(np.float32, copy=False)\n        else:\n            self._momentum_W1 = np.zeros_like(self.W1)\n            self._momentum_b1 = np.zeros_like(self.b1)\n            self._momentum_W2 = np.zeros_like(self.W2)\n            self._momentum_b2 = np.zeros_like(self.b2)\n\n        self._weights_mtime = os.path.getmtime(self._weights_path)\n        data.close()\n\n    def rollback_to_checkpoint(self, version: int) -> bool:\n        \"\"\"Rollback to a specific checkpoint version.\"\"\"\n        try:\n            import shutil\n            checkpoint_path = self._weights_path.replace(\".npz\", f\"_v{version}.npz\")\n            if os.path.exists(checkpoint_path):\n                shutil.copy2(checkpoint_path, self._weights_path)\n                self._load_weights()\n                return True\n        except Exception:\n            pass\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___34": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 60,
+      "content_hash": "ee5cf407cae1ba10659aa6c19c14f58d13cdf37f",
+      "content": "    def __init__(self, dim: int = 256, hidden_dim: int = 512, lr: float = 0.001):\n        self.dim = dim\n        self.hidden_dim = hidden_dim\n        self.base_lr = lr\n        self.lr = lr\n        self._collection = \"default\"\n        self._weights_path = self._get_weights_path(\"default\")\n        self._weights_mtime = 0.0\n        self._last_reload_check = 0.0\n\n        # Training metrics\n        self._update_count = 0\n        self._total_samples = 0\n        self._cumulative_loss = 0.0\n        self._recent_losses: List[float] = []  # Rolling window for convergence detection\n        self._version = 0\n\n        # Try to load saved weights, otherwise init random\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n                return\n            except Exception as e:\n                from scripts.logger import get_logger\n                get_logger(__name__).warning(f\"TinyScorer: failed to load {self._weights_path}: {e}, using random init\")\n\n        self._init_random_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__init_random_weights_62": {
+      "name": "_init_random_weights",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 76,
+      "content_hash": "46833e3607e4f1681822e27cb1fcada914e4e1c5",
+      "content": "    def _init_random_weights(self):\n        \"\"\"Initialize weights randomly using He initialization (local RNG, deterministic).\"\"\"\n        rng = np.random.RandomState(42)\n        scale = np.float32(np.sqrt(2.0 / (self.dim * 3)))\n        self.W1 = rng.randn(self.dim * 3, self.hidden_dim).astype(np.float32) * scale\n        self.b1 = np.zeros(self.hidden_dim, dtype=np.float32)\n        w2_scale = np.float32(np.sqrt(2.0 / self.hidden_dim))\n        self.W2 = rng.randn(self.hidden_dim, 1).astype(np.float32) * w2_scale\n        self.b2 = np.zeros(1, dtype=np.float32)\n\n        # Momentum for SGD\n        self._momentum_W1 = np.zeros_like(self.W1)\n        self._momentum_b1 = np.zeros_like(self.b1)\n        self._momentum_W2 = np.zeros_like(self.W2)\n        self._momentum_b2 = np.zeros_like(self.b2)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__update_learning_rate_78": {
+      "name": "_update_learning_rate",
+      "type": "method",
+      "start_line": 78,
+      "end_line": 81,
+      "content_hash": "100d7dcc50a41d4de8a27517f69fae791f714d4e",
+      "content": "    def _update_learning_rate(self):\n        \"\"\"Decay learning rate based on update count.\"\"\"\n        if self._update_count > 0 and self._update_count % self.LR_DECAY_STEPS == 0:\n            self.lr = max(self.MIN_LR, self.lr * self.LR_DECAY_RATE)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_metrics_83": {
+      "name": "get_metrics",
+      "type": "method",
+      "start_line": 83,
+      "end_line": 97,
+      "content_hash": "8f428d8ca69d941e9346d837d03707c3d68ac865",
+      "content": "    def get_metrics(self) -> Dict[str, Any]:\n        \"\"\"Get current training metrics.\"\"\"\n        avg_loss = self._cumulative_loss / max(1, self._update_count)\n        recent_avg = np.mean(self._recent_losses) if self._recent_losses else 0.0\n        return {\n            \"collection\": self._collection,\n            \"version\": self._version,\n            \"update_count\": self._update_count,\n            \"total_samples\": self._total_samples,\n            \"cumulative_loss\": self._cumulative_loss,\n            \"avg_loss\": avg_loss,\n            \"recent_avg_loss\": float(recent_avg),\n            \"learning_rate\": self.lr,\n            \"converged\": self._is_converged(),\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__is_converged_99": {
+      "name": "_is_converged",
+      "type": "method",
+      "start_line": 99,
+      "end_line": 106,
+      "content_hash": "73a8459ab60d616cbd373f3dd6ef3a8eac850c39",
+      "content": "    def _is_converged(self, window: int = 100, threshold: float = 0.01) -> bool:\n        \"\"\"Check if training has converged (loss not improving).\"\"\"\n        if len(self._recent_losses) < window:\n            return False\n        recent = self._recent_losses[-window:]\n        first_half = np.mean(recent[:window // 2])\n        second_half = np.mean(recent[window // 2:])\n        return abs(first_half - second_half) < threshold * first_half",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__get_weights_path_108": {
+      "name": "_get_weights_path",
+      "type": "method",
+      "start_line": 108,
+      "end_line": 112,
+      "content_hash": "4cd5bf21e6f665bda9b57137d7721003629bf36d",
+      "content": "    def _get_weights_path(self, collection: str) -> str:\n        \"\"\"Get weights file path for a collection.\"\"\"\n        os.makedirs(self.WEIGHTS_DIR, exist_ok=True)\n        safe_name = \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)\n        return os.path.join(self.WEIGHTS_DIR, f\"weights_{safe_name}.npz\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_set_collection_114": {
+      "name": "set_collection",
+      "type": "method",
+      "start_line": 114,
+      "end_line": 122,
+      "content_hash": "4dae7da98f3091db4d26c907c21a25aa337d6f9d",
+      "content": "    def set_collection(self, collection: str):\n        \"\"\"Set collection and load corresponding weights.\"\"\"\n        self._collection = collection\n        self._weights_path = self._get_weights_path(collection)\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n            except Exception:\n                pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_maybe_reload_weights_124": {
+      "name": "maybe_reload_weights",
+      "type": "method",
+      "start_line": 124,
+      "end_line": 137,
+      "content_hash": "03da8dbd8e230701333223b3c451ce4c35c6cbce",
+      "content": "    def maybe_reload_weights(self):\n        \"\"\"Check if weights file changed and reload if needed (hot reload).\"\"\"\n        now = time.time()\n        if now - self._last_reload_check < self.WEIGHTS_RELOAD_INTERVAL:\n            return\n        self._last_reload_check = now\n\n        try:\n            if os.path.exists(self._weights_path):\n                mtime = os.path.getmtime(self._weights_path)\n                if mtime > self._weights_mtime:\n                    self._load_weights_safe()\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__load_weights_safe_139": {
+      "name": "_load_weights_safe",
+      "type": "method",
+      "start_line": 139,
+      "end_line": 152,
+      "content_hash": "ba21b50a35bcd27c1af77e275cc0673b4f288046",
+      "content": "    def _load_weights_safe(self):\n        \"\"\"Load weights with advisory file locking.\"\"\"\n        import fcntl\n        lock_path = self._weights_path + \".lock\"\n        try:\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)\n                try:\n                    self._load_weights()\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n        except Exception:\n            self._load_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_forward_154": {
+      "name": "forward",
+      "type": "method",
+      "start_line": 154,
+      "end_line": 164,
+      "content_hash": "23e8bae384ffbdfc9cb2f390e39c564a92adbc90",
+      "content": "    def forward(self, query_emb: np.ndarray, doc_emb: np.ndarray, z: np.ndarray) -> np.ndarray:\n        \"\"\"Score documents given query and latent state.\"\"\"\n        self.maybe_reload_weights()\n\n        n_docs = doc_emb.shape[0]\n        q_broadcast = np.tile(query_emb, (n_docs, 1))\n        z_broadcast = np.tile(z, (n_docs, 1))\n        x = np.concatenate([q_broadcast, doc_emb, z_broadcast], axis=1)\n        h = np.maximum(0, x @ self.W1 + self.b1)\n        scores = (h @ self.W2 + self.b2).squeeze(-1)\n        return scores",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_forward_with_cache_166": {
+      "name": "forward_with_cache",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 173,
+      "content_hash": "c3f47b508a83c24a33f7c0add2b001ba7c142ef9",
+      "content": "    def forward_with_cache(self, x: np.ndarray) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:\n        \"\"\"Forward pass with cached activations for backprop.\"\"\"\n        z1 = x @ self.W1 + self.b1\n        h1 = np.maximum(0, z1)\n        z2 = h1 @ self.W2 + self.b2\n        scores = z2.squeeze(-1)\n        cache = {\"x\": x, \"z1\": z1, \"h1\": h1}\n        return scores, cache",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_backward_175": {
+      "name": "backward",
+      "type": "method",
+      "start_line": 175,
+      "end_line": 185,
+      "content_hash": "b7805a507151ad6113a5ff5b79cad64296ad296e",
+      "content": "    def backward(self, dscores: np.ndarray, cache: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:\n        \"\"\"Backward pass to compute gradients.\"\"\"\n        batch_size = dscores.shape[0]\n        dz2 = dscores.reshape(-1, 1)\n        dW2 = cache[\"h1\"].T @ dz2\n        db2 = dz2.sum(axis=0)\n        dh1 = dz2 @ self.W2.T\n        dz1 = dh1 * (cache[\"z1\"] > 0).astype(np.float32)\n        dW1 = cache[\"x\"].T @ dz1\n        db1 = dz1.sum(axis=0)\n        return {\"W1\": dW1 / batch_size, \"b1\": db1 / batch_size, \"W2\": dW2 / batch_size, \"b2\": db2 / batch_size}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_learn_from_teacher_187": {
+      "name": "learn_from_teacher",
+      "type": "method",
+      "start_line": 187,
+      "end_line": 240,
+      "content_hash": "9ec182a49e5a9138fa1de97f5b54861c3cdaac80",
+      "content": "    def learn_from_teacher(\n        self,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        z: np.ndarray,\n        teacher_scores: np.ndarray,\n        margin: float = 0.5,\n    ) -> float:\n        \"\"\"Online learning: update weights to match ONNX teacher ranking.\"\"\"\n        n_docs = doc_embs.shape[0]\n        if n_docs < 2:\n            return 0.0\n\n        q_broadcast = np.tile(query_emb, (n_docs, 1))\n        z_broadcast = np.tile(z, (n_docs, 1))\n        x = np.concatenate([q_broadcast, doc_embs, z_broadcast], axis=1)\n        our_scores, cache = self.forward_with_cache(x)\n        teacher_order = np.argsort(-teacher_scores)\n\n        n_pairs = min(5, n_docs // 2)\n        total_loss = 0.0\n        dscores = np.zeros(n_docs, dtype=np.float32)\n\n        for i in range(n_pairs):\n            pos_idx = teacher_order[i]\n            neg_idx = teacher_order[-(i + 1)]\n            diff = our_scores[pos_idx] - our_scores[neg_idx]\n            if diff < margin:\n                loss = margin - diff\n                total_loss += loss\n                dscores[pos_idx] -= 1.0\n                dscores[neg_idx] += 1.0\n\n        self._total_samples += n_docs\n        self._cumulative_loss += total_loss\n        self._recent_losses.append(total_loss)\n        if len(self._recent_losses) > 200:\n            self._recent_losses = self._recent_losses[-200:]\n\n        if total_loss > 0:\n            grads = self.backward(dscores, cache)\n            momentum = 0.9\n            self._momentum_W1 = momentum * self._momentum_W1 - self.lr * grads[\"W1\"]\n            self._momentum_b1 = momentum * self._momentum_b1 - self.lr * grads[\"b1\"]\n            self._momentum_W2 = momentum * self._momentum_W2 - self.lr * grads[\"W2\"]\n            self._momentum_b2 = momentum * self._momentum_b2 - self.lr * grads[\"b2\"]\n            self.W1 += self._momentum_W1\n            self.b1 += self._momentum_b1\n            self.W2 += self._momentum_W2\n            self.b2 += self._momentum_b2\n            self._update_count += 1\n            self._update_learning_rate()\n\n        return total_loss",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__save_weights_242": {
+      "name": "_save_weights",
+      "type": "method",
+      "start_line": 242,
+      "end_line": 272,
+      "content_hash": "78f7354cb0cf5798a16dcad9aba9b1671fdf60f6",
+      "content": "    def _save_weights(self, checkpoint: bool = False):\n        \"\"\"Save weights to disk atomically.\"\"\"\n        import fcntl\n        try:\n            self._version += 1\n            tmp_base = self._weights_path.replace(\".npz\", \".tmp\")\n            np.savez(\n                tmp_base,\n                W1=self.W1, b1=self.b1, W2=self.W2, b2=self.b2,\n                momentum_W1=self._momentum_W1, momentum_b1=self._momentum_b1,\n                momentum_W2=self._momentum_W2, momentum_b2=self._momentum_b2,\n                update_count=self._update_count,\n                total_samples=self._total_samples,\n                cumulative_loss=self._cumulative_loss,\n                learning_rate=self.lr,\n                version=self._version,\n                collection=self._collection,\n            )\n            tmp_path = tmp_base + \".npz\"\n            lock_path = self._weights_path + \".lock\"\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)\n                try:\n                    os.replace(tmp_path, self._weights_path)\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n            if checkpoint or self._version % 100 == 0:\n                self._save_checkpoint()\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__save_checkpoint_274": {
+      "name": "_save_checkpoint",
+      "type": "method",
+      "start_line": 274,
+      "end_line": 282,
+      "content_hash": "f3cd34af867d8192a332045ac0d13c551a99f5e9",
+      "content": "    def _save_checkpoint(self):\n        \"\"\"Save a versioned checkpoint and prune old ones.\"\"\"\n        try:\n            import shutil\n            checkpoint_path = self._weights_path.replace(\".npz\", f\"_v{self._version}.npz\")\n            shutil.copy2(self._weights_path, checkpoint_path)\n            self._prune_old_checkpoints()\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__prune_old_checkpoints_284": {
+      "name": "_prune_old_checkpoints",
+      "type": "method",
+      "start_line": 284,
+      "end_line": 297,
+      "content_hash": "efba76751de0ca88414e12280ceb01b7682d2cc3",
+      "content": "    def _prune_old_checkpoints(self):\n        \"\"\"Remove old checkpoints keeping only the most recent MAX_CHECKPOINTS.\"\"\"\n        try:\n            import glob\n            pattern = self._weights_path.replace(\".npz\", \"_v*.npz\")\n            checkpoints = sorted(glob.glob(pattern))\n            if len(checkpoints) > self.MAX_CHECKPOINTS:\n                for old_cp in checkpoints[:-self.MAX_CHECKPOINTS]:\n                    try:\n                        os.remove(old_cp)\n                    except Exception:\n                        pass\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__load_weights_299": {
+      "name": "_load_weights",
+      "type": "method",
+      "start_line": 299,
+      "end_line": 356,
+      "content_hash": "93ea118e8f59a350d76df9b49d4adf53428f304b",
+      "content": "    def _load_weights(self):\n        \"\"\"Load weights from disk with dimension validation.\"\"\"\n        from scripts.logger import get_logger\n        logger = get_logger(__name__)\n\n        data = np.load(self._weights_path, allow_pickle=True)\n\n        def _get(key: str, default):\n            return data[key] if key in data.files else default\n\n        w1_loaded = data[\"W1\"]\n        w2_loaded = data[\"W2\"]\n        b1_loaded = data[\"b1\"]\n        b2_loaded = data[\"b2\"]\n\n        expected_w1 = (self.dim * 3, self.hidden_dim)\n        expected_w2 = (self.hidden_dim, 1)\n        expected_b1 = (self.hidden_dim,)\n        expected_b2 = (1,)\n\n        shape_ok = (\n            w1_loaded.shape == expected_w1 and\n            w2_loaded.shape == expected_w2 and\n            b1_loaded.shape == expected_b1 and\n            b2_loaded.shape == expected_b2\n        )\n\n        if not shape_ok:\n            logger.warning(f\"TinyScorer: shape mismatch, falling back to random init.\")\n            data.close()\n            self._init_random_weights()\n            return\n\n        self.W1 = w1_loaded.astype(np.float32, copy=False)\n        self.b1 = b1_loaded.astype(np.float32, copy=False)\n        self.W2 = w2_loaded.astype(np.float32, copy=False)\n        self.b2 = b2_loaded.astype(np.float32, copy=False)\n        self._update_count = int(_get(\"update_count\", 0))\n        self._total_samples = int(_get(\"total_samples\", 0))\n        self._cumulative_loss = float(_get(\"cumulative_loss\", 0.0))\n        self._version = int(_get(\"version\", 0))\n\n        if \"learning_rate\" in data.files:\n            self.lr = float(data[\"learning_rate\"])\n\n        if \"momentum_W1\" in data.files:\n            self._momentum_W1 = data[\"momentum_W1\"].astype(np.float32, copy=False)\n            self._momentum_b1 = data[\"momentum_b1\"].astype(np.float32, copy=False)\n            self._momentum_W2 = data[\"momentum_W2\"].astype(np.float32, copy=False)\n            self._momentum_b2 = data[\"momentum_b2\"].astype(np.float32, copy=False)\n        else:\n            self._momentum_W1 = np.zeros_like(self.W1)\n            self._momentum_b1 = np.zeros_like(self.b1)\n            self._momentum_W2 = np.zeros_like(self.W2)\n            self._momentum_b2 = np.zeros_like(self.b2)\n\n        self._weights_mtime = os.path.getmtime(self._weights_path)\n        data.close()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__get_306": {
+      "name": "_get",
+      "type": "method",
+      "start_line": 306,
+      "end_line": 307,
+      "content_hash": "71a38e2665639cb4b3907a021806f5ff6f53b7ac",
+      "content": "        def _get(key: str, default):\n            return data[key] if key in data.files else default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_rollback_to_checkpoint_358": {
+      "name": "rollback_to_checkpoint",
+      "type": "method",
+      "start_line": 358,
+      "end_line": 369,
+      "content_hash": "0417a29e4fa4fdb8437ace0185cb22b57b5b5ab3",
+      "content": "    def rollback_to_checkpoint(self, version: int) -> bool:\n        \"\"\"Rollback to a specific checkpoint version.\"\"\"\n        try:\n            import shutil\n            checkpoint_path = self._weights_path.replace(\".npz\", f\"_v{version}.npz\")\n            if os.path.exists(checkpoint_path):\n                shutil.copy2(checkpoint_path, self._weights_path)\n                self._load_weights()\n                return True\n        except Exception:\n            pass\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

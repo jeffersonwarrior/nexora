@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/endless-mode-token-calculator.js",
+  "file_hash": "42d84aac0656af7aed9dfbb9be580ee892d959ba",
+  "updated_at": "2025-12-26T17:34:22.095274",
+  "symbols": {
+    "function_estimateOriginalToolOutputSize_67": {
+      "name": "estimateOriginalToolOutputSize",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 71,
+      "content_hash": "cee7121ac1ad18267e1310269f45b92beba8fa9c",
+      "content": "function estimateOriginalToolOutputSize(discoveryTokens) {\n  // Conservative multiplier: 2x (original content was 2x the discovery cost)\n  // This accounts for: reading the tool output + analyzing it + generating observation\n  return discoveryTokens * 2;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_charsToTokens_75": {
+      "name": "charsToTokens",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 77,
+      "content_hash": "ca60d479064b7d0d81ecb270c54fc70f1a947b68",
+      "content": "function charsToTokens(chars) {\n  return Math.ceil(chars / 4);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_calculateWithoutEndlessMode_83": {
+      "name": "calculateWithoutEndlessMode",
+      "type": "function",
+      "start_line": 83,
+      "end_line": 121,
+      "content_hash": "3781b1255f02ef7f547c86c198e86c5355bf21f8",
+      "content": "function calculateWithoutEndlessMode(observations) {\n  let cumulativeContextTokens = 0;\n  let totalDiscoveryTokens = 0;\n  let totalContinuationTokens = 0;\n  const timeline = [];\n\n  observations.forEach((obs, index) => {\n    const toolNumber = index + 1;\n    const originalToolSize = estimateOriginalToolOutputSize(obs.discovery_tokens);\n\n    // Discovery cost (creating observation from full tool output)\n    const discoveryCost = obs.discovery_tokens;\n    totalDiscoveryTokens += discoveryCost;\n\n    // Continuation cost: Re-process ALL previous tool outputs + current one\n    // This is the key recursive cost\n    cumulativeContextTokens += originalToolSize;\n    const continuationCost = cumulativeContextTokens;\n    totalContinuationTokens += continuationCost;\n\n    timeline.push({\n      tool: toolNumber,\n      obsId: obs.id,\n      title: obs.title.substring(0, 60),\n      originalSize: originalToolSize,\n      discoveryCost,\n      contextSize: cumulativeContextTokens,\n      continuationCost,\n      totalCostSoFar: totalDiscoveryTokens + totalContinuationTokens\n    });\n  });\n\n  return {\n    totalDiscoveryTokens,\n    totalContinuationTokens,\n    totalTokens: totalDiscoveryTokens + totalContinuationTokens,\n    timeline\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_calculateWithEndlessMode_127": {
+      "name": "calculateWithEndlessMode",
+      "type": "function",
+      "start_line": 127,
+      "end_line": 169,
+      "content_hash": "c72143f0aec832740f5103e513ed69b7a395439c",
+      "content": "function calculateWithEndlessMode(observations) {\n  let cumulativeContextTokens = 0;\n  let totalDiscoveryTokens = 0;\n  let totalContinuationTokens = 0;\n  const timeline = [];\n\n  observations.forEach((obs, index) => {\n    const toolNumber = index + 1;\n    const originalToolSize = estimateOriginalToolOutputSize(obs.discovery_tokens);\n    const compressedSize = charsToTokens(obs.compressed_size);\n\n    // Discovery cost (same as without Endless Mode - still need to create observation)\n    const discoveryCost = obs.discovery_tokens;\n    totalDiscoveryTokens += discoveryCost;\n\n    // KEY DIFFERENCE: Add COMPRESSED size to context, not original size\n    cumulativeContextTokens += compressedSize;\n    const continuationCost = cumulativeContextTokens;\n    totalContinuationTokens += continuationCost;\n\n    const compressionRatio = ((originalToolSize - compressedSize) / originalToolSize * 100).toFixed(1);\n\n    timeline.push({\n      tool: toolNumber,\n      obsId: obs.id,\n      title: obs.title.substring(0, 60),\n      originalSize: originalToolSize,\n      compressedSize,\n      compressionRatio: `${compressionRatio}%`,\n      discoveryCost,\n      contextSize: cumulativeContextTokens,\n      continuationCost,\n      totalCostSoFar: totalDiscoveryTokens + totalContinuationTokens\n    });\n  });\n\n  return {\n    totalDiscoveryTokens,\n    totalContinuationTokens,\n    totalTokens: totalDiscoveryTokens + totalContinuationTokens,\n    timeline\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_playTheTapeThrough_174": {
+      "name": "playTheTapeThrough",
+      "type": "function",
+      "start_line": 174,
+      "end_line": 270,
+      "content_hash": "536d3bfc804a77baf7602b182b616129c1b86099",
+      "content": "function playTheTapeThrough(observations) {\n  console.log('\\n' + '='.repeat(100));\n  console.log('ENDLESS MODE TOKEN ECONOMICS CALCULATOR');\n  console.log('Playing the tape through with REAL observation data');\n  console.log('='.repeat(100) + '\\n');\n\n  console.log(`\ud83d\udcca Dataset: ${observations.length} observations from live sessions\\n`);\n\n  // Calculate both scenarios\n  const without = calculateWithoutEndlessMode(observations);\n  const withMode = calculateWithEndlessMode(observations);\n\n  // Show first 10 tools from each scenario side by side\n  console.log('\ud83c\udfac TAPE PLAYBACK: First 10 Tools\\n');\n  console.log('WITHOUT Endless Mode (Current) | WITH Endless Mode (Proposed)');\n  console.log('-'.repeat(100));\n\n  for (let i = 0; i < Math.min(10, observations.length); i++) {\n    const w = without.timeline[i];\n    const e = withMode.timeline[i];\n\n    console.log(`\\nTool #${w.tool}: ${w.title}`);\n    console.log(`  Original: ${w.originalSize.toLocaleString()}t | Compressed: ${e.compressedSize.toLocaleString()}t (${e.compressionRatio} saved)`);\n    console.log(`  Context:  ${w.contextSize.toLocaleString()}t | Context:    ${e.contextSize.toLocaleString()}t`);\n    console.log(`  Total:    ${w.totalCostSoFar.toLocaleString()}t | Total:      ${e.totalCostSoFar.toLocaleString()}t`);\n  }\n\n  // Summary table\n  console.log('\\n' + '='.repeat(100));\n  console.log('\ud83d\udcc8 FINAL TOTALS\\n');\n\n  console.log('WITHOUT Endless Mode (Current):');\n  console.log(`  Discovery tokens:    ${without.totalDiscoveryTokens.toLocaleString()}t (creating observations)`);\n  console.log(`  Continuation tokens: ${without.totalContinuationTokens.toLocaleString()}t (context accumulation)`);\n  console.log(`  TOTAL TOKENS:        ${without.totalTokens.toLocaleString()}t`);\n\n  console.log('\\nWITH Endless Mode:');\n  console.log(`  Discovery tokens:    ${withMode.totalDiscoveryTokens.toLocaleString()}t (same - still create observations)`);\n  console.log(`  Continuation tokens: ${withMode.totalContinuationTokens.toLocaleString()}t (COMPRESSED context)`);\n  console.log(`  TOTAL TOKENS:        ${withMode.totalTokens.toLocaleString()}t`);\n\n  const tokensSaved = without.totalTokens - withMode.totalTokens;\n  const percentSaved = (tokensSaved / without.totalTokens * 100).toFixed(1);\n\n  console.log('\\n\ud83d\udcb0 SAVINGS:');\n  console.log(`  Tokens saved:        ${tokensSaved.toLocaleString()}t`);\n  console.log(`  Percentage saved:    ${percentSaved}%`);\n  console.log(`  Efficiency gain:     ${(without.totalTokens / withMode.totalTokens).toFixed(2)}x`);\n\n  // Anthropic scale calculation\n  console.log('\\n' + '='.repeat(100));\n  console.log('\ud83c\udf0d ANTHROPIC SCALE IMPACT\\n');\n\n  // Conservative assumptions\n  const activeUsers = 100000; // Claude Code users\n  const sessionsPerWeek = 10; // Per user\n  const toolsPerSession = observations.length; // Use our actual data\n  const weeklyToolUses = activeUsers * sessionsPerWeek * toolsPerSession;\n\n  const avgTokensPerToolWithout = without.totalTokens / observations.length;\n  const avgTokensPerToolWith = withMode.totalTokens / observations.length;\n\n  const weeklyTokensWithout = weeklyToolUses * avgTokensPerToolWithout;\n  const weeklyTokensWith = weeklyToolUses * avgTokensPerToolWith;\n  const weeklyTokensSaved = weeklyTokensWithout - weeklyTokensWith;\n\n  console.log('Assumptions:');\n  console.log(`  Active Claude Code users:  ${activeUsers.toLocaleString()}`);\n  console.log(`  Sessions per user/week:    ${sessionsPerWeek}`);\n  console.log(`  Tools per session:         ${toolsPerSession}`);\n  console.log(`  Weekly tool uses:          ${weeklyToolUses.toLocaleString()}`);\n\n  console.log('\\nWeekly Compute:');\n  console.log(`  Without Endless Mode:      ${(weeklyTokensWithout / 1e9).toFixed(2)} billion tokens`);\n  console.log(`  With Endless Mode:         ${(weeklyTokensWith / 1e9).toFixed(2)} billion tokens`);\n  console.log(`  Weekly savings:            ${(weeklyTokensSaved / 1e9).toFixed(2)} billion tokens (${percentSaved}%)`);\n\n  const annualTokensSaved = weeklyTokensSaved * 52;\n  console.log(`  Annual savings:            ${(annualTokensSaved / 1e12).toFixed(2)} TRILLION tokens`);\n\n  console.log('\\n\ud83d\udca1 What this means:');\n  console.log(`  \u2022 ${percentSaved}% reduction in Claude Code inference costs`);\n  console.log(`  \u2022 ${(without.totalTokens / withMode.totalTokens).toFixed(1)}x more users served with same infrastructure`);\n  console.log(`  \u2022 Massive energy/compute savings at scale`);\n  console.log(`  \u2022 Longer sessions = better UX without economic penalty`);\n\n  console.log('\\n' + '='.repeat(100) + '\\n');\n\n  return {\n    without,\n    withMode,\n    tokensSaved,\n    percentSaved,\n    weeklyTokensSaved,\n    annualTokensSaved\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

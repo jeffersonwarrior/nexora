@@ -1,0 +1,238 @@
+{
+  "file_path": "/work/context-engine/tests/test_deduplication_core.py",
+  "file_hash": "989870529ad3d749c179c5e5bf97dd2e90e98e69",
+  "updated_at": "2025-12-26T17:34:21.880435",
+  "symbols": {
+    "function_dedup_module_21": {
+      "name": "dedup_module",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 25,
+      "content_hash": "bc0f2466858c41d98da065c0a0a6fe643e8b6967",
+      "content": "def dedup_module():\n    \"\"\"Import deduplication module.\"\"\"\n    import importlib\n    dedup = importlib.import_module(\"scripts.deduplication\")\n    return dedup",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_request_fingerprint_29": {
+      "name": "request_fingerprint",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 31,
+      "content_hash": "d8a48890a07949f2b6bb15d4340b7ed37d00aece",
+      "content": "def request_fingerprint(dedup_module):\n    \"\"\"Create a RequestFingerprint instance.\"\"\"\n    return dedup_module.RequestFingerprint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_request_deduplicator_35": {
+      "name": "request_deduplicator",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 41,
+      "content_hash": "285681b77dd31b35ebad22e1261f8f453b5e061f",
+      "content": "def request_deduplicator(dedup_module):\n    \"\"\"Create a fresh RequestDeduplicator instance.\"\"\"\n    return dedup_module.RequestDeduplicator(\n        name=\"test\",\n        dedup_window_seconds=60,\n        max_cache_size=100,\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestRequestFingerprint_47": {
+      "name": "TestRequestFingerprint",
+      "type": "class",
+      "start_line": 47,
+      "end_line": 91,
+      "content_hash": "108aa249560e54c46310d5c603e33b2b7d92226d",
+      "content": "class TestRequestFingerprint:\n    \"\"\"Tests for RequestFingerprint class.\"\"\"\n\n    def test_fingerprint_generation(self, request_fingerprint):\n        \"\"\"Fingerprint is generated from request data.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"find function foo\"]})\n        assert fp.fingerprint is not None\n        assert isinstance(fp.fingerprint, str)\n        assert len(fp.fingerprint) > 0\n\n    def test_same_data_same_fingerprint(self, request_fingerprint):\n        \"\"\"Same request data produces same fingerprint.\"\"\"\n        data = {\"queries\": [\"find function foo\"], \"limit\": 10}\n        fp1 = request_fingerprint(data)\n        fp2 = request_fingerprint(data)\n        assert fp1.fingerprint == fp2.fingerprint\n\n    def test_different_queries_different_fingerprint(self, request_fingerprint):\n        \"\"\"Different queries produce different fingerprint.\"\"\"\n        fp1 = request_fingerprint({\"queries\": [\"foo\"]})\n        fp2 = request_fingerprint({\"queries\": [\"bar\"]})\n        assert fp1.fingerprint != fp2.fingerprint\n\n    def test_access_updates_last_accessed(self, request_fingerprint):\n        \"\"\"access() updates last_accessed timestamp.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"test\"]})\n        original = fp.last_accessed\n        time.sleep(0.01)\n        fp.access()\n        assert fp.last_accessed >= original\n\n    def test_is_expired(self, request_fingerprint):\n        \"\"\"is_expired returns True when TTL exceeded.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"test\"]})\n        # Should not be expired with 60s TTL\n        assert fp.is_expired(60) is False\n        # Should be expired with 0s TTL\n        assert fp.is_expired(0) is True\n\n    def test_get_age_seconds(self, request_fingerprint):\n        \"\"\"get_age_seconds returns age in seconds.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"test\"]})\n        age = fp.get_age_seconds()\n        assert age >= 0\n        assert age < 1  # Should be less than 1 second old",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_fingerprint_generation_50": {
+      "name": "test_fingerprint_generation",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 55,
+      "content_hash": "5cec0d21c54d8ef4947cc46c94f4fc483ac3a2d0",
+      "content": "    def test_fingerprint_generation(self, request_fingerprint):\n        \"\"\"Fingerprint is generated from request data.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"find function foo\"]})\n        assert fp.fingerprint is not None\n        assert isinstance(fp.fingerprint, str)\n        assert len(fp.fingerprint) > 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_same_data_same_fingerprint_57": {
+      "name": "test_same_data_same_fingerprint",
+      "type": "method",
+      "start_line": 57,
+      "end_line": 62,
+      "content_hash": "a677f6dc123e4be6082628e683572e3da620473a",
+      "content": "    def test_same_data_same_fingerprint(self, request_fingerprint):\n        \"\"\"Same request data produces same fingerprint.\"\"\"\n        data = {\"queries\": [\"find function foo\"], \"limit\": 10}\n        fp1 = request_fingerprint(data)\n        fp2 = request_fingerprint(data)\n        assert fp1.fingerprint == fp2.fingerprint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_different_queries_different_fingerprint_64": {
+      "name": "test_different_queries_different_fingerprint",
+      "type": "method",
+      "start_line": 64,
+      "end_line": 68,
+      "content_hash": "982c5d6ea16e5facc0c0c58ca22a259a30cd964a",
+      "content": "    def test_different_queries_different_fingerprint(self, request_fingerprint):\n        \"\"\"Different queries produce different fingerprint.\"\"\"\n        fp1 = request_fingerprint({\"queries\": [\"foo\"]})\n        fp2 = request_fingerprint({\"queries\": [\"bar\"]})\n        assert fp1.fingerprint != fp2.fingerprint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_access_updates_last_accessed_70": {
+      "name": "test_access_updates_last_accessed",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 76,
+      "content_hash": "666ef38f9300391c9f3eab5336f86acf29599972",
+      "content": "    def test_access_updates_last_accessed(self, request_fingerprint):\n        \"\"\"access() updates last_accessed timestamp.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"test\"]})\n        original = fp.last_accessed\n        time.sleep(0.01)\n        fp.access()\n        assert fp.last_accessed >= original",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_is_expired_78": {
+      "name": "test_is_expired",
+      "type": "method",
+      "start_line": 78,
+      "end_line": 84,
+      "content_hash": "3678aac55332360fb79bd3d9f47528ff436e75b6",
+      "content": "    def test_is_expired(self, request_fingerprint):\n        \"\"\"is_expired returns True when TTL exceeded.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"test\"]})\n        # Should not be expired with 60s TTL\n        assert fp.is_expired(60) is False\n        # Should be expired with 0s TTL\n        assert fp.is_expired(0) is True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_age_seconds_86": {
+      "name": "test_get_age_seconds",
+      "type": "method",
+      "start_line": 86,
+      "end_line": 91,
+      "content_hash": "f51306a323da6eb395898af0618da78707a4473d",
+      "content": "    def test_get_age_seconds(self, request_fingerprint):\n        \"\"\"get_age_seconds returns age in seconds.\"\"\"\n        fp = request_fingerprint({\"queries\": [\"test\"]})\n        age = fp.get_age_seconds()\n        assert age >= 0\n        assert age < 1  # Should be less than 1 second old",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestRequestDeduplicator_97": {
+      "name": "TestRequestDeduplicator",
+      "type": "class",
+      "start_line": 97,
+      "end_line": 147,
+      "content_hash": "7a92d56421a61a376857bd18e94b2d8a7ca019e5",
+      "content": "class TestRequestDeduplicator:\n    \"\"\"Tests for RequestDeduplicator class.\"\"\"\n\n    def test_first_request_not_duplicate(self, request_deduplicator):\n        \"\"\"First request is never a duplicate.\"\"\"\n        is_dup, similar = request_deduplicator.is_duplicate({\"queries\": [\"find foo\"]})\n        assert is_dup is False\n        assert similar is None\n\n    def test_exact_duplicate_detected(self, request_deduplicator):\n        \"\"\"Exact duplicate request is detected.\"\"\"\n        data = {\"queries\": [\"find function foo\"], \"limit\": 10}\n        \n        # First request\n        is_dup1, _ = request_deduplicator.is_duplicate(data)\n        assert is_dup1 is False\n        \n        # Second identical request\n        is_dup2, similar = request_deduplicator.is_duplicate(data)\n        assert is_dup2 is True\n        assert similar is not None\n\n    def test_different_queries_not_duplicate(self, request_deduplicator):\n        \"\"\"Different queries is not a duplicate.\"\"\"\n        request_deduplicator.is_duplicate({\"queries\": [\"foo\"]})\n        is_dup, _ = request_deduplicator.is_duplicate({\"queries\": [\"bar\"]})\n        assert is_dup is False\n\n    def test_clear_cache(self, request_deduplicator):\n        \"\"\"clear_cache removes all entries.\"\"\"\n        request_deduplicator.is_duplicate({\"queries\": [\"test1\"]})\n        request_deduplicator.is_duplicate({\"queries\": [\"test2\"]})\n        \n        request_deduplicator.clear_cache()\n        assert len(request_deduplicator) == 0\n\n    def test_stats_tracking(self, request_deduplicator):\n        \"\"\"Statistics are tracked correctly.\"\"\"\n        # Initial stats\n        stats = request_deduplicator.get_stats()\n        assert stats[\"total_requests\"] == 0\n        assert stats[\"deduped_requests\"] == 0\n        \n        # Make some requests\n        request_deduplicator.is_duplicate({\"queries\": [\"foo\"]})\n        request_deduplicator.is_duplicate({\"queries\": [\"foo\"]})  # duplicate\n        request_deduplicator.is_duplicate({\"queries\": [\"bar\"]})\n        \n        stats = request_deduplicator.get_stats()\n        assert stats[\"total_requests\"] == 3\n        assert stats[\"deduped_requests\"] == 1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_first_request_not_duplicate_100": {
+      "name": "test_first_request_not_duplicate",
+      "type": "method",
+      "start_line": 100,
+      "end_line": 104,
+      "content_hash": "9d8c67838d4092eb15ce191ac6063cdd160e6092",
+      "content": "    def test_first_request_not_duplicate(self, request_deduplicator):\n        \"\"\"First request is never a duplicate.\"\"\"\n        is_dup, similar = request_deduplicator.is_duplicate({\"queries\": [\"find foo\"]})\n        assert is_dup is False\n        assert similar is None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_exact_duplicate_detected_106": {
+      "name": "test_exact_duplicate_detected",
+      "type": "method",
+      "start_line": 106,
+      "end_line": 117,
+      "content_hash": "cb8bdb0d735f70cdf29fa4e9b0c069c8e55c8e12",
+      "content": "    def test_exact_duplicate_detected(self, request_deduplicator):\n        \"\"\"Exact duplicate request is detected.\"\"\"\n        data = {\"queries\": [\"find function foo\"], \"limit\": 10}\n        \n        # First request\n        is_dup1, _ = request_deduplicator.is_duplicate(data)\n        assert is_dup1 is False\n        \n        # Second identical request\n        is_dup2, similar = request_deduplicator.is_duplicate(data)\n        assert is_dup2 is True\n        assert similar is not None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_different_queries_not_duplicate_119": {
+      "name": "test_different_queries_not_duplicate",
+      "type": "method",
+      "start_line": 119,
+      "end_line": 123,
+      "content_hash": "1bcb916bc939d4c7bf4cb7437438e59486547ea0",
+      "content": "    def test_different_queries_not_duplicate(self, request_deduplicator):\n        \"\"\"Different queries is not a duplicate.\"\"\"\n        request_deduplicator.is_duplicate({\"queries\": [\"foo\"]})\n        is_dup, _ = request_deduplicator.is_duplicate({\"queries\": [\"bar\"]})\n        assert is_dup is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_clear_cache_125": {
+      "name": "test_clear_cache",
+      "type": "method",
+      "start_line": 125,
+      "end_line": 131,
+      "content_hash": "3f47092b4857cea2af4b44339d7c709cad448e9d",
+      "content": "    def test_clear_cache(self, request_deduplicator):\n        \"\"\"clear_cache removes all entries.\"\"\"\n        request_deduplicator.is_duplicate({\"queries\": [\"test1\"]})\n        request_deduplicator.is_duplicate({\"queries\": [\"test2\"]})\n        \n        request_deduplicator.clear_cache()\n        assert len(request_deduplicator) == 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_stats_tracking_133": {
+      "name": "test_stats_tracking",
+      "type": "method",
+      "start_line": 133,
+      "end_line": 147,
+      "content_hash": "2a7412f3e6b0b2dd010af0854596f870be1b3940",
+      "content": "    def test_stats_tracking(self, request_deduplicator):\n        \"\"\"Statistics are tracked correctly.\"\"\"\n        # Initial stats\n        stats = request_deduplicator.get_stats()\n        assert stats[\"total_requests\"] == 0\n        assert stats[\"deduped_requests\"] == 0\n        \n        # Make some requests\n        request_deduplicator.is_duplicate({\"queries\": [\"foo\"]})\n        request_deduplicator.is_duplicate({\"queries\": [\"foo\"]})  # duplicate\n        request_deduplicator.is_duplicate({\"queries\": [\"bar\"]})\n        \n        stats = request_deduplicator.get_stats()\n        assert stats[\"total_requests\"] == 3\n        assert stats[\"deduped_requests\"] == 1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestGlobalFunctions_153": {
+      "name": "TestGlobalFunctions",
+      "type": "class",
+      "start_line": 153,
+      "end_line": 185,
+      "content_hash": "e5954003ce2a3659f4f06c9cf79652baf4d43b75",
+      "content": "class TestGlobalFunctions:\n    \"\"\"Tests for module-level convenience functions.\"\"\"\n\n    def test_get_deduplicator_returns_instance(self, dedup_module):\n        \"\"\"get_deduplicator returns a RequestDeduplicator instance.\"\"\"\n        deduplicator = dedup_module.get_deduplicator()\n        assert deduplicator is not None\n        assert isinstance(deduplicator, dedup_module.RequestDeduplicator)\n\n    def test_get_deduplicator_singleton(self, dedup_module):\n        \"\"\"get_deduplicator returns same instance.\"\"\"\n        d1 = dedup_module.get_deduplicator()\n        d2 = dedup_module.get_deduplicator()\n        assert d1 is d2\n\n    def test_is_duplicate_request_function(self, dedup_module):\n        \"\"\"is_duplicate_request works at module level.\"\"\"\n        # Clear any existing state\n        dedup_module.clear_deduplication_cache()\n        \n        result = dedup_module.is_duplicate_request({\"queries\": [\"test\"]})\n        assert isinstance(result, tuple)\n        assert len(result) == 2\n        is_dup, similar = result\n        assert isinstance(is_dup, bool)\n\n    def test_get_deduplication_stats(self, dedup_module):\n        \"\"\"get_deduplication_stats returns stats dict.\"\"\"\n        stats = dedup_module.get_deduplication_stats()\n        assert isinstance(stats, dict)\n        assert \"total_requests\" in stats\n        # Uses 'deduped_requests' not 'duplicates_detected'\n        assert \"deduped_requests\" in stats",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_deduplicator_returns_instance_156": {
+      "name": "test_get_deduplicator_returns_instance",
+      "type": "method",
+      "start_line": 156,
+      "end_line": 160,
+      "content_hash": "6966cc4dd5f8287050d4dfee9f9febb9c78c6afe",
+      "content": "    def test_get_deduplicator_returns_instance(self, dedup_module):\n        \"\"\"get_deduplicator returns a RequestDeduplicator instance.\"\"\"\n        deduplicator = dedup_module.get_deduplicator()\n        assert deduplicator is not None\n        assert isinstance(deduplicator, dedup_module.RequestDeduplicator)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_deduplicator_singleton_162": {
+      "name": "test_get_deduplicator_singleton",
+      "type": "method",
+      "start_line": 162,
+      "end_line": 166,
+      "content_hash": "98279c3d3f225a689eb668af6b62ed7fb93f3390",
+      "content": "    def test_get_deduplicator_singleton(self, dedup_module):\n        \"\"\"get_deduplicator returns same instance.\"\"\"\n        d1 = dedup_module.get_deduplicator()\n        d2 = dedup_module.get_deduplicator()\n        assert d1 is d2",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_is_duplicate_request_function_168": {
+      "name": "test_is_duplicate_request_function",
+      "type": "method",
+      "start_line": 168,
+      "end_line": 177,
+      "content_hash": "acdeb90fc95301962b5858bcb2faa4ea06d069c0",
+      "content": "    def test_is_duplicate_request_function(self, dedup_module):\n        \"\"\"is_duplicate_request works at module level.\"\"\"\n        # Clear any existing state\n        dedup_module.clear_deduplication_cache()\n        \n        result = dedup_module.is_duplicate_request({\"queries\": [\"test\"]})\n        assert isinstance(result, tuple)\n        assert len(result) == 2\n        is_dup, similar = result\n        assert isinstance(is_dup, bool)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_deduplication_stats_179": {
+      "name": "test_get_deduplication_stats",
+      "type": "method",
+      "start_line": 179,
+      "end_line": 185,
+      "content_hash": "65a30ef69d738f2d4ee589e5ba189bd5b8a9169c",
+      "content": "    def test_get_deduplication_stats(self, dedup_module):\n        \"\"\"get_deduplication_stats returns stats dict.\"\"\"\n        stats = dedup_module.get_deduplication_stats()\n        assert isinstance(stats, dict)\n        assert \"total_requests\" in stats\n        # Uses 'deduped_requests' not 'duplicates_detected'\n        assert \"deduped_requests\" in stats",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

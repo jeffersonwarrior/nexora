@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/sdk/openai/model.go",
+  "file_hash": "27d88a24e0684c49a3780f92264fc0c757f3a964",
+  "updated_at": "2025-12-26T17:34:21.730375",
+  "symbols": {
+    "struct_Model_10": {
+      "name": "Model",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 16,
+      "content_hash": "4a51f5390a8441e5c231574d025ad096bca2e6cb",
+      "content": "type Model struct {\n\tid      string\n\tobject  string\n\tcreated int64\n\townedBy string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetID_17": {
+      "name": "GetID",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 20,
+      "content_hash": "90da6685e0e6c7f700da6f8a6ace378e28161cf4",
+      "content": "func (m Model) GetID() string {\n\treturn m.id\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetName_21": {
+      "name": "GetName",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 25,
+      "content_hash": "e732cb36a5cb74208d6d33cc6c63a68204dc4e00",
+      "content": "func (m Model) GetName() string {\n\t// OpenAI doesn't provide names, use the ID as name\n\treturn m.id\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetProvider_26": {
+      "name": "GetProvider",
+      "type": "method",
+      "start_line": 26,
+      "end_line": 29,
+      "content_hash": "4fbf9aa26b4c0cf14aff0a8f11ba504221899d9f",
+      "content": "func (m Model) GetProvider() string {\n\treturn \"openai\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCapabilities_30": {
+      "name": "GetCapabilities",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 64,
+      "content_hash": "462eb1452ff7080af12e5ecd18a94e2267071c3b",
+      "content": "func (m Model) GetCapabilities() base.ModelCapabilities {\n\tcap := base.ModelCapabilities{\n\t\tSupportsChat:       true,\n\t\tSupportsFIM:        false,\n\t\tSupportsEmbeddings: strings.Contains(strings.ToLower(m.id), \"embedding\"),\n\t\tSupportsFineTuning: strings.Contains(strings.ToLower(m.id), \"ft:\"),\n\t\tSupportsAgents:     false,\n\t\tSupportsFileUpload: true,\n\t\tSupportsStreaming:  true,\n\t\tSupportsJSONMode:   true,\n\t\tSupportsVision:     strings.Contains(strings.ToLower(m.id), \"vision\") || strings.Contains(strings.ToLower(m.id), \"dall-e\"),\n\t\tSupportsAudio:      strings.Contains(strings.ToLower(m.id), \"tts\") || strings.Contains(strings.ToLower(m.id), \"whisper\"),\n\t\tSupportsTools:      true,\n\t\tCanReason:          strings.Contains(strings.ToLower(m.id), \"o1-preview\") || strings.Contains(strings.ToLower(m.id), \"gpt-4\"),\n\t}\n\n\t// Add specific capabilities\n\tif cap.SupportsTools {\n\t\tcap.SupportedParameters = []string{\n\t\t\t\"model\", \"messages\", \"temperature\", \"top_p\", \"max_tokens\",\n\t\t\t\"stream\", \"stop\", \"response_format\", \"tools\", \"tool_choice\",\n\t\t\t\"presence_penalty\", \"frequency_penalty\", \"n\", \"seed\",\n\t\t}\n\t\tcap.SecurityFeatures = []string{\"content_filtering\"}\n\t}\n\tif cap.SupportsVision {\n\t\tcap.SupportedParameters = append(cap.SupportedParameters, \"modalities\")\n\t}\n\tif cap.SupportsAudio {\n\t\tcap.SupportedParameters = append(cap.SupportedParameters, \"voice\", \"speed\")\n\t}\n\n\treturn cap\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetPricing_65": {
+      "name": "GetPricing",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 74,
+      "content_hash": "1dbe9199349c18e268afe1f5e0ffa1ad00f5940d",
+      "content": "func (m Model) GetPricing() base.ModelPricing {\n\t// Default pricing (you can customize)\n\treturn base.ModelPricing{\n\t\tCostPer1MIn:  0.005, // Example price\n\t\tCostPer1MOut: 0.015,\n\t\tCurrency:     \"USD\",\n\t\tUnit:         \"1M tokens\",\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetContextWindow_75": {
+      "name": "GetContextWindow",
+      "type": "method",
+      "start_line": 75,
+      "end_line": 89,
+      "content_hash": "21eb510aff093ff64da31e2193c03f987a93544f",
+      "content": "func (m Model) GetContextWindow() int {\n\t// Return context windows based on known models\n\tswitch {\n\tcase strings.Contains(m.id, \"gpt-4\"):\n\t\treturn 128000\n\tcase strings.Contains(m.id, \"gpt-3.5\"):\n\t\treturn 4096\n\tcase strings.Contains(m.id, \"gpt-3\"):\n\t\treturn 2048\n\tdefault:\n\t\treturn 4096 // Default for unknown models\n\t}\n}\n\n// ModelListResponse represents OpenAI's model list response",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ModelListResponse_90": {
+      "name": "ModelListResponse",
+      "type": "struct",
+      "start_line": 90,
+      "end_line": 93,
+      "content_hash": "0119ee8a4292da9a699012c74212a5b600a67173",
+      "content": "type ModelListResponse struct {\n\tObject string  `json:\"object\"`\n\tData   []Model `json:\"data\"`\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

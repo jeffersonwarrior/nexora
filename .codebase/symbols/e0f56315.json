@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/tui/components/chat/splash/splash_test.go",
+  "file_hash": "e1d4d37a6cf123904ecf714eef178c6ed35ba139",
+  "updated_at": "2025-12-26T17:34:23.818366",
+  "symbols": {
+    "function_TestSplashCreation_5": {
+      "name": "TestSplashCreation",
+      "type": "function",
+      "start_line": 5,
+      "end_line": 10,
+      "content_hash": "c4f88d32e661bf8af829af52c787b0339c98c80a",
+      "content": "func TestSplashCreation(t *testing.T) {\n\ts := New()\n\tif s == nil {\n\t\tt.Fatal(\"Expected splash\")\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

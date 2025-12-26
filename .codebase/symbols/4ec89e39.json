@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/plan-evaluator.test.ts",
+  "file_hash": "0cd7625e1dbf69823aa30df6dc95af1980f2bf68",
+  "updated_at": "2025-12-26T17:34:19.897621",
+  "symbols": {
+    "function_createFeature_32": {
+      "name": "createFeature",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 37,
+      "content_hash": "5cfb99a5a684ab66f2d8b68358b7f8607e7310be",
+      "content": "  const createFeature = (description: string): Feature => ({\n    id: 'test-feature',\n    description,\n    status: 'pending',\n    attempts: 0,\n  });",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createBasicPlan_39": {
+      "name": "createBasicPlan",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 57,
+      "content_hash": "4b1afad47daafb8f4a51bc12b6b51813f8dbed05",
+      "content": "  const createBasicPlan = (): StructuredPlan => ({\n    summary: 'Implement user authentication with JWT tokens',\n    steps: [\n      {\n        order: 1,\n        description: 'Create auth service',\n        files: ['src/auth/service.ts'],\n      },\n      {\n        order: 2,\n        description: 'Add login endpoint',\n        files: ['src/api/auth.ts'],\n      },\n    ],\n    filesToCreate: ['src/auth/service.ts'],\n    filesToModify: ['src/api/auth.ts'],\n    testStrategy: 'Unit tests for auth service, integration tests for login endpoint',\n    risks: ['Token expiry handling', 'Session management complexity'],\n  });",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

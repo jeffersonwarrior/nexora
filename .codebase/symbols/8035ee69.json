@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/dist/utils/complexity-detector.js",
+  "file_hash": "1adb7c8251ca757624b5aa024f7004017dca785d",
+  "updated_at": "2025-12-26T17:34:20.400907",
+  "symbols": {
+    "function_analyzeComplexity_70": {
+      "name": "analyzeComplexity",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 160,
+      "content_hash": "28bf4c7b1eeb953ba56f6d0cc21050de1cd7ac95",
+      "content": "export function analyzeComplexity(feature, threshold = 60) {\n    const description = feature.description;\n    const signals = {\n        descriptionLength: description.length,\n        keywordMatches: [],\n        scopeIndicators: [],\n        architecturalTerms: [],\n        uncertaintyIndicators: [],\n        dependencyCount: feature.dependsOn?.length || 0,\n        estimatedTouchPoints: 0,\n    };\n    // 1. Score based on description length (0-20 pts)\n    // Short descriptions (< 50 chars) = 0, Long descriptions (> 200 chars) = 20\n    const lengthScore = Math.min(20, Math.floor(description.length / 10));\n    // 2. Score based on complexity keywords (0-30 pts, capped)\n    let keywordScore = 0;\n    for (const { pattern, weight } of COMPLEXITY_KEYWORDS) {\n        const match = description.match(pattern);\n        if (match) {\n            signals.keywordMatches.push(match[0]);\n            keywordScore += weight;\n        }\n    }\n    keywordScore = Math.min(30, keywordScore);\n    // 3. Score based on scope indicators (0-20 pts, capped)\n    let scopeScore = 0;\n    for (const { pattern, weight } of SCOPE_INDICATORS) {\n        const match = description.match(pattern);\n        if (match) {\n            signals.scopeIndicators.push(match[0]);\n            scopeScore += weight;\n        }\n    }\n    // Add architectural terms to scope\n    for (const { pattern, weight } of ARCHITECTURAL_TERMS) {\n        const match = description.match(pattern);\n        if (match) {\n            signals.architecturalTerms.push(match[0]);\n            scopeScore += Math.floor(weight / 2); // Half weight for architectural terms\n        }\n    }\n    scopeScore = Math.min(20, scopeScore);\n    // Track uncertainty indicators (informational, doesn't add to score directly)\n    for (const { pattern } of UNCERTAINTY_INDICATORS) {\n        const match = description.match(pattern);\n        if (match) {\n            signals.uncertaintyIndicators.push(match[0]);\n        }\n    }\n    // 4. Score based on dependency count (0-15 pts)\n    // 3 points per dependency, capped at 15\n    const dependencyScore = Math.min(15, signals.dependencyCount * 3);\n    // 5. Score based on estimated touch points (0-15 pts)\n    const touchPoints = new Set();\n    for (const pattern of TOUCH_POINT_PATTERNS) {\n        const matches = description.match(pattern) || [];\n        for (const match of matches) {\n            touchPoints.add(match.toLowerCase());\n        }\n    }\n    signals.estimatedTouchPoints = touchPoints.size;\n    // 3 points per touch point, capped at 15\n    const touchPointScore = Math.min(15, touchPoints.size * 3);\n    // Calculate total score\n    const score = lengthScore + keywordScore + scopeScore + dependencyScore + touchPointScore;\n    // Determine recommendation\n    let recommendation;\n    if (score >= threshold) {\n        recommendation = \"competitive_planning\";\n    }\n    else if (score >= threshold * 0.7) {\n        // 70% of threshold suggests manual review might be beneficial\n        recommendation = \"manual_review\";\n    }\n    else {\n        recommendation = \"simple\";\n    }\n    return {\n        score,\n        isComplex: score >= threshold,\n        signals,\n        recommendation,\n        breakdown: {\n            lengthScore,\n            keywordScore,\n            scopeScore,\n            dependencyScore,\n            touchPointScore,\n        },\n    };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatComplexityResult_164": {
+      "name": "formatComplexityResult",
+      "type": "function",
+      "start_line": 164,
+      "end_line": 189,
+      "content_hash": "73feaf0833f58ed2316d9865f4003de1e21352b0",
+      "content": "export function formatComplexityResult(result) {\n    const lines = [];\n    lines.push(`Complexity Score: ${result.score}/100`);\n    lines.push(`Recommendation: ${result.recommendation.replace(/_/g, \" \")}`);\n    lines.push(\"\");\n    lines.push(\"Breakdown:\");\n    lines.push(`  Description length: ${result.breakdown.lengthScore}/20`);\n    lines.push(`  Keywords: ${result.breakdown.keywordScore}/30`);\n    lines.push(`  Scope: ${result.breakdown.scopeScore}/20`);\n    lines.push(`  Dependencies: ${result.breakdown.dependencyScore}/15`);\n    lines.push(`  Touch points: ${result.breakdown.touchPointScore}/15`);\n    if (result.signals.keywordMatches.length > 0) {\n        lines.push(\"\");\n        lines.push(`Keywords found: ${result.signals.keywordMatches.join(\", \")}`);\n    }\n    if (result.signals.scopeIndicators.length > 0) {\n        lines.push(`Scope indicators: ${result.signals.scopeIndicators.join(\", \")}`);\n    }\n    if (result.signals.architecturalTerms.length > 0) {\n        lines.push(`Architectural terms: ${result.signals.architecturalTerms.join(\", \")}`);\n    }\n    if (result.signals.uncertaintyIndicators.length > 0) {\n        lines.push(`Uncertainty indicators: ${result.signals.uncertaintyIndicators.join(\", \")}`);\n    }\n    return lines.join(\"\\n\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

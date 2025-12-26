@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/qa/qa_suite_test.go",
+  "file_hash": "cfca98a82076ea5c7400e3b87d4d8d2177e0197b",
+  "updated_at": "2025-12-26T17:34:22.758341",
+  "symbols": {
+    "function_TestAll_14": {
+      "name": "TestAll",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 19,
+      "content_hash": "1991571e783331303491cf0099f9e970dffb67eb",
+      "content": "func TestAll(t *testing.T) {\n\tt.Run(\"go test\", testGoTest)\n\tt.Run(\"compile\", testCompile)\n\tt.Run(\"config files\", testConfigFiles)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_testGoTest_20": {
+      "name": "testGoTest",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 47,
+      "content_hash": "124eae049273f5ade6c69870b24a36e8d2abc9df",
+      "content": "func testGoTest(t *testing.T) {\n\t// Test all packages, handling missing test files gracefully\n\tcwd, err := os.Getwd()\n\tif err != nil {\n\t\tt.Fatalf(\"failed to get current working directory: %v\", err)\n\t}\n\n\t// Move up one directory from qa to project root\n\tprojectRoot := filepath.Dir(cwd)\n\n\t// Check if we're already in a nested test run to avoid infinite recursion\n\tif os.Getenv(\"NESTED_TEST_RUN\") == \"1\" {\n\t\tt.Skip(\"skipping nested test run to avoid infinite recursion\")\n\t}\n\n\t// Set environment variable to detect nested test runs\n\tcmd := exec.Command(\"sh\", \"-c\", \"NESTED_TEST_RUN=1 go test ./... -timeout=5m 2>&1 || true\")\n\tcmd.Dir = projectRoot\n\toutput, err := cmd.CombinedOutput()\n\n\t// Check for actual failures vs \"no test files\" warnings\n\toutputStr := string(output)\n\tif err != nil && len(outputStr) > 0 && !containsOnlyNoTestFileWarnings(outputStr) {\n\t\tt.Fatalf(\"go test failed (from %s):\\n%s\\nError: %v\", projectRoot, output, err)\n\t}\n\tt.Log(\"\u2705 go test passed\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_containsOnlyNoTestFileWarnings_48": {
+      "name": "containsOnlyNoTestFileWarnings",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 57,
+      "content_hash": "83a1065b46806d99592678aa80f950037c91f651",
+      "content": "func containsOnlyNoTestFileWarnings(output string) bool {\n\tlines := strings.Split(output, \"\\n\")\n\tfor _, line := range lines {\n\t\tif line != \"\" && !contains([]string{\"[no test files]\", \"?\", \"ok\"}, strings.TrimSpace(line)) {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_contains_58": {
+      "name": "contains",
+      "type": "function",
+      "start_line": 58,
+      "end_line": 66,
+      "content_hash": "dc63621cfd0b330092c142d86589024ea1a8f339",
+      "content": "func contains(slice []string, item string) bool {\n\tfor _, s := range slice {\n\t\tif strings.Contains(s, item) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_testCompile_67": {
+      "name": "testCompile",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 87,
+      "content_hash": "9a2636f09cfbf4b596c527fe8afe12cda239f287",
+      "content": "func testCompile(t *testing.T) {\n\t// Explicitly set the working directory to the project root\n\tcwd, err := os.Getwd()\n\tif err != nil {\n\t\tt.Fatalf(\"failed to get current working directory: %v\", err)\n\t}\n\n\t// Move up one directory from qa to project root\n\tprojectRoot := filepath.Dir(cwd)\n\tcmd := exec.Command(\"go\", \"build\", \"-o\", \"/tmp/nexora-test\", \".\")\n\tcmd.Dir = projectRoot\n\toutput, err := cmd.CombinedOutput()\n\tif err != nil {\n\t\tt.Fatalf(\"compile failed (from %s):\\n%s\\nError: %v\", projectRoot, output, err)\n\t}\n\n\t// Cleanup\n\tos.Remove(\"/tmp/nexora-test\")\n\tt.Log(\"\u2705 compile passed\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_testConfigFiles_88": {
+      "name": "testConfigFiles",
+      "type": "function",
+      "start_line": 88,
+      "end_line": 114,
+      "content_hash": "13c9b26ca92aacf13a0f46be5eebe757157de300",
+      "content": "func testConfigFiles(t *testing.T) {\n\tconfigFiles := []string{\n\t\t\"/home/agent/.local/share/nexora/nexora.json\",\n\t\t\"/home/nexora/nexora.example.json\",\n\t\t\"/home/nexora/.nexora/config.json\",\n\t\t\"/home/nexora/nexora.json\",\n\t}\n\n\tfor _, configFile := range configFiles {\n\t\tif _, err := os.Stat(configFile); os.IsNotExist(err) {\n\t\t\tcontinue // Skip missing files\n\t\t}\n\n\t\tt.Run(fmt.Sprintf(\"validate %s\", filepath.Base(configFile)), func(t *testing.T) {\n\t\t\tdata, err := os.ReadFile(configFile)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatalf(\"failed to read %s: %v\", configFile, err)\n\t\t\t}\n\n\t\t\tvar js interface{}\n\t\t\tif err := json.Unmarshal(data, &js); err != nil {\n\t\t\t\tt.Fatalf(\"%s is invalid JSON: %v\", configFile, err)\n\t\t\t}\n\t\t\tt.Logf(\"\u2705 %s valid JSON\", configFile)\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

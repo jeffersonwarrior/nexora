@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/utils/tool_id.go",
+  "file_hash": "49c22dc72127de45cfe9b98638bfc73d4903c916",
+  "updated_at": "2025-12-26T17:34:21.346856",
+  "symbols": {
+    "function_GenerateToolCallID_12": {
+      "name": "GenerateToolCallID",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 22,
+      "content_hash": "108a9df148342babf27b9e7eb7fbce7c93e9cd0f",
+      "content": "func GenerateToolCallID(provider string) string {\n\tswitch provider {\n\tcase \"mistral\", \"mistral-native\":\n\t\treturn generateMistralID()\n\tdefault:\n\t\t// Default to OpenAI format (current behavior)\n\t\treturn fmt.Sprintf(\"call_%s\", generateRandomID(12))\n\t}\n}\n\n// generateMistralID creates exactly 9 alphanumeric characters",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_generateMistralID_23": {
+      "name": "generateMistralID",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 40,
+      "content_hash": "ca1e7a42010709f36ac3f59972c96b80710c952e",
+      "content": "func generateMistralID() string {\n\tconst charset = \"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\"\n\tb := make([]byte, 9)\n\tfor i := range b {\n\t\t// Read cryptographically secure random byte\n\t\tvar n [1]byte\n\t\t_, err := rand.Read(n[:])\n\t\tif err != nil {\n\t\t\t// Fallback to simple random if crypto fails\n\t\t\tb[i] = charset[i%len(charset)]\n\t\t\tcontinue\n\t\t}\n\t\tb[i] = charset[int(n[0])%len(charset)]\n\t}\n\treturn string(b)\n}\n\n// generateRandomID creates a random hex string of specified length",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_generateRandomID_41": {
+      "name": "generateRandomID",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 56,
+      "content_hash": "4e0d4aa5f4198949bb1b45a0f5f0112784eb0bc3",
+      "content": "func generateRandomID(length int) string {\n\tconst charset = \"abcdef0123456789\"\n\tb := make([]byte, length)\n\tfor i := range b {\n\t\tvar n [1]byte\n\t\t_, err := rand.Read(n[:])\n\t\tif err != nil {\n\t\t\tb[i] = charset[i%len(charset)]\n\t\t\tcontinue\n\t\t}\n\t\tb[i] = charset[int(n[0])%len(charset)]\n\t}\n\treturn string(b)\n}\n\n// ValidateMistralID checks if ID meets Mistral requirements",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ValidateMistralID_57": {
+      "name": "ValidateMistralID",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 69,
+      "content_hash": "bbc7bb243a41afff2dcfbb7516a54db3674d3dc9",
+      "content": "func ValidateMistralID(id string) bool {\n\tif len(id) != 9 {\n\t\treturn false\n\t}\n\tfor _, char := range id {\n\t\tif !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9')) {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\n// SanitizeToolCallID converts existing ID to provider format if needed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_SanitizeToolCallID_70": {
+      "name": "SanitizeToolCallID",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 92,
+      "content_hash": "53f529663cc29c881e0d2ed6a247fefeea93797a",
+      "content": "func SanitizeToolCallID(id, provider string) string {\n\tswitch provider {\n\tcase \"mistral\", \"mistral-native\":\n\t\t// Extract digits/letters from existing ID and truncate/pad to 9\n\t\tclean := strings.Map(func(r rune) rune {\n\t\t\tif (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {\n\t\t\t\treturn r\n\t\t\t}\n\t\t\treturn -1\n\t\t}, id)\n\n\t\t// Pad or truncate to 9 chars\n\t\tfor len(clean) < 9 {\n\t\t\tclean += generateRandomID(1)\n\t\t}\n\t\tif len(clean) > 9 {\n\t\t\tclean = clean[:9]\n\t\t}\n\t\treturn clean\n\tdefault:\n\t\treturn id // Keep existing format\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

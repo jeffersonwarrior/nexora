@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/context-engine/scripts/admin_ui.py",
+  "file_hash": "fa7d646286a0ee6b750bd354e16f5dc2024afce2",
+  "updated_at": "2025-12-26T17:34:24.283729",
+  "symbols": {
+    "function_render_admin_login_22": {
+      "name": "render_admin_login",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 31,
+      "content_hash": "d75fc6e1047c0ed2aad3bde624410e13aa42a829",
+      "content": "def render_admin_login(\n    request: Request,\n    error: Optional[str] = None,\n    status_code: int = 200,\n) -> Any:\n    return _templates.TemplateResponse(\n        \"admin/login.html\",\n        {\"request\": request, \"title\": \"CTXCE Admin Login\", \"error\": error},\n        status_code=status_code,\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_render_admin_bootstrap_34": {
+      "name": "render_admin_bootstrap",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 43,
+      "content_hash": "b8fa6917f3203c36fe284a9256860c3e1e26672e",
+      "content": "def render_admin_bootstrap(\n    request: Request,\n    error: Optional[str] = None,\n    status_code: int = 200,\n) -> Any:\n    return _templates.TemplateResponse(\n        \"admin/bootstrap.html\",\n        {\"request\": request, \"title\": \"CTXCE Admin Bootstrap\", \"error\": error},\n        status_code=status_code,\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_render_admin_acl_46": {
+      "name": "render_admin_acl",
+      "type": "function",
+      "start_line": 46,
+      "end_line": 70,
+      "content_hash": "41bf76da6e6059edad5d2be0f952f447a0ae8038",
+      "content": "def render_admin_acl(\n    request: Request,\n    users: Any,\n    collections: Any,\n    grants: Any,\n    deletion_enabled: bool = False,\n    work_dir: str = \"/work\",\n    refresh_ms: int = 5000,\n    status_code: int = 200,\n) -> Any:\n    return _templates.TemplateResponse(\n        \"admin/acl.html\",\n        {\n            \"request\": request,\n            \"title\": \"CTXCE Admin ACL\",\n            \"users\": users,\n            \"collections\": collections,\n            \"grants\": grants,\n            \"deletion_enabled\": bool(deletion_enabled),\n            \"work_dir\": work_dir,\n            \"staging_enabled\": bool(is_staging_enabled() if callable(is_staging_enabled) else False),\n            \"refresh_ms\": int(refresh_ms) if refresh_ms is not None else 5000,\n        },\n        status_code=status_code,\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_render_admin_error_73": {
+      "name": "render_admin_error",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 89,
+      "content_hash": "871ea150710f409d259053373d0bdbdfd8dfb321",
+      "content": "def render_admin_error(\n    request: Request,\n    title: str,\n    message: str,\n    back_href: str = \"/admin\",\n    status_code: int = 400,\n) -> Any:\n    return _templates.TemplateResponse(\n        \"admin/error.html\",\n        {\n            \"request\": request,\n            \"title\": title,\n            \"message\": message,\n            \"back_href\": back_href,\n        },\n        status_code=status_code,\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

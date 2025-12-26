@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/worker/events/SessionEventBroadcaster.ts",
+  "file_hash": "71bfd28b7f964998d40c9ed95a6d2ba3c9e028af",
+  "updated_at": "2025-12-26T17:34:23.106463",
+  "symbols": {
+    "class_SessionEventBroadcaster_11": {
+      "name": "SessionEventBroadcaster",
+      "type": "class",
+      "start_line": 11,
+      "end_line": 96,
+      "content_hash": "70b07a80726eae5720280c56fbce62cb4dd6acb5",
+      "content": "export class SessionEventBroadcaster {\n  constructor(\n    private sseBroadcaster: SSEBroadcaster,\n    private workerService: WorkerService\n  ) {}\n\n  /**\n   * Broadcast new user prompt arrival\n   * Starts activity indicator to show work is beginning\n   */\n  broadcastNewPrompt(prompt: {\n    id: number;\n    claude_session_id: string;\n    project: string;\n    prompt_number: number;\n    prompt_text: string;\n    created_at_epoch: number;\n  }): void {\n    // Broadcast prompt details\n    this.sseBroadcaster.broadcast({\n      type: 'new_prompt',\n      prompt\n    });\n\n    // Start activity indicator (work is about to begin)\n    this.sseBroadcaster.broadcast({\n      type: 'processing_status',\n      isProcessing: true\n    });\n\n    // Update processing status based on queue depth\n    this.workerService.broadcastProcessingStatus();\n  }\n\n  /**\n   * Broadcast session initialization\n   */\n  broadcastSessionStarted(sessionDbId: number, project: string): void {\n    this.sseBroadcaster.broadcast({\n      type: 'session_started',\n      sessionDbId,\n      project\n    });\n\n    // Update processing status\n    this.workerService.broadcastProcessingStatus();\n  }\n\n  /**\n   * Broadcast observation queued\n   * Updates processing status to reflect new queue depth\n   */\n  broadcastObservationQueued(sessionDbId: number): void {\n    this.sseBroadcaster.broadcast({\n      type: 'observation_queued',\n      sessionDbId\n    });\n\n    // Update processing status (queue depth changed)\n    this.workerService.broadcastProcessingStatus();\n  }\n\n  /**\n   * Broadcast session completion\n   * Updates processing status to reflect session removal\n   */\n  broadcastSessionCompleted(sessionDbId: number): void {\n    this.sseBroadcaster.broadcast({\n      type: 'session_completed',\n      timestamp: Date.now(),\n      sessionDbId\n    });\n\n    // Update processing status (session removed from queue)\n    this.workerService.broadcastProcessingStatus();\n  }\n\n  /**\n   * Broadcast summarize request queued\n   * Updates processing status to reflect new queue depth\n   */\n  broadcastSummarizeQueued(): void {\n    // Update processing status (queue depth changed)\n    this.workerService.broadcastProcessingStatus();\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_constructor_12": {
+      "name": "constructor",
+      "type": "method",
+      "start_line": 12,
+      "end_line": 15,
+      "content_hash": "431fc05d2f650736d847a726d151322c12514e7d",
+      "content": "  constructor(\n    private sseBroadcaster: SSEBroadcaster,\n    private workerService: WorkerService\n  ) {}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_broadcastNewPrompt_21": {
+      "name": "broadcastNewPrompt",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 43,
+      "content_hash": "d07a4496de883b4bd1d7788efaef72b7ca6cc35b",
+      "content": "  broadcastNewPrompt(prompt: {\n    id: number;\n    claude_session_id: string;\n    project: string;\n    prompt_number: number;\n    prompt_text: string;\n    created_at_epoch: number;\n  }): void {\n    // Broadcast prompt details\n    this.sseBroadcaster.broadcast({\n      type: 'new_prompt',\n      prompt\n    });\n\n    // Start activity indicator (work is about to begin)\n    this.sseBroadcaster.broadcast({\n      type: 'processing_status',\n      isProcessing: true\n    });\n\n    // Update processing status based on queue depth\n    this.workerService.broadcastProcessingStatus();\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_broadcastSessionStarted_48": {
+      "name": "broadcastSessionStarted",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 57,
+      "content_hash": "a76a73e3b19b5f6f1a2d9fbdf8f557443e93673a",
+      "content": "  broadcastSessionStarted(sessionDbId: number, project: string): void {\n    this.sseBroadcaster.broadcast({\n      type: 'session_started',\n      sessionDbId,\n      project\n    });\n\n    // Update processing status\n    this.workerService.broadcastProcessingStatus();\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_broadcastObservationQueued_63": {
+      "name": "broadcastObservationQueued",
+      "type": "method",
+      "start_line": 63,
+      "end_line": 71,
+      "content_hash": "a9488682f3ff1e8f78b86c84dccd7f0299e235fd",
+      "content": "  broadcastObservationQueued(sessionDbId: number): void {\n    this.sseBroadcaster.broadcast({\n      type: 'observation_queued',\n      sessionDbId\n    });\n\n    // Update processing status (queue depth changed)\n    this.workerService.broadcastProcessingStatus();\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_broadcastSessionCompleted_77": {
+      "name": "broadcastSessionCompleted",
+      "type": "method",
+      "start_line": 77,
+      "end_line": 86,
+      "content_hash": "7b0d78c585e9041a74b534ea92e387e366285d54",
+      "content": "  broadcastSessionCompleted(sessionDbId: number): void {\n    this.sseBroadcaster.broadcast({\n      type: 'session_completed',\n      timestamp: Date.now(),\n      sessionDbId\n    });\n\n    // Update processing status (session removed from queue)\n    this.workerService.broadcastProcessingStatus();\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_broadcastSummarizeQueued_92": {
+      "name": "broadcastSummarizeQueued",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 95,
+      "content_hash": "0c4162cb14936e11fcacb41a7b9d28f00c76b142",
+      "content": "  broadcastSummarizeQueued(): void {\n    // Update processing status (queue depth changed)\n    this.workerService.broadcastProcessingStatus();\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

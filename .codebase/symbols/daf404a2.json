@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/db/db.go",
+  "file_hash": "2cb94ee9062ede32ca6ac316d27baa7135b54882",
+  "updated_at": "2025-12-26T17:34:23.405173",
+  "symbols": {
+    "interface_DBTX_13": {
+      "name": "DBTX",
+      "type": "interface",
+      "start_line": 13,
+      "end_line": 19,
+      "content_hash": "e780b7d0dc0d6eccdf4656c09c11bfd3874ba9de",
+      "content": "type DBTX interface {\n\tExecContext(context.Context, string, ...interface{}) (sql.Result, error)\n\tPrepareContext(context.Context, string) (*sql.Stmt, error)\n\tQueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)\n\tQueryRowContext(context.Context, string, ...interface{}) *sql.Row\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_New_20": {
+      "name": "New",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 23,
+      "content_hash": "2d0b06e3a78c5036597e628ff0e86e30cda95df3",
+      "content": "func New(db DBTX) *Queries {\n\treturn &Queries{db: db}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Prepare_24": {
+      "name": "Prepare",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 89,
+      "content_hash": "5ba06cb7f80cdaeca45c961fcc57cb0e61e04c51",
+      "content": "func Prepare(ctx context.Context, db DBTX) (*Queries, error) {\n\tq := Queries{db: db}\n\tvar err error\n\tif q.createFileStmt, err = db.PrepareContext(ctx, createFile); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query CreateFile: %w\", err)\n\t}\n\tif q.createMessageStmt, err = db.PrepareContext(ctx, createMessage); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query CreateMessage: %w\", err)\n\t}\n\tif q.createSessionStmt, err = db.PrepareContext(ctx, createSession); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query CreateSession: %w\", err)\n\t}\n\tif q.deleteFileStmt, err = db.PrepareContext(ctx, deleteFile); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query DeleteFile: %w\", err)\n\t}\n\tif q.deleteMessageStmt, err = db.PrepareContext(ctx, deleteMessage); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query DeleteMessage: %w\", err)\n\t}\n\tif q.deleteSessionStmt, err = db.PrepareContext(ctx, deleteSession); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query DeleteSession: %w\", err)\n\t}\n\tif q.deleteSessionFilesStmt, err = db.PrepareContext(ctx, deleteSessionFiles); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query DeleteSessionFiles: %w\", err)\n\t}\n\tif q.deleteSessionMessagesStmt, err = db.PrepareContext(ctx, deleteSessionMessages); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query DeleteSessionMessages: %w\", err)\n\t}\n\tif q.getFileStmt, err = db.PrepareContext(ctx, getFile); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query GetFile: %w\", err)\n\t}\n\tif q.getFileByPathAndSessionStmt, err = db.PrepareContext(ctx, getFileByPathAndSession); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query GetFileByPathAndSession: %w\", err)\n\t}\n\tif q.getMessageStmt, err = db.PrepareContext(ctx, getMessage); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query GetMessage: %w\", err)\n\t}\n\tif q.getSessionByIDStmt, err = db.PrepareContext(ctx, getSessionByID); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query GetSessionByID: %w\", err)\n\t}\n\tif q.listFilesByPathStmt, err = db.PrepareContext(ctx, listFilesByPath); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query ListFilesByPath: %w\", err)\n\t}\n\tif q.listFilesBySessionStmt, err = db.PrepareContext(ctx, listFilesBySession); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query ListFilesBySession: %w\", err)\n\t}\n\tif q.listLatestSessionFilesStmt, err = db.PrepareContext(ctx, listLatestSessionFiles); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query ListLatestSessionFiles: %w\", err)\n\t}\n\tif q.listMessagesBySessionStmt, err = db.PrepareContext(ctx, listMessagesBySession); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query ListMessagesBySession: %w\", err)\n\t}\n\tif q.listNewFilesStmt, err = db.PrepareContext(ctx, listNewFiles); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query ListNewFiles: %w\", err)\n\t}\n\tif q.listSessionsStmt, err = db.PrepareContext(ctx, listSessions); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query ListSessions: %w\", err)\n\t}\n\tif q.updateMessageStmt, err = db.PrepareContext(ctx, updateMessage); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query UpdateMessage: %w\", err)\n\t}\n\tif q.updateSessionStmt, err = db.PrepareContext(ctx, updateSession); err != nil {\n\t\treturn nil, fmt.Errorf(\"error preparing query UpdateSession: %w\", err)\n\t}\n\treturn &q, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Close_90": {
+      "name": "Close",
+      "type": "method",
+      "start_line": 90,
+      "end_line": 194,
+      "content_hash": "c56c90fc3593d9aabf22fd735002df6750d363ea",
+      "content": "func (q *Queries) Close() error {\n\tvar err error\n\tif q.createFileStmt != nil {\n\t\tif cerr := q.createFileStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing createFileStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.createMessageStmt != nil {\n\t\tif cerr := q.createMessageStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing createMessageStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.createSessionStmt != nil {\n\t\tif cerr := q.createSessionStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing createSessionStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.deleteFileStmt != nil {\n\t\tif cerr := q.deleteFileStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing deleteFileStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.deleteMessageStmt != nil {\n\t\tif cerr := q.deleteMessageStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing deleteMessageStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.deleteSessionStmt != nil {\n\t\tif cerr := q.deleteSessionStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing deleteSessionStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.deleteSessionFilesStmt != nil {\n\t\tif cerr := q.deleteSessionFilesStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing deleteSessionFilesStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.deleteSessionMessagesStmt != nil {\n\t\tif cerr := q.deleteSessionMessagesStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing deleteSessionMessagesStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.getFileStmt != nil {\n\t\tif cerr := q.getFileStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing getFileStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.getFileByPathAndSessionStmt != nil {\n\t\tif cerr := q.getFileByPathAndSessionStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing getFileByPathAndSessionStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.getMessageStmt != nil {\n\t\tif cerr := q.getMessageStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing getMessageStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.getSessionByIDStmt != nil {\n\t\tif cerr := q.getSessionByIDStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing getSessionByIDStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.listFilesByPathStmt != nil {\n\t\tif cerr := q.listFilesByPathStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing listFilesByPathStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.listFilesBySessionStmt != nil {\n\t\tif cerr := q.listFilesBySessionStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing listFilesBySessionStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.listLatestSessionFilesStmt != nil {\n\t\tif cerr := q.listLatestSessionFilesStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing listLatestSessionFilesStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.listMessagesBySessionStmt != nil {\n\t\tif cerr := q.listMessagesBySessionStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing listMessagesBySessionStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.listNewFilesStmt != nil {\n\t\tif cerr := q.listNewFilesStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing listNewFilesStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.listSessionsStmt != nil {\n\t\tif cerr := q.listSessionsStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing listSessionsStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.updateMessageStmt != nil {\n\t\tif cerr := q.updateMessageStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing updateMessageStmt: %w\", cerr)\n\t\t}\n\t}\n\tif q.updateSessionStmt != nil {\n\t\tif cerr := q.updateSessionStmt.Close(); cerr != nil {\n\t\t\terr = fmt.Errorf(\"error closing updateSessionStmt: %w\", cerr)\n\t\t}\n\t}\n\treturn err\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_exec_195": {
+      "name": "exec",
+      "type": "method",
+      "start_line": 195,
+      "end_line": 205,
+      "content_hash": "2f6a3a0eed1fa81e44a1ba04955c1e996d97a748",
+      "content": "func (q *Queries) exec(ctx context.Context, stmt *sql.Stmt, query string, args ...interface{}) (sql.Result, error) {\n\tswitch {\n\tcase stmt != nil && q.tx != nil:\n\t\treturn q.tx.StmtContext(ctx, stmt).ExecContext(ctx, args...)\n\tcase stmt != nil:\n\t\treturn stmt.ExecContext(ctx, args...)\n\tdefault:\n\t\treturn q.db.ExecContext(ctx, query, args...)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_query_206": {
+      "name": "query",
+      "type": "method",
+      "start_line": 206,
+      "end_line": 216,
+      "content_hash": "cf772a3486001b17e31330b70fffb90c96a42f32",
+      "content": "func (q *Queries) query(ctx context.Context, stmt *sql.Stmt, query string, args ...interface{}) (*sql.Rows, error) {\n\tswitch {\n\tcase stmt != nil && q.tx != nil:\n\t\treturn q.tx.StmtContext(ctx, stmt).QueryContext(ctx, args...)\n\tcase stmt != nil:\n\t\treturn stmt.QueryContext(ctx, args...)\n\tdefault:\n\t\treturn q.db.QueryContext(ctx, query, args...)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_queryRow_217": {
+      "name": "queryRow",
+      "type": "method",
+      "start_line": 217,
+      "end_line": 227,
+      "content_hash": "4d1dea4ab877043c6026d6be1d744d05ed187bca",
+      "content": "func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, args ...interface{}) *sql.Row {\n\tswitch {\n\tcase stmt != nil && q.tx != nil:\n\t\treturn q.tx.StmtContext(ctx, stmt).QueryRowContext(ctx, args...)\n\tcase stmt != nil:\n\t\treturn stmt.QueryRowContext(ctx, args...)\n\tdefault:\n\t\treturn q.db.QueryRowContext(ctx, query, args...)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Queries_228": {
+      "name": "Queries",
+      "type": "struct",
+      "start_line": 228,
+      "end_line": 252,
+      "content_hash": "d53940ba43fa59c65d4981200cd460be1348404c",
+      "content": "type Queries struct {\n\tdb                          DBTX\n\ttx                          *sql.Tx\n\tcreateFileStmt              *sql.Stmt\n\tcreateMessageStmt           *sql.Stmt\n\tcreateSessionStmt           *sql.Stmt\n\tdeleteFileStmt              *sql.Stmt\n\tdeleteMessageStmt           *sql.Stmt\n\tdeleteSessionStmt           *sql.Stmt\n\tdeleteSessionFilesStmt      *sql.Stmt\n\tdeleteSessionMessagesStmt   *sql.Stmt\n\tgetFileStmt                 *sql.Stmt\n\tgetFileByPathAndSessionStmt *sql.Stmt\n\tgetMessageStmt              *sql.Stmt\n\tgetSessionByIDStmt          *sql.Stmt\n\tlistFilesByPathStmt         *sql.Stmt\n\tlistFilesBySessionStmt      *sql.Stmt\n\tlistLatestSessionFilesStmt  *sql.Stmt\n\tlistMessagesBySessionStmt   *sql.Stmt\n\tlistNewFilesStmt            *sql.Stmt\n\tlistSessionsStmt            *sql.Stmt\n\tupdateMessageStmt           *sql.Stmt\n\tupdateSessionStmt           *sql.Stmt\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithTx_253": {
+      "name": "WithTx",
+      "type": "method",
+      "start_line": 253,
+      "end_line": 278,
+      "content_hash": "dd9bd3afc8ee3f21c2271200296bf2b92e40a10d",
+      "content": "func (q *Queries) WithTx(tx *sql.Tx) *Queries {\n\treturn &Queries{\n\t\tdb:                          tx,\n\t\ttx:                          tx,\n\t\tcreateFileStmt:              q.createFileStmt,\n\t\tcreateMessageStmt:           q.createMessageStmt,\n\t\tcreateSessionStmt:           q.createSessionStmt,\n\t\tdeleteFileStmt:              q.deleteFileStmt,\n\t\tdeleteMessageStmt:           q.deleteMessageStmt,\n\t\tdeleteSessionStmt:           q.deleteSessionStmt,\n\t\tdeleteSessionFilesStmt:      q.deleteSessionFilesStmt,\n\t\tdeleteSessionMessagesStmt:   q.deleteSessionMessagesStmt,\n\t\tgetFileStmt:                 q.getFileStmt,\n\t\tgetFileByPathAndSessionStmt: q.getFileByPathAndSessionStmt,\n\t\tgetMessageStmt:              q.getMessageStmt,\n\t\tgetSessionByIDStmt:          q.getSessionByIDStmt,\n\t\tlistFilesByPathStmt:         q.listFilesByPathStmt,\n\t\tlistFilesBySessionStmt:      q.listFilesBySessionStmt,\n\t\tlistLatestSessionFilesStmt:  q.listLatestSessionFilesStmt,\n\t\tlistMessagesBySessionStmt:   q.listMessagesBySessionStmt,\n\t\tlistNewFilesStmt:            q.listNewFilesStmt,\n\t\tlistSessionsStmt:            q.listSessionsStmt,\n\t\tupdateMessageStmt:           q.updateMessageStmt,\n\t\tupdateSessionStmt:           q.updateSessionStmt,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

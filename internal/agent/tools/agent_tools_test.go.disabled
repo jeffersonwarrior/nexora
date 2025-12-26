@@ -1,0 +1,517 @@
+package tools
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"testing"
+	"time"
+
+	"charm.land/fantasy"
+	"github.com/nexora/nexora/internal/agent/delegation"
+	"github.com/nexora/nexora/internal/session"
+)
+
+// MockAgentCoordinator implements the AgentCoordinator interface for testing
+type MockAgentCoordinator struct {
+	sessions       map[string]session.Session
+	busySessions   map[string]bool
+	queuedPrompts  map[string]int
+	sessionService *MockSessionService
+	delegationMgr  *MockDelegationManager
+}
+
+func NewMockAgentCoordinator() *MockAgentCoordinator {
+	mockSessions := make(map[string]session.Session)
+	sessionService := &MockSessionService{sessions: mockSessions}
+
+	return &MockAgentCoordinator{
+		sessions:       mockSessions,
+		busySessions:   make(map[string]bool),
+		queuedPrompts:  make(map[string]int),
+		sessionService: sessionService,
+		delegationMgr:  &MockDelegationManager{},
+	}
+}
+
+func (m *MockAgentCoordinator) GetSessionService() SessionService {
+	return m.sessionService
+}
+
+func (m *MockAgentCoordinator) IsSessionBusy(sessionID string) bool {
+	return m.busySessions[sessionID]
+}
+
+func (m *MockAgentCoordinator) QueuedPrompts(sessionID string) int {
+	return m.queuedPrompts[sessionID]
+}
+
+func (m *MockAgentCoordinator) BusyCount() int {
+	count := 0
+	for _, busy := range m.busySessions {
+		if busy {
+			count++
+		}
+	}
+	return count
+}
+
+func (m *MockAgentCoordinator) TotalQueued() int {
+	total := 0
+	for _, count := range m.queuedPrompts {
+		total += count
+	}
+	return total
+}
+
+func (m *MockAgentCoordinator) RunForTool(ctx context.Context, sessionID string, prompt string) (AgentResult, error) {
+	return &MockAgentResult{
+		response:   "Mock response for: " + prompt,
+		toolOutput: "Mock tool output",
+		cost:       0.001,
+		tokens:     100,
+	}, nil
+}
+
+func (m *MockAgentCoordinator) Cancel(sessionID string) {
+	delete(m.busySessions, sessionID)
+}
+
+func (m *MockAgentCoordinator) GetDelegationManager() DelegationManager {
+	return m.delegationMgr
+}
+
+// MockSessionService implements SessionService for testing
+type MockSessionService struct {
+	sessions map[string]session.Session
+}
+
+func (m *MockSessionService) List(ctx context.Context) ([]session.Session, error) {
+	sessions := make([]session.Session, 0, len(m.sessions))
+	for _, s := range m.sessions {
+		sessions = append(sessions, s)
+	}
+	return sessions, nil
+}
+
+func (m *MockSessionService) Get(ctx context.Context, id string) (session.Session, error) {
+	s, exists := m.sessions[id]
+	if !exists {
+		return session.Session{}, errors.New("session not found")
+	}
+	return s, nil
+}
+
+// MockAgentResult implements AgentResult for testing
+type MockAgentResult struct {
+	response   string
+	toolOutput string
+	cost       float64
+	tokens     int64
+}
+
+func (m *MockAgentResult) GetResponse() string {
+	return m.response
+}
+
+func (m *MockAgentResult) GetToolOutput() string {
+	return m.toolOutput
+}
+
+func (m *MockAgentResult) GetCost() float64 {
+	return m.cost
+}
+
+func (m *MockAgentResult) GetTokens() int64 {
+	return m.tokens
+}
+
+func (m *MockAgentResult) IsNil() bool {
+	return false
+}
+
+// MockDelegationManager implements DelegationManager for testing
+type MockDelegationManager struct {
+	nodes map[string]*delegation.SessionNode
+}
+
+func (m *MockDelegationManager) GetActiveAgents() []*delegation.SessionNode {
+	if m.nodes == nil {
+		return nil
+	}
+	nodes := make([]*delegation.SessionNode, 0, len(m.nodes))
+	for _, n := range m.nodes {
+		nodes = append(nodes, n)
+	}
+	return nodes
+}
+
+func (m *MockDelegationManager) GetStatus(ctx context.Context, sessionID string) (*delegation.SessionNode, error) {
+	if m.nodes == nil {
+		return nil, nil
+	}
+	node, exists := m.nodes[sessionID]
+	if !exists {
+		return nil, nil
+	}
+	return node, nil
+}
+
+func (m *MockDelegationManager) CancelAgent(ctx context.Context, sessionID string) error {
+	if m.nodes != nil {
+		delete(m.nodes, sessionID)
+	}
+	return nil
+}
+
+func (m *MockDelegationManager) GetAgentTree() DelegationTree {
+	return nil
+}
+
+// Test AgentList Tool
+func TestNewAgentListTool(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentListTool(coordinator)
+
+	if tool == nil {
+		t.Fatal("Expected non-nil tool")
+	}
+
+	info := tool.Info()
+	if info.Name != AgentListToolName {
+		t.Errorf("Expected tool name %s, got %s", AgentListToolName, info.Name)
+	}
+
+	if info.Description == "" {
+		t.Error("Expected non-empty description")
+	}
+}
+
+func TestAgentListTool_EmptySessions(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentListTool(coordinator)
+
+	ctx := context.Background()
+	params := AgentListParams{}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentListToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if resp.IsError {
+		t.Errorf("Expected no error, got: %s", resp.Content)
+	}
+
+	var listResp AgentListResponse
+	if err := json.Unmarshal([]byte(resp.Content), &listResp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if len(listResp.Sessions) != 0 {
+		t.Errorf("Expected 0 sessions, got %d", len(listResp.Sessions))
+	}
+
+	if listResp.Status.TotalSessions != 0 {
+		t.Errorf("Expected 0 total sessions, got %d", listResp.Status.TotalSessions)
+	}
+}
+
+func TestAgentListTool_WithSessions(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+
+	// Add test sessions
+	now := time.Now().Unix()
+	coordinator.sessions["session-1"] = session.Session{
+		ID:           "session-1",
+		MessageCount: 10,
+		Cost:         0.05,
+		CreatedAt:    now,
+	}
+	coordinator.sessions["session-2"] = session.Session{
+		ID:           "session-2",
+		MessageCount: 5,
+		Cost:         0.02,
+		CreatedAt:    now,
+	}
+	coordinator.busySessions["session-1"] = true
+	coordinator.queuedPrompts["session-2"] = 3
+
+	tool := NewAgentListTool(coordinator)
+	ctx := context.Background()
+	params := AgentListParams{}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentListToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	var listResp AgentListResponse
+	if err := json.Unmarshal([]byte(resp.Content), &listResp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if len(listResp.Sessions) != 2 {
+		t.Errorf("Expected 2 sessions, got %d", len(listResp.Sessions))
+	}
+
+	if listResp.Status.BusySessions != 1 {
+		t.Errorf("Expected 1 busy session, got %d", listResp.Status.BusySessions)
+	}
+
+	if listResp.Status.TotalQueued != 3 {
+		t.Errorf("Expected 3 total queued, got %d", listResp.Status.TotalQueued)
+	}
+}
+
+// Test AgentRun Tool
+func TestNewAgentRunTool(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentRunTool(coordinator)
+
+	if tool == nil {
+		t.Fatal("Expected non-nil tool")
+	}
+
+	info := tool.Info()
+	if info.Name != AgentRunToolName {
+		t.Errorf("Expected tool name %s, got %s", AgentRunToolName, info.Name)
+	}
+}
+
+func TestAgentRunTool_NoPrompt(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentRunTool(coordinator)
+
+	ctx := context.Background()
+	params := AgentRunParams{Prompt: ""}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentRunToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if !resp.IsError {
+		t.Error("Expected error for empty prompt")
+	}
+}
+
+func TestAgentRunTool_Success(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	coordinator.sessions["session-1"] = session.Session{
+		ID:        "session-1",
+		CreatedAt: time.Now().Unix(),
+	}
+
+	tool := NewAgentRunTool(coordinator)
+	ctx := context.Background()
+	params := AgentRunParams{Prompt: "test prompt"}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentRunToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if resp.IsError {
+		t.Errorf("Expected no error, got: %s", resp.Content)
+	}
+
+	var runResp AgentRunResponse
+	if err := json.Unmarshal([]byte(resp.Content), &runResp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if runResp.SessionID != "session-1" {
+		t.Errorf("Expected session-1, got %s", runResp.SessionID)
+	}
+
+	if runResp.Response == "" {
+		t.Error("Expected non-empty response")
+	}
+}
+
+// Test AgentStatus Tool
+func TestNewAgentStatusTool(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentStatusTool(coordinator)
+
+	if tool == nil {
+		t.Fatal("Expected non-nil tool")
+	}
+
+	info := tool.Info()
+	if info.Name != AgentStatusToolName {
+		t.Errorf("Expected tool name %s, got %s", AgentStatusToolName, info.Name)
+	}
+}
+
+func TestAgentStatusTool_AllSessions(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	coordinator.sessions["session-1"] = session.Session{
+		ID:           "session-1",
+		MessageCount: 10,
+		Cost:         0.05,
+		CreatedAt:    time.Now().Unix(),
+	}
+	coordinator.busySessions["session-1"] = true
+
+	tool := NewAgentStatusTool(coordinator)
+	ctx := context.Background()
+	params := AgentStatusParams{}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentStatusToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	var statusResp AgentStatusResponse
+	if err := json.Unmarshal([]byte(resp.Content), &statusResp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if len(statusResp.Sessions) != 1 {
+		t.Errorf("Expected 1 session, got %d", len(statusResp.Sessions))
+	}
+
+	if statusResp.Sessions[0].Status != "busy" {
+		t.Errorf("Expected busy status, got %s", statusResp.Sessions[0].Status)
+	}
+}
+
+// Test Agents Tool
+func TestNewAgentsTool(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentsTool(coordinator)
+
+	if tool == nil {
+		t.Fatal("Expected non-nil tool")
+	}
+
+	info := tool.Info()
+	if info.Name != AgentsToolName {
+		t.Errorf("Expected tool name %s, got %s", AgentsToolName, info.Name)
+	}
+}
+
+func TestAgentsTool_ListAction(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentsTool(coordinator)
+
+	ctx := context.Background()
+	params := AgentsParams{Action: "list"}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentsToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if resp.IsError {
+		t.Errorf("Expected no error, got: %s", resp.Content)
+	}
+
+	var agentsResp AgentsResponse
+	if err := json.Unmarshal([]byte(resp.Content), &agentsResp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if agentsResp.Action != "list" {
+		t.Errorf("Expected action 'list', got %s", agentsResp.Action)
+	}
+}
+
+func TestAgentsTool_InvalidAction(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	tool := NewAgentsTool(coordinator)
+
+	ctx := context.Background()
+	params := AgentsParams{Action: "invalid"}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentsToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if !resp.IsError {
+		t.Error("Expected error for invalid action")
+	}
+}
+
+func TestAgentsTool_StopAction(t *testing.T) {
+	coordinator := NewMockAgentCoordinator()
+	coordinator.sessions["session-1"] = session.Session{
+		ID:        "session-1",
+		CreatedAt: time.Now().Unix(),
+	}
+	coordinator.busySessions["session-1"] = true
+
+	tool := NewAgentsTool(coordinator)
+	ctx := context.Background()
+	params := AgentsParams{Action: "stop", SessionID: "session-1"}
+	paramsJSON, _ := json.Marshal(params)
+	call := fantasy.ToolCall{
+		ID:    "test-call",
+		Name:  AgentsToolName,
+		Input: string(paramsJSON),
+	}
+
+	resp, err := tool.Run(ctx, call)
+	if err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	if resp.IsError {
+		t.Errorf("Expected no error, got: %s", resp.Content)
+	}
+
+	// Verify the response contains success message
+	var agentsResp AgentsResponse
+	if err := json.Unmarshal([]byte(resp.Content), &agentsResp); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if agentsResp.Action != "stop" {
+		t.Errorf("Expected action 'stop', got %s", agentsResp.Action)
+	}
+}

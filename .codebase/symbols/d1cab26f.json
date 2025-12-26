@@ -1,0 +1,227 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/cli/orchestrator.go",
+  "file_hash": "dba5563d6d46a6064e5290efff7ffe84298eced4",
+  "updated_at": "2025-12-26T17:34:25.092806",
+  "symbols": {
+    "struct_Orchestrator_20": {
+      "name": "Orchestrator",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 34,
+      "content_hash": "b81aa7e72005b9697c1e72449b42be4705da1d1c",
+      "content": "type Orchestrator struct {\n\tstorage      *storage.Storage\n\tconfig       *Config\n\tagents       map[string]*Agent\n\tteams        map[string]*Team\n\ttasks        map[string]*Task\n\thandlers     map[string]CommandHandler\n\tmu           sync.RWMutex\n\tctx          context.Context\n\tcancel       context.CancelFunc\n\tshutdownChan chan os.Signal\n\trunning      bool\n}\n\n// Config holds CLI configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Config_35": {
+      "name": "Config",
+      "type": "struct",
+      "start_line": 35,
+      "end_line": 43,
+      "content_hash": "264877e6a9039863cc8f787c12f2c17f3104ecc0",
+      "content": "type Config struct {\n\tDatabasePath   string        `json:\"database_path\"`\n\tLogLevel       string        `json:\"log_level\"`\n\tDataRetention  time.Duration `json:\"data_retention\"`\n\tMaxConcurrency int           `json:\"max_concurrency\"`\n\tStartupAction  string        `json:\"startup_action\"`\n}\n\n// Agent represents a managed agent in the CLI",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Agent_44": {
+      "name": "Agent",
+      "type": "struct",
+      "start_line": 44,
+      "end_line": 55,
+      "content_hash": "57e476e351a6dc5d149cf41c20f82f2d2704adce",
+      "content": "type Agent struct {\n\tID           string                 `json:\"id\"`\n\tName         string                 `json:\"name\"`\n\tType         string                 `json:\"type\"`\n\tCapabilities []string               `json:\"capabilities\"`\n\tConfig       map[string]interface{} `json:\"config\"`\n\tStatus       string                 `json:\"status\"`\n\tLastSeen     time.Time              `json:\"last_seen\"`\n\tProcessID    int                    `json:\"process_id,omitempty\"`\n}\n\n// Team represents a team of agents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Team_56": {
+      "name": "Team",
+      "type": "struct",
+      "start_line": 56,
+      "end_line": 65,
+      "content_hash": "24f6269d4a3ddf16e9c13e868e5478803a55e9c4",
+      "content": "type Team struct {\n\tID          string                 `json:\"id\"`\n\tName        string                 `json:\"name\"`\n\tDescription string                 `json:\"description\"`\n\tAgents      []string               `json:\"agents\"`\n\tConfig      map[string]interface{} `json:\"config\"`\n\tMetadata    map[string]interface{} `json:\"metadata\"`\n}\n\n// Task represents a managed task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Task_66": {
+      "name": "Task",
+      "type": "struct",
+      "start_line": 66,
+      "end_line": 80,
+      "content_hash": "cd9e896c8be89433661c8f3a24540cbd158ca7b1",
+      "content": "type Task struct {\n\tID          string                 `json:\"id\"`\n\tType        string                 `json:\"type\"`\n\tStatus      string                 `json:\"status\"`\n\tAgentID     string                 `json:\"agent_id\"`\n\tTeamID      string                 `json:\"team_id,omitempty\"`\n\tInput       string                 `json:\"input\"`\n\tOutput      string                 `json:\"output\"`\n\tMetadata    map[string]interface{} `json:\"metadata\"`\n\tCreatedAt   time.Time              `json:\"created_at\"`\n\tStartedAt   time.Time              `json:\"started_at,omitempty\"`\n\tCompletedAt time.Time              `json:\"completed_at,omitempty\"`\n}\n\n// CommandHandler handles CLI commands",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_CommandHandler_81": {
+      "name": "CommandHandler",
+      "type": "interface",
+      "start_line": 81,
+      "end_line": 87,
+      "content_hash": "bd826af26e8201aeb85bc939088aed7989476eb6",
+      "content": "type CommandHandler interface {\n\tHandle(ctx context.Context, args []string) error\n\tName() string\n\tDescription() string\n}\n\n// NewOrchestrator creates a new CLI orchestrator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewOrchestrator_88": {
+      "name": "NewOrchestrator",
+      "type": "function",
+      "start_line": 88,
+      "end_line": 125,
+      "content_hash": "3524854805fcf32708ecffa556dd7eae9af7d455",
+      "content": "func NewOrchestrator(config *Config) (*Orchestrator, error) {\n\tif config == nil {\n\t\tconfig = DefaultConfig()\n\t}\n\n\t// Initialize AgentDB which includes schema creation\n\tagentDB, err := storage.NewAgentDB(config.DatabasePath)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to initialize database: %w\", err)\n\t}\n\n\t// Initialize storage\n\tstorage := storage.NewStorage(agentDB.GetDB(), config.DataRetention)\n\n\tctx, cancel := context.WithCancel(context.Background())\n\n\torchestrator := &Orchestrator{\n\t\tstorage:      storage,\n\t\tconfig:       config,\n\t\tagents:       make(map[string]*Agent),\n\t\tteams:        make(map[string]*Team),\n\t\ttasks:        make(map[string]*Task),\n\t\thandlers:     make(map[string]CommandHandler),\n\t\tctx:          ctx,\n\t\tcancel:       cancel,\n\t\tshutdownChan: make(chan os.Signal, 1),\n\t}\n\n\t// Register signal handlers\n\tsignal.Notify(orchestrator.shutdownChan, syscall.SIGINT, syscall.SIGTERM)\n\n\t// Initialize default handlers\n\torchestrator.registerDefaultHandlers()\n\n\treturn orchestrator, nil\n}\n\n// DefaultConfig returns default CLI configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultConfig_126": {
+      "name": "DefaultConfig",
+      "type": "function",
+      "start_line": 126,
+      "end_line": 137,
+      "content_hash": "b5b913abc87b92d3cd75e8f3e52a804536d1c7df",
+      "content": "func DefaultConfig() *Config {\n\thomeDir, _ := os.UserHomeDir()\n\treturn &Config{\n\t\tDatabasePath:   filepath.Join(homeDir, \".modelscan\", \"modelscan.db\"),\n\t\tLogLevel:       \"info\",\n\t\tDataRetention:  24 * time.Hour * 7, // 7 days\n\t\tMaxConcurrency: 10,\n\t\tStartupAction:  \"zero-state\",\n\t}\n}\n\n// Start starts the orchestrator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Start_138": {
+      "name": "Start",
+      "type": "method",
+      "start_line": 138,
+      "end_line": 185,
+      "content_hash": "5d1fac9f288c6930f5b176ceda1421a234a94135",
+      "content": "func (o *Orchestrator) Start() error {\n\to.mu.Lock()\n\tdefer o.mu.Unlock()\n\n\tif o.running {\n\t\treturn fmt.Errorf(\"orchestrator already running\")\n\t}\n\n\tlog.Printf(\"Starting ModelScan CLI Orchestrator\")\n\tlog.Printf(\"Database: %s\", o.config.DatabasePath)\n\tlog.Printf(\"Log Level: %s\", o.config.LogLevel)\n\tlog.Printf(\"Data Retention: %v\", o.config.DataRetention)\n\n\t// Perform health check\n\tif err := o.storage.PerformHealthCheck(o.ctx); err != nil {\n\t\treturn fmt.Errorf(\"storage health check failed: %w\", err)\n\t}\n\n\t// Initialize zero state\n\tif err := o.zeroStateStartup(); err != nil {\n\t\treturn fmt.Errorf(\"zero state initialization failed: %w\", err)\n\t}\n\n\t// Load existing agents\n\tif err := o.loadAgents(); err != nil {\n\t\treturn fmt.Errorf(\"failed to load agents: %w\", err)\n\t}\n\n\t// Load existing teams\n\tif err := o.loadTeams(); err != nil {\n\t\treturn fmt.Errorf(\"failed to load teams: %w\", err)\n\t}\n\n\t// Load existing tasks\n\tif err := o.loadTasks(); err != nil {\n\t\treturn fmt.Errorf(\"failed to load tasks: %w\", err)\n\t}\n\n\t// Start cleanup routine\n\tgo o.cleanupRoutine()\n\n\to.running = true\n\tlog.Printf(\"ModelScan CLI Orchestrator started successfully\")\n\n\treturn nil\n}\n\n// Stop stops the orchestrator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Stop_186": {
+      "name": "Stop",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 215,
+      "content_hash": "8c46852a269c901d775f81660690a0ee88a3f9ac",
+      "content": "func (o *Orchestrator) Stop() error {\n\to.mu.Lock()\n\tdefer o.mu.Unlock()\n\n\tif !o.running {\n\t\treturn nil\n\t}\n\n\tlog.Printf(\"Stopping ModelScan CLI Orchestrator\")\n\n\t// Cancel context\n\to.cancel()\n\n\t// Cancel all pending tasks\n\tif err := o.storage.CancelAllPendingTasks(o.ctx); err != nil {\n\t\tlog.Printf(\"Warning: failed to cancel pending tasks: %v\", err)\n\t}\n\n\t// Close storage\n\tif err := o.storage.Close(); err != nil {\n\t\tlog.Printf(\"Warning: failed to close storage: %v\", err)\n\t}\n\n\to.running = false\n\tlog.Printf(\"ModelScan CLI Orchestrator stopped\")\n\n\treturn nil\n}\n\n// zeroStateStartup performs zero-state initialization",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_zeroStateStartup_216": {
+      "name": "zeroStateStartup",
+      "type": "method",
+      "start_line": 216,
+      "end_line": 234,
+      "content_hash": "e3723e4b2ea653bb8f5646f9e55c6557af2f4e6d",
+      "content": "func (o *Orchestrator) zeroStateStartup() error {\n\tlog.Printf(\"Performing zero-state initialization\")\n\n\t// Initialize database zero state\n\tif err := o.storage.InitializeZeroState(o.ctx); err != nil {\n\t\treturn fmt.Errorf(\"failed to initialize zero state: %w\", err)\n\t}\n\n\t// Clear in-memory agents\n\to.agents = make(map[string]*Agent)\n\to.teams = make(map[string]*Team)\n\to.tasks = make(map[string]*Task)\n\n\tlog.Printf(\"Zero-state initialization completed\")\n\n\treturn nil\n}\n\n// loadAgents loads agents from storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadAgents_235": {
+      "name": "loadAgents",
+      "type": "method",
+      "start_line": 235,
+      "end_line": 271,
+      "content_hash": "9bde7530407962128756c045c179131504965de3",
+      "content": "func (o *Orchestrator) loadAgents() error {\n\tdbAgents, err := o.storage.Agents.ListActive(o.ctx, 1000, 0)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to list agents: %w\", err)\n\t}\n\n\tfor _, dbAgent := range dbAgents {\n\t\tagent := &Agent{\n\t\t\tID:           dbAgent.ID,\n\t\t\tName:         dbAgent.Name,\n\t\t\tType:         \"\", // Will be derived from config\n\t\t\tCapabilities: dbAgent.Capabilities,\n\t\t\tConfig:       make(map[string]interface{}),\n\t\t\tStatus:       dbAgent.Status,\n\t\t\tLastSeen:     dbAgent.UpdatedAt,\n\t\t}\n\n\t\t// Parse config JSON\n\t\tif len(dbAgent.Config) > 0 {\n\t\t\tif err := json.Unmarshal([]byte(dbAgent.Config), &agent.Config); err != nil {\n\t\t\t\tlog.Printf(\"Warning: failed to parse agent config for %s: %v\", dbAgent.ID, err)\n\t\t\t} else {\n\t\t\t\t// Extract agent type from config\n\t\t\t\tif agentType, ok := agent.Config[\"type\"].(string); ok {\n\t\t\t\t\tagent.Type = agentType\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\to.agents[agent.ID] = agent\n\t}\n\n\tlog.Printf(\"Loaded %d agents from storage\", len(o.agents))\n\treturn nil\n}\n\n// loadTeams loads teams from storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadTeams_272": {
+      "name": "loadTeams",
+      "type": "method",
+      "start_line": 272,
+      "end_line": 312,
+      "content_hash": "6d957c9c90b25d3aa1d6c4dd6d46903f943a4765",
+      "content": "func (o *Orchestrator) loadTeams() error {\n\tdbTeams, err := o.storage.Teams.List(o.ctx, 1000, 0)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to list teams: %w\", err)\n\t}\n\n\tfor _, dbTeam := range dbTeams {\n\t\tteam := &Team{\n\t\t\tID:          dbTeam.ID,\n\t\t\tName:        dbTeam.Name,\n\t\t\tDescription: dbTeam.Description,\n\t\t\tAgents:      []string{},\n\t\t\tConfig:      make(map[string]interface{}),\n\t\t\tMetadata:    dbTeam.Metadata,\n\t\t}\n\n\t\t// Parse config JSON\n\t\tif len(dbTeam.Config) > 0 {\n\t\t\tif err := json.Unmarshal([]byte(dbTeam.Config), &team.Config); err != nil {\n\t\t\t\tlog.Printf(\"Warning: failed to parse team config for %s: %v\", dbTeam.ID, err)\n\t\t\t}\n\t\t}\n\n\t\t// Load team members\n\t\tmembers, err := o.storage.Teams.GetMembers(o.ctx, dbTeam.ID)\n\t\tif err != nil {\n\t\t\tlog.Printf(\"Warning: failed to load team members for %s: %v\", dbTeam.ID, err)\n\t\t} else {\n\t\t\tfor _, member := range members {\n\t\t\t\tteam.Agents = append(team.Agents, member.AgentID)\n\t\t\t}\n\t\t}\n\n\t\to.teams[team.ID] = team\n\t}\n\n\tlog.Printf(\"Loaded %d teams from storage\", len(o.teams))\n\treturn nil\n}\n\n// loadTasks loads tasks from storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadTasks_313": {
+      "name": "loadTasks",
+      "type": "method",
+      "start_line": 313,
+      "end_line": 358,
+      "content_hash": "e7a0adce707c9c84c682d0ee02560e7a29b28800",
+      "content": "func (o *Orchestrator) loadTasks() error {\n\t// Load only active tasks\n\tdbTasks, err := o.storage.Tasks.ListByStatus(o.ctx, \"pending\", 1000, 0)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to list pending tasks: %w\", err)\n\t}\n\n\trunningTasks, err := o.storage.Tasks.ListByStatus(o.ctx, \"running\", 1000, 0)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to list running tasks: %w\", err)\n\t}\n\n\tallTasks := append(dbTasks, runningTasks...)\n\n\tfor _, dbTask := range allTasks {\n\t\ttask := &Task{\n\t\t\tID:        dbTask.ID,\n\t\t\tType:      dbTask.Type,\n\t\t\tStatus:    dbTask.Status,\n\t\t\tAgentID:   dbTask.AgentID,\n\t\t\tInput:     dbTask.Input,\n\t\t\tOutput:    dbTask.Output,\n\t\t\tMetadata:  dbTask.Metadata,\n\t\t\tCreatedAt: dbTask.CreatedAt,\n\t\t}\n\n\t\tif dbTask.TeamID != nil {\n\t\t\ttask.TeamID = *dbTask.TeamID\n\t\t}\n\n\t\tif dbTask.StartedAt != nil {\n\t\t\ttask.StartedAt = *dbTask.StartedAt\n\t\t}\n\n\t\tif dbTask.CompletedAt != nil {\n\t\t\ttask.CompletedAt = *dbTask.CompletedAt\n\t\t}\n\n\t\to.tasks[task.ID] = task\n\t}\n\n\tlog.Printf(\"Loaded %d active tasks from storage\", len(o.tasks))\n\treturn nil\n}\n\n// cleanupRoutine performs periodic cleanup",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_cleanupRoutine_359": {
+      "name": "cleanupRoutine",
+      "type": "method",
+      "start_line": 359,
+      "end_line": 373,
+      "content_hash": "17357336ef7d0ad2178e5b37c45fabac6477f2da",
+      "content": "func (o *Orchestrator) cleanupRoutine() {\n\tticker := time.NewTicker(time.Hour)\n\tdefer ticker.Stop()\n\n\tselect {\n\tcase <-o.ctx.Done():\n\t\treturn\n\tcase <-ticker.C:\n\t\tif err := o.storage.CleanupOldData(o.ctx); err != nil {\n\t\t\tlog.Printf(\"Warning: cleanup failed: %v\", err)\n\t\t}\n\t}\n}\n\n// WaitForShutdown waits for shutdown signal",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WaitForShutdown_374": {
+      "name": "WaitForShutdown",
+      "type": "method",
+      "start_line": 374,
+      "end_line": 380,
+      "content_hash": "5ff6452b9a052e91776faca6d31bac2102046ce4",
+      "content": "func (o *Orchestrator) WaitForShutdown() {\n\t<-o.shutdownChan\n\tlog.Printf(\"Received shutdown signal\")\n\to.Stop()\n}\n\n// IsRunning returns true if the orchestrator is running",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsRunning_381": {
+      "name": "IsRunning",
+      "type": "method",
+      "start_line": 381,
+      "end_line": 387,
+      "content_hash": "916efddcfd6e365ea49b870ae018eb5afa8b68bc",
+      "content": "func (o *Orchestrator) IsRunning() bool {\n\to.mu.RLock()\n\tdefer o.mu.RUnlock()\n\treturn o.running\n}\n\n// GetStorage returns the storage instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetStorage_388": {
+      "name": "GetStorage",
+      "type": "method",
+      "start_line": 388,
+      "end_line": 392,
+      "content_hash": "3ad2b79befa3882e6c5320deff8a19d49375839f",
+      "content": "func (o *Orchestrator) GetStorage() *storage.Storage {\n\treturn o.storage\n}\n\n// GetConfig returns the configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetConfig_393": {
+      "name": "GetConfig",
+      "type": "method",
+      "start_line": 393,
+      "end_line": 397,
+      "content_hash": "73f0effde4521343025daf0dd6cd77cab71cd4d6",
+      "content": "func (o *Orchestrator) GetConfig() *Config {\n\treturn o.config\n}\n\n// registerDefaultHandlers registers default command handlers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_registerDefaultHandlers_398": {
+      "name": "registerDefaultHandlers",
+      "type": "method",
+      "start_line": 398,
+      "end_line": 400,
+      "content_hash": "fa4074cb6bf865865405dd0026bbe122ec6b3212",
+      "content": "func (o *Orchestrator) registerDefaultHandlers() {\n\t// Built-in handlers will be registered by the CLI commands\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

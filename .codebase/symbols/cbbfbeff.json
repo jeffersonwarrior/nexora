@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/sessionlog/postgres.go",
+  "file_hash": "b6c6603bd93ec2265b28006994cc73e31049e8e7",
+  "updated_at": "2025-12-26T17:34:23.153657",
+  "symbols": {
+    "struct_PostgreSQLLogger_14": {
+      "name": "PostgreSQLLogger",
+      "type": "struct",
+      "start_line": 14,
+      "end_line": 18,
+      "content_hash": "8f3d20448b11fe61daf6872dc6d267c8c18bb547",
+      "content": "type PostgreSQLLogger struct {\n\tdb *sql.DB\n}\n\n// NewPostgreSQLLogger creates a new PostgreSQL logger",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewPostgreSQLLogger_19": {
+      "name": "NewPostgreSQLLogger",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 38,
+      "content_hash": "38be2e50bb1ab1c0e3a821d0d219bb432d1c406c",
+      "content": "func NewPostgreSQLLogger(connStr string) (*PostgreSQLLogger, error) {\n\tdb, err := sql.Open(\"postgres\", connStr)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to open PostgreSQL connection: %w\", err)\n\t}\n\n\t// Test connection\n\tif err := db.Ping(); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to ping PostgreSQL: %w\", err)\n\t}\n\n\t// Set connection pool settings\n\tdb.SetMaxOpenConns(25)\n\tdb.SetMaxIdleConns(5)\n\tdb.SetConnMaxLifetime(5 * time.Minute)\n\n\treturn &PostgreSQLLogger{db: db}, nil\n}\n\n// SessionStart logs the start of a session",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SessionStart_39": {
+      "name": "SessionStart",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 50,
+      "content_hash": "d158e8162e01bd4b7ff761cb0123e4a0cf2d7e2b",
+      "content": "func (l *PostgreSQLLogger) SessionStart(ctx context.Context, sessionID, instanceID string, metadata map[string]interface{}) error {\n\tmetadataJSON, _ := json.Marshal(metadata)\n\n\tquery := `\n\t\tINSERT INTO nexora_sessions (session_id, instance_id, status, metadata)\n\t\tVALUES ($1, $2, $3, $4)\n\t`\n\t_, err := l.db.ExecContext(ctx, query, sessionID, instanceID, \"active\", metadataJSON)\n\treturn err\n}\n\n// SessionEnd logs the end of a session",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SessionEnd_51": {
+      "name": "SessionEnd",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 65,
+      "content_hash": "1bec58c66e733db46bfa5404d8a316bf5d62f13f",
+      "content": "func (l *PostgreSQLLogger) SessionEnd(ctx context.Context, sessionID string, status string, errorCount, toolCount int) error {\n\tquery := `\n\t\tUPDATE nexora_sessions\n\t\tSET ended_at = CURRENT_TIMESTAMP,\n\t\t    duration_seconds = EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at))::INTEGER,\n\t\t    status = $2,\n\t\t    error_count = $3,\n\t\t    tool_count = $4\n\t\tWHERE session_id = $1\n\t`\n\t_, err := l.db.ExecContext(ctx, query, sessionID, status, errorCount, toolCount)\n\treturn err\n}\n\n// EditOperation logs an edit operation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_EditOperation_66": {
+      "name": "EditOperation",
+      "type": "method",
+      "start_line": 66,
+      "end_line": 95,
+      "content_hash": "11ddb753b2d66159e3a7c90e860c7d1629527233",
+      "content": "func (l *PostgreSQLLogger) EditOperation(ctx context.Context, edit EditOperationLog) error {\n\tmetadataJSON, _ := json.Marshal(edit.Metadata)\n\n\tquery := `\n\t\tINSERT INTO nexora_edit_operations (\n\t\t\tsession_id, instance_id, file_path, status, failure_reason,\n\t\t\told_string_length, new_string_length, replacement_count, attempt_count,\n\t\t\tduration_ms, has_tabs, has_mixed_indent, file_line_endings, metadata\n\t\t) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n\t`\n\t_, err := l.db.ExecContext(ctx, query,\n\t\tedit.SessionID,\n\t\tedit.InstanceID,\n\t\tedit.FilePath,\n\t\tedit.Status,\n\t\tedit.FailureReason,\n\t\tedit.OldStringLength,\n\t\tedit.NewStringLength,\n\t\tedit.ReplacementCount,\n\t\tedit.AttemptCount,\n\t\tedit.DurationMS,\n\t\tedit.HasTabs,\n\t\tedit.HasMixedIndent,\n\t\tedit.FileLineEndings,\n\t\tmetadataJSON,\n\t)\n\treturn err\n}\n\n// ViewOperation logs a view operation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ViewOperation_96": {
+      "name": "ViewOperation",
+      "type": "method",
+      "start_line": 96,
+      "end_line": 121,
+      "content_hash": "87447409fa11c5777d08571aa293ec69278a17e3",
+      "content": "func (l *PostgreSQLLogger) ViewOperation(ctx context.Context, view ViewOperationLog) error {\n\tmetadataJSON, _ := json.Marshal(view.Metadata)\n\n\tquery := `\n\t\tINSERT INTO nexora_view_operations (\n\t\t\tsession_id, instance_id, file_path, offset_line, limit_lines,\n\t\t\tfile_size_bytes, total_lines, status, error_reason, duration_ms, metadata\n\t\t) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n\t`\n\t_, err := l.db.ExecContext(ctx, query,\n\t\tview.SessionID,\n\t\tview.InstanceID,\n\t\tview.FilePath,\n\t\tview.OffsetLine,\n\t\tview.LimitLines,\n\t\tview.FileSizeBytes,\n\t\tview.TotalLines,\n\t\tview.Status,\n\t\tview.ErrorReason,\n\t\tview.DurationMS,\n\t\tmetadataJSON,\n\t)\n\treturn err\n}\n\n// Close closes the database connection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Close_122": {
+      "name": "Close",
+      "type": "method",
+      "start_line": 122,
+      "end_line": 128,
+      "content_hash": "b0f626e0e79aded4241b0849ba775080eced8423",
+      "content": "func (l *PostgreSQLLogger) Close() error {\n\treturn l.db.Close()\n}\n\n// ===================== Types =====================\n\n// EditOperationLog represents an edit operation log entry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EditOperationLog_129": {
+      "name": "EditOperationLog",
+      "type": "struct",
+      "start_line": 129,
+      "end_line": 146,
+      "content_hash": "ad944bd7511e76e06d7205e71008ea51bbf4e498",
+      "content": "type EditOperationLog struct {\n\tSessionID        string\n\tInstanceID       string\n\tFilePath         string\n\tStatus           string // 'success', 'failure'\n\tFailureReason    string // 'whitespace', 'not_found', etc\n\tOldStringLength  int\n\tNewStringLength  int\n\tReplacementCount int\n\tAttemptCount     int\n\tDurationMS       float64\n\tHasTabs          bool\n\tHasMixedIndent   bool\n\tFileLineEndings  string // 'LF', 'CRLF', 'Mixed'\n\tMetadata         map[string]interface{}\n}\n\n// ViewOperationLog represents a view operation log entry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ViewOperationLog_147": {
+      "name": "ViewOperationLog",
+      "type": "struct",
+      "start_line": 147,
+      "end_line": 159,
+      "content_hash": "3e710eb207c7012365f5dd5d31bc6012c0eef0e4",
+      "content": "type ViewOperationLog struct {\n\tSessionID     string\n\tInstanceID    string\n\tFilePath      string\n\tOffsetLine    int\n\tLimitLines    int\n\tFileSizeBytes int64\n\tTotalLines    int\n\tStatus        string // 'success', 'error'\n\tErrorReason   string\n\tDurationMS    float64\n\tMetadata      map[string]interface{}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

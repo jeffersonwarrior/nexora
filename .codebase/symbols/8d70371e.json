@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_impl/memory.py",
+  "file_hash": "77027d638f320e1b8733a3e657c713b46c8f4cc3",
+  "updated_at": "2025-12-26T17:34:21.827494",
+  "symbols": {
+    "function__memory_store_impl_33": {
+      "name": "_memory_store_impl",
+      "type": "function",
+      "start_line": 33,
+      "end_line": 156,
+      "content_hash": "f23813659b95717ea44d8ca09615079cb3f19cef",
+      "content": "async def _memory_store_impl(\n    information: str,\n    metadata: Optional[Dict[str, Any]] = None,\n    collection: Optional[str] = None,\n    default_collection_fn=None,\n    get_embedding_model_fn=None,\n) -> Dict[str, Any]:\n    \"\"\"Store a free-form memory entry in Qdrant using the active collection.\n\n    - Embeds the text and writes both dense and lexical vectors (plus mini vector in ReFRAG mode).\n    - Honors explicit collection overrides; otherwise falls back to workspace/env defaults.\n    - Returns a payload compatible with context-aware tools.\n    \"\"\"\n    try:\n        from qdrant_client import QdrantClient, models  # type: ignore\n        from fastembed import TextEmbedding  # type: ignore\n        from scripts.utils import sanitize_vector_name\n        from scripts.ingest_code import ensure_collection as _ensure_collection  # type: ignore\n        from scripts.ingest_code import project_mini as _project_mini  # type: ignore\n\n    except Exception as e:  # pragma: no cover\n        return {\"error\": f\"deps: {e}\"}\n\n    if not information or not str(information).strip():\n        return {\"error\": \"information is required\"}\n\n    # Get default collection\n    if default_collection_fn:\n        coll = (collection or default_collection_fn()) or \"\"\n    else:\n        from scripts.mcp_impl.workspace import _default_collection\n        coll = (collection or _default_collection()) or \"\"\n\n    model_name = os.environ.get(\"EMBEDDING_MODEL\", \"BAAI/bge-base-en-v1.5\")\n    vector_name = sanitize_vector_name(model_name)\n\n    # Minimal lexical hashing (aligns with ingest_code defaults)\n    LEX_VECTOR_NAME = os.environ.get(\"LEX_VECTOR_NAME\", \"lex\")\n    LEX_VECTOR_DIM = int(os.environ.get(\"LEX_VECTOR_DIM\", \"4096\") or 4096)\n\n    def _split_ident_lex(s: str):\n        parts = re.split(r\"[^A-Za-z0-9]+\", s)\n        out: list[str] = []\n        for p in parts:\n            if not p:\n                continue\n            segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n            out.extend([x for x in segs if x])\n        return [x.lower() for x in out if x]\n\n    def _lex_hash_vector(text: str, dim: int = LEX_VECTOR_DIM) -> list[float]:\n        # Delegate to shared utility for consistency\n        try:\n            from scripts.utils import lex_hash_vector_text\n\n            return lex_hash_vector_text(text, dim)\n        except Exception:\n            # Fallback: minimal hashing\n            if not text:\n                return [0.0] * dim\n            vec = [0.0] * dim\n            toks = _split_ident_lex(text)\n            if not toks:\n                return vec\n            for t in toks:\n                h = int(\n                    hashlib.md5(t.encode(\"utf-8\", errors=\"ignore\")).hexdigest()[:8], 16\n                )\n                vec[h % dim] += 1.0\n            norm = (sum(v * v for v in vec) or 0.0) ** 0.5 or 1.0\n            return [v / norm for v in vec]\n\n    # Build vectors (cached embedding model)\n    if get_embedding_model_fn:\n        model = get_embedding_model_fn(model_name)\n    else:\n        from scripts.mcp_impl.admin_tools import _get_embedding_model\n        model = _get_embedding_model(model_name)\n\n    dense = next(model.embed([str(information)])).tolist()\n\n    lex = _lex_hash_vector(str(information))\n\n    # Upsert\n    try:\n        client = QdrantClient(\n            url=QDRANT_URL,\n            api_key=os.environ.get(\"QDRANT_API_KEY\"),\n            timeout=float(os.environ.get(\"QDRANT_TIMEOUT\", \"20\") or 20),\n        )\n        # Ensure collection and named vectors exist (dense + lexical)\n        try:\n            await asyncio.to_thread(\n                lambda: _ensure_collection(client, coll, len(dense), vector_name)\n            )\n        except Exception:\n            pass\n        pid = str(uuid.uuid4())\n        payload = {\n            \"information\": str(information),\n            \"metadata\": metadata or {\"kind\": \"memory\", \"source\": \"memory\"},\n        }\n        vecs = {vector_name: dense, LEX_VECTOR_NAME: lex}\n        try:\n            if str(os.environ.get(\"REFRAG_MODE\", \"\")).strip().lower() in {\n                \"1\",\n                \"true\",\n                \"yes\",\n                \"on\",\n            }:\n                mini_name = os.environ.get(\"MINI_VECTOR_NAME\", \"mini\")\n                mini = _project_mini(\n                    list(dense), int(os.environ.get(\"MINI_VEC_DIM\", \"64\") or 64)\n                )\n                vecs[mini_name] = mini\n        except Exception:\n            pass\n        point = models.PointStruct(id=pid, vector=vecs, payload=payload)\n        await asyncio.to_thread(\n            lambda: client.upsert(collection_name=coll, points=[point], wait=True)\n        )\n        return {\"ok\": True, \"id\": pid, \"collection\": coll, \"vector_name\": vector_name}\n    except Exception as e:\n        return {\"error\": str(e)}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__split_ident_lex_73": {
+      "name": "_split_ident_lex",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 81,
+      "content_hash": "86b84cdf9a33bdebb2fdfedab0d80abee84facdd",
+      "content": "    def _split_ident_lex(s: str):\n        parts = re.split(r\"[^A-Za-z0-9]+\", s)\n        out: list[str] = []\n        for p in parts:\n            if not p:\n                continue\n            segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n            out.extend([x for x in segs if x])\n        return [x.lower() for x in out if x]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__lex_hash_vector_83": {
+      "name": "_lex_hash_vector",
+      "type": "function",
+      "start_line": 83,
+      "end_line": 103,
+      "content_hash": "756d7b84354dafb960ab921267115f7a97f858b1",
+      "content": "    def _lex_hash_vector(text: str, dim: int = LEX_VECTOR_DIM) -> list[float]:\n        # Delegate to shared utility for consistency\n        try:\n            from scripts.utils import lex_hash_vector_text\n\n            return lex_hash_vector_text(text, dim)\n        except Exception:\n            # Fallback: minimal hashing\n            if not text:\n                return [0.0] * dim\n            vec = [0.0] * dim\n            toks = _split_ident_lex(text)\n            if not toks:\n                return vec\n            for t in toks:\n                h = int(\n                    hashlib.md5(t.encode(\"utf-8\", errors=\"ignore\")).hexdigest()[:8], 16\n                )\n                vec[h % dim] += 1.0\n            norm = (sum(v * v for v in vec) or 0.0) ** 0.5 or 1.0\n            return [v / norm for v in vec]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

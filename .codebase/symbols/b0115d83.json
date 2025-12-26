@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/workers/manager.test.ts",
+  "file_hash": "01a20eb76eda6d368e2f0dfc9c1160c383c86043",
+  "updated_at": "2025-12-26T17:34:20.733672",
+  "symbols": {
+    "function_createMockFeature_16": {
+      "name": "createMockFeature",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 21,
+      "content_hash": "2138397abccf6daa5a8c46783a849f90983595f2",
+      "content": "  const createMockFeature = (id: string = \"feature-1\"): Feature => ({\n    id,\n    description: \"Test feature implementation\",\n    status: \"pending\",\n    attempts: 0,\n  });",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

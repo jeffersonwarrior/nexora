@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/.local/tools/modelscan/providers/mistral.go",
+  "file_hash": "870e8ca769d2b4ba7cc30090af331189204ee5ca",
+  "updated_at": "2025-12-26T17:34:19.952375",
+  "symbols": {
+    "struct_MistralProvider_15": {
+      "name": "MistralProvider",
+      "type": "struct",
+      "start_line": 15,
+      "end_line": 21,
+      "content_hash": "ea43987fddd59790c6fc6d7a4a78f00ce262f1a2",
+      "content": "type MistralProvider struct {\n\tapiKey  string\n\tbaseURL string\n\tclient  *http.Client\n}\n\n// NewMistralProvider creates a new Mistral provider instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewMistralProvider_22": {
+      "name": "NewMistralProvider",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 31,
+      "content_hash": "aac326f53439b0c7f649ee1ddcc5f3c39fd802b6",
+      "content": "func NewMistralProvider(apiKey string) Provider {\n\treturn &MistralProvider{\n\t\tapiKey:  apiKey,\n\t\tbaseURL: \"https://api.mistral.ai/v1\",\n\t\tclient: &http.Client{\n\t\t\tTimeout: 30 * time.Second,\n\t\t},\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_init_32": {
+      "name": "init",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 35,
+      "content_hash": "ebc7196a6e636db8bfe6daa915cdedfe0285d1e8",
+      "content": "func init() {\n\tRegisterProvider(\"mistral\", NewMistralProvider)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ValidateEndpoints_36": {
+      "name": "ValidateEndpoints",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 79,
+      "content_hash": "1ace220514307035477d4305d80e7b03140d00d6",
+      "content": "func (p *MistralProvider) ValidateEndpoints(ctx context.Context, verbose bool) error {\n\tendpoints := p.GetEndpoints()\n\n\t// Parallelize endpoint testing for better performance\n\tvar wg sync.WaitGroup\n\tvar mu sync.Mutex // Protect concurrent writes to endpoint status\n\n\tfor i := range endpoints {\n\t\twg.Add(1)\n\t\tgo func(endpoint *Endpoint) {\n\t\t\tdefer wg.Done()\n\n\t\t\tif verbose {\n\t\t\t\tmu.Lock()\n\t\t\t\tfmt.Printf(\"  Testing endpoint: %s %s\\n\", endpoint.Method, endpoint.Path)\n\t\t\t\tmu.Unlock()\n\t\t\t}\n\n\t\t\tstart := time.Now()\n\t\t\terr := p.testEndpoint(ctx, endpoint)\n\t\t\tlatency := time.Since(start)\n\n\t\t\tmu.Lock()\n\t\t\tendpoint.Latency = latency\n\t\t\tif err != nil {\n\t\t\t\tendpoint.Status = StatusFailed\n\t\t\t\tendpoint.Error = err.Error()\n\t\t\t\tif verbose {\n\t\t\t\t\tfmt.Printf(\"    \u2717 Failed: %v\\n\", err)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tendpoint.Status = StatusWorking\n\t\t\t\tif verbose {\n\t\t\t\t\tfmt.Printf(\"    \u2713 Working (%v)\\n\", latency)\n\t\t\t\t}\n\t\t\t}\n\t\t\tmu.Unlock()\n\t\t}(&endpoints[i])\n\t}\n\twg.Wait()\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListModels_80": {
+      "name": "ListModels",
+      "type": "method",
+      "start_line": 80,
+      "end_line": 159,
+      "content_hash": "879d25b4c975dd4b3339bb6560c8f4dc3f9b8303",
+      "content": "func (p *MistralProvider) ListModels(ctx context.Context, verbose bool) ([]Model, error) {\n\tif verbose {\n\t\tfmt.Println(\"  Fetching available models...\")\n\t}\n\n\t// Call the /v1/models endpoint\n\turl := p.baseURL + \"/models\"\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", url, nil)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\treq.Header.Set(\"Authorization\", \"Bearer \"+p.apiKey)\n\n\tresp, err := p.client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list models: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\tbody, _ := io.ReadAll(resp.Body)\n\t\treturn nil, fmt.Errorf(\"API returned status %d: %s\", resp.StatusCode, string(body))\n\t}\n\n\tvar apiResponse struct {\n\t\tObject string `json:\"object\"`\n\t\tData   []struct {\n\t\t\tID           string                 `json:\"id\"`\n\t\t\tObject       string                 `json:\"object\"`\n\t\t\tCreated      int64                  `json:\"created\"`\n\t\t\tOwnedBy      string                 `json:\"owned_by\"`\n\t\t\tCapabilities map[string]interface{} `json:\"capabilities\"`\n\t\t\tDescription  string                 `json:\"description,omitempty\"`\n\t\t} `json:\"data\"`\n\t}\n\n\tif err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to decode response: %w\", err)\n\t}\n\n\t// Convert to our Model format\n\tvar models []Model\n\tfor _, mistralModel := range apiResponse.Data {\n\t\tmodel := Model{\n\t\t\tID:           mistralModel.ID,\n\t\t\tName:         mistralModel.ID, // Mistral doesn't always provide names\n\t\t\tDescription:  mistralModel.Description,\n\t\t\tCreatedAt:    time.Unix(mistralModel.Created, 0).Format(time.RFC3339),\n\t\t\tCapabilities: make(map[string]string),\n\t\t}\n\n\t\t// Add categories based on model\n\t\tmodel.Categories = guessMistralModelCategories(mistralModel.ID)\n\n\t\t// Add capabilities from the response\n\t\tfor key, value := range mistralModel.Capabilities {\n\t\t\tif boolVal, ok := value.(bool); ok {\n\t\t\t\tif boolVal {\n\t\t\t\t\tmodel.Capabilities[key] = \"true\"\n\t\t\t\t} else {\n\t\t\t\t\tmodel.Capabilities[key] = \"false\"\n\t\t\t\t}\n\t\t\t} else if str, ok := value.(string); ok {\n\t\t\t\tmodel.Capabilities[key] = str\n\t\t\t} else {\n\t\t\t\tmodel.Capabilities[key] = fmt.Sprintf(\"%v\", value)\n\t\t\t}\n\t\t}\n\n\t\tmodels = append(models, model)\n\t}\n\n\tif verbose {\n\t\tfmt.Printf(\"  Found %d models\\n\", len(apiResponse.Data))\n\t}\n\n\treturn models, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCapabilities_160": {
+      "name": "GetCapabilities",
+      "type": "method",
+      "start_line": 160,
+      "end_line": 186,
+      "content_hash": "d85a8ad273b63c1756f887944fcac0a37638c370",
+      "content": "func (p *MistralProvider) GetCapabilities() ProviderCapabilities {\n\treturn ProviderCapabilities{\n\t\tSupportsChat:       true,\n\t\tSupportsFIM:        true,\n\t\tSupportsEmbeddings: true,\n\t\tSupportsFineTuning: true,\n\t\tSupportsAgents:     true,\n\t\tSupportsFileUpload: true,\n\t\tSupportsStreaming:  true,\n\t\tSupportsJSONMode:   true,\n\t\tSupportsVision:     true, // For certain models\n\t\tSupportsAudio:      true, // For Voxtral models\n\t\tSupportedParameters: []string{\n\t\t\t\"model\", \"messages\", \"temperature\", \"top_p\", \"max_tokens\",\n\t\t\t\"min_tokens\", \"stream\", \"stop\", \"random_seed\", \"response_format\",\n\t\t\t\"tools\", \"tool_choice\", \"safe_prompt\", \"presence_penalty\",\n\t\t\t\"frequency_penalty\", \"n\",\n\t\t},\n\t\tSecurityFeatures: []string{\n\t\t\t\"safe_prompt\",\n\t\t\t\"content_filtering\",\n\t\t},\n\t\tMaxRequestsPerMinute: 60,     // May vary by plan\n\t\tMaxTokensPerRequest:  200000, // May vary by model\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetEndpoints_187": {
+      "name": "GetEndpoints",
+      "type": "method",
+      "start_line": 187,
+      "end_line": 243,
+      "content_hash": "0c47f7d8c876977007157e3c3597c484970c58a7",
+      "content": "func (p *MistralProvider) GetEndpoints() []Endpoint {\n\treturn []Endpoint{\n\t\t{\n\t\t\tPath:        \"/models\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"List available models\",\n\t\t},\n\t\t{\n\t\t\tPath:        \"/chat/completions\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Chat completion endpoint\",\n\t\t\tTestParams: map[string]interface{}{\n\t\t\t\t\"model\": \"mistral-small-latest\",\n\t\t\t\t\"messages\": []map[string]string{\n\t\t\t\t\t{\"role\": \"user\", \"content\": \"Hello\"},\n\t\t\t\t},\n\t\t\t\t\"max_tokens\": 10,\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tPath:        \"/fim/completions\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Fill-in-the-middle code completion\",\n\t\t\tTestParams: map[string]interface{}{\n\t\t\t\t\"model\":      \"codestral-latest\",\n\t\t\t\t\"prompt\":     \"def hello():\",\n\t\t\t\t\"suffix\":     \"    print('Hello')\",\n\t\t\t\t\"max_tokens\": 10,\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tPath:        \"/agents\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"List agents\",\n\t\t},\n\t\t{\n\t\t\tPath:        \"/embeddings\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Create embeddings\",\n\t\t\tTestParams: map[string]interface{}{\n\t\t\t\t\"model\": \"mistral-embed\",\n\t\t\t\t\"input\": \"Test embedding\",\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tPath:        \"/files\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"List uploaded files\",\n\t\t},\n\t\t{\n\t\t\tPath:        \"/fine_tuning/jobs\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"List fine-tuning jobs\",\n\t\t},\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_TestModel_244": {
+      "name": "TestModel",
+      "type": "method",
+      "start_line": 244,
+      "end_line": 284,
+      "content_hash": "62dc7e87c791c81e1ff4efcd465c5975cb66c737",
+      "content": "func (p *MistralProvider) TestModel(ctx context.Context, modelID string, verbose bool) error {\n\tif verbose {\n\t\tfmt.Printf(\"  Testing model: %s\\n\", modelID)\n\t}\n\n\tpayload := map[string]interface{}{\n\t\t\"model\": modelID,\n\t\t\"messages\": []map[string]string{\n\t\t\t{\"role\": \"user\", \"content\": \"Say 'test'\"},\n\t\t},\n\t\t\"max_tokens\": 5,\n\t}\n\n\tjsonData, err := json.Marshal(payload)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to encode request: %w\", err)\n\t}\n\n\turl := p.baseURL + \"/chat/completions\"\n\treq, err := http.NewRequestWithContext(ctx, \"POST\", url, bytes.NewBuffer(jsonData))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\treq.Header.Set(\"Authorization\", \"Bearer \"+p.apiKey)\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\n\tresp, err := p.client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to test model: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\tbody, _ := io.ReadAll(resp.Body)\n\t\treturn fmt.Errorf(\"model test failed with status %d: %s\", resp.StatusCode, string(body))\n\t}\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_testEndpoint_285": {
+      "name": "testEndpoint",
+      "type": "method",
+      "start_line": 285,
+      "end_line": 295,
+      "content_hash": "c53af0a5b9699c8d21a815830f581166dd0e310a",
+      "content": "func (p *MistralProvider) testEndpoint(ctx context.Context, endpoint *Endpoint) error {\n\tswitch endpoint.Method {\n\tcase \"GET\":\n\t\treturn p.testGetEndpoint(ctx, endpoint)\n\tcase \"POST\":\n\t\treturn p.testPostEndpoint(ctx, endpoint)\n\tdefault:\n\t\treturn fmt.Errorf(\"unsupported HTTP method: %s\", endpoint.Method)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_testGetEndpoint_296": {
+      "name": "testGetEndpoint",
+      "type": "method",
+      "start_line": 296,
+      "end_line": 318,
+      "content_hash": "6e9d163d4640a2d3f6a574af90aba5d577926881",
+      "content": "func (p *MistralProvider) testGetEndpoint(ctx context.Context, endpoint *Endpoint) error {\n\turl := p.baseURL + endpoint.Path\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", url, nil)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\treq.Header.Set(\"Authorization\", \"Bearer \"+p.apiKey)\n\n\tresp, err := p.client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"request failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\t// 2xx status codes are considered success\n\tif resp.StatusCode < 200 || resp.StatusCode >= 300 {\n\t\treturn fmt.Errorf(\"unexpected status code: %d\", resp.StatusCode)\n\t}\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_testPostEndpoint_319": {
+      "name": "testPostEndpoint",
+      "type": "method",
+      "start_line": 319,
+      "end_line": 360,
+      "content_hash": "87ccdb142b0ad0e3d7576fb77b1193e46c0c0a12",
+      "content": "func (p *MistralProvider) testPostEndpoint(ctx context.Context, endpoint *Endpoint) error {\n\turl := p.baseURL + endpoint.Path\n\n\tvar jsonData []byte\n\tvar err error\n\n\tif endpoint.TestParams != nil {\n\t\tjsonData, err = json.Marshal(endpoint.TestParams)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to encode test params: %w\", err)\n\t\t}\n\t} else {\n\t\t// Default minimal payload\n\t\tjsonData, err = json.Marshal(map[string]string{\"test\": \"true\"})\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to encode default payload: %w\", err)\n\t\t}\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, \"POST\", url, bytes.NewBuffer(jsonData))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\treq.Header.Set(\"Authorization\", \"Bearer \"+p.apiKey)\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\n\tresp, err := p.client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"request failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\t// For POST, we consider 2xx or 400 (bad request) as success\n\t// 400 might mean the endpoint exists but needs different params\n\tif resp.StatusCode >= 200 && resp.StatusCode < 500 {\n\t\treturn nil\n\t}\n\n\treturn fmt.Errorf(\"unexpected status code: %d\", resp.StatusCode)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_enhanceModelInfo_361": {
+      "name": "enhanceModelInfo",
+      "type": "method",
+      "start_line": 361,
+      "end_line": 396,
+      "content_hash": "7afd23c8fb1b7bcc1a61d5899674458a221954a3",
+      "content": "func (p *MistralProvider) enhanceModelInfo(model *Model) {\n\t// Add categories based on model ID patterns\n\tswitch {\n\tcase containsAny(model.ID, []string{\"devstral\", \"codestral\", \"magistral\"}):\n\t\tmodel.Categories = append(model.Categories, \"coding\")\n\tcase containsAny(model.ID, []string{\"mistral-small\", \"mistral-medium\", \"mistral-large\", \"ministral\"}):\n\t\tmodel.Categories = append(model.Categories, \"chat\")\n\tcase containsAny(model.ID, []string{\"embed\"}):\n\t\tmodel.Categories = append(model.Categories, \"embedding\")\n\tcase containsAny(model.ID, []string{\"voxtral\"}):\n\t\tmodel.Categories = append(model.Categories, \"audio\")\n\t}\n\n\t// Add specific capabilities\n\tif model.SupportsImages {\n\t\tif model.Capabilities == nil {\n\t\t\tmodel.Capabilities = make(map[string]string)\n\t\t}\n\t\tmodel.Capabilities[\"vision\"] = \"high\"\n\t}\n\n\tif model.SupportsTools {\n\t\tif model.Capabilities == nil {\n\t\t\tmodel.Capabilities = make(map[string]string)\n\t\t}\n\t\tmodel.Capabilities[\"function_calling\"] = \"full\"\n\t}\n\n\tif model.CanReason {\n\t\tif model.Capabilities == nil {\n\t\t\tmodel.Capabilities = make(map[string]string)\n\t\t}\n\t\tmodel.Capabilities[\"reasoning\"] = \"enabled\"\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_guessMistralModelCategories_397": {
+      "name": "guessMistralModelCategories",
+      "type": "function",
+      "start_line": 397,
+      "end_line": 418,
+      "content_hash": "5744221c4404e70f8af0344cdf296b4fceb00a57",
+      "content": "func guessMistralModelCategories(modelID string) []string {\n\tvar categories []string\n\n\tif containsAny(modelID, []string{\"labs-devstral\", \"codestral\", \"magistral\", \"mistral-code\"}) {\n\t\tcategories = append(categories, \"coding\")\n\t}\n\tif containsAny(modelID, []string{\"mistral-small\", \"mistral-medium\", \"mistral-large\", \"ministral\", \"pixtral\"}) {\n\t\tcategories = append(categories, \"chat\")\n\t}\n\tif containsAny(modelID, []string{\"embed\"}) {\n\t\tcategories = append(categories, \"embedding\")\n\t}\n\tif containsAny(modelID, []string{\"voxtral\"}) {\n\t\tcategories = append(categories, \"audio\")\n\t}\n\n\tif len(categories) == 0 {\n\t\tcategories = []string{\"general\"}\n\t}\n\n\treturn categories\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/source/n_from_id.rs",
+  "file_hash": "7a802fea61f1805c288f788098ed00a8da998cde",
+  "updated_at": "2025-12-26T17:34:21.775868",
+  "symbols": {
+    "trait_NFromIdAdapter_7": {
+      "name": "NFromIdAdapter",
+      "type": "trait",
+      "start_line": 7,
+      "end_line": 16,
+      "content_hash": "3ff585b0c2ea103593b4ec6dd39312e72e51d07a",
+      "content": "pub trait NFromIdAdapter<\n    'db: 'arena,\n    'arena: 'txn,\n    'txn,\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n>: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    /// Returns an iterator containing the node with the given id.\n    ///\n    /// Note that the `id` cannot be empty and must be a valid, existing node id.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_n_from_id_17": {
+      "name": "n_from_id",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 23,
+      "content_hash": "cd23d3423856d097408d2933410f8a5ad292a0db",
+      "content": "    fn n_from_id(\n        self,\n        id: &u128,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_24": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 24,
+      "end_line": 31,
+      "content_hash": "9423282177650787ed36565e84d72fb6bf724881",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    NFromIdAdapter<'db, 'arena, 'txn, I> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    #[inline]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_n_from_id_32": {
+      "name": "n_from_id",
+      "type": "method",
+      "start_line": 32,
+      "end_line": 38,
+      "content_hash": "cd23d3423856d097408d2933410f8a5ad292a0db",
+      "content": "    fn n_from_id(\n        self,\n        id: &u128,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_39": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 39,
+      "end_line": 55,
+      "content_hash": "370d7ea24a912a3a037f6bd01c24365e638d91bb",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        let n_from_id = std::iter::once({\n            match self.storage.get_node(self.txn, id, self.arena) {\n                Ok(node) => Ok(TraversalValue::Node(node)),\n                Err(e) => Err(e),\n            }\n        });\n\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: n_from_id,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

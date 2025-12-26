@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/worker/PaginationHelper.ts",
+  "file_hash": "739adf9928dfbd1f97cd08ffdbc4926442ff5ab1",
+  "updated_at": "2025-12-26T17:34:19.913902",
+  "symbols": {
+    "class_PaginationHelper_13": {
+      "name": "PaginationHelper",
+      "type": "class",
+      "start_line": 13,
+      "end_line": 196,
+      "content_hash": "934c97990415abfa46f7311fa259ff0f00bf9418",
+      "content": "export class PaginationHelper {\n  private dbManager: DatabaseManager;\n\n  constructor(dbManager: DatabaseManager) {\n    this.dbManager = dbManager;\n  }\n\n  /**\n   * Strip project path from file paths using heuristic\n   * Converts \"/Users/user/project/src/file.ts\" -> \"src/file.ts\"\n   * Uses first occurrence of project name from left (project root)\n   */\n  private stripProjectPath(filePath: string, projectName: string): string {\n    const marker = `/${projectName}/`;\n    const index = filePath.indexOf(marker);\n\n    if (index !== -1) {\n      // Strip everything before and including the project name\n      return filePath.substring(index + marker.length);\n    }\n\n    // Fallback: return original path if project name not found\n    return filePath;\n  }\n\n  /**\n   * Strip project path from JSON array of file paths\n   */\n  private stripProjectPaths(filePathsStr: string | null, projectName: string): string | null {\n    if (!filePathsStr) return filePathsStr;\n\n    try {\n      // Parse JSON array\n      const paths = JSON.parse(filePathsStr) as string[];\n\n      // Strip project path from each file\n      const strippedPaths = paths.map(p => this.stripProjectPath(p, projectName));\n\n      // Return as JSON string\n      return JSON.stringify(strippedPaths);\n    } catch (error) {\n      // If parsing fails, return original string\n      return filePathsStr;\n    }\n  }\n\n  /**\n   * Sanitize observation by stripping project paths from files\n   */\n  private sanitizeObservation(obs: Observation): Observation {\n    return {\n      ...obs,\n      files_read: this.stripProjectPaths(obs.files_read, obs.project),\n      files_modified: this.stripProjectPaths(obs.files_modified, obs.project)\n    };\n  }\n\n  /**\n   * Get paginated observations\n   */\n  getObservations(offset: number, limit: number, project?: string): PaginatedResult<Observation> {\n    const result = this.paginate<Observation>(\n      'observations',\n      'id, sdk_session_id, project, type, title, subtitle, narrative, text, facts, concepts, files_read, files_modified, prompt_number, created_at, created_at_epoch',\n      offset,\n      limit,\n      project\n    );\n\n    // Strip project paths from file paths before returning\n    return {\n      ...result,\n      items: result.items.map(obs => this.sanitizeObservation(obs))\n    };\n  }\n\n  /**\n   * Get paginated summaries\n   */\n  getSummaries(offset: number, limit: number, project?: string): PaginatedResult<Summary> {\n    const db = this.dbManager.getSessionStore().db;\n\n    let query = `\n      SELECT\n        ss.id,\n        s.claude_session_id as session_id,\n        ss.request,\n        ss.investigated,\n        ss.learned,\n        ss.completed,\n        ss.next_steps,\n        ss.project,\n        ss.created_at,\n        ss.created_at_epoch\n      FROM session_summaries ss\n      JOIN sdk_sessions s ON ss.sdk_session_id = s.sdk_session_id\n    `;\n    const params: any[] = [];\n\n    if (project) {\n      query += ' WHERE ss.project = ?';\n      params.push(project);\n    }\n\n    query += ' ORDER BY ss.created_at_epoch DESC LIMIT ? OFFSET ?';\n    params.push(limit + 1, offset);\n\n    const stmt = db.prepare(query);\n    const results = stmt.all(...params) as Summary[];\n\n    return {\n      items: results.slice(0, limit),\n      hasMore: results.length > limit,\n      offset,\n      limit\n    };\n  }\n\n  /**\n   * Get paginated user prompts\n   */\n  getPrompts(offset: number, limit: number, project?: string): PaginatedResult<UserPrompt> {\n    const db = this.dbManager.getSessionStore().db;\n\n    let query = `\n      SELECT up.id, up.claude_session_id, s.project, up.prompt_number, up.prompt_text, up.created_at, up.created_at_epoch\n      FROM user_prompts up\n      JOIN sdk_sessions s ON up.claude_session_id = s.claude_session_id\n    `;\n    const params: any[] = [];\n\n    if (project) {\n      query += ' WHERE s.project = ?';\n      params.push(project);\n    }\n\n    query += ' ORDER BY up.created_at_epoch DESC LIMIT ? OFFSET ?';\n    params.push(limit + 1, offset);\n\n    const stmt = db.prepare(query);\n    const results = stmt.all(...params) as UserPrompt[];\n\n    return {\n      items: results.slice(0, limit),\n      hasMore: results.length > limit,\n      offset,\n      limit\n    };\n  }\n\n  /**\n   * Generic pagination implementation (DRY)\n   */\n  private paginate<T>(\n    table: string,\n    columns: string,\n    offset: number,\n    limit: number,\n    project?: string\n  ): PaginatedResult<T> {\n    const db = this.dbManager.getSessionStore().db;\n\n    let query = `SELECT ${columns} FROM ${table}`;\n    const params: any[] = [];\n\n    if (project) {\n      query += ' WHERE project = ?';\n      params.push(project);\n    }\n\n    query += ' ORDER BY created_at_epoch DESC LIMIT ? OFFSET ?';\n    params.push(limit + 1, offset); // Fetch one extra to check hasMore\n\n    const stmt = db.prepare(query);\n    const results = stmt.all(...params) as T[];\n\n    return {\n      items: results.slice(0, limit),\n      hasMore: results.length > limit,\n      offset,\n      limit\n    };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_constructor_16": {
+      "name": "constructor",
+      "type": "method",
+      "start_line": 16,
+      "end_line": 18,
+      "content_hash": "51881cca1eb9c7b452bb76cee9333b7066487920",
+      "content": "  constructor(dbManager: DatabaseManager) {\n    this.dbManager = dbManager;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_stripProjectPath_25": {
+      "name": "stripProjectPath",
+      "type": "method",
+      "start_line": 25,
+      "end_line": 36,
+      "content_hash": "5f461c16c260d7b71ea50950322b60708e57094d",
+      "content": "  private stripProjectPath(filePath: string, projectName: string): string {\n    const marker = `/${projectName}/`;\n    const index = filePath.indexOf(marker);\n\n    if (index !== -1) {\n      // Strip everything before and including the project name\n      return filePath.substring(index + marker.length);\n    }\n\n    // Fallback: return original path if project name not found\n    return filePath;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_stripProjectPaths_41": {
+      "name": "stripProjectPaths",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 57,
+      "content_hash": "afc89ca1f66bb2d3757dde806815a716666ee209",
+      "content": "  private stripProjectPaths(filePathsStr: string | null, projectName: string): string | null {\n    if (!filePathsStr) return filePathsStr;\n\n    try {\n      // Parse JSON array\n      const paths = JSON.parse(filePathsStr) as string[];\n\n      // Strip project path from each file\n      const strippedPaths = paths.map(p => this.stripProjectPath(p, projectName));\n\n      // Return as JSON string\n      return JSON.stringify(strippedPaths);\n    } catch (error) {\n      // If parsing fails, return original string\n      return filePathsStr;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_sanitizeObservation_62": {
+      "name": "sanitizeObservation",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 68,
+      "content_hash": "8a79ab85ffad14ee504386a3127b77bcfdcab1be",
+      "content": "  private sanitizeObservation(obs: Observation): Observation {\n    return {\n      ...obs,\n      files_read: this.stripProjectPaths(obs.files_read, obs.project),\n      files_modified: this.stripProjectPaths(obs.files_modified, obs.project)\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getObservations_73": {
+      "name": "getObservations",
+      "type": "method",
+      "start_line": 73,
+      "end_line": 87,
+      "content_hash": "15262948c619127d1e4019fc318162155d2b1657",
+      "content": "  getObservations(offset: number, limit: number, project?: string): PaginatedResult<Observation> {\n    const result = this.paginate<Observation>(\n      'observations',\n      'id, sdk_session_id, project, type, title, subtitle, narrative, text, facts, concepts, files_read, files_modified, prompt_number, created_at, created_at_epoch',\n      offset,\n      limit,\n      project\n    );\n\n    // Strip project paths from file paths before returning\n    return {\n      ...result,\n      items: result.items.map(obs => this.sanitizeObservation(obs))\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getSummaries_92": {
+      "name": "getSummaries",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 129,
+      "content_hash": "1f8ee3b5ae094ba572969ef147f03ab216523863",
+      "content": "  getSummaries(offset: number, limit: number, project?: string): PaginatedResult<Summary> {\n    const db = this.dbManager.getSessionStore().db;\n\n    let query = `\n      SELECT\n        ss.id,\n        s.claude_session_id as session_id,\n        ss.request,\n        ss.investigated,\n        ss.learned,\n        ss.completed,\n        ss.next_steps,\n        ss.project,\n        ss.created_at,\n        ss.created_at_epoch\n      FROM session_summaries ss\n      JOIN sdk_sessions s ON ss.sdk_session_id = s.sdk_session_id\n    `;\n    const params: any[] = [];\n\n    if (project) {\n      query += ' WHERE ss.project = ?';\n      params.push(project);\n    }\n\n    query += ' ORDER BY ss.created_at_epoch DESC LIMIT ? OFFSET ?';\n    params.push(limit + 1, offset);\n\n    const stmt = db.prepare(query);\n    const results = stmt.all(...params) as Summary[];\n\n    return {\n      items: results.slice(0, limit),\n      hasMore: results.length > limit,\n      offset,\n      limit\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getPrompts_134": {
+      "name": "getPrompts",
+      "type": "method",
+      "start_line": 134,
+      "end_line": 161,
+      "content_hash": "63acb7e8dca4e1ef3316f21bffa85daf67b3293c",
+      "content": "  getPrompts(offset: number, limit: number, project?: string): PaginatedResult<UserPrompt> {\n    const db = this.dbManager.getSessionStore().db;\n\n    let query = `\n      SELECT up.id, up.claude_session_id, s.project, up.prompt_number, up.prompt_text, up.created_at, up.created_at_epoch\n      FROM user_prompts up\n      JOIN sdk_sessions s ON up.claude_session_id = s.claude_session_id\n    `;\n    const params: any[] = [];\n\n    if (project) {\n      query += ' WHERE s.project = ?';\n      params.push(project);\n    }\n\n    query += ' ORDER BY up.created_at_epoch DESC LIMIT ? OFFSET ?';\n    params.push(limit + 1, offset);\n\n    const stmt = db.prepare(query);\n    const results = stmt.all(...params) as UserPrompt[];\n\n    return {\n      items: results.slice(0, limit),\n      hasMore: results.length > limit,\n      offset,\n      limit\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_paginate_166": {
+      "name": "paginate",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 195,
+      "content_hash": "4485dcae3c828f03adf6922914d1532132a49ab0",
+      "content": "  private paginate<T>(\n    table: string,\n    columns: string,\n    offset: number,\n    limit: number,\n    project?: string\n  ): PaginatedResult<T> {\n    const db = this.dbManager.getSessionStore().db;\n\n    let query = `SELECT ${columns} FROM ${table}`;\n    const params: any[] = [];\n\n    if (project) {\n      query += ' WHERE project = ?';\n      params.push(project);\n    }\n\n    query += ' ORDER BY created_at_epoch DESC LIMIT ? OFFSET ?';\n    params.push(limit + 1, offset); // Fetch one extra to check hasMore\n\n    const stmt = db.prepare(query);\n    const results = stmt.all(...params) as T[];\n\n    return {\n      items: results.slice(0, limit),\n      hasMore: results.length > limit,\n      offset,\n      limit\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

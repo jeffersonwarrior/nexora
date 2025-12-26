@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/internal/stringext/string.go",
+  "file_hash": "4911a205842d91b8029d6a820edb70cfb9404e5f",
+  "updated_at": "2025-12-26T17:34:25.070183",
+  "symbols": {
+    "function_Capitalize_10": {
+      "name": "Capitalize",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 13,
+      "content_hash": "e364e54852d4873dc120d64ba7d6159432906807",
+      "content": "func Capitalize(text string) string {\n\treturn cases.Title(language.English, cases.Compact).String(text)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ContainsAny_14": {
+      "name": "ContainsAny",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 21,
+      "content_hash": "e54ca08ac63888bb729c7cad10e2380e67961932",
+      "content": "func ContainsAny(str string, args ...string) bool {\n\tfor _, arg := range args {\n\t\tif strings.Contains(str, arg) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

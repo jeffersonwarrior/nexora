@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/agent/tools/fuzzy_match.go",
+  "file_hash": "6f3a9600512f6f980d80ab0bef6269e1122ce22c",
+  "updated_at": "2025-12-26T17:34:20.354521",
+  "symbols": {
+    "function_normalizeAllWhitespace_9": {
+      "name": "normalizeAllWhitespace",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 22,
+      "content_hash": "051a6df3e8ab7729a8a8a5df69a28c8a66177116",
+      "content": "func normalizeAllWhitespace(s string) string {\n\tlines := strings.Split(s, \"\\n\")\n\tnormalized := make([]string, len(lines))\n\tfor i, line := range lines {\n\t\t// Replace tabs with 4 spaces\n\t\tline = strings.ReplaceAll(line, \"\\t\", \"    \")\n\t\t// Preserve relative indentation but normalize\n\t\tnormalized[i] = line\n\t}\n\treturn strings.Join(normalized, \"\\n\")\n}\n\n// matchByLineContent attempts to match content line-by-line, ignoring leading whitespace\n// Returns the byte offset if found, -1 otherwise",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_matchByLineContent_23": {
+      "name": "matchByLineContent",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 54,
+      "content_hash": "15114e7328a54962da4461638764826e62ca54c8",
+      "content": "func matchByLineContent(content, target string) int {\n\ttargetLines := strings.Split(target, \"\\n\")\n\tcontentLines := strings.Split(content, \"\\n\")\n\n\tif len(targetLines) == 0 || len(targetLines) > len(contentLines) {\n\t\treturn -1\n\t}\n\n\t// Try to find a sequence of lines that match when trimmed\n\tfor i := 0; i <= len(contentLines)-len(targetLines); i++ {\n\t\tmatch := true\n\t\tfor j, targetLine := range targetLines {\n\t\t\tcontentLine := contentLines[i+j]\n\t\t\t// Compare trimmed versions\n\t\t\tif strings.TrimSpace(contentLine) != strings.TrimSpace(targetLine) {\n\t\t\t\tmatch = false\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tif match {\n\t\t\t// Calculate byte offset for this match\n\t\t\toffset := 0\n\t\t\tfor k := 0; k < i; k++ {\n\t\t\t\toffset += len(contentLines[k]) + 1 // +1 for newline\n\t\t\t}\n\t\t\treturn offset\n\t\t}\n\t}\n\treturn -1\n}\n\n// matchResult represents the result of a fuzzy match attempt",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_matchResult_55": {
+      "name": "matchResult",
+      "type": "struct",
+      "start_line": 55,
+      "end_line": 63,
+      "content_hash": "5a6ce2c0438f096f05c974e0ee65fea20bd7b19f",
+      "content": "type matchResult struct {\n\texactMatch    string\n\tconfidence    float64\n\tbyteOffset    int\n\tmatchStrategy string\n}\n\n// findBestMatch attempts fuzzy matching with confidence scoring\n// Returns nil if no match found above confidence threshold",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_findBestMatch_64": {
+      "name": "findBestMatch",
+      "type": "function",
+      "start_line": 64,
+      "end_line": 117,
+      "content_hash": "c225b81502fe39afc082354aeae160a697f5fce5",
+      "content": "func findBestMatch(content, target string) *matchResult {\n\t// 1. Try exact match first\n\tif idx := strings.Index(content, target); idx != -1 {\n\t\treturn &matchResult{\n\t\t\texactMatch:    target,\n\t\t\tconfidence:    1.0,\n\t\t\tbyteOffset:    idx,\n\t\t\tmatchStrategy: \"exact\",\n\t\t}\n\t}\n\n\t// 2. Try with tab normalization\n\tnormalizedTarget := normalizeTabIndicators(target)\n\tif idx := strings.Index(content, normalizedTarget); idx != -1 {\n\t\treturn &matchResult{\n\t\t\texactMatch:    normalizedTarget,\n\t\t\tconfidence:    0.95,\n\t\t\tbyteOffset:    idx,\n\t\t\tmatchStrategy: \"tab_normalized\",\n\t\t}\n\t}\n\n\t// 3. Try line-by-line matching (ignoring leading whitespace)\n\tif idx := matchByLineContent(content, target); idx != -1 {\n\t\t// Extract the actual content at this location\n\t\tlines := strings.Split(content, \"\\n\")\n\t\ttargetLines := strings.Split(target, \"\\n\")\n\t\tstartLine := strings.Count(content[:idx], \"\\n\")\n\t\tendLine := startLine + len(targetLines)\n\t\tif endLine <= len(lines) {\n\t\t\tactualMatch := strings.Join(lines[startLine:endLine], \"\\n\")\n\t\t\treturn &matchResult{\n\t\t\t\texactMatch:    actualMatch,\n\t\t\t\tconfidence:    0.90,\n\t\t\t\tbyteOffset:    idx,\n\t\t\t\tmatchStrategy: \"line_content_match\",\n\t\t\t}\n\t\t}\n\t}\n\n\t// 4. Try with full whitespace normalization (lower confidence)\n\tnormalizedContent := normalizeAllWhitespace(content)\n\tnormalizedTarget = normalizeAllWhitespace(target)\n\tif idx := strings.Index(normalizedContent, normalizedTarget); idx != -1 {\n\t\treturn &matchResult{\n\t\t\texactMatch:    \"\",\n\t\t\tconfidence:    0.80,\n\t\t\tbyteOffset:    idx,\n\t\t\tmatchStrategy: \"whitespace_normalized\",\n\t\t}\n\t}\n\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

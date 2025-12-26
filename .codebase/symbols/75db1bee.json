@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/internal/app/lsp.go",
+  "file_hash": "7821a9fca05e5be32e62bd02544e41a1be4b74b2",
+  "updated_at": "2025-12-26T17:34:21.163814",
+  "symbols": {
+    "method_initLSPClients_13": {
+      "name": "initLSPClients",
+      "type": "method",
+      "start_line": 13,
+      "end_line": 24,
+      "content_hash": "95aa02ba772a4d4e471c99ddee9c7c52396e2f5f",
+      "content": "func (app *App) initLSPClients(ctx context.Context) {\n\tfor name, clientConfig := range app.config.LSP {\n\t\tif clientConfig.Disabled {\n\t\t\tslog.Info(\"Skipping disabled LSP client\", \"name\", name)\n\t\t\tcontinue\n\t\t}\n\t\tgo app.createAndStartLSPClient(ctx, name, clientConfig)\n\t}\n\tslog.Info(\"LSP clients initialization started in background\")\n}\n\n// createAndStartLSPClient creates a new LSP client, initializes it, and starts its workspace watcher",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_createAndStartLSPClient_25": {
+      "name": "createAndStartLSPClient",
+      "type": "method",
+      "start_line": 25,
+      "end_line": 80,
+      "content_hash": "b451cd569703007ed5dff416d8151e4a237d85cb",
+      "content": "func (app *App) createAndStartLSPClient(ctx context.Context, name string, config config.LSPConfig) {\n\tslog.Debug(\"Creating LSP client\", \"name\", name, \"command\", config.Command, \"fileTypes\", config.FileTypes, \"args\", config.Args)\n\n\t// Check if any root markers exist in the working directory (config now has defaults)\n\tif !lsp.HasRootMarkers(app.config.WorkingDir(), config.RootMarkers) {\n\t\tslog.Debug(\"Skipping LSP client: no root markers found\", \"name\", name, \"rootMarkers\", config.RootMarkers)\n\t\tupdateLSPState(name, lsp.StateDisabled, nil, nil, 0)\n\t\treturn\n\t}\n\n\t// Update state to starting\n\tupdateLSPState(name, lsp.StateStarting, nil, nil, 0)\n\n\t// Create LSP client.\n\tlspClient, err := lsp.New(ctx, name, config, app.config.Resolver())\n\tif err != nil {\n\t\tslog.Error(\"Failed to create LSP client for\", name, err)\n\t\tupdateLSPState(name, lsp.StateError, err, nil, 0)\n\t\treturn\n\t}\n\n\t// Set diagnostics callback\n\tlspClient.SetDiagnosticsCallback(updateLSPDiagnostics)\n\n\t// Increase initialization timeout as some servers take more time to start.\n\tinitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)\n\tdefer cancel()\n\n\t// Initialize LSP client.\n\t_, err = lspClient.Initialize(initCtx, app.config.WorkingDir())\n\tif err != nil {\n\t\tslog.Error(\"LSP client initialization failed\", \"name\", name, \"error\", err)\n\t\tupdateLSPState(name, lsp.StateError, err, lspClient, 0)\n\t\tlspClient.Close(ctx)\n\t\treturn\n\t}\n\n\t// Wait for the server to be ready.\n\tif err := lspClient.WaitForServerReady(initCtx); err != nil {\n\t\tslog.Error(\"Server failed to become ready\", \"name\", name, \"error\", err)\n\t\t// Server never reached a ready state, but let's continue anyway, as\n\t\t// some functionality might still work.\n\t\tlspClient.SetServerState(lsp.StateError)\n\t\tupdateLSPState(name, lsp.StateError, err, lspClient, 0)\n\t} else {\n\t\t// Server reached a ready state scuccessfully.\n\t\tslog.Debug(\"LSP server is ready\", \"name\", name)\n\t\tlspClient.SetServerState(lsp.StateReady)\n\t\tupdateLSPState(name, lsp.StateReady, nil, lspClient, 0)\n\t}\n\n\tslog.Info(\"LSP client initialized\", \"name\", name)\n\n\t// Add to map with mutex protection before starting goroutine\n\tapp.LSPClients.Set(name, lspClient)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/context-engine/scripts/query_optimizer.py",
+  "file_hash": "a9e79430eb84fade9799e2c57f1b2cb048fb5460",
+  "updated_at": "2025-12-26T17:34:20.571370",
+  "symbols": {
+    "class_QueryType_22": {
+      "name": "QueryType",
+      "type": "class",
+      "start_line": 22,
+      "end_line": 27,
+      "content_hash": "121279ea28105476de661a08981bcff6eba802f5",
+      "content": "class QueryType(Enum):\n    \"\"\"Classification of query types for optimized routing.\"\"\"\n    SIMPLE = \"simple\"  # Simple keyword, exact match likely\n    SEMANTIC = \"semantic\"  # Natural language, needs deep search\n    COMPLEX = \"complex\"  # Multi-faceted, benefits from extensive search\n    HYBRID = \"hybrid\"  # Mix of keywords and semantic",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_QueryProfile_31": {
+      "name": "QueryProfile",
+      "type": "class",
+      "start_line": 31,
+      "end_line": 38,
+      "content_hash": "33d3bdc5201cae3226f75e26977f5b25762886c5",
+      "content": "class QueryProfile:\n    \"\"\"Profile of a query for optimization decisions.\"\"\"\n    query: str\n    query_type: QueryType\n    complexity_score: float\n    recommended_ef: int\n    use_dense_only: bool\n    estimated_latency_ms: float",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_OptimizationStats_42": {
+      "name": "OptimizationStats",
+      "type": "class",
+      "start_line": 42,
+      "end_line": 51,
+      "content_hash": "c62766fafa046e6240cc6adde4fea80db1a016ed",
+      "content": "class OptimizationStats:\n    \"\"\"Statistics for monitoring optimizer performance.\"\"\"\n    total_queries: int = 0\n    simple_queries: int = 0\n    semantic_queries: int = 0\n    complex_queries: int = 0\n    hybrid_queries: int = 0\n    avg_ef_used: float = 0.0\n    total_latency_ms: float = 0.0\n    cache_hits: int = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_QueryOptimizer_54": {
+      "name": "QueryOptimizer",
+      "type": "class",
+      "start_line": 54,
+      "end_line": 427,
+      "content_hash": "1668dc8f85590637c270602659a7450b930a7038",
+      "content": "class QueryOptimizer:\n    \"\"\"\n    Adaptive query optimizer that dynamically tunes HNSW_EF and routing.\n    \n    Features:\n    - Query complexity analysis\n    - Dynamic HNSW_EF calculation based on query type\n    - Intelligent routing between dense and hybrid search\n    - Performance monitoring and adaptive learning\n    \"\"\"\n    \n    def __init__(\n        self,\n        base_ef: int = 128,\n        min_ef: int = 64,\n        max_ef: int = 512,\n        collection_size: int = 10000,\n        enable_adaptive: bool = True\n    ):\n        \"\"\"\n        Initialize the query optimizer.\n        \n        Args:\n            base_ef: Default HNSW_EF value\n            min_ef: Minimum allowed EF value\n            max_ef: Maximum allowed EF value\n            collection_size: Approximate collection size for scaling\n            enable_adaptive: Enable adaptive EF tuning\n        \"\"\"\n        self.base_ef = base_ef\n        self.min_ef = min_ef\n        self.max_ef = max_ef\n        self.collection_size = collection_size\n        self.enable_adaptive = enable_adaptive\n        \n        # Statistics tracking\n        self.stats = OptimizationStats()\n        self._query_cache: Dict[str, QueryProfile] = {}\n        self._performance_history: List[Tuple[float, int, float]] = []  # (complexity, ef, latency)\n        \n        # Load configuration from environment\n        self._load_config()\n        \n        logger.info(\n            f\"QueryOptimizer initialized: base_ef={base_ef}, range=[{min_ef}, {max_ef}], \"\n            f\"adaptive={enable_adaptive}\"\n        )\n    \n    def _load_config(self):\n        \"\"\"Load optimizer configuration from environment variables.\"\"\"\n        self.enable_adaptive = os.environ.get(\"QUERY_OPTIMIZER_ADAPTIVE\", \"1\").lower() in {\n            \"1\", \"true\", \"yes\", \"on\"\n        }\n        \n        # Complexity thresholds for query classification\n        self.simple_threshold = float(os.environ.get(\"QUERY_OPTIMIZER_SIMPLE_THRESHOLD\", \"0.3\") or 0.3)\n        self.complex_threshold = float(os.environ.get(\"QUERY_OPTIMIZER_COMPLEX_THRESHOLD\", \"0.7\") or 0.7)\n        \n        # EF scaling factors\n        self.simple_ef_factor = float(os.environ.get(\"QUERY_OPTIMIZER_SIMPLE_FACTOR\", \"0.5\") or 0.5)\n        self.semantic_ef_factor = float(os.environ.get(\"QUERY_OPTIMIZER_SEMANTIC_FACTOR\", \"1.0\") or 1.0)\n        self.complex_ef_factor = float(os.environ.get(\"QUERY_OPTIMIZER_COMPLEX_FACTOR\", \"2.0\") or 2.0)\n        \n        # Dense-only routing threshold (lower complexity = prefer dense)\n        self.dense_only_threshold = float(os.environ.get(\"QUERY_OPTIMIZER_DENSE_THRESHOLD\", \"0.2\") or 0.2)\n        \n        if os.environ.get(\"DEBUG_QUERY_OPTIMIZER\"):\n            logger.debug(f\"Optimizer config loaded: adaptive={self.enable_adaptive}, thresholds=({self.simple_threshold}, {self.complex_threshold})\")\n    \n    def analyze_query(self, query: str, language: Optional[str] = None) -> QueryProfile:\n        \"\"\"\n        Analyze query and generate optimization profile.\n        \n        Args:\n            query: Query string to analyze\n            language: Optional programming language hint\n        \n        Returns:\n            QueryProfile with optimization recommendations\n        \"\"\"\n        # Check cache first\n        cache_key = f\"{query}:{language or ''}\"\n        if cache_key in self._query_cache:\n            self.stats.cache_hits += 1\n            return self._query_cache[cache_key]\n        \n        # Calculate complexity score\n        complexity = self._calculate_complexity(query, language)\n        \n        # Classify query type\n        query_type = self._classify_query(query, complexity)\n        \n        # Calculate optimal EF\n        recommended_ef = self._calculate_optimal_ef(complexity, query_type)\n        \n        # Decide on routing\n        use_dense_only = self._should_use_dense_only(query, complexity, query_type)\n        \n        # Estimate latency (rough heuristic)\n        estimated_latency = self._estimate_latency(complexity, recommended_ef, use_dense_only)\n        \n        profile = QueryProfile(\n            query=query,\n            query_type=query_type,\n            complexity_score=complexity,\n            recommended_ef=recommended_ef,\n            use_dense_only=use_dense_only,\n            estimated_latency_ms=estimated_latency\n        )\n        \n        # Cache the profile\n        if len(self._query_cache) < 1000:  # Limit cache size\n            self._query_cache[cache_key] = profile\n        \n        # Update stats\n        self.stats.total_queries += 1\n        if query_type == QueryType.SIMPLE:\n            self.stats.simple_queries += 1\n        elif query_type == QueryType.SEMANTIC:\n            self.stats.semantic_queries += 1\n        elif query_type == QueryType.COMPLEX:\n            self.stats.complex_queries += 1\n        else:\n            self.stats.hybrid_queries += 1\n        \n        if os.environ.get(\"DEBUG_QUERY_OPTIMIZER\"):\n            logger.debug(\n                f\"Query analyzed: type={query_type.value}, complexity={complexity:.3f}, \"\n                f\"ef={recommended_ef}, dense_only={use_dense_only}\"\n            )\n        \n        return profile\n    \n    def _calculate_complexity(self, query: str, language: Optional[str] = None) -> float:\n        \"\"\"\n        Calculate query complexity score (0.0 to 1.0).\n        \n        Higher scores indicate more complex queries needing deeper search.\n        \n        Factors:\n        - Query length (longer = more complex)\n        - Number of terms\n        - Natural language indicators (questions, connectors)\n        - Code-specific patterns (operators, symbols)\n        - Language-specific keywords\n        \"\"\"\n        score = 0.0\n        query_lower = query.lower().strip()\n        \n        # 1. Length factor (normalize to ~100 chars)\n        length_score = min(len(query) / 100.0, 1.0)\n        score += length_score * 0.2\n        \n        # 2. Term count (more terms = more complex)\n        terms = re.findall(r'\\b\\w+\\b', query)\n        term_score = min(len(terms) / 10.0, 1.0)\n        score += term_score * 0.15\n        \n        # 3. Natural language indicators\n        question_words = ['what', 'how', 'why', 'when', 'where', 'which', 'who', 'explain', 'describe']\n        if any(word in query_lower for word in question_words):\n            score += 0.2\n        \n        # Connectors indicate complex multi-part queries\n        connectors = ['and', 'or', 'but', 'with', 'that', 'also', 'including']\n        connector_count = sum(1 for word in connectors if f' {word} ' in f' {query_lower} ')\n        score += min(connector_count * 0.1, 0.2)\n        \n        # 4. Code-specific complexity\n        # Special characters often mean precise searches\n        special_chars = len(re.findall(r'[(){}[\\]<>.:;,]', query))\n        if special_chars > 0:\n            score -= 0.1  # Special chars = more specific = simpler\n        \n        # CamelCase or snake_case (likely looking for specific symbols)\n        if re.search(r'[A-Z][a-z]+[A-Z]', query) or '_' in query:\n            score -= 0.1\n        \n        # Quoted strings (exact matches)\n        if '\"' in query or \"'\" in query:\n            score -= 0.15\n        \n        # 5. Language-specific adjustments\n        if language:\n            # If language specified, query is more focused\n            score -= 0.1\n        \n        # 6. Regex patterns (very specific)\n        if re.search(r'[*+?\\\\|^$]', query):\n            score -= 0.15\n        \n        # Clamp to [0, 1]\n        return max(0.0, min(1.0, score))\n    \n    def _classify_query(self, query: str, complexity: float) -> QueryType:\n        \"\"\"Classify query type based on complexity and patterns.\"\"\"\n        query_lower = query.lower().strip()\n        \n        # Simple: Low complexity, likely exact match\n        if complexity < self.simple_threshold:\n            # Extra checks for simple patterns\n            if re.match(r'^[a-z_][a-z0-9_]*$', query_lower):  # Single identifier\n                return QueryType.SIMPLE\n            if len(query.split()) <= 2 and not any(c in query for c in '(){}[]'):\n                return QueryType.SIMPLE\n        \n        # Complex: High complexity, multi-faceted\n        if complexity > self.complex_threshold:\n            return QueryType.COMPLEX\n        \n        # Semantic: Natural language questions\n        question_indicators = ['what', 'how', 'why', 'explain', 'describe', 'show me', 'find all']\n        if any(query_lower.startswith(ind) for ind in question_indicators):\n            return QueryType.SEMANTIC\n        \n        # Hybrid: Everything else\n        return QueryType.HYBRID\n    \n    def _calculate_optimal_ef(self, complexity: float, query_type: QueryType) -> int:\n        \"\"\"\n        Calculate optimal HNSW_EF based on complexity and query type.\n        \n        Strategy:\n        - Simple queries: Lower EF for speed\n        - Complex queries: Higher EF for quality\n        - Scale with collection size\n        \"\"\"\n        if not self.enable_adaptive:\n            return self.base_ef\n        \n        # Base factor by query type\n        if query_type == QueryType.SIMPLE:\n            factor = self.simple_ef_factor\n        elif query_type == QueryType.SEMANTIC:\n            factor = self.semantic_ef_factor\n        elif query_type == QueryType.COMPLEX:\n            factor = self.complex_ef_factor\n        else:  # HYBRID\n            factor = (self.simple_ef_factor + self.semantic_ef_factor) / 2\n        \n        # Adjust by complexity within type\n        complexity_adjustment = 0.5 + (complexity * 0.5)  # Range [0.5, 1.0]\n        \n        # Calculate EF\n        calculated_ef = int(self.base_ef * factor * complexity_adjustment)\n        \n        # Collection size scaling (larger collections may benefit from higher EF)\n        if self.collection_size > 100000:\n            scale_factor = min(1.5, 1.0 + (self.collection_size / 1000000.0))\n            calculated_ef = int(calculated_ef * scale_factor)\n        \n        # Clamp to valid range\n        return max(self.min_ef, min(self.max_ef, calculated_ef))\n    \n    def _should_use_dense_only(\n        self, query: str, complexity: float, query_type: QueryType\n    ) -> bool:\n        \"\"\"\n        Decide whether to use dense-only search vs hybrid.\n        \n        Dense-only is faster but may miss exact matches.\n        Hybrid is more thorough but slower.\n        \n        Returns:\n            True if dense-only search is recommended\n        \"\"\"\n        # Very simple queries benefit from hybrid (lexical matching)\n        if complexity < self.dense_only_threshold:\n            return False\n        \n        # Natural language questions: dense is fine\n        if query_type == QueryType.SEMANTIC:\n            return True\n        \n        # Has special characters or exact match indicators: use hybrid\n        if any(char in query for char in ['\"', \"'\", '(', ')', '{', '}', '[', ']']):\n            return False\n        \n        # CamelCase or specific symbol names: use hybrid\n        if re.search(r'[A-Z][a-z]+[A-Z]', query) or '_' in query:\n            return False\n        \n        # Default: use hybrid for safety\n        return False\n    \n    def _estimate_latency(\n        self, complexity: float, ef: int, dense_only: bool\n    ) -> float:\n        \"\"\"\n        Estimate query latency in milliseconds.\n        \n        This is a rough heuristic based on:\n        - EF value (higher = slower)\n        - Dense vs hybrid (hybrid = ~1.5x slower)\n        - Collection size\n        \"\"\"\n        # Base latency per EF unit (ms)\n        base_latency_per_ef = 0.1\n        \n        # EF contribution\n        latency = ef * base_latency_per_ef\n        \n        # Hybrid search overhead\n        if not dense_only:\n            latency *= 1.5\n        \n        # Collection size overhead (log scale)\n        if self.collection_size > 1000:\n            size_factor = 1.0 + (math.log10(self.collection_size) / 10.0)\n            latency *= size_factor\n        \n        # Complexity overhead (reranking, post-processing)\n        latency += complexity * 10.0\n        \n        return latency\n    \n    def record_query_performance(\n        self, complexity: float, ef: int, actual_latency_ms: float\n    ):\n        \"\"\"\n        Record actual query performance for adaptive learning.\n        \n        Args:\n            complexity: Query complexity score\n            ef: EF value used\n            actual_latency_ms: Actual query latency\n        \"\"\"\n        self._performance_history.append((complexity, ef, actual_latency_ms))\n        \n        # Keep last 1000 samples\n        if len(self._performance_history) > 1000:\n            self._performance_history = self._performance_history[-1000:]\n        \n        # Update rolling average\n        if self._performance_history:\n            total_ef = sum(h[1] for h in self._performance_history)\n            self.stats.avg_ef_used = total_ef / len(self._performance_history)\n            \n            total_latency = sum(h[2] for h in self._performance_history)\n            self.stats.total_latency_ms = total_latency\n    \n    def get_stats(self) -> Dict[str, Any]:\n        \"\"\"Get optimizer statistics for monitoring.\"\"\"\n        return {\n            \"total_queries\": self.stats.total_queries,\n            \"query_types\": {\n                \"simple\": self.stats.simple_queries,\n                \"semantic\": self.stats.semantic_queries,\n                \"complex\": self.stats.complex_queries,\n                \"hybrid\": self.stats.hybrid_queries\n            },\n            \"avg_ef_used\": round(self.stats.avg_ef_used, 2),\n            \"avg_latency_ms\": (\n                round(self.stats.total_latency_ms / len(self._performance_history), 2)\n                if self._performance_history else 0.0\n            ),\n            \"cache_hits\": self.stats.cache_hits,\n            \"cache_hit_rate\": (\n                round(self.stats.cache_hits / self.stats.total_queries * 100, 2)\n                if self.stats.total_queries > 0 else 0.0\n            ),\n            \"config\": {\n                \"adaptive_enabled\": self.enable_adaptive,\n                \"base_ef\": self.base_ef,\n                \"ef_range\": [self.min_ef, self.max_ef],\n                \"collection_size\": self.collection_size\n            }\n        }\n    \n    def reset_stats(self):\n        \"\"\"Reset statistics counters.\"\"\"\n        self.stats = OptimizationStats()\n        self._performance_history = []\n        logger.info(\"QueryOptimizer stats reset\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___65": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 100,
+      "content_hash": "78eec5690c2de7c4eeb1530899d6c61d56655354",
+      "content": "    def __init__(\n        self,\n        base_ef: int = 128,\n        min_ef: int = 64,\n        max_ef: int = 512,\n        collection_size: int = 10000,\n        enable_adaptive: bool = True\n    ):\n        \"\"\"\n        Initialize the query optimizer.\n        \n        Args:\n            base_ef: Default HNSW_EF value\n            min_ef: Minimum allowed EF value\n            max_ef: Maximum allowed EF value\n            collection_size: Approximate collection size for scaling\n            enable_adaptive: Enable adaptive EF tuning\n        \"\"\"\n        self.base_ef = base_ef\n        self.min_ef = min_ef\n        self.max_ef = max_ef\n        self.collection_size = collection_size\n        self.enable_adaptive = enable_adaptive\n        \n        # Statistics tracking\n        self.stats = OptimizationStats()\n        self._query_cache: Dict[str, QueryProfile] = {}\n        self._performance_history: List[Tuple[float, int, float]] = []  # (complexity, ef, latency)\n        \n        # Load configuration from environment\n        self._load_config()\n        \n        logger.info(\n            f\"QueryOptimizer initialized: base_ef={base_ef}, range=[{min_ef}, {max_ef}], \"\n            f\"adaptive={enable_adaptive}\"\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__load_config_102": {
+      "name": "_load_config",
+      "type": "method",
+      "start_line": 102,
+      "end_line": 121,
+      "content_hash": "1878099904d6b732a59f8b990da74d1c6130b919",
+      "content": "    def _load_config(self):\n        \"\"\"Load optimizer configuration from environment variables.\"\"\"\n        self.enable_adaptive = os.environ.get(\"QUERY_OPTIMIZER_ADAPTIVE\", \"1\").lower() in {\n            \"1\", \"true\", \"yes\", \"on\"\n        }\n        \n        # Complexity thresholds for query classification\n        self.simple_threshold = float(os.environ.get(\"QUERY_OPTIMIZER_SIMPLE_THRESHOLD\", \"0.3\") or 0.3)\n        self.complex_threshold = float(os.environ.get(\"QUERY_OPTIMIZER_COMPLEX_THRESHOLD\", \"0.7\") or 0.7)\n        \n        # EF scaling factors\n        self.simple_ef_factor = float(os.environ.get(\"QUERY_OPTIMIZER_SIMPLE_FACTOR\", \"0.5\") or 0.5)\n        self.semantic_ef_factor = float(os.environ.get(\"QUERY_OPTIMIZER_SEMANTIC_FACTOR\", \"1.0\") or 1.0)\n        self.complex_ef_factor = float(os.environ.get(\"QUERY_OPTIMIZER_COMPLEX_FACTOR\", \"2.0\") or 2.0)\n        \n        # Dense-only routing threshold (lower complexity = prefer dense)\n        self.dense_only_threshold = float(os.environ.get(\"QUERY_OPTIMIZER_DENSE_THRESHOLD\", \"0.2\") or 0.2)\n        \n        if os.environ.get(\"DEBUG_QUERY_OPTIMIZER\"):\n            logger.debug(f\"Optimizer config loaded: adaptive={self.enable_adaptive}, thresholds=({self.simple_threshold}, {self.complex_threshold})\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_analyze_query_123": {
+      "name": "analyze_query",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 185,
+      "content_hash": "7280c368a4a320cfef6b374f0576ca7b0c445a75",
+      "content": "    def analyze_query(self, query: str, language: Optional[str] = None) -> QueryProfile:\n        \"\"\"\n        Analyze query and generate optimization profile.\n        \n        Args:\n            query: Query string to analyze\n            language: Optional programming language hint\n        \n        Returns:\n            QueryProfile with optimization recommendations\n        \"\"\"\n        # Check cache first\n        cache_key = f\"{query}:{language or ''}\"\n        if cache_key in self._query_cache:\n            self.stats.cache_hits += 1\n            return self._query_cache[cache_key]\n        \n        # Calculate complexity score\n        complexity = self._calculate_complexity(query, language)\n        \n        # Classify query type\n        query_type = self._classify_query(query, complexity)\n        \n        # Calculate optimal EF\n        recommended_ef = self._calculate_optimal_ef(complexity, query_type)\n        \n        # Decide on routing\n        use_dense_only = self._should_use_dense_only(query, complexity, query_type)\n        \n        # Estimate latency (rough heuristic)\n        estimated_latency = self._estimate_latency(complexity, recommended_ef, use_dense_only)\n        \n        profile = QueryProfile(\n            query=query,\n            query_type=query_type,\n            complexity_score=complexity,\n            recommended_ef=recommended_ef,\n            use_dense_only=use_dense_only,\n            estimated_latency_ms=estimated_latency\n        )\n        \n        # Cache the profile\n        if len(self._query_cache) < 1000:  # Limit cache size\n            self._query_cache[cache_key] = profile\n        \n        # Update stats\n        self.stats.total_queries += 1\n        if query_type == QueryType.SIMPLE:\n            self.stats.simple_queries += 1\n        elif query_type == QueryType.SEMANTIC:\n            self.stats.semantic_queries += 1\n        elif query_type == QueryType.COMPLEX:\n            self.stats.complex_queries += 1\n        else:\n            self.stats.hybrid_queries += 1\n        \n        if os.environ.get(\"DEBUG_QUERY_OPTIMIZER\"):\n            logger.debug(\n                f\"Query analyzed: type={query_type.value}, complexity={complexity:.3f}, \"\n                f\"ef={recommended_ef}, dense_only={use_dense_only}\"\n            )\n        \n        return profile",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__calculate_complexity_187": {
+      "name": "_calculate_complexity",
+      "type": "method",
+      "start_line": 187,
+      "end_line": 246,
+      "content_hash": "eae9a16f2ecb20154f74526d700be2b33eda9557",
+      "content": "    def _calculate_complexity(self, query: str, language: Optional[str] = None) -> float:\n        \"\"\"\n        Calculate query complexity score (0.0 to 1.0).\n        \n        Higher scores indicate more complex queries needing deeper search.\n        \n        Factors:\n        - Query length (longer = more complex)\n        - Number of terms\n        - Natural language indicators (questions, connectors)\n        - Code-specific patterns (operators, symbols)\n        - Language-specific keywords\n        \"\"\"\n        score = 0.0\n        query_lower = query.lower().strip()\n        \n        # 1. Length factor (normalize to ~100 chars)\n        length_score = min(len(query) / 100.0, 1.0)\n        score += length_score * 0.2\n        \n        # 2. Term count (more terms = more complex)\n        terms = re.findall(r'\\b\\w+\\b', query)\n        term_score = min(len(terms) / 10.0, 1.0)\n        score += term_score * 0.15\n        \n        # 3. Natural language indicators\n        question_words = ['what', 'how', 'why', 'when', 'where', 'which', 'who', 'explain', 'describe']\n        if any(word in query_lower for word in question_words):\n            score += 0.2\n        \n        # Connectors indicate complex multi-part queries\n        connectors = ['and', 'or', 'but', 'with', 'that', 'also', 'including']\n        connector_count = sum(1 for word in connectors if f' {word} ' in f' {query_lower} ')\n        score += min(connector_count * 0.1, 0.2)\n        \n        # 4. Code-specific complexity\n        # Special characters often mean precise searches\n        special_chars = len(re.findall(r'[(){}[\\]<>.:;,]', query))\n        if special_chars > 0:\n            score -= 0.1  # Special chars = more specific = simpler\n        \n        # CamelCase or snake_case (likely looking for specific symbols)\n        if re.search(r'[A-Z][a-z]+[A-Z]', query) or '_' in query:\n            score -= 0.1\n        \n        # Quoted strings (exact matches)\n        if '\"' in query or \"'\" in query:\n            score -= 0.15\n        \n        # 5. Language-specific adjustments\n        if language:\n            # If language specified, query is more focused\n            score -= 0.1\n        \n        # 6. Regex patterns (very specific)\n        if re.search(r'[*+?\\\\|^$]', query):\n            score -= 0.15\n        \n        # Clamp to [0, 1]\n        return max(0.0, min(1.0, score))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__classify_query_248": {
+      "name": "_classify_query",
+      "type": "method",
+      "start_line": 248,
+      "end_line": 270,
+      "content_hash": "a2da0a05bb0597acb2483f7f3aa46c7fb21386db",
+      "content": "    def _classify_query(self, query: str, complexity: float) -> QueryType:\n        \"\"\"Classify query type based on complexity and patterns.\"\"\"\n        query_lower = query.lower().strip()\n        \n        # Simple: Low complexity, likely exact match\n        if complexity < self.simple_threshold:\n            # Extra checks for simple patterns\n            if re.match(r'^[a-z_][a-z0-9_]*$', query_lower):  # Single identifier\n                return QueryType.SIMPLE\n            if len(query.split()) <= 2 and not any(c in query for c in '(){}[]'):\n                return QueryType.SIMPLE\n        \n        # Complex: High complexity, multi-faceted\n        if complexity > self.complex_threshold:\n            return QueryType.COMPLEX\n        \n        # Semantic: Natural language questions\n        question_indicators = ['what', 'how', 'why', 'explain', 'describe', 'show me', 'find all']\n        if any(query_lower.startswith(ind) for ind in question_indicators):\n            return QueryType.SEMANTIC\n        \n        # Hybrid: Everything else\n        return QueryType.HYBRID",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__calculate_optimal_ef_272": {
+      "name": "_calculate_optimal_ef",
+      "type": "method",
+      "start_line": 272,
+      "end_line": 306,
+      "content_hash": "1a46171e77e5fbda7d60e3b8e96660fffb060aeb",
+      "content": "    def _calculate_optimal_ef(self, complexity: float, query_type: QueryType) -> int:\n        \"\"\"\n        Calculate optimal HNSW_EF based on complexity and query type.\n        \n        Strategy:\n        - Simple queries: Lower EF for speed\n        - Complex queries: Higher EF for quality\n        - Scale with collection size\n        \"\"\"\n        if not self.enable_adaptive:\n            return self.base_ef\n        \n        # Base factor by query type\n        if query_type == QueryType.SIMPLE:\n            factor = self.simple_ef_factor\n        elif query_type == QueryType.SEMANTIC:\n            factor = self.semantic_ef_factor\n        elif query_type == QueryType.COMPLEX:\n            factor = self.complex_ef_factor\n        else:  # HYBRID\n            factor = (self.simple_ef_factor + self.semantic_ef_factor) / 2\n        \n        # Adjust by complexity within type\n        complexity_adjustment = 0.5 + (complexity * 0.5)  # Range [0.5, 1.0]\n        \n        # Calculate EF\n        calculated_ef = int(self.base_ef * factor * complexity_adjustment)\n        \n        # Collection size scaling (larger collections may benefit from higher EF)\n        if self.collection_size > 100000:\n            scale_factor = min(1.5, 1.0 + (self.collection_size / 1000000.0))\n            calculated_ef = int(calculated_ef * scale_factor)\n        \n        # Clamp to valid range\n        return max(self.min_ef, min(self.max_ef, calculated_ef))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__should_use_dense_only_308": {
+      "name": "_should_use_dense_only",
+      "type": "method",
+      "start_line": 308,
+      "end_line": 337,
+      "content_hash": "0b69b700872e15dc4517f71b5e4748e4446d0896",
+      "content": "    def _should_use_dense_only(\n        self, query: str, complexity: float, query_type: QueryType\n    ) -> bool:\n        \"\"\"\n        Decide whether to use dense-only search vs hybrid.\n        \n        Dense-only is faster but may miss exact matches.\n        Hybrid is more thorough but slower.\n        \n        Returns:\n            True if dense-only search is recommended\n        \"\"\"\n        # Very simple queries benefit from hybrid (lexical matching)\n        if complexity < self.dense_only_threshold:\n            return False\n        \n        # Natural language questions: dense is fine\n        if query_type == QueryType.SEMANTIC:\n            return True\n        \n        # Has special characters or exact match indicators: use hybrid\n        if any(char in query for char in ['\"', \"'\", '(', ')', '{', '}', '[', ']']):\n            return False\n        \n        # CamelCase or specific symbol names: use hybrid\n        if re.search(r'[A-Z][a-z]+[A-Z]', query) or '_' in query:\n            return False\n        \n        # Default: use hybrid for safety\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__estimate_latency_339": {
+      "name": "_estimate_latency",
+      "type": "method",
+      "start_line": 339,
+      "end_line": 368,
+      "content_hash": "68017e96423d7d358dee14de1a8a80288fc5fb7f",
+      "content": "    def _estimate_latency(\n        self, complexity: float, ef: int, dense_only: bool\n    ) -> float:\n        \"\"\"\n        Estimate query latency in milliseconds.\n        \n        This is a rough heuristic based on:\n        - EF value (higher = slower)\n        - Dense vs hybrid (hybrid = ~1.5x slower)\n        - Collection size\n        \"\"\"\n        # Base latency per EF unit (ms)\n        base_latency_per_ef = 0.1\n        \n        # EF contribution\n        latency = ef * base_latency_per_ef\n        \n        # Hybrid search overhead\n        if not dense_only:\n            latency *= 1.5\n        \n        # Collection size overhead (log scale)\n        if self.collection_size > 1000:\n            size_factor = 1.0 + (math.log10(self.collection_size) / 10.0)\n            latency *= size_factor\n        \n        # Complexity overhead (reranking, post-processing)\n        latency += complexity * 10.0\n        \n        return latency",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_record_query_performance_370": {
+      "name": "record_query_performance",
+      "type": "method",
+      "start_line": 370,
+      "end_line": 393,
+      "content_hash": "b20830927db4008fe741385402e5f97f459e9c2b",
+      "content": "    def record_query_performance(\n        self, complexity: float, ef: int, actual_latency_ms: float\n    ):\n        \"\"\"\n        Record actual query performance for adaptive learning.\n        \n        Args:\n            complexity: Query complexity score\n            ef: EF value used\n            actual_latency_ms: Actual query latency\n        \"\"\"\n        self._performance_history.append((complexity, ef, actual_latency_ms))\n        \n        # Keep last 1000 samples\n        if len(self._performance_history) > 1000:\n            self._performance_history = self._performance_history[-1000:]\n        \n        # Update rolling average\n        if self._performance_history:\n            total_ef = sum(h[1] for h in self._performance_history)\n            self.stats.avg_ef_used = total_ef / len(self._performance_history)\n            \n            total_latency = sum(h[2] for h in self._performance_history)\n            self.stats.total_latency_ms = total_latency",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_stats_395": {
+      "name": "get_stats",
+      "type": "method",
+      "start_line": 395,
+      "end_line": 421,
+      "content_hash": "84805340b7f6c4f1c96ca6ae0c4858bec2fac647",
+      "content": "    def get_stats(self) -> Dict[str, Any]:\n        \"\"\"Get optimizer statistics for monitoring.\"\"\"\n        return {\n            \"total_queries\": self.stats.total_queries,\n            \"query_types\": {\n                \"simple\": self.stats.simple_queries,\n                \"semantic\": self.stats.semantic_queries,\n                \"complex\": self.stats.complex_queries,\n                \"hybrid\": self.stats.hybrid_queries\n            },\n            \"avg_ef_used\": round(self.stats.avg_ef_used, 2),\n            \"avg_latency_ms\": (\n                round(self.stats.total_latency_ms / len(self._performance_history), 2)\n                if self._performance_history else 0.0\n            ),\n            \"cache_hits\": self.stats.cache_hits,\n            \"cache_hit_rate\": (\n                round(self.stats.cache_hits / self.stats.total_queries * 100, 2)\n                if self.stats.total_queries > 0 else 0.0\n            ),\n            \"config\": {\n                \"adaptive_enabled\": self.enable_adaptive,\n                \"base_ef\": self.base_ef,\n                \"ef_range\": [self.min_ef, self.max_ef],\n                \"collection_size\": self.collection_size\n            }\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_reset_stats_423": {
+      "name": "reset_stats",
+      "type": "method",
+      "start_line": 423,
+      "end_line": 427,
+      "content_hash": "24ede4216d36628c36a7a60f19d5fb8021871c44",
+      "content": "    def reset_stats(self):\n        \"\"\"Reset statistics counters.\"\"\"\n        self.stats = OptimizationStats()\n        self._performance_history = []\n        logger.info(\"QueryOptimizer stats reset\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_query_optimizer_435": {
+      "name": "get_query_optimizer",
+      "type": "function",
+      "start_line": 435,
+      "end_line": 467,
+      "content_hash": "141a4cc0621727382ba8090c8cd3ba2ab11871bb",
+      "content": "def get_query_optimizer(\n    collection_size: Optional[int] = None,\n    reset: bool = False\n) -> QueryOptimizer:\n    \"\"\"\n    Get or create global query optimizer instance.\n    \n    Args:\n        collection_size: Approximate collection size for optimization\n        reset: Force recreation of optimizer\n    \n    Returns:\n        QueryOptimizer instance\n    \"\"\"\n    global _optimizer\n    \n    with _optimizer_lock:\n        if _optimizer is None or reset:\n            base_ef = int(os.environ.get(\"QDRANT_EF_SEARCH\", \"128\") or 128)\n            min_ef = int(os.environ.get(\"QUERY_OPTIMIZER_MIN_EF\", \"64\") or 64)\n            max_ef = int(os.environ.get(\"QUERY_OPTIMIZER_MAX_EF\", \"512\") or 512)\n            \n            size = collection_size or int(os.environ.get(\"QUERY_OPTIMIZER_COLLECTION_SIZE\", \"10000\") or 10000)\n            \n            _optimizer = QueryOptimizer(\n                base_ef=base_ef,\n                min_ef=min_ef,\n                max_ef=max_ef,\n                collection_size=size,\n                enable_adaptive=True\n            )\n        \n        return _optimizer",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_optimize_query_471": {
+      "name": "optimize_query",
+      "type": "function",
+      "start_line": 471,
+      "end_line": 495,
+      "content_hash": "c5af3b165d0fa5bbecbcdb5f53004dabc77d563f",
+      "content": "def optimize_query(\n    query: str,\n    language: Optional[str] = None,\n    collection_size: Optional[int] = None\n) -> Dict[str, Any]:\n    \"\"\"\n    Analyze query and return optimization recommendations.\n    \n    Returns dict with:\n        - recommended_ef: Optimal HNSW_EF value\n        - use_dense_only: Whether to use dense-only search\n        - query_type: Classification of query\n        - complexity: Complexity score\n        - estimated_latency_ms: Estimated latency\n    \"\"\"\n    optimizer = get_query_optimizer(collection_size)\n    profile = optimizer.analyze_query(query, language)\n    \n    return {\n        \"recommended_ef\": profile.recommended_ef,\n        \"use_dense_only\": profile.use_dense_only,\n        \"query_type\": profile.query_type.value,\n        \"complexity\": round(profile.complexity_score, 3),\n        \"estimated_latency_ms\": round(profile.estimated_latency_ms, 2)\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_optimizer_stats_498": {
+      "name": "get_optimizer_stats",
+      "type": "function",
+      "start_line": 498,
+      "end_line": 502,
+      "content_hash": "bf6bd59f853a30d936a44a6c25a1522a5dec63d5",
+      "content": "def get_optimizer_stats() -> Dict[str, Any]:\n    \"\"\"Get current optimizer statistics.\"\"\"\n    if _optimizer is None:\n        return {\"error\": \"Optimizer not initialized\"}\n    return _optimizer.get_stats()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

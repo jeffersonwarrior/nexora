@@ -1,0 +1,238 @@
+{
+  "file_path": "/work/internal/indexer/query.go",
+  "file_hash": "c45b486cb496d6f9855cf0ec859acf2c57c8e283",
+  "updated_at": "2025-12-26T17:34:22.674933",
+  "symbols": {
+    "struct_QueryEngine_13": {
+      "name": "QueryEngine",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 19,
+      "content_hash": "de999cfb2f865be1320eabb9addd27a70ef6a016",
+      "content": "type QueryEngine struct {\n\tstorage    *Indexer\n\tembeddings *EmbeddingEngine\n\tgraph      *Graph\n}\n\n// NewQueryEngine creates a new QueryEngine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewQueryEngine_20": {
+      "name": "NewQueryEngine",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 27,
+      "content_hash": "892469aeec82318770f357e5cfd2a83ad19889d5",
+      "content": "func NewQueryEngine(storage *Indexer, embeddings *EmbeddingEngine) *QueryEngine {\n\treturn &QueryEngine{\n\t\tstorage:    storage,\n\t\tembeddings: embeddings,\n\t}\n}\n\n// SetGraph sets the graph for graph-based queries",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetGraph_28": {
+      "name": "SetGraph",
+      "type": "method",
+      "start_line": 28,
+      "end_line": 42,
+      "content_hash": "81ef6c43ecc4907754082ef147045858183389c3",
+      "content": "func (qe *QueryEngine) SetGraph(graph *Graph) {\n\tqe.graph = graph\n}\n\n// QueryType specifies the type of search to perform\ntype QueryType int\n\nconst (\n\tQueryTypeAll QueryType = iota\n\tQueryTypeSemantic\n\tQueryTypeText\n\tQueryTypeGraph\n)\n\n// QueryRequest represents a search request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_QueryRequest_43": {
+      "name": "QueryRequest",
+      "type": "struct",
+      "start_line": 43,
+      "end_line": 52,
+      "content_hash": "92f1fae00cd918073a793d8b1f82299a46e3d936",
+      "content": "type QueryRequest struct {\n\tQuery       string    `json:\"query\"`\n\tType        QueryType `json:\"type\"`\n\tLimit       int       `json:\"limit\"`\n\tContext     string    `json:\"context,omitempty\"`      // package, file, or type context\n\tSymbolTypes []string  `json:\"symbol_types,omitempty\"` // filter by symbol types\n\tIncludeDocs bool      `json:\"include_docs\"`           // include documentation in search\n}\n\n// QueryResult represents a search result",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_QueryResult_53": {
+      "name": "QueryResult",
+      "type": "struct",
+      "start_line": 53,
+      "end_line": 61,
+      "content_hash": "6106bcd5f2a2e06fcb96b3839b1f4c0c63e206ee",
+      "content": "type QueryResult struct {\n\tSymbol    *Symbol `json:\"symbol\"`\n\tScore     float64 `json:\"score\"`\n\tMatchType string  `json:\"match_type\"` // \"semantic\", \"text\", \"graph\", \"hybrid\"\n\tLocation  string  `json:\"location\"`\n\tReason    string  `json:\"reason\"` // why this result matched\n}\n\n// SearchResult represents the complete search response",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_SearchResult_62": {
+      "name": "SearchResult",
+      "type": "struct",
+      "start_line": 62,
+      "end_line": 70,
+      "content_hash": "f4ccbb954ab27fd223fcb18680ee3d59397e7b80",
+      "content": "type SearchResult struct {\n\tQuery    string        `json:\"query\"`\n\tType     QueryType     `json:\"type\"`\n\tResults  []QueryResult `json:\"results\"`\n\tTotal    int           `json:\"total\"`\n\tDuration string        `json:\"duration\"`\n}\n\n// Search performs a multi-modal search",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Search_71": {
+      "name": "Search",
+      "type": "method",
+      "start_line": 71,
+      "end_line": 129,
+      "content_hash": "d54fceb93d535cf865f4d323e9215d195c526276",
+      "content": "func (qe *QueryEngine) Search(ctx context.Context, req *QueryRequest) (*SearchResult, error) {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn nil, ctx.Err()\n\tdefault:\n\t}\n\n\tif req.Limit <= 0 {\n\t\treq.Limit = 20\n\t}\n\n\t// Start timing\n\tstartTime := time.Now()\n\tvar allResults []QueryResult\n\n\t// Perform semantic search\n\tif req.Type == QueryTypeAll || req.Type == QueryTypeSemantic {\n\t\tsemanticResults, err := qe.semanticSearch(ctx, req)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"semantic search failed: %w\", err)\n\t\t}\n\t\tallResults = append(allResults, semanticResults...)\n\t}\n\n\t// Perform text search\n\tif req.Type == QueryTypeAll || req.Type == QueryTypeText {\n\t\ttextResults, err := qe.textSearch(ctx, req)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"text search failed: %w\", err)\n\t\t}\n\t\tallResults = append(allResults, textResults...)\n\t}\n\n\t// Perform graph search\n\tif (req.Type == QueryTypeAll || req.Type == QueryTypeGraph) && qe.graph != nil {\n\t\tgraphResults, err := qe.graphSearch(ctx, req)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"graph search failed: %w\", err)\n\t\t}\n\t\tallResults = append(allResults, graphResults...)\n\t}\n\n\t// Merge and rank results\n\tfinalResults := qe.mergeAndRankResults(allResults, req)\n\n\t// Calculate duration\n\tduration := time.Since(startTime)\n\tdurationStr := fmt.Sprintf(\"%.2fms\", float64(duration.Nanoseconds())/1_000_000)\n\n\treturn &SearchResult{\n\t\tQuery:    req.Query,\n\t\tType:     req.Type,\n\t\tResults:  finalResults,\n\t\tTotal:    len(finalResults),\n\t\tDuration: durationStr,\n\t}, nil\n}\n\n// semanticSearch performs semantic search using embeddings",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_semanticSearch_130": {
+      "name": "semanticSearch",
+      "type": "method",
+      "start_line": 130,
+      "end_line": 173,
+      "content_hash": "ae3f8d6ed19ac1daddbb709ca5ec45dcfdbf4d88",
+      "content": "func (qe *QueryEngine) semanticSearch(ctx context.Context, req *QueryRequest) ([]QueryResult, error) {\n\t// Generate embedding for the query\n\tqueryEmbedding, err := qe.embeddings.GenerateEmbedding(ctx, req.Query)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Search for similar embeddings\n\tsimilarEmbeddings, err := qe.embeddings.SearchSimilar(ctx, req.Query, req.Limit*2)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tvar results []QueryResult\n\tfor _, embResult := range similarEmbeddings {\n\t\t// Get symbol for this embedding\n\t\tsymbol, err := qe.storage.GetSymbol(ctx, embResult.ID)\n\t\tif err != nil {\n\t\t\tcontinue\n\t\t}\n\t\tif symbol == nil {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Apply filters\n\t\tif !qe.matchesFilters(symbol, req) {\n\t\t\tcontinue\n\t\t}\n\n\t\tresult := QueryResult{\n\t\t\tSymbol:    symbol,\n\t\t\tScore:     float64(qe.embeddings.cosineSimilarity(queryEmbedding, embResult.Vector)),\n\t\t\tMatchType: \"semantic\",\n\t\t\tLocation:  fmt.Sprintf(\"%s:%d\", symbol.File, symbol.Line),\n\t\t\tReason:    fmt.Sprintf(\"semantic similarity: %.3f\", qe.embeddings.cosineSimilarity(queryEmbedding, embResult.Vector)),\n\t\t}\n\n\t\tresults = append(results, result)\n\t}\n\n\treturn results, nil\n}\n\n// getAllSymbolsWithFilters returns all symbols with applied filters",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getAllSymbolsWithFilters_174": {
+      "name": "getAllSymbolsWithFilters",
+      "type": "method",
+      "start_line": 174,
+      "end_line": 203,
+      "content_hash": "64e2bfaaf810cc78897a85c174d4d2cf7be53076",
+      "content": "func (qe *QueryEngine) getAllSymbolsWithFilters(ctx context.Context, req *QueryRequest) ([]QueryResult, error) {\n\tsymbols, err := qe.storage.SearchSymbols(ctx, \"\", req.Limit*2)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tvar results []QueryResult\n\tfor i := range symbols {\n\t\tsymbol := &symbols[i] // Get pointer to the symbol\n\n\t\t// Apply filters\n\t\tif !qe.matchesFilters(symbol, req) {\n\t\t\tcontinue\n\t\t}\n\n\t\tresult := QueryResult{\n\t\t\tSymbol:    symbol, // Already a pointer\n\t\t\tScore:     1.0,\n\t\t\tMatchType: \"text\",\n\t\t\tLocation:  fmt.Sprintf(\"%s:%d\", symbol.File, symbol.Line),\n\t\t\tReason:    \"exact match\",\n\t\t}\n\n\t\tresults = append(results, result)\n\t}\n\n\treturn results, nil\n}\n\n// textSearch performs full-text search using SQLite FTS",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_textSearch_204": {
+      "name": "textSearch",
+      "type": "method",
+      "start_line": 204,
+      "end_line": 270,
+      "content_hash": "2ed7bfa04e91f6933288932da2a8196c32909c73",
+      "content": "func (qe *QueryEngine) textSearch(ctx context.Context, req *QueryRequest) ([]QueryResult, error) {\n\t// Handle empty query case\n\tif req.Query == \"\" {\n\t\treturn qe.getAllSymbolsWithFilters(ctx, req)\n\t}\n\n\t// Build FTS query\n\tftsQuery := qe.buildFTSQuery(req.Query, req.IncludeDocs)\n\n\trows, err := qe.storage.db.QueryContext(ctx, `\n\t\tSELECT s.name, s.type, s.package, s.file, s.line, s.column, s.signature, s.doc, s.imports, s.callers, s.calls, s.public, s.params, s.returns, s.fields, s.methods\n\t\tFROM symbols_fts fts\n\t\tJOIN symbols s ON s.id = fts.id\n\t\tWHERE symbols_fts MATCH ?\n\t\tLIMIT ?`, ftsQuery, req.Limit*2)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tvar results []QueryResult\n\tfor rows.Next() {\n\t\tvar symbol Symbol\n\t\tvar id string\n\t\tvar importsJSON, callersJSON, callsJSON, paramsJSON, returnsJSON, fieldsJSON, methodsJSON string\n\t\tvar createdAt time.Time\n\n\t\terr := rows.Scan(\n\t\t\t&id, &symbol.Name, &symbol.Type, &symbol.Package,\n\t\t\t&symbol.File, &symbol.Line, &symbol.Column, &symbol.Signature,\n\t\t\t&symbol.Doc, &importsJSON, &callersJSON, &callsJSON,\n\t\t\t&symbol.Public, &paramsJSON, &returnsJSON, &fieldsJSON,\n\t\t\t&methodsJSON, &createdAt,\n\t\t)\n\t\tif err != nil {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Parse JSON fields\n\t\tjson.Unmarshal([]byte(importsJSON), &symbol.Imports)\n\t\tjson.Unmarshal([]byte(callersJSON), &symbol.Callers)\n\t\tjson.Unmarshal([]byte(callsJSON), &symbol.Calls)\n\t\tjson.Unmarshal([]byte(paramsJSON), &symbol.Params)\n\t\tjson.Unmarshal([]byte(returnsJSON), &symbol.Returns)\n\t\tjson.Unmarshal([]byte(fieldsJSON), &symbol.Fields)\n\t\tjson.Unmarshal([]byte(methodsJSON), &symbol.Methods)\n\n\t\t// Apply filters\n\t\tif !qe.matchesFilters(&symbol, req) {\n\t\t\tcontinue\n\t\t}\n\n\t\tresult := QueryResult{\n\t\t\tSymbol:    &symbol,\n\t\t\tScore:     1.0, // Default score since we're not using rank\n\t\t\tMatchType: \"text\",\n\t\t\tLocation:  fmt.Sprintf(\"%s:%d\", symbol.File, symbol.Line),\n\t\t\tReason:    \"text match\",\n\t\t}\n\n\t\tresults = append(results, result)\n\t}\n\n\treturn results, nil\n}\n\n// graphSearch performs graph-based search using relationships",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_graphSearch_271": {
+      "name": "graphSearch",
+      "type": "method",
+      "start_line": 271,
+      "end_line": 333,
+      "content_hash": "c1dcc8519ce23f32bf2fabf533120ab5c82575cf",
+      "content": "func (qe *QueryEngine) graphSearch(ctx context.Context, req *QueryRequest) ([]QueryResult, error) {\n\t// This is a simplified graph search - in practice, this would be more sophisticated\n\t// For now, we'll search for symbols that are related to symbols matching the text query\n\n\t// First, find symbols that match the query text\n\ttextResults, err := qe.textSearch(ctx, req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Find related symbols through the graph\n\tvar results []QueryResult\n\tprocessed := make(map[string]bool)\n\n\tfor _, result := range textResults {\n\t\tsymbolID := result.Symbol.Name\n\t\tif processed[symbolID] {\n\t\t\tcontinue\n\t\t}\n\t\tprocessed[symbolID] = true\n\n\t\t// Add the original result\n\t\tresults = append(results, result)\n\n\t\t// Add related symbols\n\t\tif qe.graph != nil {\n\t\t\trelated := qe.getRelatedSymbols(symbolID, 2) // depth 2\n\t\t\tfor _, relatedID := range related {\n\t\t\t\tif processed[relatedID] {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tprocessed[relatedID] = true\n\n\t\t\t\tsymbols, err := qe.storage.GetSymbol(ctx, relatedID)\n\t\t\t\tif err != nil || symbols == nil {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\n\t\t\t\tsymbol := symbols\n\t\t\t\tif !qe.matchesFilters(symbol, req) {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\n\t\t\t\t// Calculate a simple graph-based score\n\t\t\t\tgraphScore := qe.calculateGraphScore(symbolID, relatedID)\n\n\t\t\t\tgraphResult := QueryResult{\n\t\t\t\t\tSymbol:    symbol,\n\t\t\t\t\tScore:     graphScore,\n\t\t\t\t\tMatchType: \"graph\",\n\t\t\t\t\tLocation:  fmt.Sprintf(\"%s:%d\", symbol.File, symbol.Line),\n\t\t\t\t\tReason:    fmt.Sprintf(\"graph relationship to: %s\", symbolID),\n\t\t\t\t}\n\n\t\t\t\tresults = append(results, graphResult)\n\t\t\t}\n\t\t}\n\t}\n\n\treturn results, nil\n}\n\n// getRelatedSymbols finds symbols related to the given symbol within the graph",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getRelatedSymbols_334": {
+      "name": "getRelatedSymbols",
+      "type": "method",
+      "start_line": 334,
+      "end_line": 373,
+      "content_hash": "5a95b23d879b05281c48e91031b71c3d3af3249f",
+      "content": "func (qe *QueryEngine) getRelatedSymbols(symbolID string, maxDepth int) []string {\n\tif qe.graph == nil {\n\t\treturn nil\n\t}\n\n\trelated := make([]string, 0)\n\tvisited := make(map[string]bool)\n\n\tvar traverse func(currentID string, depth int)\n\n\ttraverse = func(currentID string, depth int) {\n\t\tif depth <= 0 || visited[currentID] {\n\t\t\treturn\n\t\t}\n\t\tvisited[currentID] = true\n\n\t\t// Get upstream and downstream dependencies\n\t\tupstream := qe.graph.GetUpstreamDependencies(currentID)\n\t\tdownstream := qe.graph.GetDownstreamDependencies(currentID)\n\n\t\tfor _, dep := range upstream {\n\t\t\tif !visited[dep] {\n\t\t\t\trelated = append(related, dep)\n\t\t\t\ttraverse(dep, depth-1)\n\t\t\t}\n\t\t}\n\n\t\tfor _, dep := range downstream {\n\t\t\tif !visited[dep] {\n\t\t\t\trelated = append(related, dep)\n\t\t\t\ttraverse(dep, depth-1)\n\t\t\t}\n\t\t}\n\t}\n\n\ttraverse(symbolID, maxDepth)\n\treturn related\n}\n\n// calculateGraphScore calculates a score for graph relationships",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_calculateGraphScore_374": {
+      "name": "calculateGraphScore",
+      "type": "method",
+      "start_line": 374,
+      "end_line": 391,
+      "content_hash": "418023c97962912e4fc05dca95df2499effe4e34",
+      "content": "func (qe *QueryEngine) calculateGraphScore(fromID, toID string) float64 {\n\tif qe.graph == nil {\n\t\treturn 0.1\n\t}\n\n\t// Simple scoring: stronger relationships have higher scores\n\tif edges, exists := qe.graph.Edges[fromID]; exists {\n\t\tfor _, edge := range edges {\n\t\t\tif edge.To == toID {\n\t\t\t\treturn float64(edge.Weight) / 10.0\n\t\t\t}\n\t\t}\n\t}\n\n\treturn 0.1 // Default low score for indirect relationships\n}\n\n// buildFTSQuery constructs a SQLite FTS query from a natural language query",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_buildFTSQuery_392": {
+      "name": "buildFTSQuery",
+      "type": "method",
+      "start_line": 392,
+      "end_line": 440,
+      "content_hash": "29b13071a85d4b45c08d1282c548026badecafa9",
+      "content": "func (qe *QueryEngine) buildFTSQuery(query string, includeDocs bool) string {\n\t// Sanitize input to prevent SQL injection\n\t// Replace SQLite FTS special characters with escaped versions\n\tsanitized := strings.ReplaceAll(query, `\"`, `\"\"`)\n\tsanitized = strings.ReplaceAll(sanitized, `'`, `''`)\n\n\t// Remove any other potentially harmful characters\n\tsanitized = strings.ReplaceAll(sanitized, \";\", \"\")\n\tsanitized = strings.ReplaceAll(sanitized, \"--\", \"\")\n\tsanitized = strings.ReplaceAll(sanitized, \"/*\", \"\")\n\tsanitized = strings.ReplaceAll(sanitized, \"*/\", \"\")\n\n\tterms := strings.Fields(sanitized)\n\tvar ftsTerms []string\n\n\tfor _, term := range terms {\n\t\t// Skip empty terms and control characters\n\t\tif term == \"\" || strings.ContainsAny(term, \"\\x00\\x1a\\x0d\\x0a\") {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Quote terms that contain spaces or special characters\n\t\tif strings.ContainsAny(term, \" -:()[]{}\") {\n\t\t\tterm = `\"` + term + `\"`\n\t\t}\n\n\t\tif includeDocs && !strings.HasPrefix(term, \"-\") {\n\t\t\t// Include documentation in search\n\t\t\tftsTerms = append(ftsTerms, term)\n\t\t} else {\n\t\t\t// Search only in name and signature\n\t\t\tftsTerms = append(ftsTerms, term)\n\t\t}\n\t}\n\n\tif len(ftsTerms) == 0 {\n\t\treturn `\"\"` // Return empty search if no valid terms\n\t}\n\n\tif includeDocs {\n\t\treturn strings.Join(ftsTerms, \" OR \")\n\t}\n\n\t// SQLite FTS syntax for column-specific search - use parameterized approach\n\tjoined := strings.Join(ftsTerms, \" OR \")\n\treturn fmt.Sprintf(\"(name:%s OR signature:%s)\", joined, joined)\n}\n\n// matchesFilters checks if a symbol matches the query filters",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_matchesFilters_441": {
+      "name": "matchesFilters",
+      "type": "method",
+      "start_line": 441,
+      "end_line": 467,
+      "content_hash": "7aba4e64d93473c5b158d9d9d14f475affec4cc0",
+      "content": "func (qe *QueryEngine) matchesFilters(symbol *Symbol, req *QueryRequest) bool {\n\t// Filter by symbol type\n\tif len(req.SymbolTypes) > 0 {\n\t\tfound := false\n\t\tfor _, allowedType := range req.SymbolTypes {\n\t\t\tif symbol.Type == allowedType {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tif !found {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// Filter by context (package, file)\n\tif req.Context != \"\" {\n\t\t// Check if context matches package or file\n\t\tif !strings.Contains(symbol.Package, req.Context) && !strings.Contains(symbol.File, req.Context) {\n\t\t\treturn false\n\t\t}\n\t}\n\n\treturn true\n}\n\n// mergeAndRankResults combines results from different search types and ranks them",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_mergeAndRankResults_468": {
+      "name": "mergeAndRankResults",
+      "type": "method",
+      "start_line": 468,
+      "end_line": 511,
+      "content_hash": "827ff2bbb18ad9270eb20fc60a18faf31ba60dc9",
+      "content": "func (qe *QueryEngine) mergeAndRankResults(results []QueryResult, req *QueryRequest) []QueryResult {\n\t// Group by symbol ID\n\tsymbolResults := make(map[string]*QueryResult)\n\n\tfor _, result := range results {\n\t\tsymbolID := result.Symbol.Name + \"@\" + result.Symbol.Package\n\n\t\tif existing, exists := symbolResults[symbolID]; exists {\n\t\t\t// Boost score if found by multiple methods\n\t\t\tcombinedScore := existing.Score + result.Score*0.5\n\n\t\t\t// Update match type to hybrid if we have multiple types\n\t\t\tif existing.MatchType != result.MatchType {\n\t\t\t\tresult.MatchType = \"hybrid\"\n\t\t\t\tresult.Score = combinedScore\n\t\t\t\tsymbolResults[symbolID] = &result\n\t\t\t} else {\n\t\t\t\texisting.Score = combinedScore\n\t\t\t}\n\t\t} else {\n\t\t\tsymbolResults[symbolID] = &result\n\t\t}\n\t}\n\n\t// Convert back to slice and sort by score\n\tvar finalResults []QueryResult\n\tfor _, result := range symbolResults {\n\t\tfinalResults = append(finalResults, *result)\n\t}\n\n\t// Sort by score (descending)\n\tsort.Slice(finalResults, func(i, j int) bool {\n\t\treturn finalResults[i].Score > finalResults[j].Score\n\t})\n\n\t// Apply limit\n\tif len(finalResults) > req.Limit {\n\t\tfinalResults = finalResults[:req.Limit]\n\t}\n\n\treturn finalResults\n}\n\n// AdvancedQuery performs more complex queries like \"find all functions that X calls\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AdvancedQuery_512": {
+      "name": "AdvancedQuery",
+      "type": "method",
+      "start_line": 512,
+      "end_line": 543,
+      "content_hash": "2dfe1e438d0270d0a6c26b180f50a8709e0f0d1f",
+      "content": "func (qe *QueryEngine) AdvancedQuery(ctx context.Context, queryPattern string) ([]QueryResult, error) {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn nil, ctx.Err()\n\tdefault:\n\t}\n\n\t// Parse common query patterns\n\tif strings.HasPrefix(queryPattern, \"find all \") {\n\t\treturn qe.parseFindQuery(ctx, queryPattern)\n\t} else if strings.Contains(queryPattern, \" that \") {\n\t\treturn qe.parseRelationshipQuery(ctx, queryPattern)\n\t} else if strings.Contains(queryPattern, \" calls \") {\n\t\treturn qe.parseCallQuery(ctx, queryPattern)\n\t}\n\n\t// Fall back to regular search\n\treq := &QueryRequest{\n\t\tQuery: queryPattern,\n\t\tType:  QueryTypeAll,\n\t\tLimit: 20,\n\t}\n\n\tresult, err := qe.Search(ctx, req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn result.Results, nil\n}\n\n// parseFindQuery handles queries like \"find all functions in package X\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parseFindQuery_544": {
+      "name": "parseFindQuery",
+      "type": "method",
+      "start_line": 544,
+      "end_line": 585,
+      "content_hash": "b5b47cb282a4543828a1c253580b401cbecd5641",
+      "content": "func (qe *QueryEngine) parseFindQuery(ctx context.Context, query string) ([]QueryResult, error) {\n\t// Simple pattern parsing - in practice this would be more sophisticated\n\tquery = strings.TrimPrefix(query, \"find all \")\n\n\tvar symbolType string\n\tvar context string\n\n\tterms := strings.Fields(query)\n\tfor i, term := range terms {\n\t\tif term == \"functions\" {\n\t\t\tsymbolType = \"function\"\n\t\t} else if term == \"function\" {\n\t\t\tsymbolType = \"function\"\n\t\t} else if term == \"structs\" {\n\t\t\tsymbolType = \"struct\"\n\t\t} else if term == \"interfaces\" {\n\t\t\tsymbolType = \"interface\"\n\t\t} else if term == \"variables\" {\n\t\t\tsymbolType = \"var\"\n\t\t}\n\t\tif term == \"in\" && i+1 < len(terms) {\n\t\t\tcontext = terms[i+1]\n\t\t}\n\t}\n\n\treq := &QueryRequest{\n\t\tQuery:       \"\",\n\t\tType:        QueryTypeText,\n\t\tLimit:       50,\n\t\tContext:     context,\n\t\tSymbolTypes: []string{symbolType},\n\t}\n\n\tresult, err := qe.Search(ctx, req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn result.Results, nil\n}\n\n// parseRelationshipQuery handles queries like \"functions that implement interface X\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parseRelationshipQuery_586": {
+      "name": "parseRelationshipQuery",
+      "type": "method",
+      "start_line": 586,
+      "end_line": 603,
+      "content_hash": "0e0d6c52080c003401f9be611de6860a7be837ca",
+      "content": "func (qe *QueryEngine) parseRelationshipQuery(ctx context.Context, query string) ([]QueryResult, error) {\n\t// This would use the graph to find relationships\n\t// For now, fall back to text search\n\treq := &QueryRequest{\n\t\tQuery: query,\n\t\tType:  QueryTypeAll,\n\t\tLimit: 20,\n\t}\n\n\tresult, err := qe.Search(ctx, req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn result.Results, nil\n}\n\n// parseCallQuery handles queries like \"function X calls\" or \"who calls X\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parseCallQuery_604": {
+      "name": "parseCallQuery",
+      "type": "method",
+      "start_line": 604,
+      "end_line": 661,
+      "content_hash": "5ee1169e21041c900ab3fb9cd35de4b1c426cda7",
+      "content": "func (qe *QueryEngine) parseCallQuery(ctx context.Context, query string) ([]QueryResult, error) {\n\tif qe.graph == nil {\n\t\treturn nil, fmt.Errorf(\"graph search not available\")\n\t}\n\n\t// Simple parsing for call relationships\n\tvar functionName string\n\tvar direction string // \"outgoing\" or \"incoming\"\n\n\tif strings.Contains(query, \" calls \") {\n\t\t// Find functions that are called by X\n\t\tparts := strings.Split(query, \" calls \")\n\t\tif len(parts) >= 1 {\n\t\t\tfunctionName = strings.TrimSpace(parts[0])\n\t\t\tdirection = \"outgoing\"\n\t\t}\n\t} else if strings.Contains(query, \" who calls \") {\n\t\t// Find functions that call X\n\t\tparts := strings.Split(query, \" who calls \")\n\t\tif len(parts) >= 2 {\n\t\t\tfunctionName = strings.TrimSpace(parts[1])\n\t\t\tdirection = \"incoming\"\n\t\t}\n\t}\n\n\tif functionName == \"\" {\n\t\treturn nil, fmt.Errorf(\"unable to parse call query: %s\", query)\n\t}\n\n\tvar relatedSymbols []string\n\tif direction == \"outgoing\" {\n\t\trelatedSymbols = qe.graph.FindCallees(functionName)\n\t} else {\n\t\trelatedSymbols = qe.graph.FindCallers(functionName)\n\t}\n\n\tvar results []QueryResult\n\tfor _, symbolID := range relatedSymbols {\n\t\tsymbol, err := qe.storage.GetSymbol(ctx, symbolID)\n\t\tif err != nil || symbol == nil {\n\t\t\tcontinue\n\t\t}\n\n\t\tresult := QueryResult{\n\t\t\tSymbol:    symbol,\n\t\t\tScore:     0.8, // Fixed score for graph relationships\n\t\t\tMatchType: \"graph\",\n\t\t\tLocation:  fmt.Sprintf(\"%s:%d\", symbol.File, symbol.Line),\n\t\t\tReason:    fmt.Sprintf(\"%s relationship to %s\", direction, functionName),\n\t\t}\n\n\t\tresults = append(results, result)\n\t}\n\n\treturn results, nil\n}\n\n// ExplainQuery explains why certain results were returned",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ExplainQuery_662": {
+      "name": "ExplainQuery",
+      "type": "method",
+      "start_line": 662,
+      "end_line": 691,
+      "content_hash": "64ab38f684ccc0aa814516ffe0cbc2eacd9abb32",
+      "content": "func (qe *QueryEngine) ExplainQuery(ctx context.Context, query string) (string, error) {\n\treq := &QueryRequest{\n\t\tQuery: query,\n\t\tType:  QueryTypeAll,\n\t\tLimit: 5,\n\t}\n\n\tresult, err := qe.Search(ctx, req)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tvar explanation strings.Builder\n\texplanation.WriteString(fmt.Sprintf(\"Query: '%s'\\n\", query))\n\texplanation.WriteString(fmt.Sprintf(\"Found %d results\\n\\n\", len(result.Results)))\n\n\tfor i, res := range result.Results {\n\t\texplanation.WriteString(fmt.Sprintf(\"%d. %s (%s) - score: %.3f\\n\", i+1, res.Symbol.Name, res.Symbol.Type, res.Score))\n\t\texplanation.WriteString(fmt.Sprintf(\"   Location: %s\\n\", res.Location))\n\t\texplanation.WriteString(fmt.Sprintf(\"   Match type: %s\\n\", res.MatchType))\n\t\texplanation.WriteString(fmt.Sprintf(\"   Reason: %s\\n\", res.Reason))\n\n\t\tif res.Symbol.Doc != \"\" {\n\t\t\texplanation.WriteString(fmt.Sprintf(\"   Documentation: %s\\n\", res.Symbol.Doc))\n\t\t}\n\t\texplanation.WriteString(\"\\n\")\n\t}\n\n\treturn explanation.String(), nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

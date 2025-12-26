@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/memory.go",
+  "file_hash": "d698c1ffff3a85d7ee88aefe04c7100ae49c4349",
+  "updated_at": "2025-12-26T17:34:21.178911",
+  "symbols": {
+    "function_WithCapacity_19": {
+      "name": "WithCapacity",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 25,
+      "content_hash": "5f6fae4d9d89aa09388757d8577da41353ebe6d7",
+      "content": "func WithCapacity(capacity int) MemoryOption {\n\treturn func(m *InMemoryMemory) {\n\t\tm.capacity = capacity\n\t}\n}\n\n// WithExpiration sets the expiration duration for messages",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithExpiration_26": {
+      "name": "WithExpiration",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 32,
+      "content_hash": "e13624ae883493947f8ef53d0bc3691682a08ca8",
+      "content": "func WithExpiration(expiration time.Duration) MemoryOption {\n\treturn func(m *InMemoryMemory) {\n\t\tm.expiration = expiration\n\t}\n}\n\n// InMemoryMemory provides an in-memory implementation of the Memory interface",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_InMemoryMemory_33": {
+      "name": "InMemoryMemory",
+      "type": "struct",
+      "start_line": 33,
+      "end_line": 40,
+      "content_hash": "35f3d79c7bc197dc6ef98f4531823d9974e673e0",
+      "content": "type InMemoryMemory struct {\n\tmu         sync.RWMutex\n\tmessages   []MemoryMessage // Messages in chronological order (oldest first)\n\tcapacity   int             // Maximum number of messages to store (0 = unlimited)\n\texpiration time.Duration   // Message expiration time (0 = no expiration)\n}\n\n// NewInMemoryMemory creates a new in-memory storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewInMemoryMemory_41": {
+      "name": "NewInMemoryMemory",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 55,
+      "content_hash": "cf24034d59a2e881d6c1af6442d0ba0811253bb0",
+      "content": "func NewInMemoryMemory(opts ...MemoryOption) *InMemoryMemory {\n\tmemory := &InMemoryMemory{\n\t\tcapacity:   0, // Unlimited by default\n\t\texpiration: 0, // No expiration by default\n\t\tmessages:   make([]MemoryMessage, 0),\n\t}\n\n\tfor _, opt := range opts {\n\t\topt(memory)\n\t}\n\n\treturn memory\n}\n\n// Store stores a message in memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Store_56": {
+      "name": "Store",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 94,
+      "content_hash": "58391556a707a14fbeffe04b66cf466a0f47c60c",
+      "content": "func (m *InMemoryMemory) Store(ctx context.Context, message MemoryMessage) error {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn ctx.Err()\n\tdefault:\n\t}\n\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\t// Assign ID if not provided\n\tif message.ID == \"\" {\n\t\tmessage.ID = uuid.New().String()\n\t}\n\n\t// Set timestamp if not provided\n\tif message.Timestamp == 0 {\n\t\tmessage.Timestamp = time.Now().UnixNano()\n\t}\n\n\t// Initialize metadata if nil\n\tif message.Metadata == nil {\n\t\tmessage.Metadata = make(map[string]interface{})\n\t}\n\n\t// Append message\n\tm.messages = append(m.messages, message)\n\n\t// Enforce capacity limit\n\tif m.capacity > 0 && len(m.messages) > m.capacity {\n\t\t// Remove oldest messages to maintain capacity\n\t\toverflow := len(m.messages) - m.capacity\n\t\tm.messages = m.messages[overflow:]\n\t}\n\n\treturn nil\n}\n\n// Retrieve retrieves messages from memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Retrieve_95": {
+      "name": "Retrieve",
+      "type": "method",
+      "start_line": 95,
+      "end_line": 136,
+      "content_hash": "29f9ee36ccfec50c3bbf2cf6d4cfe9dbca73191b",
+      "content": "func (m *InMemoryMemory) Retrieve(ctx context.Context, query string, limit int) ([]MemoryMessage, error) {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn nil, ctx.Err()\n\tdefault:\n\t}\n\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\n\t// Filter expires messages\n\tnow := time.Now().UnixNano()\n\tvalidMessages := make([]MemoryMessage, 0, len(m.messages))\n\n\tfor _, msg := range m.messages {\n\t\t// Skip expired messages\n\t\tif m.expiration > 0 && now-msg.Timestamp > m.expiration.Nanoseconds() {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Filter by query if provided\n\t\tif query != \"\" && !strings.Contains(strings.ToLower(msg.Content), strings.ToLower(query)) {\n\t\t\tcontinue\n\t\t}\n\n\t\tvalidMessages = append(validMessages, msg)\n\t}\n\n\t// Sort messages in reverse chronological order (newest first)\n\tsort.Slice(validMessages, func(i, j int) bool {\n\t\treturn validMessages[i].Timestamp > validMessages[j].Timestamp\n\t})\n\n\t// Apply limit\n\tif limit > 0 && len(validMessages) > limit {\n\t\tvalidMessages = validMessages[:limit]\n\t}\n\n\treturn validMessages, nil\n}\n\n// Search searches for messages matching the pattern",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Search_137": {
+      "name": "Search",
+      "type": "method",
+      "start_line": 137,
+      "end_line": 185,
+      "content_hash": "78a2edf494fbd53ef19fcc25322ec1ac4a5b127d",
+      "content": "func (m *InMemoryMemory) Search(ctx context.Context, pattern string) ([]MemoryMessage, error) {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn nil, ctx.Err()\n\tdefault:\n\t}\n\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\n\t// Filter expires messages\n\tnow := time.Now().UnixNano()\n\tvar results []MemoryMessage\n\n\tpatternLower := strings.ToLower(pattern)\n\n\tfor _, msg := range m.messages {\n\t\t// Skip expired messages\n\t\tif m.expiration > 0 && now-msg.Timestamp > m.expiration.Nanoseconds() {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Check if pattern matches content or metadata\n\t\tcontentMatches := strings.Contains(strings.ToLower(msg.Content), patternLower)\n\t\troleMatches := strings.Contains(strings.ToLower(msg.Role), patternLower)\n\n\t\t// Check metadata string values\n\t\tvar metadataMatches bool\n\t\tfor _, v := range msg.Metadata {\n\t\t\tif strVal, ok := v.(string); ok && strings.Contains(strings.ToLower(strVal), patternLower) {\n\t\t\t\tmetadataMatches = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\tif contentMatches || roleMatches || metadataMatches {\n\t\t\tresults = append(results, msg)\n\t\t}\n\t}\n\n\t// Sort results by timestamp (newest first)\n\tsort.Slice(results, func(i, j int) bool {\n\t\treturn results[i].Timestamp > results[j].Timestamp\n\t})\n\n\treturn results, nil\n}\n\n// Clear removes all messages from memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Clear_186": {
+      "name": "Clear",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 200,
+      "content_hash": "d1deb8e40f5bc4e7bdf2d11fcdc42c6c93df03bd",
+      "content": "func (m *InMemoryMemory) Clear(ctx context.Context) error {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn ctx.Err()\n\tdefault:\n\t}\n\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\tm.messages = make([]MemoryMessage, 0)\n\treturn nil\n}\n\n// Cleanup removes expired messages from memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cleanup_201": {
+      "name": "Cleanup",
+      "type": "method",
+      "start_line": 201,
+      "end_line": 228,
+      "content_hash": "664f21b941275e64e0ff1c26ef4294b5c702c8a3",
+      "content": "func (m *InMemoryMemory) Cleanup(ctx context.Context) error {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn ctx.Err()\n\tdefault:\n\t}\n\n\tif m.expiration == 0 {\n\t\treturn nil // No expiration, nothing to clean up\n\t}\n\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\tnow := time.Now().UnixNano()\n\tvalidMessages := make([]MemoryMessage, 0, len(m.messages))\n\n\tfor _, msg := range m.messages {\n\t\tif now-msg.Timestamp <= m.expiration.Nanoseconds() {\n\t\t\tvalidMessages = append(validMessages, msg)\n\t\t}\n\t}\n\n\tm.messages = validMessages\n\treturn nil\n}\n\n// Len returns the number of messages currently stored (non-expired)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Len_229": {
+      "name": "Len",
+      "type": "method",
+      "start_line": 229,
+      "end_line": 254,
+      "content_hash": "e776f0891dadbbc2643c53d47fd5ddabbc31567e",
+      "content": "func (m *InMemoryMemory) Len(ctx context.Context) (int, error) {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn 0, ctx.Err()\n\tdefault:\n\t}\n\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\n\tif m.expiration == 0 {\n\t\treturn len(m.messages), nil\n\t}\n\n\tnow := time.Now().UnixNano()\n\tcount := 0\n\tfor _, msg := range m.messages {\n\t\tif now-msg.Timestamp <= m.expiration.Nanoseconds() {\n\t\t\tcount++\n\t\t}\n\t}\n\n\treturn count, nil\n}\n\n// Stats returns memory statistics",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MemoryStats_255": {
+      "name": "MemoryStats",
+      "type": "struct",
+      "start_line": 255,
+      "end_line": 263,
+      "content_hash": "0a91cf43a84d076df52de524552ae8920810969c",
+      "content": "type MemoryStats struct {\n\tTotalMessages int     `json:\"total_messages\"`\n\tCapacity      int     `json:\"capacity\"`\n\tUsagePercent  float64 `json:\"usage_percent\"` // 0-1 range\n\tHasExpiration bool    `json:\"has_expiration\"`\n\tExpiration    string  `json:\"expiration\"`\n}\n\n// Stats returns memory statistics",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Stats_264": {
+      "name": "Stats",
+      "type": "method",
+      "start_line": 264,
+      "end_line": 293,
+      "content_hash": "f8cdb07d5b71be372c6c84e951dd855ab4ff993a",
+      "content": "func (m *InMemoryMemory) Stats(ctx context.Context) (MemoryStats, error) {\n\tselect {\n\tcase <-ctx.Done():\n\t\treturn MemoryStats{}, ctx.Err()\n\tdefault:\n\t}\n\n\tcount, err := m.Len(ctx)\n\tif err != nil {\n\t\treturn MemoryStats{}, err\n\t}\n\n\tstats := MemoryStats{\n\t\tTotalMessages: count,\n\t\tCapacity:      m.capacity,\n\t\tHasExpiration: m.expiration > 0,\n\t}\n\n\tif m.expiration > 0 {\n\t\tstats.Expiration = m.expiration.String()\n\t}\n\n\tif m.capacity > 0 {\n\t\tstats.UsagePercent = float64(count) / float64(m.capacity)\n\t}\n\n\treturn stats, nil\n}\n\n// Mock memory for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MockMemory_294": {
+      "name": "MockMemory",
+      "type": "struct",
+      "start_line": 294,
+      "end_line": 299,
+      "content_hash": "df9fd4babed0c2aab259b0ab8f050767a5c90e72",
+      "content": "type MockMemory struct {\n\tmessages []MemoryMessage\n\tmu       sync.RWMutex\n}\n\n// NewMockMemory creates a mock memory implementation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewMockMemory_300": {
+      "name": "NewMockMemory",
+      "type": "function",
+      "start_line": 300,
+      "end_line": 306,
+      "content_hash": "6b46aea12bcb27abb9ce1a639d45e9b3f802b3e7",
+      "content": "func NewMockMemory() *MockMemory {\n\treturn &MockMemory{\n\t\tmessages: make([]MemoryMessage, 0),\n\t}\n}\n\n// Store stores a message in mock memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Store_307": {
+      "name": "Store",
+      "type": "method",
+      "start_line": 307,
+      "end_line": 323,
+      "content_hash": "2fe97cb9ac7185a12c4375fbf7d56a9f8a502b59",
+      "content": "func (m *MockMemory) Store(ctx context.Context, message MemoryMessage) error {\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\tif message.ID == \"\" {\n\t\tmessage.ID = fmt.Sprintf(\"mock-%d\", rand.Intn(10000))\n\t}\n\n\tif message.Timestamp == 0 {\n\t\tmessage.Timestamp = time.Now().UnixNano()\n\t}\n\n\tm.messages = append(m.messages, message)\n\treturn nil\n}\n\n// Retrieve retrieves messages from mock memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Retrieve_324": {
+      "name": "Retrieve",
+      "type": "method",
+      "start_line": 324,
+      "end_line": 343,
+      "content_hash": "365454634837eae83c41cdfe83d4d5e69a84c9df",
+      "content": "func (m *MockMemory) Retrieve(ctx context.Context, query string, limit int) ([]MemoryMessage, error) {\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\n\tvar results []MemoryMessage\n\n\tfor _, msg := range m.messages {\n\t\tif query == \"\" || strings.Contains(strings.ToLower(msg.Content), strings.ToLower(query)) {\n\t\t\tresults = append(results, msg)\n\t\t}\n\t}\n\n\tif limit > 0 && len(results) > limit {\n\t\tresults = results[:limit]\n\t}\n\n\treturn results, nil\n}\n\n// Search searches messages in mock memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Search_344": {
+      "name": "Search",
+      "type": "method",
+      "start_line": 344,
+      "end_line": 348,
+      "content_hash": "0e26218c737048476f99d5e0a18523e9ad45e06d",
+      "content": "func (m *MockMemory) Search(ctx context.Context, pattern string) ([]MemoryMessage, error) {\n\treturn m.Retrieve(ctx, pattern, 0)\n}\n\n// Clear clears mock memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Clear_349": {
+      "name": "Clear",
+      "type": "method",
+      "start_line": 349,
+      "end_line": 355,
+      "content_hash": "20accaec25f69fab176f750fd853947e05c6a97c",
+      "content": "func (m *MockMemory) Clear(ctx context.Context) error {\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\tm.messages = make([]MemoryMessage, 0)\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

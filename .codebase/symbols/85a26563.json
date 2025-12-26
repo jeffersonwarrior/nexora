@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_git_history_prune.py",
+  "file_hash": "5593ab83a11928dc31d4cb056897bba7f836441f",
+  "updated_at": "2025-12-26T17:34:20.987749",
+  "symbols": {
+    "class_FakeClient_10": {
+      "name": "FakeClient",
+      "type": "class",
+      "start_line": 10,
+      "end_line": 15,
+      "content_hash": "5075e8fcf4327e7d2f87b0ccdf2e76ec43b8bf2d",
+      "content": "class FakeClient:\n    def __init__(self):\n        self.calls = []\n\n    def delete(self, **kwargs):\n        self.calls.append(kwargs)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___11": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 11,
+      "end_line": 12,
+      "content_hash": "f58f5431e7f01f9f012d44106c021b64606bce76",
+      "content": "    def __init__(self):\n        self.calls = []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_delete_14": {
+      "name": "delete",
+      "type": "method",
+      "start_line": 14,
+      "end_line": 15,
+      "content_hash": "4b6e4852c644e9aaffb807486c3aa7064165ee32",
+      "content": "    def delete(self, **kwargs):\n        self.calls.append(kwargs)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__dump_18": {
+      "name": "_dump",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 23,
+      "content_hash": "85d949dc2d20175d0a164718377cbe3c8cefcb3e",
+      "content": "def _dump(obj):\n    if hasattr(obj, \"model_dump\"):\n        return obj.model_dump()\n    if hasattr(obj, \"dict\"):\n        return obj.dict()\n    return obj",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__assert_has_match_26": {
+      "name": "_assert_has_match",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 34,
+      "content_hash": "792ac4c3036219e4ef798465a94347f9b73902fc",
+      "content": "def _assert_has_match(conds, *, key: str, value: str) -> None:\n    for c in conds:\n        cd = _dump(c)\n        if cd.get(\"key\") != key:\n            continue\n        match = cd.get(\"match\") or {}\n        if isinstance(match, dict) and match.get(\"value\") == value:\n            return\n    raise AssertionError(f\"missing condition key={key} value={value}; got={conds}\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_prune_skipped_on_delta_38": {
+      "name": "test_prune_skipped_on_delta",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 45,
+      "content_hash": "8602609ad0f5a1f73b652e23997cd84e797968d9",
+      "content": "def test_prune_skipped_on_delta(monkeypatch):\n    client = FakeClient()\n    monkeypatch.setenv(\"GIT_HISTORY_PRUNE\", \"1\")\n    monkeypatch.setattr(ih, \"REPO_NAME\", \"repo\")\n    monkeypatch.setattr(ih, \"COLLECTION\", \"coll\")\n\n    ih._prune_old_commit_points(client, \"run-1\", mode=\"delta\")\n    assert client.calls == []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_prune_skipped_when_disabled_49": {
+      "name": "test_prune_skipped_when_disabled",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 56,
+      "content_hash": "1e55ccc05854c62c23ee844251f3252a9ce5313e",
+      "content": "def test_prune_skipped_when_disabled(monkeypatch):\n    client = FakeClient()\n    monkeypatch.setenv(\"GIT_HISTORY_PRUNE\", \"0\")\n    monkeypatch.setattr(ih, \"REPO_NAME\", \"repo\")\n    monkeypatch.setattr(ih, \"COLLECTION\", \"coll\")\n\n    ih._prune_old_commit_points(client, \"run-1\", mode=\"snapshot\")\n    assert client.calls == []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_prune_called_on_snapshot_60": {
+      "name": "test_prune_called_on_snapshot",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 87,
+      "content_hash": "af2862ec9618605bb681d13f4e54019fb9057a7d",
+      "content": "def test_prune_called_on_snapshot(monkeypatch):\n    client = FakeClient()\n    monkeypatch.setenv(\"GIT_HISTORY_PRUNE\", \"1\")\n    monkeypatch.setattr(ih, \"REPO_NAME\", \"repo\")\n    monkeypatch.setattr(ih, \"COLLECTION\", \"coll\")\n\n    run_id = \"git_history_test_run\"\n    ih._prune_old_commit_points(client, run_id, mode=\"snapshot\")\n\n    assert len(client.calls) == 1\n    call = client.calls[0]\n\n    assert call.get(\"collection_name\") == \"coll\"\n    assert call.get(\"wait\") is True\n\n    selector = call.get(\"points_selector\")\n    assert isinstance(selector, models.FilterSelector)\n\n    flt = selector.filter\n    assert isinstance(flt, models.Filter)\n\n    flt_d = _dump(flt)\n    must = flt_d.get(\"must\") or []\n    must_not = flt_d.get(\"must_not\") or []\n\n    _assert_has_match(must, key=\"metadata.kind\", value=\"git_message\")\n    _assert_has_match(must, key=\"metadata.repo\", value=\"repo\")\n    _assert_has_match(must_not, key=\"metadata.git_history_run_id\", value=run_id)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_prune_swallow_delete_errors_91": {
+      "name": "test_prune_swallow_delete_errors",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 100,
+      "content_hash": "cb767938e3b8fede928c610ddc76f65ac5a9b754",
+      "content": "def test_prune_swallow_delete_errors(monkeypatch):\n    class BoomClient:\n        def delete(self, **kwargs):\n            raise RuntimeError(\"boom\")\n\n    monkeypatch.setenv(\"GIT_HISTORY_PRUNE\", \"1\")\n    monkeypatch.setattr(ih, \"REPO_NAME\", \"repo\")\n    monkeypatch.setattr(ih, \"COLLECTION\", \"coll\")\n\n    ih._prune_old_commit_points(BoomClient(), \"run-1\", mode=\"snapshot\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_BoomClient_92": {
+      "name": "BoomClient",
+      "type": "class",
+      "start_line": 92,
+      "end_line": 94,
+      "content_hash": "f131e1fc0b9f1be017a9b68e98e212f0921f08cc",
+      "content": "    class BoomClient:\n        def delete(self, **kwargs):\n            raise RuntimeError(\"boom\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_delete_93": {
+      "name": "delete",
+      "type": "method",
+      "start_line": 93,
+      "end_line": 94,
+      "content_hash": "a4eee6d4579e6eba988126f6219e188bbfa2de3d",
+      "content": "        def delete(self, **kwargs):\n            raise RuntimeError(\"boom\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

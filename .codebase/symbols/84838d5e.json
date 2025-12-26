@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/context-engine/scripts/upload_auth_utils.py",
+  "file_hash": "c7cb57f80be76851e59960ba6c600748ca56fa1e",
+  "updated_at": "2025-12-26T17:34:21.309178",
+  "symbols": {
+    "function_get_auth_session_7": {
+      "name": "get_auth_session",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 47,
+      "content_hash": "0cf568c60428fc499f94a10e6978e8f99dca144b",
+      "content": "def get_auth_session(upload_endpoint: str) -> str:\n    \"\"\"Resolve auth session from environment or ~/.ctxce/auth.json.\n\n    This mirrors the existing behavior used by the upload clients:\n    - Prefer CTXCE_UPLOAD_SESSION_ID / CTXCE_SESSION_ID from the environment.\n    - Fall back to ~/.ctxce/auth.json keyed by the upload endpoint (with and without\n      a trailing slash), honoring an optional numeric expiresAt/expires_at field.\n    - Treat expiresAt <= 0 or missing as non-expiring.\n\n    Returns an empty string when no usable session is found.\n    \"\"\"\n    try:\n        sess = (os.environ.get(\"CTXCE_UPLOAD_SESSION_ID\") or os.environ.get(\"CTXCE_SESSION_ID\") or \"\").strip()\n    except Exception:\n        sess = \"\"\n    if sess:\n        return sess\n\n    try:\n        home = os.path.expanduser(\"~\")\n        cfg_path = os.path.join(home, \".ctxce\", \"auth.json\")\n        if not os.path.exists(cfg_path):\n            return \"\"\n        with open(cfg_path, \"r\", encoding=\"utf-8\") as f:\n            raw: Any = json.load(f)\n        if not isinstance(raw, dict):\n            return \"\"\n        key = upload_endpoint.rstrip(\"/\")\n        entry = raw.get(key) or raw.get(upload_endpoint)\n        if not isinstance(entry, dict):\n            return \"\"\n        sid = entry.get(\"sessionId\") or entry.get(\"session_id\")\n        exp = entry.get(\"expiresAt\") or entry.get(\"expires_at\")\n        now_secs = int(time.time())\n        if isinstance(exp, (int, float)) and exp > 0:\n            if exp >= now_secs:\n                return (sid or \"\").strip()\n            return \"\"\n        return (sid or \"\").strip()\n    except Exception:\n        return \"\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

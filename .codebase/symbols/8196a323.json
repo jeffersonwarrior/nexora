@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_router/intent.py",
+  "file_hash": "549b66ce389a3fdb6a61d34088d54a77087f39b0",
+  "updated_at": "2025-12-26T17:34:21.611823",
+  "symbols": {
+    "function_get_last_intent_debug_30": {
+      "name": "get_last_intent_debug",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 32,
+      "content_hash": "45c95509185eece4bfb3d524bbf246d734f9c154",
+      "content": "def get_last_intent_debug() -> Dict[str, Any]:\n    \"\"\"Get the last intent debug info.\"\"\"\n    return _LAST_INTENT_DEBUG",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__classify_intent_rules_35": {
+      "name": "_classify_intent_rules",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 72,
+      "content_hash": "be45e1d701c8198633f77bfba9e4fa3ae9329ec2",
+      "content": "def _classify_intent_rules(q: str) -> str | None:\n    s = q.lower()\n    # Admin / maintenance first\n    if any(w in s for w in [\"reindex\", \"reset\", \"recreate\", \"index now\", \"fresh index\"]):\n        return INTENT_INDEX\n    if any(w in s for w in [\"prune\", \"pruning\", \"cleanup\", \"clean up\"]):\n        return INTENT_PRUNE\n    if any(w in s for w in [\"status\", \"health\", \"points\", \"stats\"]):\n        return INTENT_STATUS\n    if any(w in s for w in [\"list collections\", \"collections\", \"list qdrant\"]):\n        return INTENT_LIST\n\n    # Intent wrappers\n    if any(w in s for w in [\"tests\", \"pytest\", \"unit test\", \"test file\", \"where are tests\"]):\n        return INTENT_SEARCH_TESTS\n    # Memory intents\n    if any(w in s for w in [\n        \"remember this\", \"save memory\", \"store memory\", \"remember that\", \"save preference\", \"remember preference\"\n    ]):\n        return INTENT_MEMORY_STORE\n    if any(w in s for w in [\n        \"find memory\", \"recall\", \"retrieve memory\", \"memory search\", \"what did we save\"\n    ]):\n        return INTENT_MEMORY_FIND\n\n    if any(w in s for w in [\"config\", \"yaml\", \"toml\", \"ini\", \"settings file\", \"configuration\"]):\n        return INTENT_SEARCH_CONFIG\n    if any(w in s for w in [\"who calls\", \"callers\", \"used by\", \"usage sites\", \"references this function\"]):\n        return INTENT_SEARCH_CALLERS\n    if any(w in s for w in [\"importers\", \"who imports\", \"imports this\", \"importing modules\"]):\n        return INTENT_SEARCH_IMPORTERS\n\n    # Q&A-like prompts\n    if re.match(r\"^(what|how|why|explain|describe|summarize)(\\b|\\s)\", s):\n        return INTENT_ANSWER\n    if any(w in s for w in [\"recap\", \"design doc\", \"architecture\", \"adr\", \"retrospective\", \"postmortem\", \"summary of\", \"summarize the design\"]):\n        return INTENT_ANSWER\n    return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__intent_prototypes_75": {
+      "name": "_intent_prototypes",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 103,
+      "content_hash": "c01067583c5cd47f069ce63c79d9a8dafe637af2",
+      "content": "def _intent_prototypes() -> Dict[str, List[str]]:\n    return {\n        INTENT_ANSWER: [\n            \"explain, describe, summarize, recap, design, architecture, ADR, why/how\",\n            \"summarize design decisions and architecture rationale\",\n        ],\n        INTENT_SEARCH: [\n            \"find code references, search repository, locate files\",\n            \"code search in repo, general lookup\",\n        ],\n        INTENT_MEMORY_STORE: [\n            \"remember this, save preference, store memory\",\n        ],\n        INTENT_MEMORY_FIND: [\n            \"what did we save, recall saved notes, retrieve memory\",\n        ],\n        INTENT_SEARCH_TESTS: [\n            \"find unit tests, test files, pytest\",\n        ],\n        INTENT_SEARCH_CONFIG: [\n            \"config files, configuration changes, yaml toml ini settings\",\n        ],\n        INTENT_SEARCH_CALLERS: [\n            \"who calls this function, callers, usage sites\",\n        ],\n        INTENT_SEARCH_IMPORTERS: [\n            \"who imports this module, importers, importing modules\",\n        ],\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__cosine_106": {
+      "name": "_cosine",
+      "type": "function",
+      "start_line": 106,
+      "end_line": 122,
+      "content_hash": "76c1f03faf361440ea1115a494d72f55f91fd7e3",
+      "content": "def _cosine(a: list[float], b: list[float]) -> float:\n    \"\"\"Lightweight cosine similarity.\"\"\"\n    try:\n        s = 0.0\n        na = 0.0\n        nb = 0.0\n        for i in range(min(len(a), len(b))):\n            va = float(a[i])\n            vb = float(b[i])\n            s += va * vb\n            na += va * va\n            nb += vb * vb\n        na = (na or 1.0) ** 0.5\n        nb = (nb or 1.0) ** 0.5\n        return s / (na * nb)\n    except Exception:\n        return 0.0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__embed_texts_125": {
+      "name": "_embed_texts",
+      "type": "function",
+      "start_line": 125,
+      "end_line": 155,
+      "content_hash": "b2fa69fa055ecad9d8ad834a89cc3632385876d8",
+      "content": "def _embed_texts(texts: list[str]) -> list[list[float]]:\n    \"\"\"Embed texts using available embedding model.\"\"\"\n    if not texts:\n        return []\n\n    # Try centralized embedder factory first\n    try:\n        from scripts.embedder import get_embedding_model\n        model_name = os.environ.get(\"EMBEDDING_MODEL\", \"BAAI/bge-base-en-v1.5\")\n        em = get_embedding_model(model_name)\n        raw = list(em.embed(texts))\n        return [v.tolist() if hasattr(v, \"tolist\") else list(v) for v in raw]\n    except ImportError:\n        pass\n\n    # Try fastembed directly\n    try:\n        from fastembed import TextEmbedding\n        model_name = os.environ.get(\"EMBEDDING_MODEL\", \"BAAI/bge-base-en-v1.5\")\n        em = TextEmbedding(model_name=model_name)\n        raw = list(em.embed(texts))\n        return [v.tolist() if hasattr(v, \"tolist\") else list(v) for v in raw]\n    except Exception:\n        pass\n\n    # Fallback to lexical\n    try:\n        from scripts.utils import lex_hash_vector_text\n        return [lex_hash_vector_text(t, dim=4096) for t in texts]\n    except Exception:\n        return [[float(len(t))] for t in texts]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__classify_intent_ml_158": {
+      "name": "_classify_intent_ml",
+      "type": "function",
+      "start_line": 158,
+      "end_line": 195,
+      "content_hash": "7297822d3a3012634860fe625fbc74d4db101361",
+      "content": "def _classify_intent_ml(q: str) -> str:\n    global _LAST_INTENT_DEBUG\n    protos = _intent_prototypes()\n    labels = list(protos.keys())\n    texts = [q] + [\"\\n\".join(protos[l]) for l in labels]\n    vecs = _embed_texts(texts)\n    if not vecs or len(vecs) < len(texts):\n        _LAST_INTENT_DEBUG = {\n            \"strategy\": \"ml\",\n            \"intent\": INTENT_SEARCH,\n            \"confidence\": 0.0,\n            \"query\": q,\n            \"top_candidate\": INTENT_SEARCH,\n            \"top_score\": 0.0,\n            \"threshold\": 0.25,\n            \"candidates\": [],\n            \"reason\": \"embed_failed\",\n        }\n        return INTENT_SEARCH\n    qv = vecs[0]\n    sims = []\n    for i, lab in enumerate(labels):\n        sims.append((lab, _cosine(qv, vecs[1 + i])))\n    sims.sort(key=lambda x: x[1], reverse=True)\n    top, score = sims[0]\n    picked = top if score >= 0.25 else INTENT_SEARCH\n    _LAST_INTENT_DEBUG = {\n        \"strategy\": \"ml\",\n        \"intent\": picked,\n        \"confidence\": float(score),\n        \"query\": q,\n        \"top_candidate\": top,\n        \"top_score\": float(score),\n        \"threshold\": 0.25,\n        \"candidates\": [(name, float(val)) for name, val in sims[:5]],\n        \"fallback\": picked == INTENT_SEARCH and top != INTENT_SEARCH,\n    }\n    return picked",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_classify_intent_198": {
+      "name": "classify_intent",
+      "type": "function",
+      "start_line": 198,
+      "end_line": 217,
+      "content_hash": "2845095def31f0012642f2dbadb359db62de3af6",
+      "content": "def classify_intent(q: str) -> str:\n    \"\"\"Classify user query into an intent.\"\"\"\n    global _LAST_INTENT_DEBUG\n    ruled = _classify_intent_rules(q)\n    if ruled is not None:\n        _LAST_INTENT_DEBUG = {\n            \"strategy\": \"rules\",\n            \"intent\": ruled,\n            \"confidence\": 1.0,\n            \"query\": q,\n        }\n        return ruled\n    picked = _classify_intent_ml(q)\n    try:\n        if os.environ.get(\"DEBUG_ROUTER\") and isinstance(_LAST_INTENT_DEBUG, dict):\n            if _LAST_INTENT_DEBUG.get(\"fallback\"):\n                print(json.dumps({\"router\": {\"intent_fallback\": _LAST_INTENT_DEBUG}}), file=sys.stderr)\n    except Exception:\n        pass\n    return picked",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

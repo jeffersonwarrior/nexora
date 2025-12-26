@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/gemini_test.go",
+  "file_hash": "d0bff1be89aa2063c380cbfc082df7be6ed75d67",
+  "updated_at": "2025-12-26T17:34:25.130739",
+  "symbols": {
+    "function_TestGeminiProvider_11": {
+      "name": "TestGeminiProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 92,
+      "content_hash": "f91d4ea22be64ab9bac2fe493f867c8962b1d8a8",
+      "content": "func TestGeminiProvider(t *testing.T) {\n\tt.Run(\"creates provider with correct basic info\", func(t *testing.T) {\n\t\tprovider := GeminiProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.Equal(t, \"gemini\", string(provider.ID))\n\t\tassert.Equal(t, \"Google Gemini\", provider.Name)\n\t\tassert.Equal(t, \"openai-compat\", string(provider.Type))\n\t\tassert.Equal(t, \"$GEMINI_API_KEY\", provider.APIKey)\n\t\tassert.Equal(t, \"https://generativelanguage.googleapis.com/v1beta/models\", provider.APIEndpoint)\n\t})\n\n\tt.Run(\"creates provider with default models\", func(t *testing.T) {\n\t\tprovider := GeminiProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.NotEmpty(t, provider.Models)\n\t\tassert.Equal(t, \"gemini-3-pro\", provider.DefaultLargeModelID)\n\t\tassert.Equal(t, \"gemini-2-5-flash\", provider.DefaultSmallModelID)\n\t})\n\n\tt.Run(\"does not create if already exists\", func(t *testing.T) {\n\t\texistingProvider := catwalk.Provider{ID: \"gemini\"}\n\t\tprovider := GeminiProvider([]catwalk.Provider{existingProvider})\n\n\t\tassert.Equal(t, \"\", string(provider.ID))\n\t})\n\n\tt.Run(\"has gemini-3-pro model\", func(t *testing.T) {\n\t\tprovider := GeminiProvider([]catwalk.Provider{})\n\n\t\tvar gemini3Model *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"gemini-3-pro\" {\n\t\t\t\tgemini3Model = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, gemini3Model)\n\t\tassert.Equal(t, \"Gemini 3 Pro\", gemini3Model.Name)\n\t\tassert.Equal(t, 2.0, gemini3Model.CostPer1MIn)\n\t\tassert.Equal(t, 12.0, gemini3Model.CostPer1MOut)\n\t\tassert.True(t, gemini3Model.SupportsImages)\n\t\tassert.True(t, gemini3Model.CanReason)\n\t})\n\n\tt.Run(\"has gemini-2-5-flash model\", func(t *testing.T) {\n\t\tprovider := GeminiProvider([]catwalk.Provider{})\n\n\t\tvar flashModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"gemini-2-5-flash\" {\n\t\t\t\tflashModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, flashModel)\n\t\tassert.Equal(t, \"Gemini 2.5 Flash\", flashModel.Name)\n\t\tassert.Equal(t, 0.075, flashModel.CostPer1MIn)\n\t\tassert.Equal(t, 0.3, flashModel.CostPer1MOut)\n\t\tassert.False(t, flashModel.CanReason)\n\t})\n\n\tt.Run(\"has extended thinking model\", func(t *testing.T) {\n\t\tprovider := GeminiProvider([]catwalk.Provider{})\n\n\t\tvar thinkingModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"gemini-2-0-flash-thinking-exp\" {\n\t\t\t\tthinkingModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, thinkingModel)\n\t\tassert.True(t, thinkingModel.CanReason)\n\t\tassert.Equal(t, 5.0, thinkingModel.CostPer1MIn)\n\t\tassert.Equal(t, 20.0, thinkingModel.CostPer1MOut)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/context-engine/scripts/ingest/tree_sitter.py",
+  "file_hash": "2a2e8756308d94eed5f3801025b57c76d5ea3106",
+  "updated_at": "2025-12-26T17:34:24.270576",
+  "symbols": {
+    "function__load_ts_language_24": {
+      "name": "_load_ts_language",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 52,
+      "content_hash": "05e09322b907a239e1a325d52e62f64ce8e3518b",
+      "content": "    def _load_ts_language(mod: Any, *, preferred: list[str] | None = None) -> Any | None:\n        \"\"\"Return a tree-sitter Language instance from a per-language package.\n\n        Different packages expose different entrypoints (e.g. language(),\n        language_typescript(), language_tsx()).\n        \"\"\"\n        preferred = preferred or []\n        candidates: list[Any] = []\n        if getattr(mod, \"language\", None) is not None and callable(getattr(mod, \"language\")):\n            candidates.append(getattr(mod, \"language\"))\n        for name in preferred:\n            fn = getattr(mod, name, None)\n            if fn is not None and callable(fn):\n                candidates.append(fn)\n        # Last resort: scan for any callable language* attribute\n        for name in dir(mod):\n            if not name.startswith(\"language\"):\n                continue\n            fn = getattr(mod, name, None)\n            if fn is not None and callable(fn):\n                candidates.append(fn)\n\n        for fn in candidates:\n            try:\n                raw_lang = fn()\n                return raw_lang if isinstance(raw_lang, Language) else Language(raw_lang)\n            except Exception:\n                continue\n        return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__load_ts_language_108": {
+      "name": "_load_ts_language",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 110,
+      "content_hash": "5603fd1663a141131781151694a3dede38ca2400",
+      "content": "    def _load_ts_language(mod: Any, *, preferred: list[str] | None = None) -> Any | None:\n        \"\"\"Stub when tree-sitter is not available.\"\"\"\n        return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__use_tree_sitter_113": {
+      "name": "_use_tree_sitter",
+      "type": "function",
+      "start_line": 113,
+      "end_line": 127,
+      "content_hash": "afec00bbb18a07f3fbe237e8e863f4123da785f4",
+      "content": "def _use_tree_sitter() -> bool:\n    \"\"\"Check if tree-sitter should be used for parsing.\"\"\"\n    global _TS_WARNED\n    val = os.environ.get(\"USE_TREE_SITTER\")\n    # Default ON when libs are available; allow explicit disable via 0/false\n    if val is None or str(val).strip() == \"\":\n        want = True\n    else:\n        want = str(val).strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}\n    if want and not _TS_AVAILABLE and not _TS_WARNED:\n        print(\n            \"[WARN] USE_TREE_SITTER=1 but tree-sitter libs not available; falling back to regex heuristics\"\n        )\n        _TS_WARNED = True\n    return _TS_AVAILABLE and want",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ts_parser_130": {
+      "name": "_ts_parser",
+      "type": "function",
+      "start_line": 130,
+      "end_line": 145,
+      "content_hash": "4ec125e431e137c6fc932226ed0723794ff6b4c7",
+      "content": "def _ts_parser(lang_key: str):\n    \"\"\"Return a tree-sitter Parser for the given language key.\n\n    Uses tree-sitter 0.25+ API with pre-loaded Language objects.\n    \"\"\"\n    if not _use_tree_sitter():\n        return None\n\n    if Parser is None or lang_key not in _TS_LANGUAGES:\n        return None\n\n    try:\n        lang = _TS_LANGUAGES[lang_key]\n        return Parser(lang)\n    except Exception:\n        return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

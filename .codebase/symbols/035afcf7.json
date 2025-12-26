@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/tui/components/logo/logo.go",
+  "file_hash": "b220ab27fd5bb1cdad9861cadba6773cd0d61ad6",
+  "updated_at": "2025-12-26T17:34:22.960761",
+  "symbols": {
+    "function_init_30": {
+      "name": "init",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 33,
+      "content_hash": "1257c0ea3a5c19be6e87fd969ac2ca321b19c165",
+      "content": "func init() {\n\trandSource = rand.New(rand.NewSource(time.Now().UnixNano()))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_max_34": {
+      "name": "max",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 40,
+      "content_hash": "45792222a5e4bdcc2727be2395c79ab59c1890cb",
+      "content": "func max(a, b int) int {\n\tif a > b {\n\t\treturn a\n\t}\n\treturn b\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cachedRandN_41": {
+      "name": "cachedRandN",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 50,
+      "content_hash": "f2bf38096d1a385f3c51c194a45459537def8afb",
+      "content": "func cachedRandN(n int) int {\n\trandSourceMu.Lock()\n\tdefer randSourceMu.Unlock()\n\tif n <= 0 {\n\t\treturn 0\n\t}\n\treturn randSource.Intn(n)\n}\n\n// Opts are the options for rendering the Nexora title art.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Opts_51": {
+      "name": "Opts",
+      "type": "struct",
+      "start_line": 51,
+      "end_line": 60,
+      "content_hash": "f26f4798d32b9e97fc846c0e45c559df3ccebe3a",
+      "content": "type Opts struct {\n\tFieldColor   color.Color // diagonal lines\n\tTitleColorA  color.Color // left gradient ramp point\n\tTitleColorB  color.Color // right gradient ramp point\n\tCharmColor   color.Color // NEXORA text color\n\tVersionColor color.Color // Version text color\n\tWidth        int         // width of the rendered logo, used for truncation\n}\n\n// Render renders the Nexora logo.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Render_61": {
+      "name": "Render",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 83,
+      "content_hash": "9ca2173f07a47f18979bb5b6a41d3e6e1bad034b",
+      "content": "func Render(version string, compact bool, o Opts) string {\n\tfg := func(c color.Color, s string) string {\n\t\treturn lipgloss.NewStyle().Foreground(c).Render(s)\n\t}\n\n\t// Simple one-line logo: /// NEXORA <v> ///\n\tlogoText := \"/// NEXORA \" + version + \" ///\"\n\tlogoText = fg(o.CharmColor, logoText)\n\n\tif compact {\n\t\treturn logoText\n\t}\n\n\t// For the wide version, just center it on the screen\n\tif o.Width > 0 {\n\t\tpadding := max(0, (o.Width-lipgloss.Width(logoText))/2)\n\t\tlogoText = strings.Repeat(\" \", padding) + logoText\n\t}\n\treturn logoText\n}\n\n// SmallRender renders a smaller version of the Nexora logo, suitable for\n// smaller windows or sidebar usage.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_SmallRender_84": {
+      "name": "SmallRender",
+      "type": "function",
+      "start_line": 84,
+      "end_line": 99,
+      "content_hash": "7fe510f18eebc612502585a1b575a73a47cafa98",
+      "content": "func SmallRender(width int) string {\n\tt := styles.CurrentTheme()\n\tlogoText := t.S().Base.Foreground(t.Primary).Render(\"/// NEXORA\")\n\tif width > 0 {\n\t\tremainingWidth := width - lipgloss.Width(logoText) - 3 // 3 for \" //\"\n\t\tif remainingWidth > 0 {\n\t\t\tlogoText += \" //\"\n\t\t\tlines := strings.Repeat(\"\u2571\", remainingWidth)\n\t\t\tlogoText += t.S().Base.Foreground(t.Secondary).Render(lines)\n\t\t}\n\t}\n\treturn logoText\n}\n\n// renderWord renders letterforms to fork a word. stretchIndex is the index of\n// the letter to stretch, or -1 if no letter should be stretched.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_renderWord_100": {
+      "name": "renderWord",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 123,
+      "content_hash": "09e1850f0aa61f5e1df2af34d859277e8c335827",
+      "content": "func renderWord(spacing int, stretchIndex int, letterforms ...letterform) string {\n\tif spacing < 0 {\n\t\tspacing = 0\n\t}\n\n\trenderedLetterforms := make([]string, len(letterforms))\n\n\t// pick one letter randomly to stretch\n\tfor i, letter := range letterforms {\n\t\trenderedLetterforms[i] = letter(i == stretchIndex)\n\t}\n\n\tif spacing > 0 {\n\t\t// Add spaces between the letters and render.\n\t\trenderedLetterforms = slice.Intersperse(renderedLetterforms, strings.Repeat(\" \", spacing))\n\t}\n\treturn strings.TrimSpace(\n\t\tlipgloss.JoinHorizontal(lipgloss.Top, renderedLetterforms...),\n\t)\n}\n\n// letterC renders the letter C in a stylized way. It takes an integer that\n// determines how many cells to stretch the letter. If the stretch is less than\n// 1, defaults to no stretching.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_letterC_124": {
+      "name": "letterC",
+      "type": "function",
+      "start_line": 124,
+      "end_line": 153,
+      "content_hash": "6ee197e0f6ba0a971ddda955a26f82227f7615cb",
+      "content": "func letterC(stretch bool) string {\n\t// Here's what we're making:\n\t//\n\t// \u2584\u2580\u2580\u2580\u2580\n\t// \u2588\n\t//\t\u2580\u2580\u2580\u2580\n\n\tleft := heredoc.Doc(`\n\t\t\u2584\n\t\t\u2588\n\t`)\n\tright := heredoc.Doc(`\n\t\t\u2580\n\n\t\t\u2580\n\t`)\n\treturn joinLetterform(\n\t\tleft,\n\t\tstretchLetterformPart(right, letterformProps{\n\t\t\tstretch:    stretch,\n\t\t\twidth:      4,\n\t\t\tminStretch: 7,\n\t\t\tmaxStretch: 12,\n\t\t}),\n\t)\n}\n\n// letterH renders the letter H in a stylized way. It takes an integer that\n// determines how many cells to stretch the letter. If the stretch is less than\n// 1, defaults to no stretching.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_letterH_154": {
+      "name": "letterH",
+      "type": "function",
+      "start_line": 154,
+      "end_line": 183,
+      "content_hash": "f7f2473db4b0afb131704176dacefe1618ea1606",
+      "content": "func letterH(stretch bool) string {\n\t// Here's what we're making:\n\t//\n\t// \u2588   \u2588\n\t// \u2588\u2580\u2580\u2580\u2588\n\t// \u2580   \u2580\n\n\tside := heredoc.Doc(`\n\t\t\u2588\n\t\t\u2588\n\t\t\u2580`)\n\tmiddle := heredoc.Doc(`\n\n\t\t\u2580\n\t`)\n\treturn joinLetterform(\n\t\tside,\n\t\tstretchLetterformPart(middle, letterformProps{\n\t\t\tstretch:    stretch,\n\t\t\twidth:      3,\n\t\t\tminStretch: 8,\n\t\t\tmaxStretch: 12,\n\t\t}),\n\t\tside,\n\t)\n}\n\n// letterR renders the letter R in a stylized way. It takes an integer that\n// determines how many cells to stretch the letter. If the stretch is less than\n// 1, defaults to no stretching.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_letterR_184": {
+      "name": "letterR",
+      "type": "function",
+      "start_line": 184,
+      "end_line": 219,
+      "content_hash": "29d01314addf915c01784d382a1403de1d505c38",
+      "content": "func letterR(stretch bool) string {\n\t// Here's what we're making:\n\t//\n\t// \u2588\u2580\u2580\u2580\u2584\n\t// \u2588\u2580\u2580\u2580\u2584\n\t// \u2580   \u2580\n\n\tleft := heredoc.Doc(`\n\t\t\u2588\n\t\t\u2588\n\t\t\u2580\n\t`)\n\tcenter := heredoc.Doc(`\n\t\t\u2580\n\t\t\u2580\n\t`)\n\tright := heredoc.Doc(`\n\t\t\u2584\n\t\t\u2584\n\t\t\u2580\n\t`)\n\treturn joinLetterform(\n\t\tleft,\n\t\tstretchLetterformPart(center, letterformProps{\n\t\t\tstretch:    stretch,\n\t\t\twidth:      3,\n\t\t\tminStretch: 7,\n\t\t\tmaxStretch: 12,\n\t\t}),\n\t\tright,\n\t)\n}\n\n// letterSStylized renders the letter S in a stylized way, more so than\n// [letterS]. It takes an integer that determines how many cells to stretch the\n// letter. If the stretch is less than 1, defaults to no stretching.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_letterSStylized_220": {
+      "name": "letterSStylized",
+      "type": "function",
+      "start_line": 220,
+      "end_line": 255,
+      "content_hash": "939163bb4516a29aed10bdc07870db834c965b67",
+      "content": "func letterSStylized(stretch bool) string {\n\t// Here's what we're making:\n\t//\n\t// \u2584\u2580\u2580\u2580\u2580\u2580\n\t// \u2580\u2580\u2580\u2580\u2580\u2588\n\t// \u2580\u2580\u2580\u2580\u2580\n\n\tleft := heredoc.Doc(`\n\t\t\u2584\n\t\t\u2580\n\t\t\u2580\n\t`)\n\tcenter := heredoc.Doc(`\n\t\t\u2580\n\t\t\u2580\n\t\t\u2580\n\t`)\n\tright := heredoc.Doc(`\n\t\t\u2580\n\t\t\u2588\n\t`)\n\treturn joinLetterform(\n\t\tleft,\n\t\tstretchLetterformPart(center, letterformProps{\n\t\t\tstretch:    stretch,\n\t\t\twidth:      3,\n\t\t\tminStretch: 7,\n\t\t\tmaxStretch: 12,\n\t\t}),\n\t\tright,\n\t)\n}\n\n// letterU renders the letter U in a stylized way. It takes an integer that\n// determines how many cells to stretch the letter. If the stretch is less than\n// 1, defaults to no stretching.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_letterU_256": {
+      "name": "letterU",
+      "type": "function",
+      "start_line": 256,
+      "end_line": 283,
+      "content_hash": "7f0027f125ee3c1079e147098723c1109bec0ce3",
+      "content": "func letterU(stretch bool) string {\n\t// Here's what we're making:\n\t//\n\t// \u2588   \u2588\n\t// \u2588   \u2588\n\t//\t\u2580\u2580\u2580\n\n\tside := heredoc.Doc(`\n\t\t\u2588\n\t\t\u2588\n\t`)\n\tmiddle := heredoc.Doc(`\n\n\n\t\t\u2580\n\t`)\n\treturn joinLetterform(\n\t\tside,\n\t\tstretchLetterformPart(middle, letterformProps{\n\t\t\tstretch:    stretch,\n\t\t\twidth:      3,\n\t\t\tminStretch: 7,\n\t\t\tmaxStretch: 12,\n\t\t}),\n\t\tside,\n\t)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_joinLetterform_284": {
+      "name": "joinLetterform",
+      "type": "function",
+      "start_line": 284,
+      "end_line": 289,
+      "content_hash": "41d2a4cbb62f426d4cfb783581d59b73113a4727",
+      "content": "func joinLetterform(letters ...string) string {\n\treturn lipgloss.JoinHorizontal(lipgloss.Top, letters...)\n}\n\n// letterformProps defines letterform stretching properties.\n// for readability.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_letterformProps_290": {
+      "name": "letterformProps",
+      "type": "struct",
+      "start_line": 290,
+      "end_line": 298,
+      "content_hash": "39ca6bdfbd1951c04666a0f6a9fc33672b118040",
+      "content": "type letterformProps struct {\n\twidth      int\n\tminStretch int\n\tmaxStretch int\n\tstretch    bool\n}\n\n// stretchLetterformPart is a helper function for letter stretching. If randomize\n// is false the minimum number will be used.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_stretchLetterformPart_299": {
+      "name": "stretchLetterformPart",
+      "type": "function",
+      "start_line": 299,
+      "end_line": 312,
+      "content_hash": "9eeb557ac405ac7686d50e744aba7913a0ad702e",
+      "content": "func stretchLetterformPart(s string, p letterformProps) string {\n\tif p.maxStretch < p.minStretch {\n\t\tp.minStretch, p.maxStretch = p.maxStretch, p.minStretch\n\t}\n\tn := p.width\n\tif p.stretch {\n\t\tn = cachedRandN(p.maxStretch-p.minStretch) + p.minStretch //nolint:gosec\n\t}\n\tparts := make([]string, n)\n\tfor i := range parts {\n\t\tparts[i] = s\n\t}\n\treturn lipgloss.JoinHorizontal(lipgloss.Top, parts...)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

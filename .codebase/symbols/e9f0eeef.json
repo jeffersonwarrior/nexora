@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/vscode-extension/context-engine-uploader/workspace_paths.js",
+  "file_hash": "78afb04bd4f7ffebbedf475e729c8294d873cce3",
+  "updated_at": "2025-12-26T17:34:21.801189",
+  "symbols": {
+    "function_createWorkspacePathUtils_1": {
+      "name": "createWorkspacePathUtils",
+      "type": "function",
+      "start_line": 1,
+      "end_line": 168,
+      "content_hash": "dad7834a2d98150e4a9fefc3604f46a15e4174dd",
+      "content": "function createWorkspacePathUtils(deps) {\n  const vscode = deps.vscode;\n  const path = deps.path;\n  const fs = deps.fs;\n  const log = deps.log;\n  const updateStatusBarTooltip = deps.updateStatusBarTooltip;\n\n  let lastAutoDetectLogKey = '';\n  let lastResolvedTargetLogKey = '';\n\n  function getWorkspaceFolderPath() {\n    const folders = vscode.workspace.workspaceFolders;\n    if (!folders || !folders.length) {\n      return undefined;\n    }\n    return folders[0].uri.fsPath;\n  }\n\n  function looksLikeRepoRoot(dirPath) {\n    try {\n      const codebaseStatePath = path.join(dirPath, '.codebase', 'state.json');\n      const gitDir = path.join(dirPath, '.git');\n      if (fs.existsSync(codebaseStatePath) || fs.existsSync(gitDir)) {\n        return true;\n      }\n    } catch (error) {\n      log(`Repo root detection failed for ${dirPath}: ${error instanceof Error ? error.message : String(error)}`);\n    }\n    return false;\n  }\n\n  function detectDefaultTargetPath(workspaceFolderPath) {\n    try {\n      const resolved = path.resolve(workspaceFolderPath);\n      if (!fs.existsSync(resolved)) {\n        return workspaceFolderPath;\n      }\n      const rootLooksLikeRepo = looksLikeRepoRoot(resolved);\n      let entries;\n      try {\n        entries = fs.readdirSync(resolved);\n      } catch (error) {\n        log(`Auto targetPath discovery failed to read workspace folder: ${error instanceof Error ? error.message : String(error)}`);\n        return resolved;\n      }\n      const candidates = [];\n      for (const name of entries) {\n        const fullPath = path.join(resolved, name);\n        let stats;\n        try {\n          stats = fs.statSync(fullPath);\n        } catch (_) {\n          continue;\n        }\n        if (!stats.isDirectory()) {\n          continue;\n        }\n        if (looksLikeRepoRoot(fullPath)) {\n          candidates.push(path.resolve(fullPath));\n        }\n      }\n      if (candidates.length === 1) {\n        const detected = candidates[0];\n        const key = `${resolved}::${detected}`;\n        if (key !== lastAutoDetectLogKey) {\n          lastAutoDetectLogKey = key;\n          log(`Target path auto-detected as ${detected} (under workspace folder).`);\n        }\n        return detected;\n      }\n      if (rootLooksLikeRepo) {\n        if (candidates.length > 1) {\n          const key = `${resolved}::multiple`;\n          if (key !== lastAutoDetectLogKey) {\n            lastAutoDetectLogKey = key;\n            log('Auto targetPath discovery found multiple candidate repos under workspace; using workspace folder instead.');\n          }\n        }\n        return resolved;\n      }\n      if (candidates.length > 1) {\n        const key = `${resolved}::multiple`;\n        if (key !== lastAutoDetectLogKey) {\n          lastAutoDetectLogKey = key;\n          log('Auto targetPath discovery found multiple candidate repos under workspace; using workspace folder instead.');\n        }\n      }\n      return resolved;\n    } catch (error) {\n      log(`Auto targetPath discovery failed: ${error instanceof Error ? error.message : String(error)}`);\n      return workspaceFolderPath;\n    }\n  }\n\n  function resolveTargetPathFromConfig(config) {\n    let inspected;\n    try {\n      if (typeof config.inspect === 'function') {\n        inspected = config.inspect('targetPath');\n      }\n    } catch (error) {\n      inspected = undefined;\n    }\n    let targetPath = (config.get('targetPath') || '').trim();\n    const metadata = inspected || {};\n    if (targetPath) {\n      return { path: targetPath, inspected: metadata };\n    }\n    const folderPath = getWorkspaceFolderPath();\n    if (!folderPath) {\n      return { path: undefined, inspected: metadata };\n    }\n    const autoTarget = detectDefaultTargetPath(folderPath);\n    return { path: autoTarget, inspected: metadata, inferred: true };\n  }\n\n  function getTargetPath(config) {\n    const result = resolveTargetPathFromConfig(config);\n    let targetPath = result.path;\n    const inspected = result.inspected;\n    if (inspected && targetPath) {\n      let sourceLabel = 'default';\n      if (inspected.workspaceFolderValue !== undefined) {\n        sourceLabel = 'workspaceFolder';\n      } else if (inspected.workspaceValue !== undefined) {\n        sourceLabel = 'workspace';\n      } else if (inspected.globalValue !== undefined) {\n        sourceLabel = 'user';\n      }\n      const key = `${sourceLabel}::${targetPath}`;\n      if (key !== lastResolvedTargetLogKey) {\n        lastResolvedTargetLogKey = key;\n        log(`Target path resolved to ${targetPath} (source: ${sourceLabel} settings)`);\n      }\n      if (inspected.globalValue !== undefined && inspected.workspaceValue !== undefined && inspected.globalValue !== inspected.workspaceValue) {\n        log('Target path has different user and workspace values; using workspace value. Update workspace settings (e.g. .vscode/settings.json) to change it.');\n      }\n    }\n    if (targetPath) {\n      const folderPath = getWorkspaceFolderPath();\n      if (folderPath && !path.isAbsolute(targetPath)) {\n        targetPath = path.resolve(folderPath, targetPath);\n      }\n      updateStatusBarTooltip(targetPath);\n      return targetPath;\n    }\n    vscode.window.showErrorMessage('Context Engine Uploader: open a folder or set contextEngineUploader.targetPath.');\n    updateStatusBarTooltip();\n    return undefined;\n  }\n\n  function saveTargetPath(config, targetPath) {\n    const hasWorkspace = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length;\n    const target = hasWorkspace ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;\n    config.update('targetPath', targetPath, target).catch(error => {\n      log(`Target path save failed: ${error instanceof Error ? error.message : String(error)}`);\n    });\n  }\n\n  return {\n    getWorkspaceFolderPath,\n    looksLikeRepoRoot,\n    detectDefaultTargetPath,\n    resolveTargetPathFromConfig,\n    getTargetPath,\n    saveTargetPath,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getWorkspaceFolderPath_11": {
+      "name": "getWorkspaceFolderPath",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 17,
+      "content_hash": "12c79f1c29720cdfd3ae5ea581344f9ecd75553f",
+      "content": "  function getWorkspaceFolderPath() {\n    const folders = vscode.workspace.workspaceFolders;\n    if (!folders || !folders.length) {\n      return undefined;\n    }\n    return folders[0].uri.fsPath;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_looksLikeRepoRoot_19": {
+      "name": "looksLikeRepoRoot",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 30,
+      "content_hash": "f015017423211c6ec5bc4417845be157f581c8d8",
+      "content": "  function looksLikeRepoRoot(dirPath) {\n    try {\n      const codebaseStatePath = path.join(dirPath, '.codebase', 'state.json');\n      const gitDir = path.join(dirPath, '.git');\n      if (fs.existsSync(codebaseStatePath) || fs.existsSync(gitDir)) {\n        return true;\n      }\n    } catch (error) {\n      log(`Repo root detection failed for ${dirPath}: ${error instanceof Error ? error.message : String(error)}`);\n    }\n    return false;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_detectDefaultTargetPath_32": {
+      "name": "detectDefaultTargetPath",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 93,
+      "content_hash": "1bce3402d8f1ded6dda49024112396ab9cc0d55f",
+      "content": "  function detectDefaultTargetPath(workspaceFolderPath) {\n    try {\n      const resolved = path.resolve(workspaceFolderPath);\n      if (!fs.existsSync(resolved)) {\n        return workspaceFolderPath;\n      }\n      const rootLooksLikeRepo = looksLikeRepoRoot(resolved);\n      let entries;\n      try {\n        entries = fs.readdirSync(resolved);\n      } catch (error) {\n        log(`Auto targetPath discovery failed to read workspace folder: ${error instanceof Error ? error.message : String(error)}`);\n        return resolved;\n      }\n      const candidates = [];\n      for (const name of entries) {\n        const fullPath = path.join(resolved, name);\n        let stats;\n        try {\n          stats = fs.statSync(fullPath);\n        } catch (_) {\n          continue;\n        }\n        if (!stats.isDirectory()) {\n          continue;\n        }\n        if (looksLikeRepoRoot(fullPath)) {\n          candidates.push(path.resolve(fullPath));\n        }\n      }\n      if (candidates.length === 1) {\n        const detected = candidates[0];\n        const key = `${resolved}::${detected}`;\n        if (key !== lastAutoDetectLogKey) {\n          lastAutoDetectLogKey = key;\n          log(`Target path auto-detected as ${detected} (under workspace folder).`);\n        }\n        return detected;\n      }\n      if (rootLooksLikeRepo) {\n        if (candidates.length > 1) {\n          const key = `${resolved}::multiple`;\n          if (key !== lastAutoDetectLogKey) {\n            lastAutoDetectLogKey = key;\n            log('Auto targetPath discovery found multiple candidate repos under workspace; using workspace folder instead.');\n          }\n        }\n        return resolved;\n      }\n      if (candidates.length > 1) {\n        const key = `${resolved}::multiple`;\n        if (key !== lastAutoDetectLogKey) {\n          lastAutoDetectLogKey = key;\n          log('Auto targetPath discovery found multiple candidate repos under workspace; using workspace folder instead.');\n        }\n      }\n      return resolved;\n    } catch (error) {\n      log(`Auto targetPath discovery failed: ${error instanceof Error ? error.message : String(error)}`);\n      return workspaceFolderPath;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveTargetPathFromConfig_95": {
+      "name": "resolveTargetPathFromConfig",
+      "type": "function",
+      "start_line": 95,
+      "end_line": 115,
+      "content_hash": "1011c802d6b237df15a95d5db9b31beda5fd39ca",
+      "content": "  function resolveTargetPathFromConfig(config) {\n    let inspected;\n    try {\n      if (typeof config.inspect === 'function') {\n        inspected = config.inspect('targetPath');\n      }\n    } catch (error) {\n      inspected = undefined;\n    }\n    let targetPath = (config.get('targetPath') || '').trim();\n    const metadata = inspected || {};\n    if (targetPath) {\n      return { path: targetPath, inspected: metadata };\n    }\n    const folderPath = getWorkspaceFolderPath();\n    if (!folderPath) {\n      return { path: undefined, inspected: metadata };\n    }\n    const autoTarget = detectDefaultTargetPath(folderPath);\n    return { path: autoTarget, inspected: metadata, inferred: true };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getTargetPath_117": {
+      "name": "getTargetPath",
+      "type": "function",
+      "start_line": 117,
+      "end_line": 150,
+      "content_hash": "4f1ad2a04c5174cd99ebdca8789c15f7a887cf9a",
+      "content": "  function getTargetPath(config) {\n    const result = resolveTargetPathFromConfig(config);\n    let targetPath = result.path;\n    const inspected = result.inspected;\n    if (inspected && targetPath) {\n      let sourceLabel = 'default';\n      if (inspected.workspaceFolderValue !== undefined) {\n        sourceLabel = 'workspaceFolder';\n      } else if (inspected.workspaceValue !== undefined) {\n        sourceLabel = 'workspace';\n      } else if (inspected.globalValue !== undefined) {\n        sourceLabel = 'user';\n      }\n      const key = `${sourceLabel}::${targetPath}`;\n      if (key !== lastResolvedTargetLogKey) {\n        lastResolvedTargetLogKey = key;\n        log(`Target path resolved to ${targetPath} (source: ${sourceLabel} settings)`);\n      }\n      if (inspected.globalValue !== undefined && inspected.workspaceValue !== undefined && inspected.globalValue !== inspected.workspaceValue) {\n        log('Target path has different user and workspace values; using workspace value. Update workspace settings (e.g. .vscode/settings.json) to change it.');\n      }\n    }\n    if (targetPath) {\n      const folderPath = getWorkspaceFolderPath();\n      if (folderPath && !path.isAbsolute(targetPath)) {\n        targetPath = path.resolve(folderPath, targetPath);\n      }\n      updateStatusBarTooltip(targetPath);\n      return targetPath;\n    }\n    vscode.window.showErrorMessage('Context Engine Uploader: open a folder or set contextEngineUploader.targetPath.');\n    updateStatusBarTooltip();\n    return undefined;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_saveTargetPath_152": {
+      "name": "saveTargetPath",
+      "type": "function",
+      "start_line": 152,
+      "end_line": 158,
+      "content_hash": "6f0c1bc9334977fce3c38f02b66cb2d6a50e5df4",
+      "content": "  function saveTargetPath(config, targetPath) {\n    const hasWorkspace = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length;\n    const target = hasWorkspace ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global;\n    config.update('targetPath', targetPath, target).catch(error => {\n      log(`Target path save failed: ${error instanceof Error ? error.message : String(error)}`);\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

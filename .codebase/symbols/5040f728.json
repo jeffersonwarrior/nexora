@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/agent/metrics/metrics_test.go",
+  "file_hash": "6b68899e6c506f0eb83920c8931d13565e51ff90",
+  "updated_at": "2025-12-26T17:34:20.774294",
+  "symbols": {
+    "function_TestCollectorRecordAndRetrieve_10": {
+      "name": "TestCollectorRecordAndRetrieve",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 28,
+      "content_hash": "7b2e763a72ee5df47a9fece0db323e9b3ef44b5d",
+      "content": "func TestCollectorRecordAndRetrieve(t *testing.T) {\n\tt.Parallel()\n\tc := NewCollector(CollectorConfig{MaxMetrics: 100})\n\n\tm := Metric{\n\t\tToolName:      \"edit\",\n\t\tExecutionTime: 100 * time.Millisecond,\n\t\tSuccess:       true,\n\t\tMemoryUsed:    1024,\n\t}\n\n\tc.RecordMetric(m)\n\n\tmetrics := c.GetMetrics()\n\trequire.Len(t, metrics, 1)\n\trequire.Equal(t, \"edit\", metrics[0].ToolName)\n\trequire.True(t, metrics[0].Success)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAggregatedMetrics_29": {
+      "name": "TestAggregatedMetrics",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 61,
+      "content_hash": "8bf7f46251dcefba7866b85591eae039de7dbf77",
+      "content": "func TestAggregatedMetrics(t *testing.T) {\n\tt.Parallel()\n\tc := NewCollector(CollectorConfig{MaxMetrics: 100})\n\n\t// Record success metrics\n\tfor i := 0; i < 3; i++ {\n\t\tc.RecordMetric(Metric{\n\t\t\tToolName:      \"grep\",\n\t\t\tExecutionTime: 100 * time.Millisecond,\n\t\t\tSuccess:       true,\n\t\t\tMemoryUsed:    2048,\n\t\t})\n\t}\n\n\t// Record failure metrics\n\tfor i := 0; i < 2; i++ {\n\t\tc.RecordMetric(Metric{\n\t\t\tToolName:      \"grep\",\n\t\t\tExecutionTime: 50 * time.Millisecond,\n\t\t\tSuccess:       false,\n\t\t\tError:         \"test error\",\n\t\t\tMemoryUsed:    1024,\n\t\t})\n\t}\n\n\tagg := c.GetAggregated(\"grep\")\n\trequire.Equal(t, 5, agg.ExecutionCount)\n\trequire.Equal(t, 3, agg.SuccessCount)\n\trequire.Equal(t, 2, agg.FailureCount)\n\trequire.Equal(t, int64(3*2048+2*1024), agg.TotalMemoryUsed)\n\trequire.Equal(t, 60.0, c.GetSuccessRate(\"grep\"))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMaxMetricsCapacity_62": {
+      "name": "TestMaxMetricsCapacity",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 81,
+      "content_hash": "71b0e7b3c017114796e55413e91e100c47e05d70",
+      "content": "func TestMaxMetricsCapacity(t *testing.T) {\n\tt.Parallel()\n\tc := NewCollector(CollectorConfig{MaxMetrics: 5})\n\n\tfor i := 0; i < 10; i++ {\n\t\tc.RecordMetric(Metric{\n\t\t\tToolName:      \"test\",\n\t\t\tExecutionTime: time.Duration(i) * time.Millisecond,\n\t\t\tSuccess:       true,\n\t\t\tMemoryUsed:    int64(i),\n\t\t})\n\t}\n\n\tmetrics := c.GetMetrics()\n\trequire.Len(t, metrics, 5)\n\t// Oldest metrics should be removed\n\trequire.Equal(t, int64(5), metrics[0].MemoryUsed)\n\trequire.Equal(t, int64(9), metrics[4].MemoryUsed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetAllAggregated_82": {
+      "name": "TestGetAllAggregated",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 107,
+      "content_hash": "01fe858b825f435e1ad11b91898bd478404ac234",
+      "content": "func TestGetAllAggregated(t *testing.T) {\n\tt.Parallel()\n\tc := NewCollector(CollectorConfig{MaxMetrics: 100})\n\n\tc.RecordMetric(Metric{\n\t\tToolName:      \"edit\",\n\t\tExecutionTime: 100 * time.Millisecond,\n\t\tSuccess:       true,\n\t\tMemoryUsed:    1024,\n\t})\n\n\tc.RecordMetric(Metric{\n\t\tToolName:      \"grep\",\n\t\tExecutionTime: 50 * time.Millisecond,\n\t\tSuccess:       true,\n\t\tMemoryUsed:    512,\n\t})\n\n\tagg := c.GetAllAggregated()\n\trequire.Len(t, agg, 2)\n\trequire.NotNil(t, agg[\"edit\"])\n\trequire.NotNil(t, agg[\"grep\"])\n\trequire.Equal(t, 1, agg[\"edit\"].ExecutionCount)\n\trequire.Equal(t, 1, agg[\"grep\"].ExecutionCount)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestClear_108": {
+      "name": "TestClear",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 124,
+      "content_hash": "4f08f41047c5cce45295b079c1506d2e22a49f00",
+      "content": "func TestClear(t *testing.T) {\n\tt.Parallel()\n\tc := NewCollector(CollectorConfig{MaxMetrics: 100})\n\n\tc.RecordMetric(Metric{\n\t\tToolName:      \"test\",\n\t\tExecutionTime: 100 * time.Millisecond,\n\t\tSuccess:       true,\n\t\tMemoryUsed:    1024,\n\t})\n\n\trequire.Len(t, c.GetMetrics(), 1)\n\n\tc.Clear()\n\trequire.Len(t, c.GetMetrics(), 0)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSuccessRate_125": {
+      "name": "TestSuccessRate",
+      "type": "function",
+      "start_line": 125,
+      "end_line": 154,
+      "content_hash": "6969968e18e23ac541781ccce3b569ee72049cec",
+      "content": "func TestSuccessRate(t *testing.T) {\n\tt.Parallel()\n\tc := NewCollector(CollectorConfig{MaxMetrics: 100})\n\n\t// No metrics\n\trequire.Equal(t, 0.0, c.GetSuccessRate(\"nonexistent\"))\n\n\t// All success\n\tfor i := 0; i < 4; i++ {\n\t\tc.RecordMetric(Metric{\n\t\t\tToolName:      \"tool1\",\n\t\t\tExecutionTime: 100 * time.Millisecond,\n\t\t\tSuccess:       true,\n\t\t\tMemoryUsed:    1024,\n\t\t})\n\t}\n\n\t// All failure\n\tfor i := 0; i < 6; i++ {\n\t\tc.RecordMetric(Metric{\n\t\t\tToolName:      \"tool2\",\n\t\t\tExecutionTime: 100 * time.Millisecond,\n\t\t\tSuccess:       false,\n\t\t\tMemoryUsed:    1024,\n\t\t})\n\t}\n\n\trequire.Equal(t, 100.0, c.GetSuccessRate(\"tool1\"))\n\trequire.Equal(t, 0.0, c.GetSuccessRate(\"tool2\"))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

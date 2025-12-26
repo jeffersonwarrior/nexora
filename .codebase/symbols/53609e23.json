@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/build-images.sh",
+  "file_hash": "8a5ca17c3096bd74e0f9f9be5d73be581ed9bdd6",
+  "updated_at": "2025-12-26T17:34:19.914683",
+  "symbols": {
+    "function_log_info_27": {
+      "name": "log_info",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 27,
+      "content_hash": "ab60790d6e33a1078651c7f871ed346b6e1a4afa",
+      "content": "log_info() { echo -e \"${GREEN}[INFO]${NC} $1\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_warn_28": {
+      "name": "log_warn",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 28,
+      "content_hash": "81c55e84719d340de17776c9f5a5c845056e089b",
+      "content": "log_warn() { echo -e \"${YELLOW}[WARN]${NC} $1\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_error_29": {
+      "name": "log_error",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 29,
+      "content_hash": "c8a6838c3d334ea636677aa6dad572fba26ff91c",
+      "content": "log_error() { echo -e \"${RED}[ERROR]${NC} $1\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_build_image_32": {
+      "name": "build_image",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 32,
+      "content_hash": "b0c02812d36fa6fcdd62152dc1d73816f4d9e88e",
+      "content": "build_image() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_67": {
+      "name": "main",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 67,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_show_help_170": {
+      "name": "show_help",
+      "type": "function",
+      "start_line": 170,
+      "end_line": 170,
+      "content_hash": "aaaec5a23269a038245fc518a0c137f4257cdf56",
+      "content": "show_help() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

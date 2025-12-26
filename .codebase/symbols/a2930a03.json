@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/indexer/p6_simple_test.go",
+  "file_hash": "e5f9f10731d4b9dcb7addc008803fa7ec2889103",
+  "updated_at": "2025-12-26T17:34:21.870499",
+  "symbols": {
+    "function_TestP6Performance_12": {
+      "name": "TestP6Performance",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 72,
+      "content_hash": "8ed7d35e9951258fd146a12f6bceb3e470715a9d",
+      "content": "func TestP6Performance(t *testing.T) {\n\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)\n\tdefer cancel()\n\n\tt.Run(\"Performance Benchmarks\", func(t *testing.T) {\n\t\tbenchmark, err := NewPerformanceBenchmark(ctx)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to create benchmark: %v\", err)\n\t\t}\n\t\tdefer benchmark.Close()\n\n\t\t// Run a single benchmark to test functionality\n\t\tresult := benchmark.benchmarkParsing()\n\t\tif !result.Success {\n\t\t\tt.Fatalf(\"Parsing benchmark failed: %v\", result.Error)\n\t\t}\n\n\t\tif result.OperationCount == 0 {\n\t\t\tt.Error(\"Should have parsed some files\")\n\t\t}\n\n\t\tif result.Throughput <= 0 {\n\t\t\tt.Errorf(\"Throughput should be positive, got %f\", result.Throughput)\n\t\t}\n\n\t\tt.Logf(\"Parsing benchmark successful: %d ops in %v (%.2f ops/sec)\",\n\t\t\tresult.OperationCount, result.Duration, result.Throughput)\n\t})\n\n\tt.Run(\"Query Performance\", func(t *testing.T) {\n\t\tbenchmark, err := NewPerformanceBenchmark(ctx)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to create benchmark: %v\", err)\n\t\t}\n\t\tdefer benchmark.Close()\n\n\t\t// Index some data first\n\t\tsymbols, err := benchmark.parser.ParseDirectory(ctx, \"/home/nexora/internal/indexer\")\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to parse directory: %v\", err)\n\t\t}\n\n\t\tif err := benchmark.indexer.StoreSymbols(ctx, symbols); err != nil {\n\t\t\tt.Fatalf(\"Failed to store symbols: %v\", err)\n\t\t}\n\n\t\t// Test query performance\n\t\tresult := benchmark.benchmarkQuerying()\n\t\tif !result.Success {\n\t\t\tt.Fatalf(\"Query benchmark failed: %v\", result.Error)\n\t\t}\n\n\t\tif result.OperationCount == 0 {\n\t\t\tt.Error(\"Should have run some queries\")\n\t\t}\n\n\t\tt.Logf(\"Query benchmark successful: %d ops in %v (%.2f ops/sec)\",\n\t\t\tresult.OperationCount, result.Duration, result.Throughput)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestP6Concurrency_73": {
+      "name": "TestP6Concurrency",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 96,
+      "content_hash": "1b7837c5a11c937edf9f35c8ba68f021ae655c24",
+      "content": "func TestP6Concurrency(t *testing.T) {\n\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)\n\tdefer cancel()\n\n\tbenchmark, err := NewPerformanceBenchmark(ctx)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create benchmark: %v\", err)\n\t}\n\tdefer benchmark.Close()\n\n\t// Run concurrency test\n\tresult := benchmark.benchmarkConcurrency()\n\tif !result.Success {\n\t\tt.Logf(\"Concurrency test had issues: %v\", result.Error)\n\t\t// Not failing the test since concurrency can be tricky\n\t}\n\n\tif result.OperationCount != 15 {\n\t\tt.Errorf(\"Expected 15 operations, got %d\", result.OperationCount)\n\t}\n\n\tt.Logf(\"Concurrency test: %v\", result.Duration)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestP6IntegrationWorkflow_97": {
+      "name": "TestP6IntegrationWorkflow",
+      "type": "function",
+      "start_line": 97,
+      "end_line": 142,
+      "content_hash": "d1a815b5ced97595230c4a243bed2ce5f4c28937",
+      "content": "func TestP6IntegrationWorkflow(t *testing.T) {\n\tctx := context.Background()\n\n\tt.Run(\"Full Index \u2192 Query Workflow\", func(t *testing.T) {\n\t\tstart := time.Now()\n\n\t\t// Create indexer\n\t\tindexer, err := NewIndexer(\":memory:\")\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to create indexer: %v\", err)\n\t\t}\n\t\tdefer indexer.Close()\n\n\t\t// Parse files\n\t\tparser := NewASTParser()\n\t\tsymbols, err := parser.ParseDirectory(ctx, \"/home/nexora/internal/indexer\")\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to parse directory: %v\", err)\n\t\t}\n\n\t\t// Index files\n\t\terr = indexer.StoreSymbols(ctx, symbols)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to store symbols: %v\", err)\n\t\t}\n\n\t\t// Query files\n\t\tquerySymbols, err := indexer.SearchSymbols(ctx, \"Indexer\", 10)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to search symbols: %v\", err)\n\t\t}\n\n\t\tduration := time.Since(start)\n\n\t\tif len(symbols) == 0 {\n\t\t\tt.Error(\"Should have found some symbols to index\")\n\t\t}\n\n\t\tif len(querySymbols) == 0 {\n\t\t\tt.Error(\"Should have found some symbols in query\")\n\t\t}\n\n\t\tt.Logf(\"Full workflow completed: indexed %d symbols, found %d in query in %v\",\n\t\t\tlen(symbols), len(querySymbols), duration)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

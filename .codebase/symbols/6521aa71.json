@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/source/add_n.rs",
+  "file_hash": "b60dd9c748bad4b1a6aef4cd2216abddfb5d8918",
+  "updated_at": "2025-12-26T17:34:19.726553",
+  "symbols": {
+    "struct_AddNIterator_12": {
+      "name": "AddNIterator",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 22,
+      "content_hash": "958726b4e0534e423e882195abbd8f5e75131d11",
+      "content": "pub struct AddNIterator<'db, 'arena, 'txn>\nwhere\n    'db: 'arena,\n    'arena: 'txn,\n{\n    pub storage: &'db HelixGraphStorage,\n    pub arena: &'arena bumpalo::Bump,\n    pub txn: &'txn RwTxn<'db>,\n    inner: std::iter::Once<Result<TraversalValue<'arena>, GraphError>>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_23": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 23,
+      "end_line": 25,
+      "content_hash": "5a36103b5c4291ec13c0707c9cef3457bdee0f25",
+      "content": "impl<'db, 'arena, 'txn> Iterator for AddNIterator<'db, 'arena, 'txn> {\n    type Item = Result<TraversalValue<'arena>, GraphError>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_26": {
+      "name": "next",
+      "type": "method",
+      "start_line": 26,
+      "end_line": 30,
+      "content_hash": "61902b91c5a2d5de9a1728d89548a399c974e36a",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        self.inner.next()\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_AddNAdapter_31": {
+      "name": "AddNAdapter",
+      "type": "trait",
+      "start_line": 31,
+      "end_line": 33,
+      "content_hash": "d07f14be3970e5516628f42b75d1cc9df22abb80",
+      "content": "pub trait AddNAdapter<'db, 'arena, 'txn, 's>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_add_n_34": {
+      "name": "add_n",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 42,
+      "content_hash": "461d5689c8fce606afbe250fc10eb2b9411972fc",
+      "content": "    fn add_n(\n        self,\n        label: &'arena str,\n        properties: Option<ImmutablePropertiesMap<'arena>>,\n        secondary_indices: Option<&'s [&str]>,\n    ) -> RwTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_43": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 43,
+      "end_line": 49,
+      "content_hash": "f3dd438ae546cf13b2f49801dd10141eb73133ef",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, 's, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    AddNAdapter<'db, 'arena, 'txn, 's> for RwTraversalIterator<'db, 'arena, 'txn, I>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_add_n_50": {
+      "name": "add_n",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 58,
+      "content_hash": "461d5689c8fce606afbe250fc10eb2b9411972fc",
+      "content": "    fn add_n(\n        self,\n        label: &'arena str,\n        properties: Option<ImmutablePropertiesMap<'arena>>,\n        secondary_indices: Option<&'s [&str]>,\n    ) -> RwTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_59": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 59,
+      "end_line": 141,
+      "content_hash": "768d1a65a8cabafd786644049b708d30c8caf004",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        let node = Node {\n            id: v6_uuid(),\n            label,\n            version: 1,\n            properties,\n        };\n        let secondary_indices = secondary_indices.unwrap_or(&[]).to_vec();\n        let mut result: Result<TraversalValue, GraphError> = Ok(TraversalValue::Empty);\n\n        match bincode::serialize(&node) {\n            Ok(bytes) => {\n                if let Err(e) = self.storage.nodes_db.put_with_flags(\n                    self.txn,\n                    PutFlags::APPEND,\n                    &node.id,\n                    &bytes,\n                ) {\n                    result = Err(GraphError::from(e));\n                }\n            }\n            Err(e) => result = Err(GraphError::from(e)),\n        }\n\n        for index in secondary_indices {\n            match self.storage.secondary_indices.get(index) {\n                Some(db) => {\n                    let key = match node.get_property(index) {\n                        Some(value) => value,\n                        None => continue,\n                    };\n                    // look into if there is a way to serialize to a slice\n                    match bincode::serialize(&key) {\n                        Ok(serialized) => {\n                            // possibly append dup\n\n                            if let Err(e) = db.put(self.txn, &serialized, &node.id) {\n                                println!(\n                                    \"{} Error adding node to secondary index: {:?}\",\n                                    line!(),\n                                    e\n                                );\n                                result = Err(GraphError::from(e));\n                            }\n                        }\n                        Err(e) => result = Err(GraphError::from(e)),\n                    }\n                }\n                None => {\n                    result = Err(GraphError::New(format!(\n                        \"Secondary Index {index} not found\"\n                    )));\n                }\n            }\n        }\n\n        if let Some(bm25) = &self.storage.bm25\n            && let Some(props) = node.properties.as_ref()\n        {\n            let mut data = props.flatten_bm25();\n            data.push_str(node.label);\n            if let Err(e) = bm25.insert_doc(self.txn, node.id, &data) {\n                result = Err(e);\n            }\n        }\n\n        if result.is_ok() {\n            result = Ok(TraversalValue::Node(node));\n        } else {\n            result = Err(GraphError::New(\n                \"Failed to add node to secondary indices\".to_string(),\n            ));\n        }\n\n        RwTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: std::iter::once(result),\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

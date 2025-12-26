@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/qa/testutil/simple_test_provider.go",
+  "file_hash": "1cf20073495f9446c03191a20070cad8e96f8bba",
+  "updated_at": "2025-12-26T17:34:20.942609",
+  "symbols": {
+    "struct_SimpleTestProvider_9": {
+      "name": "SimpleTestProvider",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 14,
+      "content_hash": "6a529a5d3ff0b160de91a91c028c3cc2d0d77b62",
+      "content": "type SimpleTestProvider struct {\n\tresponses []string\n\tcallIndex int\n}\n\n// NewSimpleTestProvider creates a basic test provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSimpleTestProvider_15": {
+      "name": "NewSimpleTestProvider",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 21,
+      "content_hash": "140c80c2375c6305e41b216cf3bb06378dd0c8ac",
+      "content": "func NewSimpleTestProvider(responses ...string) *SimpleTestProvider {\n\treturn &SimpleTestProvider{\n\t\tresponses: responses,\n\t}\n}\n\n// MockResponse returns a simple response for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MockResponse_22": {
+      "name": "MockResponse",
+      "type": "method",
+      "start_line": 22,
+      "end_line": 31,
+      "content_hash": "9dcdf8ab81f1f9b24d138884395bf0c66d44138a",
+      "content": "func (p *SimpleTestProvider) MockResponse(content string) string {\n\tif p.callIndex >= len(p.responses) {\n\t\treturn content\n\t}\n\tresp := p.responses[p.callIndex]\n\tp.callIndex++\n\treturn resp\n}\n\n// Reset call index",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Reset_32": {
+      "name": "Reset",
+      "type": "method",
+      "start_line": 32,
+      "end_line": 36,
+      "content_hash": "eff9027ff0d7741ae0089e62945a303d5b78aa1a",
+      "content": "func (p *SimpleTestProvider) Reset() {\n\tp.callIndex = 0\n}\n\n// SetupTempTestDir creates a temporary directory for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_SetupTempTestDir_37": {
+      "name": "SetupTempTestDir",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 53,
+      "content_hash": "edf2d036d135e5ddd8a29aaeeb3e37fb6bea3b80",
+      "content": "func SetupTempTestDir(t *testing.T, files map[string]string) string {\n\tt.Helper()\n\n\tdir := t.TempDir()\n\n\tfor path, content := range files {\n\t\tfullPath := dir + \"/\" + path\n\t\terr := os.WriteFile(fullPath, []byte(content), 0644)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to create test file %s: %v\", fullPath, err)\n\t\t}\n\t}\n\n\treturn dir\n}\n\n// CleanupTempTestDir is kept for compatibility, but t.TempDir() is preferred",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CleanupTempTestDir_54": {
+      "name": "CleanupTempTestDir",
+      "type": "function",
+      "start_line": 54,
+      "end_line": 56,
+      "content_hash": "df4c5188b9a9478339b890d63fae7da3b7221422",
+      "content": "func CleanupTempTestDir(dir string) {\n\tos.RemoveAll(dir)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

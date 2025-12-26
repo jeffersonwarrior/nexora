@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/internal/config/load_test.go",
+  "file_hash": "317e8b3169dc6326a8c49a3510c0b4bd15e505fb",
+  "updated_at": "2025-12-26T17:34:23.868746",
+  "symbols": {
+    "function_TestMain_18": {
+      "name": "TestMain",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 24,
+      "content_hash": "39c3f8306d2d8371a3430a70a3b4eefe88b581a8",
+      "content": "func TestMain(m *testing.M) {\n\tslog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))\n\n\texitVal := m.Run()\n\tos.Exit(exitVal)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_LoadFromReaders_25": {
+      "name": "TestConfig_LoadFromReaders",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 39,
+      "content_hash": "de3ae38af594b54b0a34f40a5de6b9ec7a8414fc",
+      "content": "func TestConfig_LoadFromReaders(t *testing.T) {\n\tdata1 := strings.NewReader(`{\"providers\": {\"openai\": {\"api_key\": \"key1\", \"base_url\": \"https://api.openai.com/v1\"}}}`)\n\tdata2 := strings.NewReader(`{\"providers\": {\"openai\": {\"api_key\": \"key2\", \"base_url\": \"https://api.openai.com/v2\"}}}`)\n\tdata3 := strings.NewReader(`{\"providers\": {\"openai\": {}}}`)\n\n\tloadedConfig, err := loadFromReaders([]io.Reader{data1, data2, data3})\n\n\trequire.NoError(t, err)\n\trequire.NotNil(t, loadedConfig)\n\trequire.Equal(t, 1, loadedConfig.Providers.Len())\n\tpc, _ := loadedConfig.Providers.Get(\"openai\")\n\trequire.Equal(t, \"key2\", pc.APIKey)\n\trequire.Equal(t, \"https://api.openai.com/v2\", pc.BaseURL)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_setDefaults_40": {
+      "name": "TestConfig_setDefaults",
+      "type": "function",
+      "start_line": 40,
+      "end_line": 59,
+      "content_hash": "300d7894cf8ae61dbb8832ca2288f288aa0dcb2e",
+      "content": "func TestConfig_setDefaults(t *testing.T) {\n\tcfg := &Config{}\n\n\tcfg.setDefaults(\"/tmp\", \"\")\n\n\trequire.NotNil(t, cfg.Options)\n\trequire.NotNil(t, cfg.Options.TUI)\n\trequire.NotNil(t, cfg.Options.ContextPaths)\n\trequire.NotNil(t, cfg.Providers)\n\trequire.NotNil(t, cfg.Models)\n\trequire.NotNil(t, cfg.LSP)\n\trequire.NotNil(t, cfg.MCP)\n\trequire.Equal(t, filepath.Join(\"/tmp\", \".nexora\"), cfg.Options.DataDirectory)\n\trequire.Equal(t, \"AGENTS.md\", cfg.Options.InitializeAs)\n\tfor _, path := range defaultContextPaths {\n\t\trequire.Contains(t, cfg.Options.ContextPaths, path)\n\t}\n\trequire.Equal(t, \"/tmp\", cfg.workingDir)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProviders_60": {
+      "name": "TestConfig_configureProviders",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 86,
+      "content_hash": "20ff901990f6d1cb1ba9f350daf69bed89f9759c",
+      "content": "func TestConfig_configureProviders(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          \"openai\",\n\t\t\tAPIKey:      \"$OPENAI_API_KEY\",\n\t\t\tAPIEndpoint: \"https://api.openai.com/v1\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"test-model\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"OPENAI_API_KEY\": \"test-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\trequire.Equal(t, 1, cfg.Providers.Len())\n\n\t// We want to make sure that we keep the configured API key as a placeholder\n\tpc, _ := cfg.Providers.Get(\"openai\")\n\trequire.Equal(t, \"$OPENAI_API_KEY\", pc.APIKey)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersWithOverride_87": {
+      "name": "TestConfig_configureProvidersWithOverride",
+      "type": "function",
+      "start_line": 87,
+      "end_line": 132,
+      "content_hash": "548109c5172bd86677438cac4634a57b48e4f1eb",
+      "content": "func TestConfig_configureProvidersWithOverride(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          \"openai\",\n\t\t\tAPIKey:      \"$OPENAI_API_KEY\",\n\t\t\tAPIEndpoint: \"https://api.openai.com/v1\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"test-model\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{\n\t\tProviders: csync.NewMap[string, ProviderConfig](),\n\t}\n\tcfg.Providers.Set(\"openai\", ProviderConfig{\n\t\tAPIKey:  \"xyz\",\n\t\tBaseURL: \"https://api.openai.com/v2\",\n\t\tModels: []catwalk.Model{\n\t\t\t{\n\t\t\t\tID:   \"test-model\",\n\t\t\t\tName: \"Updated\",\n\t\t\t},\n\t\t\t{\n\t\t\t\tID: \"another-model\",\n\t\t\t},\n\t\t},\n\t})\n\tcfg.setDefaults(\"/tmp\", \"\")\n\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"OPENAI_API_KEY\": \"test-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\trequire.Equal(t, 1, cfg.Providers.Len())\n\n\t// We want to make sure that we keep the configured API key as a placeholder\n\tpc, _ := cfg.Providers.Get(\"openai\")\n\trequire.Equal(t, \"xyz\", pc.APIKey)\n\trequire.Equal(t, \"https://api.openai.com/v2\", pc.BaseURL)\n\trequire.Len(t, pc.Models, 2)\n\trequire.Equal(t, \"Updated\", pc.Models[0].Name)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersWithNewProvider_133": {
+      "name": "TestConfig_configureProvidersWithNewProvider",
+      "type": "function",
+      "start_line": 133,
+      "end_line": 179,
+      "content_hash": "81ea6e6709ebcf0e7a8e30b22c9356f35897888a",
+      "content": "func TestConfig_configureProvidersWithNewProvider(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          \"openai\",\n\t\t\tAPIKey:      \"$OPENAI_API_KEY\",\n\t\t\tAPIEndpoint: \"https://api.openai.com/v1\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"test-model\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{\n\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\"custom\": {\n\t\t\t\tAPIKey:  \"xyz\",\n\t\t\t\tBaseURL: \"https://api.someendpoint.com/v2\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID: \"test-model\",\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}),\n\t}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"OPENAI_API_KEY\": \"test-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\t// Should be to because of the env variable\n\trequire.Equal(t, cfg.Providers.Len(), 2)\n\n\t// We want to make sure that we keep the configured API key as a placeholder\n\tpc, _ := cfg.Providers.Get(\"custom\")\n\trequire.Equal(t, \"xyz\", pc.APIKey)\n\t// Make sure we set the ID correctly\n\trequire.Equal(t, \"custom\", pc.ID)\n\trequire.Equal(t, \"https://api.someendpoint.com/v2\", pc.BaseURL)\n\trequire.Len(t, pc.Models, 1)\n\n\t_, ok := cfg.Providers.Get(\"openai\")\n\trequire.True(t, ok, \"OpenAI provider should still be present\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersBedrockWithCredentials_180": {
+      "name": "TestConfig_configureProvidersBedrockWithCredentials",
+      "type": "function",
+      "start_line": 180,
+      "end_line": 208,
+      "content_hash": "0961622b1ba90b53667d351dddda5e5e4b4f2553",
+      "content": "func TestConfig_configureProvidersBedrockWithCredentials(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          catwalk.InferenceProviderBedrock,\n\t\t\tAPIKey:      \"\",\n\t\t\tAPIEndpoint: \"\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"anthropic.claude-sonnet-4-20250514-v1:0\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"AWS_ACCESS_KEY_ID\":     \"test-key-id\",\n\t\t\"AWS_SECRET_ACCESS_KEY\": \"test-secret-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\trequire.Equal(t, cfg.Providers.Len(), 1)\n\n\tbedrockProvider, ok := cfg.Providers.Get(\"bedrock\")\n\trequire.True(t, ok, \"Bedrock provider should be present\")\n\trequire.Len(t, bedrockProvider.Models, 1)\n\trequire.Equal(t, \"anthropic.claude-sonnet-4-20250514-v1:0\", bedrockProvider.Models[0].ID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersBedrockWithoutCredentials_209": {
+      "name": "TestConfig_configureProvidersBedrockWithoutCredentials",
+      "type": "function",
+      "start_line": 209,
+      "end_line": 234,
+      "content_hash": "4ebfeaa87caf6fe64a535cf5b8137af51d72acd6",
+      "content": "func TestConfig_configureProvidersBedrockWithoutCredentials(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          catwalk.InferenceProviderBedrock,\n\t\t\tAPIKey:      \"\",\n\t\t\tAPIEndpoint: \"\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"anthropic.claude-sonnet-4-20250514-v1:0\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\n\t// In the actual test environment, AWS credentials might be available through config files\n\t// So the expected behavior is to add the provider (not skip it)\n\trequire.Equal(t, 1, cfg.Providers.Len())\n\t_, exists := cfg.Providers.Get(\"bedrock\")\n\trequire.True(t, exists)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersBedrockWithoutUnsupportedModel_235": {
+      "name": "TestConfig_configureProvidersBedrockWithoutUnsupportedModel",
+      "type": "function",
+      "start_line": 235,
+      "end_line": 257,
+      "content_hash": "f4f783833fb0bb87194069566d29a72575387775",
+      "content": "func TestConfig_configureProvidersBedrockWithoutUnsupportedModel(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          catwalk.InferenceProviderBedrock,\n\t\t\tAPIKey:      \"\",\n\t\t\tAPIEndpoint: \"\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"some-random-model\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"AWS_ACCESS_KEY_ID\":     \"test-key-id\",\n\t\t\"AWS_SECRET_ACCESS_KEY\": \"test-secret-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.Error(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersVertexAIWithCredentials_258": {
+      "name": "TestConfig_configureProvidersVertexAIWithCredentials",
+      "type": "function",
+      "start_line": 258,
+      "end_line": 288,
+      "content_hash": "fef18bbdbd74e1cabcb24890a48912648c41cb0e",
+      "content": "func TestConfig_configureProvidersVertexAIWithCredentials(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          catwalk.InferenceProviderVertexAI,\n\t\t\tAPIKey:      \"\",\n\t\t\tAPIEndpoint: \"\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"gemini-pro\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"VERTEXAI_PROJECT\":  \"test-project\",\n\t\t\"VERTEXAI_LOCATION\": \"us-central1\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\trequire.Equal(t, cfg.Providers.Len(), 1)\n\n\tvertexProvider, ok := cfg.Providers.Get(\"vertexai\")\n\trequire.True(t, ok, \"VertexAI provider should be present\")\n\trequire.Len(t, vertexProvider.Models, 1)\n\trequire.Equal(t, \"gemini-pro\", vertexProvider.Models[0].ID)\n\trequire.Equal(t, \"test-project\", vertexProvider.ExtraParams[\"project\"])\n\trequire.Equal(t, \"us-central1\", vertexProvider.ExtraParams[\"location\"])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersVertexAIWithoutCredentials_289": {
+      "name": "TestConfig_configureProvidersVertexAIWithoutCredentials",
+      "type": "function",
+      "start_line": 289,
+      "end_line": 314,
+      "content_hash": "8526b88d8b71ad3e6ec182f6831a9c816776412a",
+      "content": "func TestConfig_configureProvidersVertexAIWithoutCredentials(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          catwalk.InferenceProviderVertexAI,\n\t\t\tAPIKey:      \"\",\n\t\t\tAPIEndpoint: \"\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"gemini-pro\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"GOOGLE_GENAI_USE_VERTEXAI\": \"false\",\n\t\t\"GOOGLE_CLOUD_PROJECT\":      \"test-project\",\n\t\t\"GOOGLE_CLOUD_LOCATION\":     \"us-central1\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\t// Provider should not be configured without proper credentials\n\trequire.Equal(t, cfg.Providers.Len(), 0)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersVertexAIMissingProject_315": {
+      "name": "TestConfig_configureProvidersVertexAIMissingProject",
+      "type": "function",
+      "start_line": 315,
+      "end_line": 339,
+      "content_hash": "74f8db68ab0188dc135b34ed42a03ccba2f427c3",
+      "content": "func TestConfig_configureProvidersVertexAIMissingProject(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          catwalk.InferenceProviderVertexAI,\n\t\t\tAPIKey:      \"\",\n\t\t\tAPIEndpoint: \"\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"gemini-pro\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"GOOGLE_GENAI_USE_VERTEXAI\": \"true\",\n\t\t\"GOOGLE_CLOUD_LOCATION\":     \"us-central1\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\t// Provider should not be configured without project\n\trequire.Equal(t, cfg.Providers.Len(), 0)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersSetProviderID_340": {
+      "name": "TestConfig_configureProvidersSetProviderID",
+      "type": "function",
+      "start_line": 340,
+      "end_line": 366,
+      "content_hash": "c3692381c1121c320f1992c21f8a41d7aa76bb36",
+      "content": "func TestConfig_configureProvidersSetProviderID(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          \"openai\",\n\t\t\tAPIKey:      \"$OPENAI_API_KEY\",\n\t\t\tAPIEndpoint: \"https://api.openai.com/v1\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"test-model\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"OPENAI_API_KEY\": \"test-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\trequire.Equal(t, cfg.Providers.Len(), 1)\n\n\t// Provider ID should be set\n\tpc, _ := cfg.Providers.Get(\"openai\")\n\trequire.Equal(t, \"openai\", pc.ID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_EnabledProviders_367": {
+      "name": "TestConfig_EnabledProviders",
+      "type": "function",
+      "start_line": 367,
+      "end_line": 418,
+      "content_hash": "0425732375bb2f601190d1d2f401e7daece57c79",
+      "content": "func TestConfig_EnabledProviders(t *testing.T) {\n\tt.Run(\"all providers enabled\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tID:      \"openai\",\n\t\t\t\t\tAPIKey:  \"key1\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t\t\"anthropic\": {\n\t\t\t\t\tID:      \"anthropic\",\n\t\t\t\t\tAPIKey:  \"key2\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\tenabled := cfg.EnabledProviders()\n\t\trequire.Len(t, enabled, 2)\n\t})\n\n\tt.Run(\"some providers disabled\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tID:      \"openai\",\n\t\t\t\t\tAPIKey:  \"key1\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t\t\"anthropic\": {\n\t\t\t\t\tID:      \"anthropic\",\n\t\t\t\t\tAPIKey:  \"key2\",\n\t\t\t\t\tDisable: true,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\tenabled := cfg.EnabledProviders()\n\t\trequire.Len(t, enabled, 1)\n\t\trequire.Equal(t, \"openai\", enabled[0].ID)\n\t})\n\n\tt.Run(\"empty providers map\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMap[string, ProviderConfig](),\n\t\t}\n\n\t\tenabled := cfg.EnabledProviders()\n\t\trequire.Len(t, enabled, 0)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_IsConfigured_419": {
+      "name": "TestConfig_IsConfigured",
+      "type": "function",
+      "start_line": 419,
+      "end_line": 461,
+      "content_hash": "7e7f7c1d401d57a739030d153b9dd7af43c656d2",
+      "content": "func TestConfig_IsConfigured(t *testing.T) {\n\tt.Run(\"returns true when at least one provider is enabled\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tID:      \"openai\",\n\t\t\t\t\tAPIKey:  \"key1\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\trequire.True(t, cfg.IsConfigured())\n\t})\n\n\tt.Run(\"returns false when no providers are configured\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMap[string, ProviderConfig](),\n\t\t}\n\n\t\trequire.False(t, cfg.IsConfigured())\n\t})\n\n\tt.Run(\"returns false when all providers are disabled\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tID:      \"openai\",\n\t\t\t\t\tAPIKey:  \"key1\",\n\t\t\t\t\tDisable: true,\n\t\t\t\t},\n\t\t\t\t\"anthropic\": {\n\t\t\t\t\tID:      \"anthropic\",\n\t\t\t\t\tAPIKey:  \"key2\",\n\t\t\t\t\tDisable: true,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\trequire.False(t, cfg.IsConfigured())\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_AreModelsConfigured_462": {
+      "name": "TestConfig_AreModelsConfigured",
+      "type": "function",
+      "start_line": 462,
+      "end_line": 556,
+      "content_hash": "449f95e293ef87bd8a72be4797859253320351f6",
+      "content": "func TestConfig_AreModelsConfigured(t *testing.T) {\n\tt.Run(\"returns true when both large and small models are configured with valid providers\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\tSelectedModelTypeLarge: {\n\t\t\t\t\tProvider: \"openai\",\n\t\t\t\t\tModel:    \"gpt-4\",\n\t\t\t\t},\n\t\t\t\tSelectedModelTypeSmall: {\n\t\t\t\t\tProvider: \"anthropic\",\n\t\t\t\t\tModel:    \"claude-3-haiku\",\n\t\t\t\t},\n\t\t\t},\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tID:      \"openai\",\n\t\t\t\t\tAPIKey:  \"key1\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t\t\"anthropic\": {\n\t\t\t\t\tID:      \"anthropic\",\n\t\t\t\t\tAPIKey:  \"key2\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\trequire.True(t, cfg.AreModelsConfigured())\n\t})\n\n\tt.Run(\"returns false when large model is not selected\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\tSelectedModelTypeSmall: {\n\t\t\t\t\tProvider: \"anthropic\",\n\t\t\t\t\tModel:    \"claude-3-haiku\",\n\t\t\t\t},\n\t\t\t},\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"anthropic\": {\n\t\t\t\t\tID:      \"anthropic\",\n\t\t\t\t\tAPIKey:  \"key2\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\trequire.False(t, cfg.AreModelsConfigured())\n\t})\n\n\tt.Run(\"returns false when small model is not selected\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\tSelectedModelTypeLarge: {\n\t\t\t\t\tProvider: \"openai\",\n\t\t\t\t\tModel:    \"gpt-4\",\n\t\t\t\t},\n\t\t\t},\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tID:      \"openai\",\n\t\t\t\t\tAPIKey:  \"key1\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\trequire.False(t, cfg.AreModelsConfigured())\n\t})\n\n\tt.Run(\"returns false when provider for large model doesn't exist\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\tSelectedModelTypeLarge: {\n\t\t\t\t\tProvider: \"openai\",\n\t\t\t\t\tModel:    \"gpt-4\",\n\t\t\t\t},\n\t\t\t\tSelectedModelTypeSmall: {\n\t\t\t\t\tProvider: \"anthropic\",\n\t\t\t\t\tModel:    \"claude-3-haiku\",\n\t\t\t\t},\n\t\t\t},\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"anthropic\": {\n\t\t\t\t\tID:      \"anthropic\",\n\t\t\t\t\tAPIKey:  \"key2\",\n\t\t\t\t\tDisable: false,\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\n\t\trequire.False(t, cfg.AreModelsConfigured())\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_setupAgentsWithNoDisabledTools_557": {
+      "name": "TestConfig_setupAgentsWithNoDisabledTools",
+      "type": "function",
+      "start_line": 557,
+      "end_line": 573,
+      "content_hash": "9ac2bc3a3667b7f9e0c2a64b8554b5781e2248a9",
+      "content": "func TestConfig_setupAgentsWithNoDisabledTools(t *testing.T) {\n\tcfg := &Config{\n\t\tOptions: &Options{\n\t\t\tDisabledTools: []string{},\n\t\t},\n\t}\n\n\tcfg.SetupAgents()\n\tcoderAgent, ok := cfg.Agents[AgentCoder]\n\trequire.True(t, ok)\n\tassert.Equal(t, allToolNames(), coderAgent.AllowedTools)\n\n\ttaskAgent, ok := cfg.Agents[AgentTask]\n\trequire.True(t, ok)\n\tassert.Equal(t, []string{\"glob\", \"grep\", \"ls\", \"sourcegraph\", \"view\"}, taskAgent.AllowedTools)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_setupAgentsWithDisabledTools_574": {
+      "name": "TestConfig_setupAgentsWithDisabledTools",
+      "type": "function",
+      "start_line": 574,
+      "end_line": 595,
+      "content_hash": "ad991f47ef6e44f06244e67269b65a2a55d86ea3",
+      "content": "func TestConfig_setupAgentsWithDisabledTools(t *testing.T) {\n\tcfg := &Config{\n\t\tOptions: &Options{\n\t\t\tDisabledTools: []string{\n\t\t\t\t\"edit\",\n\t\t\t\t\"download\",\n\t\t\t\t\"grep\",\n\t\t\t},\n\t\t},\n\t}\n\n\tcfg.SetupAgents()\n\tcoderAgent, ok := cfg.Agents[AgentCoder]\n\trequire.True(t, ok)\n\n\tassert.Equal(t, []string{\"agent\", \"bash\", \"job_output\", \"job_kill\", \"multiedit\", \"lsp_diagnostics\", \"lsp_references\", \"fetch\", \"agentic_fetch\", \"glob\", \"ls\", \"sourcegraph\", \"view\", \"write\"}, coderAgent.AllowedTools)\n\n\ttaskAgent, ok := cfg.Agents[AgentTask]\n\trequire.True(t, ok)\n\tassert.Equal(t, []string{\"glob\", \"ls\", \"sourcegraph\", \"view\"}, taskAgent.AllowedTools)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_setupAgentsWithEveryReadOnlyToolDisabled_596": {
+      "name": "TestConfig_setupAgentsWithEveryReadOnlyToolDisabled",
+      "type": "function",
+      "start_line": 596,
+      "end_line": 618,
+      "content_hash": "2701eb74c7274681ed672426aa266211283ae7bf",
+      "content": "func TestConfig_setupAgentsWithEveryReadOnlyToolDisabled(t *testing.T) {\n\tcfg := &Config{\n\t\tOptions: &Options{\n\t\t\tDisabledTools: []string{\n\t\t\t\t\"glob\",\n\t\t\t\t\"grep\",\n\t\t\t\t\"ls\",\n\t\t\t\t\"sourcegraph\",\n\t\t\t\t\"view\",\n\t\t\t},\n\t\t},\n\t}\n\n\tcfg.SetupAgents()\n\tcoderAgent, ok := cfg.Agents[AgentCoder]\n\trequire.True(t, ok)\n\tassert.Equal(t, []string{\"agent\", \"bash\", \"job_output\", \"job_kill\", \"download\", \"edit\", \"multiedit\", \"lsp_diagnostics\", \"lsp_references\", \"fetch\", \"agentic_fetch\", \"write\"}, coderAgent.AllowedTools)\n\n\ttaskAgent, ok := cfg.Agents[AgentTask]\n\trequire.True(t, ok)\n\tassert.Equal(t, []string{}, taskAgent.AllowedTools)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersWithDisabledProvider_619": {
+      "name": "TestConfig_configureProvidersWithDisabledProvider",
+      "type": "function",
+      "start_line": 619,
+      "end_line": 652,
+      "content_hash": "988fe1e3840f17cce5b13d0d74f6a9df8f1b3147",
+      "content": "func TestConfig_configureProvidersWithDisabledProvider(t *testing.T) {\n\tknownProviders := []catwalk.Provider{\n\t\t{\n\t\t\tID:          \"openai\",\n\t\t\tAPIKey:      \"$OPENAI_API_KEY\",\n\t\t\tAPIEndpoint: \"https://api.openai.com/v1\",\n\t\t\tModels: []catwalk.Model{{\n\t\t\t\tID: \"test-model\",\n\t\t\t}},\n\t\t},\n\t}\n\n\tcfg := &Config{\n\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\"openai\": {\n\t\t\t\tDisable: true,\n\t\t\t},\n\t\t}),\n\t}\n\tcfg.setDefaults(\"/tmp\", \"\")\n\n\tenv := env.NewFromMap(map[string]string{\n\t\t\"OPENAI_API_KEY\": \"test-key\",\n\t})\n\tresolver := NewEnvironmentVariableResolver(env)\n\terr := cfg.configureProviders(env, resolver, knownProviders)\n\trequire.NoError(t, err)\n\n\trequire.Equal(t, cfg.Providers.Len(), 1)\n\tprov, exists := cfg.Providers.Get(\"openai\")\n\trequire.True(t, exists)\n\trequire.True(t, prov.Disable)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersCustomProviderValidation_653": {
+      "name": "TestConfig_configureProvidersCustomProviderValidation",
+      "type": "function",
+      "start_line": 653,
+      "end_line": 833,
+      "content_hash": "bbd6fbb7ae62bc9c118e906a3603a14c1ce02798",
+      "content": "func TestConfig_configureProvidersCustomProviderValidation(t *testing.T) {\n\tt.Run(\"custom provider with missing API key is allowed, but not known providers\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\t\tID: \"test-model\",\n\t\t\t\t\t}},\n\t\t\t\t},\n\t\t\t\t\"openai\": {\n\t\t\t\t\tAPIKey: \"$MISSING\",\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 1)\n\t\t_, exists := cfg.Providers.Get(\"custom\")\n\t\trequire.True(t, exists)\n\t})\n\n\tt.Run(\"custom provider with missing BaseURL is removed\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey: \"test-key\",\n\t\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\t\tID: \"test-model\",\n\t\t\t\t\t}},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 0)\n\t\t_, exists := cfg.Providers.Get(\"custom\")\n\t\trequire.False(t, exists)\n\t})\n\n\tt.Run(\"custom provider with no models is removed\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tModels:  []catwalk.Model{},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 0)\n\t\t_, exists := cfg.Providers.Get(\"custom\")\n\t\trequire.False(t, exists)\n\t})\n\n\tt.Run(\"custom provider with unsupported type is removed\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tType:    \"unsupported\",\n\t\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\t\tID: \"test-model\",\n\t\t\t\t\t}},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 0)\n\t\t_, exists := cfg.Providers.Get(\"custom\")\n\t\trequire.False(t, exists)\n\t})\n\n\tt.Run(\"valid custom provider is kept and ID is set\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tType:    catwalk.TypeOpenAI,\n\t\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\t\tID: \"test-model\",\n\t\t\t\t\t}},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 1)\n\t\tcustomProvider, exists := cfg.Providers.Get(\"custom\")\n\t\trequire.True(t, exists)\n\t\trequire.Equal(t, \"custom\", customProvider.ID)\n\t\trequire.Equal(t, \"test-key\", customProvider.APIKey)\n\t\trequire.Equal(t, \"https://api.custom.com/v1\", customProvider.BaseURL)\n\t})\n\n\tt.Run(\"custom anthropic provider is supported\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom-anthropic\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.anthropic.com/v1\",\n\t\t\t\t\tType:    catwalk.TypeAnthropic,\n\t\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\t\tID: \"claude-3-sonnet\",\n\t\t\t\t\t}},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 1)\n\t\tcustomProvider, exists := cfg.Providers.Get(\"custom-anthropic\")\n\t\trequire.True(t, exists)\n\t\trequire.Equal(t, \"custom-anthropic\", customProvider.ID)\n\t\trequire.Equal(t, \"test-key\", customProvider.APIKey)\n\t\trequire.Equal(t, \"https://api.anthropic.com/v1\", customProvider.BaseURL)\n\t\trequire.Equal(t, catwalk.TypeAnthropic, customProvider.Type)\n\t})\n\n\tt.Run(\"disabled custom provider is removed\", func(t *testing.T) {\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tType:    catwalk.TypeOpenAI,\n\t\t\t\t\tDisable: true,\n\t\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\t\tID: \"test-model\",\n\t\t\t\t\t}},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, []catwalk.Provider{})\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 0)\n\t\t_, exists := cfg.Providers.Get(\"custom\")\n\t\trequire.False(t, exists)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureProvidersEnhancedCredentialValidation_834": {
+      "name": "TestConfig_configureProvidersEnhancedCredentialValidation",
+      "type": "function",
+      "start_line": 834,
+      "end_line": 965,
+      "content_hash": "82344c6703ccb7cbe0d8b1375feb84889731b448",
+      "content": "func TestConfig_configureProvidersEnhancedCredentialValidation(t *testing.T) {\n\tt.Run(\"VertexAI provider removed when credentials missing with existing config\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:          catwalk.InferenceProviderVertexAI,\n\t\t\t\tAPIKey:      \"\",\n\t\t\t\tAPIEndpoint: \"\",\n\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\tID: \"gemini-pro\",\n\t\t\t\t}},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"vertexai\": {\n\t\t\t\t\tBaseURL: \"custom-url\",\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{\n\t\t\t\"GOOGLE_GENAI_USE_VERTEXAI\": \"false\",\n\t\t})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 0)\n\t\t_, exists := cfg.Providers.Get(\"vertexai\")\n\t\trequire.False(t, exists)\n\t})\n\n\tt.Run(\"Bedrock provider removed when AWS credentials missing with existing config\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:          catwalk.InferenceProviderBedrock,\n\t\t\t\tAPIKey:      \"\",\n\t\t\t\tAPIEndpoint: \"\",\n\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\tID: \"anthropic.claude-sonnet-4-20250514-v1:0\",\n\t\t\t\t}},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"bedrock\": {\n\t\t\t\t\tBaseURL: \"custom-url\",\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\t// Since AWS credentials are available in the test environment (via config file),\n\t\t// the provider will be kept\n\t\trequire.Equal(t, 1, cfg.Providers.Len())\n\t\t_, exists := cfg.Providers.Get(\"bedrock\")\n\t\trequire.True(t, exists)\n\t})\n\n\tt.Run(\"provider removed when API key missing with existing config\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:          \"openai\",\n\t\t\t\tAPIKey:      \"$MISSING_API_KEY\",\n\t\t\t\tAPIEndpoint: \"https://api.openai.com/v1\",\n\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\tID: \"test-model\",\n\t\t\t\t}},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tBaseURL: \"custom-url\",\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 0)\n\t\t_, exists := cfg.Providers.Get(\"openai\")\n\t\trequire.False(t, exists)\n\t})\n\n\tt.Run(\"known provider should still be added if the endpoint is missing the client will use default endpoints\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:          \"openai\",\n\t\t\t\tAPIKey:      \"$OPENAI_API_KEY\",\n\t\t\t\tAPIEndpoint: \"$MISSING_ENDPOINT\",\n\t\t\t\tModels: []catwalk.Model{{\n\t\t\t\t\tID: \"test-model\",\n\t\t\t\t}},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"openai\": {\n\t\t\t\t\tAPIKey: \"test-key\",\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\n\t\tenv := env.NewFromMap(map[string]string{\n\t\t\t\"OPENAI_API_KEY\": \"test-key\",\n\t\t})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\trequire.Equal(t, cfg.Providers.Len(), 1)\n\t\t_, exists := cfg.Providers.Get(\"openai\")\n\t\trequire.True(t, exists)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_defaultModelSelection_966": {
+      "name": "TestConfig_defaultModelSelection",
+      "type": "function",
+      "start_line": 966,
+      "end_line": 1198,
+      "content_hash": "21812152cbc1274adda6001a357a28e6ee8ef2a2",
+      "content": "func TestConfig_defaultModelSelection(t *testing.T) {\n\tt.Run(\"default behavior uses the default models for given provider\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"abc\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\tlarge, small, err := cfg.defaultModelSelection(knownProviders)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, \"large-model\", large.Model)\n\t\trequire.Equal(t, \"openai\", large.Provider)\n\t\trequire.Equal(t, int64(1000), large.MaxTokens)\n\t\trequire.Equal(t, \"small-model\", small.Model)\n\t\trequire.Equal(t, \"openai\", small.Provider)\n\t\trequire.Equal(t, int64(500), small.MaxTokens)\n\t})\n\tt.Run(\"should error if no providers configured\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"$MISSING_KEY\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\t_, _, err = cfg.defaultModelSelection(knownProviders)\n\t\trequire.Error(t, err)\n\t})\n\tt.Run(\"should error if model is missing\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"abc\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"not-large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\t\t_, _, err = cfg.defaultModelSelection(knownProviders)\n\t\trequire.Error(t, err)\n\t})\n\n\tt.Run(\"should configure the default models with a custom provider\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"$MISSING\", // will not be included in the config\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"not-large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\tID:               \"model\",\n\t\t\t\t\t\t\tDefaultMaxTokens: 600,\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\t\tlarge, small, err := cfg.defaultModelSelection(knownProviders)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, \"model\", large.Model)\n\t\trequire.Equal(t, \"custom\", large.Provider)\n\t\trequire.Equal(t, int64(600), large.MaxTokens)\n\t\trequire.Equal(t, \"model\", small.Model)\n\t\trequire.Equal(t, \"custom\", small.Provider)\n\t\trequire.Equal(t, int64(600), small.MaxTokens)\n\t})\n\n\tt.Run(\"should fail if no model configured\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"$MISSING\", // will not be included in the config\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"not-large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tModels:  []catwalk.Model{},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\t\t_, _, err = cfg.defaultModelSelection(knownProviders)\n\t\trequire.Error(t, err)\n\t})\n\tt.Run(\"should use the default provider first\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"set\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tProviders: csync.NewMapFrom(map[string]ProviderConfig{\n\t\t\t\t\"custom\": {\n\t\t\t\t\tAPIKey:  \"test-key\",\n\t\t\t\t\tBaseURL: \"https://api.custom.com/v1\",\n\t\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t}),\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\t\tlarge, small, err := cfg.defaultModelSelection(knownProviders)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, \"large-model\", large.Model)\n\t\trequire.Equal(t, \"openai\", large.Provider)\n\t\trequire.Equal(t, int64(1000), large.MaxTokens)\n\t\trequire.Equal(t, \"small-model\", small.Model)\n\t\trequire.Equal(t, \"openai\", small.Provider)\n\t\trequire.Equal(t, int64(500), small.MaxTokens)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfig_configureSelectedModels_1199": {
+      "name": "TestConfig_configureSelectedModels",
+      "type": "function",
+      "start_line": 1199,
+      "end_line": 1351,
+      "content_hash": "5502f853ed1f4c724800cad1a682ed0647c4cf71",
+      "content": "func TestConfig_configureSelectedModels(t *testing.T) {\n\tt.Run(\"should override defaults\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"abc\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"larger-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 2000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\t\"large\": {\n\t\t\t\t\tModel: \"larger-model\",\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\terr = cfg.configureSelectedModels(knownProviders)\n\t\trequire.NoError(t, err)\n\t\tlarge := cfg.Models[SelectedModelTypeLarge]\n\t\tsmall := cfg.Models[SelectedModelTypeSmall]\n\t\trequire.Equal(t, \"larger-model\", large.Model)\n\t\trequire.Equal(t, \"openai\", large.Provider)\n\t\trequire.Equal(t, int64(2000), large.MaxTokens)\n\t\trequire.Equal(t, \"small-model\", small.Model)\n\t\trequire.Equal(t, \"openai\", small.Provider)\n\t\trequire.Equal(t, int64(500), small.MaxTokens)\n\t})\n\tt.Run(\"should be possible to use multiple providers\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"abc\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t\t{\n\t\t\t\tID:                  \"anthropic\",\n\t\t\t\tAPIKey:              \"abc\",\n\t\t\t\tDefaultLargeModelID: \"a-large-model\",\n\t\t\t\tDefaultSmallModelID: \"a-small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"a-large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"a-small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 200,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\t\"small\": {\n\t\t\t\t\tModel:     \"a-small-model\",\n\t\t\t\t\tProvider:  \"anthropic\",\n\t\t\t\t\tMaxTokens: 300,\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\terr = cfg.configureSelectedModels(knownProviders)\n\t\trequire.NoError(t, err)\n\t\tlarge := cfg.Models[SelectedModelTypeLarge]\n\t\tsmall := cfg.Models[SelectedModelTypeSmall]\n\t\trequire.Equal(t, \"large-model\", large.Model)\n\t\trequire.Equal(t, \"openai\", large.Provider)\n\t\trequire.Equal(t, int64(1000), large.MaxTokens)\n\t\trequire.Equal(t, \"a-small-model\", small.Model)\n\t\trequire.Equal(t, \"anthropic\", small.Provider)\n\t\trequire.Equal(t, int64(300), small.MaxTokens)\n\t})\n\n\tt.Run(\"should override the max tokens only\", func(t *testing.T) {\n\t\tknownProviders := []catwalk.Provider{\n\t\t\t{\n\t\t\t\tID:                  \"openai\",\n\t\t\t\tAPIKey:              \"abc\",\n\t\t\t\tDefaultLargeModelID: \"large-model\",\n\t\t\t\tDefaultSmallModelID: \"small-model\",\n\t\t\t\tModels: []catwalk.Model{\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"large-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 1000,\n\t\t\t\t\t},\n\t\t\t\t\t{\n\t\t\t\t\t\tID:               \"small-model\",\n\t\t\t\t\t\tDefaultMaxTokens: 500,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\tcfg := &Config{\n\t\t\tModels: map[SelectedModelType]SelectedModel{\n\t\t\t\t\"large\": {\n\t\t\t\t\tMaxTokens: 100,\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\t\tcfg.setDefaults(\"/tmp\", \"\")\n\t\tenv := env.NewFromMap(map[string]string{})\n\t\tresolver := NewEnvironmentVariableResolver(env)\n\t\terr := cfg.configureProviders(env, resolver, knownProviders)\n\t\trequire.NoError(t, err)\n\n\t\terr = cfg.configureSelectedModels(knownProviders)\n\t\trequire.NoError(t, err)\n\t\tlarge := cfg.Models[SelectedModelTypeLarge]\n\t\trequire.Equal(t, \"large-model\", large.Model)\n\t\trequire.Equal(t, \"openai\", large.Provider)\n\t\trequire.Equal(t, int64(100), large.MaxTokens)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

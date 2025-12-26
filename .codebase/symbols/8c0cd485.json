@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/context-engine/tests/test_subprocess_hybrid_smoke.py",
+  "file_hash": "6250eff98a03853562d3a87fa327439b42618e1d",
+  "updated_at": "2025-12-26T17:34:21.522912",
+  "symbols": {
+    "function_qdrant_container_15": {
+      "name": "qdrant_container",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 66,
+      "content_hash": "e07af621fcddf0a6c362b219434535a399e22d5b",
+      "content": "def qdrant_container():\n    try:\n        from testcontainers.core.container import DockerContainer\n    except Exception:\n        pytest.skip(\"testcontainers not available\")\n    import time, urllib.request\n\n    # Disable ryuk to avoid port mapping flakiness in some environments\n    os.environ.setdefault(\"TESTCONTAINERS_RYUK_DISABLED\", \"true\")\n    os.environ.setdefault(\"TESTCONTAINERS_RYUK_TIMEOUT\", \"0\")\n    container = (\n        DockerContainer(\"qdrant/qdrant:latest\")\n        .with_env(\"TESTCONTAINERS_RYUK_DISABLED\", \"true\")\n        .with_env(\"TESTCONTAINERS_RYUK_TIMEOUT\", \"0\")\n        .with_exposed_ports(6333)\n    )\n    ready = False\n    try:\n        container.start()\n        host = container.get_container_host_ip()\n        deadline = time.time() + 30\n        last_exc: Exception | None = None\n        port = None\n        while time.time() < deadline:\n            try:\n                port = int(container.get_exposed_port(6333))\n                break\n            except Exception as exc:  # pragma: no cover - retry only in flaky envs\n                last_exc = exc\n                time.sleep(0.25)\n        else:\n            raise RuntimeError(f\"qdrant port mapping unavailable: {last_exc}\")\n        url = f\"http://{host}:{port}\"\n        # Poll readiness endpoint up to 60s\n        deadline = time.time() + 60\n        while time.time() < deadline:\n            try:\n                with urllib.request.urlopen(url + \"/readyz\", timeout=2) as r:\n                    if 200 <= r.status < 300:\n                        ready = True\n                        break\n            except Exception:\n                pass\n            time.sleep(1)\n        if not ready:\n            raise RuntimeError(\"qdrant container failed readiness check within timeout\")\n        yield url\n    finally:\n        try:\n            container.stop()\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hybrid_cli_runs_basic_70": {
+      "name": "test_hybrid_cli_runs_basic",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 120,
+      "content_hash": "4bae5e5521a590cadec6ac5288fcd3be957c8097",
+      "content": "def test_hybrid_cli_runs_basic(tmp_path, qdrant_container):\n    env = os.environ.copy()\n    env[\"QDRANT_URL\"] = qdrant_container\n    collection_name = f\"test-{uuid.uuid4().hex[:8]}\"\n    env[\"COLLECTION_NAME\"] = collection_name\n\n    # Warm the FastEmbed model cache to avoid long first-run download inside subprocess\n    try:\n        from fastembed import TextEmbedding\n\n        TextEmbedding(model_name=\"BAAI/bge-base-en-v1.5\")\n    except Exception:\n        pass\n\n    # Create a tiny repo and index it so the CLI has something to return\n    (tmp_path / \"pkg\").mkdir()\n    (tmp_path / \"pkg\" / \"a.py\").write_text(\n        \"def test():\\n    return 1\\n\", encoding=\"utf-8\"\n    )\n    ing = importlib.import_module(\"scripts.ingest_code\")\n    prev_collection = os.environ.get(\"COLLECTION_NAME\")\n    os.environ[\"COLLECTION_NAME\"] = collection_name\n    try:\n        ing.index_repo(\n            root=tmp_path,\n            qdrant_url=qdrant_container,\n            api_key=\"\",\n            collection=collection_name,\n            model_name=\"BAAI/bge-base-en-v1.5\",\n            recreate=True,\n        )\n    finally:\n        if prev_collection is None:\n            os.environ.pop(\"COLLECTION_NAME\", None)\n        else:\n            os.environ[\"COLLECTION_NAME\"] = prev_collection\n\n    # Use the real model; allow time to download on first run\n    env[\"EMBEDDING_MODEL\"] = \"BAAI/bge-base-en-v1.5\"\n    cmd = [\n        sys.executable,\n        \"scripts/hybrid_search.py\",\n        \"--query\",\n        \"test\",\n        \"--limit\",\n        \"1\",\n    ]\n    proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=300)\n    # Assert successful run with real model and output\n    assert proc.returncode == 0\n    assert (proc.stdout or \"\").strip() != \"\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

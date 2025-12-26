@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/.local/tools/modelscan/providers/google_test.go",
+  "file_hash": "d49c9c4846c3418d20d7e00b6c321b68b9b66fc5",
+  "updated_at": "2025-12-26T17:34:24.285583",
+  "symbols": {
+    "function_TestGoogleProvider_isGenerativeModel_11": {
+      "name": "TestGoogleProvider_isGenerativeModel",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 71,
+      "content_hash": "f5794651e43c5ec17a0a4b9fa9c561789d2266c0",
+      "content": "func TestGoogleProvider_isGenerativeModel(t *testing.T) {\n\tprovider := NewGoogleProvider(\"test-key\")\n\tgoogleProvider := provider.(*GoogleProvider)\n\n\ttests := []struct {\n\t\tname     string\n\t\tmodel    googleModelInfo\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname: \"with generateContent method\",\n\t\t\tmodel: googleModelInfo{\n\t\t\t\tName:                       \"models/gemini-pro\",\n\t\t\t\tSupportedGenerationMethods: []string{\"generateContent\"},\n\t\t\t},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname: \"with streamGenerateContent method\",\n\t\t\tmodel: googleModelInfo{\n\t\t\t\tName:                       \"models/gemini-flash\",\n\t\t\t\tSupportedGenerationMethods: []string{\"streamGenerateContent\"},\n\t\t\t},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname: \"with both methods\",\n\t\t\tmodel: googleModelInfo{\n\t\t\t\tName:                       \"models/gemini-pro\",\n\t\t\t\tSupportedGenerationMethods: []string{\"generateContent\", \"streamGenerateContent\"},\n\t\t\t},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname: \"without generative methods\",\n\t\t\tmodel: googleModelInfo{\n\t\t\t\tName:                       \"models/embedding\",\n\t\t\t\tSupportedGenerationMethods: []string{\"embedContent\"},\n\t\t\t},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname: \"empty methods\",\n\t\t\tmodel: googleModelInfo{\n\t\t\t\tName:                       \"models/unknown\",\n\t\t\t\tSupportedGenerationMethods: []string{},\n\t\t\t},\n\t\t\texpected: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := googleProvider.isGenerativeModel(tt.model)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"Expected %v, got %v for model %s\", tt.expected, result, tt.model.Name)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_enrichModelDetails_72": {
+      "name": "TestGoogleProvider_enrichModelDetails",
+      "type": "function",
+      "start_line": 72,
+      "end_line": 216,
+      "content_hash": "fc91291f7ae8fc52c911cae72946bb6bfb209d95",
+      "content": "func TestGoogleProvider_enrichModelDetails(t *testing.T) {\n\tprovider := NewGoogleProvider(\"test-key\")\n\tgoogleProvider := provider.(*GoogleProvider)\n\n\ttests := []struct {\n\t\tname           string\n\t\tinputModel     Model\n\t\tcheckCost      bool\n\t\texpectedInMin  float64\n\t\texpectedOutMax float64\n\t\tcheckReason    bool\n\t\texpectReason   bool\n\t\tcheckCategory  bool\n\t\texpectCategory string\n\t}{\n\t\t{\n\t\t\tname: \"gemini-3-pro model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-3-pro\",\n\t\t\t\tName: \"Gemini 3 Pro\",\n\t\t\t},\n\t\t\tcheckCost:      true,\n\t\t\texpectedInMin:  2.00,\n\t\t\texpectedOutMax: 12.00,\n\t\t\tcheckReason:    true,\n\t\t\texpectReason:   true,\n\t\t\tcheckCategory:  true,\n\t\t\texpectCategory: \"reasoning\",\n\t\t},\n\t\t{\n\t\t\tname: \"gemini-3-flash model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-3-flash\",\n\t\t\t\tName: \"Gemini 3 Flash\",\n\t\t\t},\n\t\t\tcheckCost:      true,\n\t\t\texpectedInMin:  0.50,\n\t\t\texpectedOutMax: 3.00,\n\t\t\tcheckReason:    true,\n\t\t\texpectReason:   true,\n\t\t\tcheckCategory:  true,\n\t\t\texpectCategory: \"fast\",\n\t\t},\n\t\t{\n\t\t\tname: \"gemini-2.5-pro model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-2.5-pro\",\n\t\t\t\tName: \"Gemini 2.5 Pro\",\n\t\t\t},\n\t\t\tcheckCost:      true,\n\t\t\texpectedInMin:  1.25,\n\t\t\texpectedOutMax: 10.00,\n\t\t},\n\t\t{\n\t\t\tname: \"gemini-2.0-flash model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-2.0-flash-exp\",\n\t\t\t\tName: \"Gemini 2.0 Flash\",\n\t\t\t},\n\t\t\tcheckCost: false,\n\t\t},\n\t\t{\n\t\t\tname: \"gemini-1.5-pro model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-1.5-pro\",\n\t\t\t\tName: \"Gemini 1.5 Pro\",\n\t\t\t},\n\t\t\tcheckCost:      true,\n\t\t\texpectedInMin:  1.25,\n\t\t\texpectedOutMax: 5.00,\n\t\t},\n\t\t{\n\t\t\tname: \"gemini-1.5-flash model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-1.5-flash\",\n\t\t\t\tName: \"Gemini 1.5 Flash\",\n\t\t\t},\n\t\t\tcheckCost:      true,\n\t\t\texpectedInMin:  0.075,\n\t\t\texpectedOutMax: 0.30,\n\t\t},\n\t\t{\n\t\t\tname: \"gemini-pro model (legacy)\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-pro\",\n\t\t\t\tName: \"Gemini Pro\",\n\t\t\t},\n\t\t\tcheckCost:      true,\n\t\t\texpectedInMin:  1.25,\n\t\t\texpectedOutMax: 5.00,\n\t\t},\n\t\t{\n\t\t\tname: \"unknown gemini model\",\n\t\t\tinputModel: Model{\n\t\t\t\tID:   \"gemini-unknown-999\",\n\t\t\t\tName: \"Unknown Gemini\",\n\t\t\t},\n\t\t\tcheckCost: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := googleProvider.enrichModelDetails(tt.inputModel)\n\n\t\t\t// Check common capabilities\n\t\t\tif !result.SupportsTools {\n\t\t\t\tt.Error(\"Expected SupportsTools to be true\")\n\t\t\t}\n\t\t\tif !result.CanStream {\n\t\t\t\tt.Error(\"Expected CanStream to be true\")\n\t\t\t}\n\t\t\tif !result.SupportsImages {\n\t\t\t\tt.Error(\"Expected SupportsImages to be true\")\n\t\t\t}\n\n\t\t\t// Check costs if specified\n\t\t\tif tt.checkCost {\n\t\t\t\tif result.CostPer1MIn != tt.expectedInMin {\n\t\t\t\t\tt.Errorf(\"Expected CostPer1MIn %f, got %f\", tt.expectedInMin, result.CostPer1MIn)\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// Check reasoning capability\n\t\t\tif tt.checkReason && result.CanReason != tt.expectReason {\n\t\t\t\tt.Errorf(\"Expected CanReason %v, got %v\", tt.expectReason, result.CanReason)\n\t\t\t}\n\n\t\t\t// Check categories\n\t\t\tif tt.checkCategory {\n\t\t\t\tfound := false\n\t\t\t\tfor _, cat := range result.Categories {\n\t\t\t\t\tif cat == tt.expectCategory {\n\t\t\t\t\t\tfound = true\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif !found {\n\t\t\t\t\tt.Errorf(\"Expected category %s not found in %v\", tt.expectCategory, result.Categories)\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_TestModel_217": {
+      "name": "TestGoogleProvider_TestModel",
+      "type": "function",
+      "start_line": 217,
+      "end_line": 260,
+      "content_hash": "5ea08708b82e720f1ec5914f86cbe30f14734738",
+      "content": "func TestGoogleProvider_TestModel(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t// Verify API key in query\n\t\tif r.URL.Query().Get(\"key\") != \"test-key\" {\n\t\t\tw.WriteHeader(http.StatusUnauthorized)\n\t\t\treturn\n\t\t}\n\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\n\t\t\t\"candidates\": [{\n\t\t\t\t\"content\": {\n\t\t\t\t\t\"parts\": [{\"text\": \"test successful\"}],\n\t\t\t\t\t\"role\": \"model\"\n\t\t\t\t},\n\t\t\t\t\"finishReason\": \"STOP\"\n\t\t\t}],\n\t\t\t\"usageMetadata\": {\n\t\t\t\t\"promptTokenCount\": 5,\n\t\t\t\t\"candidatesTokenCount\": 10,\n\t\t\t\t\"totalTokenCount\": 15\n\t\t\t}\n\t\t}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\terr := provider.TestModel(ctx, \"gemini-1.5-flash\", false)\n\tif err != nil {\n\t\tt.Errorf(\"TestModel failed: %v\", err)\n\t}\n\n\terr = provider.TestModel(ctx, \"gemini-1.5-flash\", true)\n\tif err != nil {\n\t\tt.Errorf(\"TestModel verbose failed: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_TestModel_Error_261": {
+      "name": "TestGoogleProvider_TestModel_Error",
+      "type": "function",
+      "start_line": 261,
+      "end_line": 279,
+      "content_hash": "9823d941640e8b6e6dd83c0f2df58cd96385c32b",
+      "content": "func TestGoogleProvider_TestModel_Error(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusBadRequest)\n\t\tw.Write([]byte(`{\"error\": {\"message\": \"invalid model\"}}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\terr := provider.TestModel(ctx, \"invalid\", false)\n\tif err == nil {\n\t\tt.Error(\"Expected error for invalid model\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ListModels_HTTPMock_280": {
+      "name": "TestGoogleProvider_ListModels_HTTPMock",
+      "type": "function",
+      "start_line": 280,
+      "end_line": 322,
+      "content_hash": "b1583396f7a23bef35fede448810d19caac997ae",
+      "content": "func TestGoogleProvider_ListModels_HTTPMock(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\n\t\t\t\"models\": [\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"models/gemini-1.5-flash\",\n\t\t\t\t\t\"displayName\": \"Gemini 1.5 Flash\",\n\t\t\t\t\t\"description\": \"Fast model\",\n\t\t\t\t\t\"inputTokenLimit\": 1000000,\n\t\t\t\t\t\"outputTokenLimit\": 8192,\n\t\t\t\t\t\"supportedGenerationMethods\": [\"generateContent\"]\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"models/gemini-1.5-pro\",\n\t\t\t\t\t\"displayName\": \"Gemini 1.5 Pro\",\n\t\t\t\t\t\"description\": \"Pro model\",\n\t\t\t\t\t\"inputTokenLimit\": 2000000,\n\t\t\t\t\t\"outputTokenLimit\": 8192,\n\t\t\t\t\t\"supportedGenerationMethods\": [\"generateContent\"]\n\t\t\t\t}\n\t\t\t]\n\t\t}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\tmodels, err := provider.ListModels(ctx, false)\n\tif err != nil {\n\t\tt.Fatalf(\"ListModels failed: %v\", err)\n\t}\n\n\tif len(models) < 2 {\n\t\tt.Errorf(\"Expected at least 2 models, got %d\", len(models))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ValidateEndpoints_323": {
+      "name": "TestGoogleProvider_ValidateEndpoints",
+      "type": "function",
+      "start_line": 323,
+      "end_line": 341,
+      "content_hash": "3c3d07cb4defdd6c6c074c98cf3df35dcdf39ae3",
+      "content": "func TestGoogleProvider_ValidateEndpoints(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\"models\": []}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\terr := provider.ValidateEndpoints(ctx, false)\n\tif err != nil {\n\t\tt.Errorf(\"ValidateEndpoints failed: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_EnrichModelDetails_342": {
+      "name": "TestGoogleProvider_EnrichModelDetails",
+      "type": "function",
+      "start_line": 342,
+      "end_line": 475,
+      "content_hash": "73870468f828f124fe1672a3f46f7219b3cd6969",
+      "content": "func TestGoogleProvider_EnrichModelDetails(t *testing.T) {\n\tprovider := NewGoogleProvider(\"test-key\")\n\tgoogleProvider := provider.(*GoogleProvider)\n\n\ttests := []struct {\n\t\tname           string\n\t\tmodelID        string\n\t\texpectReason   bool\n\t\texpectCategory string\n\t\tminCost        float64\n\t}{\n\t\t{\n\t\t\tname:           \"gemini-3-pro\",\n\t\t\tmodelID:        \"gemini-3-pro-latest\",\n\t\t\texpectReason:   true,\n\t\t\texpectCategory: \"reasoning\",\n\t\t\tminCost:        2.00,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-3-flash\",\n\t\t\tmodelID:        \"gemini-3-flash\",\n\t\t\texpectReason:   true,\n\t\t\texpectCategory: \"fast\",\n\t\t\tminCost:        0.50,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-2.5-pro\",\n\t\t\tmodelID:        \"gemini-2.5-pro-latest\",\n\t\t\texpectReason:   true,\n\t\t\texpectCategory: \"reasoning\",\n\t\t\tminCost:        1.25,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-2.5-flash\",\n\t\t\tmodelID:        \"gemini-2.5-flash-latest\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"fast\",\n\t\t\tminCost:        0.30,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-2.0-flash\",\n\t\t\tmodelID:        \"gemini-2.0-flash-exp\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"balanced\",\n\t\t\tminCost:        0.30,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-1.5-flash\",\n\t\t\tmodelID:        \"gemini-1.5-flash-latest\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"fast\",\n\t\t\tminCost:        0.075,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-1.5-pro\",\n\t\t\tmodelID:        \"gemini-1.5-pro-latest\",\n\t\t\texpectReason:   true,\n\t\t\texpectCategory: \"premium\",\n\t\t\tminCost:        1.25,\n\t\t},\n\t\t{\n\t\t\tname:           \"gemini-1.0-pro (default)\",\n\t\t\tmodelID:        \"gemini-1.0-pro\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"chat\",\n\t\t\tminCost:        1.00,\n\t\t},\n\t\t{\n\t\t\tname:           \"unknown model\",\n\t\t\tmodelID:        \"gemini-unknown\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"chat\",\n\t\t\tminCost:        1.00,\n\t\t},\n\t\t{\n\t\t\tname:           \"image generation\",\n\t\t\tmodelID:        \"imagen-3.0-generate\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"image-generation\",\n\t\t\tminCost:        1.00,\n\t\t},\n\t\t{\n\t\t\tname:           \"embedding\",\n\t\t\tmodelID:        \"text-embedding-004\",\n\t\t\texpectReason:   false,\n\t\t\texpectCategory: \"embedding\",\n\t\t\tminCost:        0.025,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tmodel := Model{\n\t\t\t\tID:   tt.modelID,\n\t\t\t\tName: tt.modelID,\n\t\t\t}\n\n\t\t\tenriched := googleProvider.enrichModelDetails(model)\n\n\t\t\t// Check reasoning\n\t\t\tif enriched.CanReason != tt.expectReason {\n\t\t\t\tt.Errorf(\"Expected CanReason=%v, got %v\", tt.expectReason, enriched.CanReason)\n\t\t\t}\n\n\t\t\t// Check category\n\t\t\tfound := false\n\t\t\tfor _, cat := range enriched.Categories {\n\t\t\t\tif cat == tt.expectCategory {\n\t\t\t\t\tfound = true\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tif !found {\n\t\t\t\tt.Errorf(\"Expected category %s, got %v\", tt.expectCategory, enriched.Categories)\n\t\t\t}\n\n\t\t\t// Check pricing\n\t\t\tif enriched.CostPer1MIn != tt.minCost {\n\t\t\t\tt.Errorf(\"Expected cost %v, got %v\", tt.minCost, enriched.CostPer1MIn)\n\t\t\t}\n\n\t\t\t// Check common capabilities (skip for embedding models)\n\t\t\tif tt.expectCategory != \"embedding\" {\n\t\t\t\tif !enriched.SupportsTools {\n\t\t\t\t\tt.Error(\"Expected SupportsTools to be true\")\n\t\t\t\t}\n\t\t\t\tif !enriched.CanStream {\n\t\t\t\t\tt.Error(\"Expected CanStream to be true\")\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ListModels_Verbose_476": {
+      "name": "TestGoogleProvider_ListModels_Verbose",
+      "type": "function",
+      "start_line": 476,
+      "end_line": 524,
+      "content_hash": "b0db9c5577ed325563495ce6b45210124ac06d8e",
+      "content": "func TestGoogleProvider_ListModels_Verbose(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\n\t\t\t\"models\": [\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"models/gemini-2.0-flash\",\n\t\t\t\t\t\"displayName\": \"Gemini 2.0 Flash\",\n\t\t\t\t\t\"description\": \"Latest flash model\",\n\t\t\t\t\t\"inputTokenLimit\": 1000000,\n\t\t\t\t\t\"outputTokenLimit\": 8192,\n\t\t\t\t\t\"supportedGenerationMethods\": [\"generateContent\"]\n\t\t\t\t}\n\t\t\t]\n\t\t}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\tmodels, err := provider.ListModels(ctx, true) // verbose mode\n\tif err != nil {\n\t\tt.Fatalf(\"ListModels failed: %v\", err)\n\t}\n\n\tif len(models) != 1 {\n\t\tt.Errorf(\"Expected 1 model, got %d\", len(models))\n\t}\n\n\t// Verify model details\n\tif models[0].ID != \"gemini-2.0-flash\" {\n\t\tt.Errorf(\"Expected ID gemini-2.0-flash, got %s\", models[0].ID)\n\t}\n\tif models[0].Name != \"Gemini 2.0 Flash\" {\n\t\tt.Errorf(\"Expected name 'Gemini 2.0 Flash', got %s\", models[0].Name)\n\t}\n\tif models[0].Description != \"Latest flash model\" {\n\t\tt.Errorf(\"Expected description, got %s\", models[0].Description)\n\t}\n\tif models[0].ContextWindow != 1000000 {\n\t\tt.Errorf(\"Expected context window 1000000, got %d\", models[0].ContextWindow)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ListModels_NonGenerativeFiltered_525": {
+      "name": "TestGoogleProvider_ListModels_NonGenerativeFiltered",
+      "type": "function",
+      "start_line": 525,
+      "end_line": 571,
+      "content_hash": "ac188d7201055634e89336a48d9294ab3a88caa8",
+      "content": "func TestGoogleProvider_ListModels_NonGenerativeFiltered(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\n\t\t\t\"models\": [\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"models/gemini-1.5-flash\",\n\t\t\t\t\t\"displayName\": \"Gemini 1.5 Flash\",\n\t\t\t\t\t\"description\": \"Generative model\",\n\t\t\t\t\t\"inputTokenLimit\": 1000000,\n\t\t\t\t\t\"outputTokenLimit\": 8192,\n\t\t\t\t\t\"supportedGenerationMethods\": [\"generateContent\"]\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t\"name\": \"models/embedding-001\",\n\t\t\t\t\t\"displayName\": \"Embedding Model\",\n\t\t\t\t\t\"description\": \"Embedding model\",\n\t\t\t\t\t\"inputTokenLimit\": 1000,\n\t\t\t\t\t\"outputTokenLimit\": 0,\n\t\t\t\t\t\"supportedGenerationMethods\": [\"embedContent\"]\n\t\t\t\t}\n\t\t\t]\n\t\t}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\tmodels, err := provider.ListModels(ctx, false)\n\tif err != nil {\n\t\tt.Fatalf(\"ListModels failed: %v\", err)\n\t}\n\n\t// Should only get the generative model\n\tif len(models) != 1 {\n\t\tt.Errorf(\"Expected 1 generative model, got %d\", len(models))\n\t}\n\tif models[0].ID != \"gemini-1.5-flash\" {\n\t\tt.Errorf(\"Expected gemini-1.5-flash, got %s\", models[0].ID)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ListModels_EmptyResponse_572": {
+      "name": "TestGoogleProvider_ListModels_EmptyResponse",
+      "type": "function",
+      "start_line": 572,
+      "end_line": 595,
+      "content_hash": "4524bcd0fe99e5e9e04bb13e10cf57c40274d645",
+      "content": "func TestGoogleProvider_ListModels_EmptyResponse(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\"models\": []}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\tmodels, err := provider.ListModels(ctx, true) // verbose to test that path\n\tif err != nil {\n\t\tt.Fatalf(\"ListModels failed: %v\", err)\n\t}\n\n\tif len(models) != 0 {\n\t\tt.Errorf(\"Expected 0 models, got %d\", len(models))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ListModels_HTTPError_596": {
+      "name": "TestGoogleProvider_ListModels_HTTPError",
+      "type": "function",
+      "start_line": 596,
+      "end_line": 617,
+      "content_hash": "ec9eae779f6800d526c795fc91c6733b0397750e",
+      "content": "func TestGoogleProvider_ListModels_HTTPError(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusForbidden)\n\t\tw.Write([]byte(`{\"error\": \"forbidden\"}`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\t_, err := provider.ListModels(ctx, false)\n\tif err == nil {\n\t\tt.Error(\"Expected error for HTTP 403\")\n\t}\n\tif !strings.Contains(err.Error(), \"403\") {\n\t\tt.Errorf(\"Expected error to mention status 403, got: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGoogleProvider_ListModels_InvalidJSON_618": {
+      "name": "TestGoogleProvider_ListModels_InvalidJSON",
+      "type": "function",
+      "start_line": 618,
+      "end_line": 636,
+      "content_hash": "55995d05c0509fd24d986b350bcb3df2ce263ad3",
+      "content": "func TestGoogleProvider_ListModels_InvalidJSON(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`invalid json`))\n\t}))\n\tdefer server.Close()\n\n\tprovider := &GoogleProvider{\n\t\tapiKey:  \"test-key\",\n\t\tbaseURL: server.URL,\n\t}\n\n\tctx := context.Background()\n\t_, err := provider.ListModels(ctx, false)\n\tif err == nil {\n\t\tt.Error(\"Expected error for invalid JSON\")\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

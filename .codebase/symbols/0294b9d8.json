@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/context-engine/scripts/ingest/exclusions.py",
+  "file_hash": "73d44425160cfe07cea0d987da0d89408f92ef50",
+  "updated_at": "2025-12-26T17:34:24.319190",
+  "symbols": {
+    "class__Excluder_26": {
+      "name": "_Excluder",
+      "type": "class",
+      "start_line": 26,
+      "end_line": 108,
+      "content_hash": "bc33b74d6ddf8179b03fde0372ef5318a443b689",
+      "content": "class _Excluder:\n    \"\"\"Handles file and directory exclusion based on patterns.\"\"\"\n    \n    def __init__(self, root: Path):\n        self.root = root\n        self.dir_prefixes: List[str] = []  # absolute like /path/sub\n        self.dir_globs: List[str] = []  # fnmatch patterns for directory names\n        self.file_globs: List[str] = []  # fnmatch patterns\n\n        # Defaults\n        use_defaults = _env_truthy(os.environ.get(\"QDRANT_DEFAULT_EXCLUDES\"), True)\n        if use_defaults:\n            self.dir_prefixes.extend(_DEFAULT_EXCLUDE_DIRS)\n            self.dir_globs.extend(_DEFAULT_EXCLUDE_DIR_GLOBS)\n            self.file_globs.extend(_DEFAULT_EXCLUDE_FILES)\n\n        # .qdrantignore\n        ignore_file = os.environ.get(\"QDRANT_IGNORE_FILE\", \".qdrantignore\")\n        ig_path = root / ignore_file\n        if ig_path.exists():\n            for raw in ig_path.read_text(\n                encoding=\"utf-8\", errors=\"ignore\"\n            ).splitlines():\n                line = raw.strip()\n                if not line or line.startswith(\"#\"):\n                    continue\n                self._add_pattern(line)\n\n        # Extra excludes via env (comma separated)\n        extra = os.environ.get(\"QDRANT_EXCLUDES\", \"\").strip()\n        if extra:\n            for pat in [p.strip() for p in extra.split(\",\") if p.strip()]:\n                self._add_pattern(pat)\n\n    def _add_pattern(self, pat: str):\n        \"\"\"Add a pattern to the appropriate exclusion list.\"\"\"\n        # Normalize to leading-slash for prefixes\n        has_wild = any(ch in pat for ch in \"*?[\")\n        if pat.startswith(\"/\") and not has_wild:\n            # Treat as directory prefix if no wildcard\n            self.dir_prefixes.append(pat.rstrip(\"/\"))\n        else:\n            # Treat as file glob (match against relpath and basename)\n            self.file_globs.append(pat.lstrip(\"/\"))\n\n    def exclude_dir(self, rel: str) -> bool:\n        \"\"\"Check if a directory should be excluded.\"\"\"\n        # rel like /a/b\n        for pref in self.dir_prefixes:\n            if rel == pref or rel.startswith(pref + \"/\"):\n                return True\n\n        base = rel.rsplit(\"/\", 1)[-1]\n\n        # Match directory name against dir_globs (e.g., .venv*)\n        for g in self.dir_globs:\n            if fnmatch.fnmatch(base, g):\n                return True\n\n        # Treat single-segment dir prefixes (e.g. \"/.git\", \"/node_modules\") as\n        # \"exclude this directory name anywhere\". This matters when indexing a\n        # workspace root that contains multiple repos, e.g. /work/<repo>/.git.\n        try:\n            if base in _ANY_DEPTH_EXCLUDE_DIR_NAMES and (\"/\" + base) in self.dir_prefixes:\n                return True\n        except Exception:\n            pass\n\n        # Also allow dir name-only patterns in file_globs (e.g., node_modules)\n        for g in self.file_globs:\n            # Match bare dir names without wildcards\n            if g and all(ch not in g for ch in \"*?[\") and base == g:\n                return True\n        return False\n\n    def exclude_file(self, rel: str) -> bool:\n        \"\"\"Check if a file should be excluded.\"\"\"\n        # Try matching whole rel path and basename\n        base = rel.rsplit(\"/\", 1)[-1]\n        for g in self.file_globs:\n            if fnmatch.fnmatch(rel.lstrip(\"/\"), g) or fnmatch.fnmatch(base, g):\n                return True\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___29": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 58,
+      "content_hash": "f31a21655a8874be1a4cf08e7281c3d3ba821d7b",
+      "content": "    def __init__(self, root: Path):\n        self.root = root\n        self.dir_prefixes: List[str] = []  # absolute like /path/sub\n        self.dir_globs: List[str] = []  # fnmatch patterns for directory names\n        self.file_globs: List[str] = []  # fnmatch patterns\n\n        # Defaults\n        use_defaults = _env_truthy(os.environ.get(\"QDRANT_DEFAULT_EXCLUDES\"), True)\n        if use_defaults:\n            self.dir_prefixes.extend(_DEFAULT_EXCLUDE_DIRS)\n            self.dir_globs.extend(_DEFAULT_EXCLUDE_DIR_GLOBS)\n            self.file_globs.extend(_DEFAULT_EXCLUDE_FILES)\n\n        # .qdrantignore\n        ignore_file = os.environ.get(\"QDRANT_IGNORE_FILE\", \".qdrantignore\")\n        ig_path = root / ignore_file\n        if ig_path.exists():\n            for raw in ig_path.read_text(\n                encoding=\"utf-8\", errors=\"ignore\"\n            ).splitlines():\n                line = raw.strip()\n                if not line or line.startswith(\"#\"):\n                    continue\n                self._add_pattern(line)\n\n        # Extra excludes via env (comma separated)\n        extra = os.environ.get(\"QDRANT_EXCLUDES\", \"\").strip()\n        if extra:\n            for pat in [p.strip() for p in extra.split(\",\") if p.strip()]:\n                self._add_pattern(pat)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__add_pattern_60": {
+      "name": "_add_pattern",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 69,
+      "content_hash": "ac912c0cbdfa143fbe21d97347d5452966379144",
+      "content": "    def _add_pattern(self, pat: str):\n        \"\"\"Add a pattern to the appropriate exclusion list.\"\"\"\n        # Normalize to leading-slash for prefixes\n        has_wild = any(ch in pat for ch in \"*?[\")\n        if pat.startswith(\"/\") and not has_wild:\n            # Treat as directory prefix if no wildcard\n            self.dir_prefixes.append(pat.rstrip(\"/\"))\n        else:\n            # Treat as file glob (match against relpath and basename)\n            self.file_globs.append(pat.lstrip(\"/\"))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_exclude_dir_71": {
+      "name": "exclude_dir",
+      "type": "method",
+      "start_line": 71,
+      "end_line": 99,
+      "content_hash": "e987609bef61086b55678d545fc9e0878b9e4424",
+      "content": "    def exclude_dir(self, rel: str) -> bool:\n        \"\"\"Check if a directory should be excluded.\"\"\"\n        # rel like /a/b\n        for pref in self.dir_prefixes:\n            if rel == pref or rel.startswith(pref + \"/\"):\n                return True\n\n        base = rel.rsplit(\"/\", 1)[-1]\n\n        # Match directory name against dir_globs (e.g., .venv*)\n        for g in self.dir_globs:\n            if fnmatch.fnmatch(base, g):\n                return True\n\n        # Treat single-segment dir prefixes (e.g. \"/.git\", \"/node_modules\") as\n        # \"exclude this directory name anywhere\". This matters when indexing a\n        # workspace root that contains multiple repos, e.g. /work/<repo>/.git.\n        try:\n            if base in _ANY_DEPTH_EXCLUDE_DIR_NAMES and (\"/\" + base) in self.dir_prefixes:\n                return True\n        except Exception:\n            pass\n\n        # Also allow dir name-only patterns in file_globs (e.g., node_modules)\n        for g in self.file_globs:\n            # Match bare dir names without wildcards\n            if g and all(ch not in g for ch in \"*?[\") and base == g:\n                return True\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_exclude_file_101": {
+      "name": "exclude_file",
+      "type": "method",
+      "start_line": 101,
+      "end_line": 108,
+      "content_hash": "70549be1d51f4444f132706995b1f6916c8060c9",
+      "content": "    def exclude_file(self, rel: str) -> bool:\n        \"\"\"Check if a file should be excluded.\"\"\"\n        # Try matching whole rel path and basename\n        base = rel.rsplit(\"/\", 1)[-1]\n        for g in self.file_globs:\n            if fnmatch.fnmatch(rel.lstrip(\"/\"), g) or fnmatch.fnmatch(base, g):\n                return True\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_is_indexable_file_111": {
+      "name": "is_indexable_file",
+      "type": "function",
+      "start_line": 111,
+      "end_line": 126,
+      "content_hash": "2783cc1c62f08ec164332b557a348110f62571ac",
+      "content": "def is_indexable_file(p: Path) -> bool:\n    \"\"\"Check if a file should be indexed (by extension or name pattern).\n\n    Public API for use by watch_index and other modules.\n    \"\"\"\n    # Check by extension first\n    if p.suffix.lower() in CODE_EXTS:\n        return True\n    # Check by filename (for Dockerfile, Makefile, etc.)\n    fname_lower = p.name.lower()\n    if fname_lower in EXTENSIONLESS_FILES:\n        return True\n    # Check for Dockerfile.* pattern (e.g., Dockerfile.dev, Dockerfile.prod)\n    if fname_lower.startswith(\"dockerfile\"):\n        return True\n    return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__should_skip_explicit_file_by_excluder_133": {
+      "name": "_should_skip_explicit_file_by_excluder",
+      "type": "function",
+      "start_line": 133,
+      "end_line": 198,
+      "content_hash": "c9fc108ea6447f43033b297592a63415c458f548",
+      "content": "def _should_skip_explicit_file_by_excluder(file_path: Path) -> bool:\n    \"\"\"Check if a file should be skipped based on exclusion rules.\"\"\"\n    try:\n        p = file_path if isinstance(file_path, Path) else Path(str(file_path))\n    except Exception:\n        return False\n\n    root = None\n    try:\n        parts = list(p.parts)\n        if \".remote-git\" in parts:\n            i = parts.index(\".remote-git\")\n            root = Path(*parts[:i]) if i > 0 else Path(\"/\")\n    except Exception:\n        root = None\n\n    if root is None:\n        try:\n            s = str(p)\n            if s.startswith(\"/work/\"):\n                slug = s[len(\"/work/\"):].split(\"/\", 1)[0]\n                root = (Path(\"/work\") / slug) if slug else None\n        except Exception:\n            root = None\n\n    if root is None:\n        try:\n            ws = (os.environ.get(\"WATCH_ROOT\") or os.environ.get(\"WORKSPACE_PATH\") or \"\").strip()\n            if ws:\n                ws_path = Path(ws).resolve()\n                pr = p.resolve()\n                if pr == ws_path or ws_path in pr.parents:\n                    root = ws_path\n        except Exception:\n            root = None\n\n    if root is None:\n        try:\n            pr = p.resolve()\n            for anc in [pr.parent] + list(pr.parents):\n                if (anc / \".codebase\").exists():\n                    root = anc\n                    break\n        except Exception:\n            root = None\n\n    if not root or str(root) == \"/\":\n        return False\n\n    try:\n        rel = p.resolve().relative_to(root.resolve()).as_posix().lstrip(\"/\")\n    except Exception:\n        return False\n    if not rel:\n        return False\n\n    try:\n        excl = _Excluder(root)\n        cur = \"\"\n        for seg in [x for x in rel.split(\"/\") if x][:-1]:\n            cur = cur + \"/\" + seg\n            if excl.exclude_dir(cur):\n                return True\n        return excl.exclude_file(rel)\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_iter_files_201": {
+      "name": "iter_files",
+      "type": "function",
+      "start_line": 201,
+      "end_line": 244,
+      "content_hash": "c942a3974909f5148e0d5ac77028e080e94a553c",
+      "content": "def iter_files(root: Path) -> Iterable[Path]:\n    \"\"\"Iterate over indexable files in a directory tree.\"\"\"\n    # Allow passing a single file\n    if root.is_file():\n        if is_indexable_file(root) and not _should_skip_explicit_file_by_excluder(root):\n            yield root\n        return\n\n    excl = _Excluder(root)\n    # Use os.walk to prune directories for performance\n    # NOTE: avoid Path.resolve()/realpath here; on network filesystems (e.g. CephFS)\n    # it can trigger expensive metadata calls during large unchanged indexing runs.\n    try:\n        root_abs = os.path.abspath(str(root))\n    except Exception:\n        root_abs = str(root)\n\n    for dirpath, dirnames, filenames in os.walk(root_abs):\n        # Compute rel path like /a/b from root without resolving symlinks\n        try:\n            rel = os.path.relpath(dirpath, root_abs)\n        except Exception:\n            rel = \".\"\n        if rel in (\".\", \"\"):\n            rel_dir = \"/\"\n        else:\n            rel_dir = \"/\" + rel.replace(os.sep, \"/\")\n        # Prune excluded directories in-place\n        keep = []\n        for d in dirnames:\n            rel = (rel_dir.rstrip(\"/\") + \"/\" + d).replace(\"//\", \"/\")\n            if excl.exclude_dir(rel):\n                continue\n            keep.append(d)\n        dirnames[:] = keep\n\n        for f in filenames:\n            p = Path(dirpath) / f\n            if not is_indexable_file(p):\n                continue\n            relf = (rel_dir.rstrip(\"/\") + \"/\" + f).replace(\"//\", \"/\")\n            if excl.exclude_file(relf):\n                continue\n            yield p",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

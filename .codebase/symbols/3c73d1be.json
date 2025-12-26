@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/analyzer/utils.rs",
+  "file_hash": "156ce4955dd3ee6ca68a1e311454f98cd4a835f2",
+  "updated_at": "2025-12-26T17:34:20.600626",
+  "symbols": {
+    "impl_Variable_259": {
+      "name": "Variable",
+      "type": "impl",
+      "start_line": 259,
+      "end_line": 260,
+      "content_hash": "a57ff764c0e4a063bc536b6445b687cbd22e207d",
+      "content": "impl Variable {\n    #[allow(dead_code)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_261": {
+      "name": "new",
+      "type": "method",
+      "start_line": 261,
+      "end_line": 274,
+      "content_hash": "bf92655bd81345821b9f0a0f0c16bbaf8360a297",
+      "content": "    pub fn new(name: String, ty: Type) -> Self {\n        Self { name, ty }\n    }\n}\n\n// Helper struct to track both type and cardinality of variables\n#[derive(Clone, Debug)]\npub(super) struct VariableInfo {\n    pub ty: Type,\n    pub is_single: bool,            // true if ToObj, false if ToVec\n    pub reference_count: usize,     // How many times this variable is referenced\n    pub source_var: Option<String>, // For closure parameters, the actual variable they refer to\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_VariableInfo_275": {
+      "name": "VariableInfo",
+      "type": "impl",
+      "start_line": 275,
+      "end_line": 275,
+      "content_hash": "413466df56bf3b237fdf647e3d1a85c6d947d08a",
+      "content": "impl VariableInfo {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_276": {
+      "name": "new",
+      "type": "method",
+      "start_line": 276,
+      "end_line": 284,
+      "content_hash": "ac6692938af2e2f9d17a185a7a164f9a9e79c932",
+      "content": "    pub fn new(ty: Type, is_single: bool) -> Self {\n        Self {\n            ty,\n            is_single,\n            reference_count: 0,\n            source_var: None,\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_with_source_285": {
+      "name": "new_with_source",
+      "type": "method",
+      "start_line": 285,
+      "end_line": 293,
+      "content_hash": "96686ec80275d00355c1b5f80e504e7d9f2b240b",
+      "content": "    pub fn new_with_source(ty: Type, is_single: bool, source_var: String) -> Self {\n        Self {\n            ty,\n            is_single,\n            reference_count: 0,\n            source_var: Some(source_var),\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_increment_reference_294": {
+      "name": "increment_reference",
+      "type": "method",
+      "start_line": 294,
+      "end_line": 300,
+      "content_hash": "5f023cc8671baa9ef78fe862153b63477e1f16fb",
+      "content": "    pub fn increment_reference(&mut self) {\n        self.reference_count += 1;\n    }\n}\n\n#[allow(unused)]\npub(super) trait VariableAccess {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_variable_name_301": {
+      "name": "get_variable_name",
+      "type": "method",
+      "start_line": 301,
+      "end_line": 301,
+      "content_hash": "b9f753930beb48742b23d570a17c4cb283eb5782",
+      "content": "    fn get_variable_name(&self) -> String;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_variable_ty_302": {
+      "name": "get_variable_ty",
+      "type": "method",
+      "start_line": 302,
+      "end_line": 304,
+      "content_hash": "10c2cf9ccefd909631f9780f32613ef5caece9e2",
+      "content": "    fn get_variable_ty(&self) -> &Type;\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_VariableAccess_305": {
+      "name": "VariableAccess",
+      "type": "impl",
+      "start_line": 305,
+      "end_line": 305,
+      "content_hash": "c8c01ead912e9d17c32dd96309553daa79783f27",
+      "content": "impl VariableAccess for Option<Variable> {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_variable_name_306": {
+      "name": "get_variable_name",
+      "type": "method",
+      "start_line": 306,
+      "end_line": 312,
+      "content_hash": "7ecb650aaf7ac11c5b1d3d8a33976c3e19eab800",
+      "content": "    fn get_variable_name(&self) -> String {\n        match self {\n            Some(v) => v.name.clone(),\n            None => \"var\".to_string(),\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_variable_ty_313": {
+      "name": "get_variable_ty",
+      "type": "method",
+      "start_line": 313,
+      "end_line": 321,
+      "content_hash": "acaca06aaf7d1af56845d3c097a87435bd0e4bb0",
+      "content": "    fn get_variable_ty(&self) -> &Type {\n        match self {\n            Some(v) => &v.ty,\n            None => &Type::Unknown,\n        }\n    }\n}\n\npub(super) trait FieldLookup {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_item_fields_contains_key_322": {
+      "name": "item_fields_contains_key",
+      "type": "method",
+      "start_line": 322,
+      "end_line": 323,
+      "content_hash": "b076e77af4df74e030f81f5d3d72d66b0b937eff",
+      "content": "    fn item_fields_contains_key(&self, ctx: &Ctx, key: &str) -> bool;\n    #[allow(dead_code)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_item_fields_contains_key_with_type_324": {
+      "name": "item_fields_contains_key_with_type",
+      "type": "method",
+      "start_line": 324,
+      "end_line": 324,
+      "content_hash": "f9b9ed4bbfca54da4ffa56f7a914901c6fb3f306",
+      "content": "    fn item_fields_contains_key_with_type(&self, ctx: &Ctx, key: &str) -> (bool, String);",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_field_type_from_item_fields_325": {
+      "name": "get_field_type_from_item_fields",
+      "type": "method",
+      "start_line": 325,
+      "end_line": 327,
+      "content_hash": "223f793bc5ca8d364cccf2f9fde9cbff410805a1",
+      "content": "    fn get_field_type_from_item_fields(&self, ctx: &Ctx, key: &str) -> Option<FieldType>;\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_FieldLookup_328": {
+      "name": "FieldLookup",
+      "type": "impl",
+      "start_line": 328,
+      "end_line": 328,
+      "content_hash": "ef64cf93dcf1bb23c3a73dbe92f67dea8521ca73",
+      "content": "impl FieldLookup for Type {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_item_fields_contains_key_329": {
+      "name": "item_fields_contains_key",
+      "type": "method",
+      "start_line": 329,
+      "end_line": 358,
+      "content_hash": "7f9cdf76101ca4d27a12023b20c387c312463fd9",
+      "content": "    fn item_fields_contains_key(&self, ctx: &Ctx, key: &str) -> bool {\n        match self {\n            Type::Node(Some(node_type)) | Type::Nodes(Some(node_type)) => ctx\n                .node_fields\n                .get(node_type.as_str())\n                .map(|fields| match key {\n                    \"id\" | \"ID\" | \"label\" => true,\n                    _ => fields.contains_key(key),\n                })\n                .unwrap_or(true),\n            Type::Edge(Some(edge_type)) | Type::Edges(Some(edge_type)) => ctx\n                .edge_fields\n                .get(edge_type.as_str())\n                .map(|fields| match key {\n                    \"id\" | \"ID\" | \"label\" | \"from_node\" | \"to_node\" => true,\n                    _ => fields.contains_key(key),\n                })\n                .unwrap_or(true),\n            Type::Vector(Some(vector_type)) | Type::Vectors(Some(vector_type)) => ctx\n                .vector_fields\n                .get(vector_type.as_str())\n                .map(|fields| match key {\n                    \"id\" | \"ID\" | \"label\" | \"data\" | \"score\" => true,\n                    _ => fields.contains_key(key),\n                })\n                .unwrap_or(true),\n            _ => unreachable!(\"shouldve been caught eariler\"),\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_item_fields_contains_key_with_type_359": {
+      "name": "item_fields_contains_key_with_type",
+      "type": "method",
+      "start_line": 359,
+      "end_line": 396,
+      "content_hash": "8ebcdd6cbc9e97b1e7bfc7e2a44f7c7f4aa1b846",
+      "content": "    fn item_fields_contains_key_with_type(&self, ctx: &Ctx, key: &str) -> (bool, String) {\n        let (is_valid_field, item_type) = match self {\n            Type::Node(Some(node_type)) | Type::Nodes(Some(node_type)) => (\n                ctx.node_fields\n                    .get(node_type.as_str())\n                    .map(|fields| match key {\n                        \"id\" | \"ID\" | \"label\" => true,\n                        _ => fields.contains_key(key),\n                    })\n                    .unwrap_or(true),\n                node_type.as_str(),\n            ),\n            Type::Edge(Some(edge_type)) | Type::Edges(Some(edge_type)) => (\n                ctx.edge_fields\n                    .get(edge_type.as_str())\n                    .map(|fields| match key {\n                        \"id\" | \"ID\" | \"label\" | \"from_node\" | \"to_node\" => true,\n                        _ => fields.contains_key(key),\n                    })\n                    .unwrap_or(true),\n                edge_type.as_str(),\n            ),\n            Type::Vector(Some(vector_type)) | Type::Vectors(Some(vector_type)) => (\n                ctx.vector_fields\n                    .get(vector_type.as_str())\n                    .map(|fields| match key {\n                        \"id\" | \"ID\" | \"label\" | \"data\" | \"score\" => true,\n                        _ => fields.contains_key(key),\n                    })\n                    .unwrap_or(true),\n                vector_type.as_str(),\n            ),\n            _ => unreachable!(\"shouldve been caught eariler\"),\n        };\n\n        (is_valid_field, item_type.to_string())\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_field_type_from_item_fields_397": {
+      "name": "get_field_type_from_item_fields",
+      "type": "method",
+      "start_line": 397,
+      "end_line": 442,
+      "content_hash": "331d848172cabb3698d9573fdf2723fa84e7bfb6",
+      "content": "    fn get_field_type_from_item_fields(&self, ctx: &Ctx, key: &str) -> Option<FieldType> {\n        match self {\n            Type::Node(Some(node_type)) | Type::Nodes(Some(node_type)) => ctx\n                .node_fields\n                .get(node_type.as_str())\n                .map(|fields| match key {\n                    \"id\" | \"ID\" => Some(FieldType::Uuid),\n                    \"label\" => Some(FieldType::String),\n                    _ => fields\n                        .get(key)\n                        .map(|field| Some(field.field_type.clone()))\n                        .unwrap_or(None),\n                })\n                .unwrap_or(None),\n            Type::Edge(Some(edge_type)) | Type::Edges(Some(edge_type)) => ctx\n                .edge_fields\n                .get(edge_type.as_str())\n                .map(|fields| match key {\n                    \"id\" | \"ID\" => Some(FieldType::Uuid),\n                    \"label\" => Some(FieldType::String),\n                    \"from_node\" | \"to_node\" => Some(FieldType::Uuid),\n                    _ => fields\n                        .get(key)\n                        .map(|field| Some(field.field_type.clone()))\n                        .unwrap_or(None),\n                })\n                .unwrap_or(None),\n\n            Type::Vector(Some(vector_type)) | Type::Vectors(Some(vector_type)) => ctx\n                .vector_fields\n                .get(vector_type.as_str())\n                .map(|fields| match key {\n                    \"id\" | \"ID\" => Some(FieldType::Uuid),\n                    \"label\" => Some(FieldType::String),\n                    \"data\" => Some(FieldType::Array(Box::new(FieldType::F64))),\n                    \"score\" => Some(FieldType::F64),\n                    _ => fields\n                        .get(key)\n                        .map(|field| Some(field.field_type.clone()))\n                        .unwrap_or(None),\n                })\n                .unwrap_or(None),\n            _ => unreachable!(\"shouldve been caught eariler\"),\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

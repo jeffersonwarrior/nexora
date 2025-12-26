@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/db/sessions.sql.go",
+  "file_hash": "8ad64aa571efe353e04a19213709ad446818964c",
+  "updated_at": "2025-12-26T17:34:24.495651",
+  "symbols": {
+    "struct_CreateSessionParams_39": {
+      "name": "CreateSessionParams",
+      "type": "struct",
+      "start_line": 39,
+      "end_line": 48,
+      "content_hash": "798b114d2db4735e99eedbaac8cb92c31f305054",
+      "content": "type CreateSessionParams struct {\n\tID               string         `json:\"id\"`\n\tParentSessionID  sql.NullString `json:\"parent_session_id\"`\n\tTitle            string         `json:\"title\"`\n\tMessageCount     int64          `json:\"message_count\"`\n\tPromptTokens     int64          `json:\"prompt_tokens\"`\n\tCompletionTokens int64          `json:\"completion_tokens\"`\n\tCost             float64        `json:\"cost\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateSession_49": {
+      "name": "CreateSession",
+      "type": "method",
+      "start_line": 49,
+      "end_line": 79,
+      "content_hash": "4974f0e7b41ad084785518357673ba65df1d4d7c",
+      "content": "func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {\n\trow := q.queryRow(ctx, q.createSessionStmt, createSession,\n\t\targ.ID,\n\t\targ.ParentSessionID,\n\t\targ.Title,\n\t\targ.MessageCount,\n\t\targ.PromptTokens,\n\t\targ.CompletionTokens,\n\t\targ.Cost,\n\t)\n\tvar i Session\n\terr := row.Scan(\n\t\t&i.ID,\n\t\t&i.ParentSessionID,\n\t\t&i.Title,\n\t\t&i.MessageCount,\n\t\t&i.PromptTokens,\n\t\t&i.CompletionTokens,\n\t\t&i.Cost,\n\t\t&i.UpdatedAt,\n\t\t&i.CreatedAt,\n\t\t&i.SummaryMessageID,\n\t)\n\treturn i, err\n}\n\nconst deleteSession = `-- name: DeleteSession :exec\nDELETE FROM sessions\nWHERE id = ?\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DeleteSession_80": {
+      "name": "DeleteSession",
+      "type": "method",
+      "start_line": 80,
+      "end_line": 90,
+      "content_hash": "200e726361261d8975ccafc0591de7323eb29634",
+      "content": "func (q *Queries) DeleteSession(ctx context.Context, id string) error {\n\t_, err := q.exec(ctx, q.deleteSessionStmt, deleteSession, id)\n\treturn err\n}\n\nconst getSessionByID = `-- name: GetSessionByID :one\nSELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id\nFROM sessions\nWHERE id = ? LIMIT 1\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetSessionByID_91": {
+      "name": "GetSessionByID",
+      "type": "method",
+      "start_line": 91,
+      "end_line": 115,
+      "content_hash": "f2e03f31764b1b0a9846e6fa4d9db4543952b5fc",
+      "content": "func (q *Queries) GetSessionByID(ctx context.Context, id string) (Session, error) {\n\trow := q.queryRow(ctx, q.getSessionByIDStmt, getSessionByID, id)\n\tvar i Session\n\terr := row.Scan(\n\t\t&i.ID,\n\t\t&i.ParentSessionID,\n\t\t&i.Title,\n\t\t&i.MessageCount,\n\t\t&i.PromptTokens,\n\t\t&i.CompletionTokens,\n\t\t&i.Cost,\n\t\t&i.UpdatedAt,\n\t\t&i.CreatedAt,\n\t\t&i.SummaryMessageID,\n\t)\n\treturn i, err\n}\n\nconst listSessions = `-- name: ListSessions :many\nSELECT id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id\nFROM sessions\nWHERE parent_session_id is NULL\nORDER BY created_at DESC\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListSessions_116": {
+      "name": "ListSessions",
+      "type": "method",
+      "start_line": 116,
+      "end_line": 161,
+      "content_hash": "f28c221165f15500f91dd17c23dba963e82e115f",
+      "content": "func (q *Queries) ListSessions(ctx context.Context) ([]Session, error) {\n\trows, err := q.query(ctx, q.listSessionsStmt, listSessions)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\titems := []Session{}\n\tfor rows.Next() {\n\t\tvar i Session\n\t\tif err := rows.Scan(\n\t\t\t&i.ID,\n\t\t\t&i.ParentSessionID,\n\t\t\t&i.Title,\n\t\t\t&i.MessageCount,\n\t\t\t&i.PromptTokens,\n\t\t\t&i.CompletionTokens,\n\t\t\t&i.Cost,\n\t\t\t&i.UpdatedAt,\n\t\t\t&i.CreatedAt,\n\t\t\t&i.SummaryMessageID,\n\t\t); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\titems = append(items, i)\n\t}\n\tif err := rows.Close(); err != nil {\n\t\treturn nil, err\n\t}\n\tif err := rows.Err(); err != nil {\n\t\treturn nil, err\n\t}\n\treturn items, nil\n}\n\nconst updateSession = `-- name: UpdateSession :one\nUPDATE sessions\nSET\n    title = ?,\n    prompt_tokens = ?,\n    completion_tokens = ?,\n    summary_message_id = ?,\n    cost = ?\nWHERE id = ?\nRETURNING id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, updated_at, created_at, summary_message_id\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_UpdateSessionParams_162": {
+      "name": "UpdateSessionParams",
+      "type": "struct",
+      "start_line": 162,
+      "end_line": 170,
+      "content_hash": "d753184b8e0b6db9cb148aa88546ddf741a55a94",
+      "content": "type UpdateSessionParams struct {\n\tTitle            string         `json:\"title\"`\n\tPromptTokens     int64          `json:\"prompt_tokens\"`\n\tCompletionTokens int64          `json:\"completion_tokens\"`\n\tSummaryMessageID sql.NullString `json:\"summary_message_id\"`\n\tCost             float64        `json:\"cost\"`\n\tID               string         `json:\"id\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_UpdateSession_171": {
+      "name": "UpdateSession",
+      "type": "method",
+      "start_line": 171,
+      "end_line": 194,
+      "content_hash": "0a9aa2a42e8f66f1de5fd34e5da3534a226211bd",
+      "content": "func (q *Queries) UpdateSession(ctx context.Context, arg UpdateSessionParams) (Session, error) {\n\trow := q.queryRow(ctx, q.updateSessionStmt, updateSession,\n\t\targ.Title,\n\t\targ.PromptTokens,\n\t\targ.CompletionTokens,\n\t\targ.SummaryMessageID,\n\t\targ.Cost,\n\t\targ.ID,\n\t)\n\tvar i Session\n\terr := row.Scan(\n\t\t&i.ID,\n\t\t&i.ParentSessionID,\n\t\t&i.Title,\n\t\t&i.MessageCount,\n\t\t&i.PromptTokens,\n\t\t&i.CompletionTokens,\n\t\t&i.Cost,\n\t\t&i.UpdatedAt,\n\t\t&i.CreatedAt,\n\t\t&i.SummaryMessageID,\n\t)\n\treturn i, err\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

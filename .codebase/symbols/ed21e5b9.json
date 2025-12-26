@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/rerank_local.py",
+  "file_hash": "0d8d504967759f1eb1db77997e1bb822805a7a15",
+  "updated_at": "2025-12-26T17:34:23.128287",
+  "symbols": {
+    "function__get_rerank_session_56": {
+      "name": "_get_rerank_session",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 110,
+      "content_hash": "d6178e70293f786b8891083cafbe5b14561dd55c",
+      "content": "def _get_rerank_session():\n    global _RERANK_SESSION, _RERANK_TOKENIZER\n    if not (ort and Tokenizer and RERANKER_ONNX_PATH and RERANKER_TOKENIZER_PATH):\n        return None, None\n    if _RERANK_SESSION is not None and _RERANK_TOKENIZER is not None:\n        return _RERANK_SESSION, _RERANK_TOKENIZER\n    with _RERANK_LOCK:\n        if _RERANK_SESSION is not None and _RERANK_TOKENIZER is not None:\n            return _RERANK_SESSION, _RERANK_TOKENIZER\n        tok = Tokenizer.from_file(RERANKER_TOKENIZER_PATH)\n        try:\n            tok.enable_truncation(max_length=RERANK_MAX_TOKENS)\n        except Exception:\n            pass\n        try:\n            # Provider selection: explicit RERANK_PROVIDERS overrides\n            prov_env = os.environ.get(\"RERANK_PROVIDERS\")\n            providers = prov_env.split(\",\") if prov_env else None\n            if not providers:\n                try:\n                    avail = set(ort.get_available_providers()) if ort else set()\n                except Exception:\n                    avail = set()\n                use_trt = str(os.environ.get(\"RERANK_USE_TRT\", \"\")).strip().lower() in {\n                    \"1\",\n                    \"true\",\n                    \"yes\",\n                    \"on\",\n                }\n                if use_trt and \"TensorrtExecutionProvider\" in avail:\n                    providers = [\"TensorrtExecutionProvider\"]\n                    if \"CUDAExecutionProvider\" in avail:\n                        providers.append(\"CUDAExecutionProvider\")\n                    providers.append(\"CPUExecutionProvider\")\n                else:\n                    providers = (\n                        [\"CUDAExecutionProvider\"]\n                        if \"CUDAExecutionProvider\" in avail\n                        else []\n                    ) + [\"CPUExecutionProvider\"]\n            # Session options with full graph optimizations\n            so = ort.SessionOptions()\n            try:\n                so.graph_optimization_level = getattr(\n                    ort.GraphOptimizationLevel, \"ORT_ENABLE_ALL\", 99\n                )\n            except Exception:\n                pass\n            sess = ort.InferenceSession(\n                RERANKER_ONNX_PATH, sess_options=so, providers=providers\n            )\n        except Exception:\n            sess = None\n        _RERANK_SESSION, _RERANK_TOKENIZER = sess, tok\n        return _RERANK_SESSION, _RERANK_TOKENIZER",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_warmup_reranker_116": {
+      "name": "warmup_reranker",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 129,
+      "content_hash": "039cb6e4687a7214a9820f8bf3696da532c89556",
+      "content": "def warmup_reranker():\n    \"\"\"Background warmup: load ONNX session and run a dummy inference.\"\"\"\n    global _WARMUP_DONE\n    if _WARMUP_DONE:\n        return\n    sess, tok = _get_rerank_session()\n    if sess and tok:\n        try:\n            # Dummy inference to warm up the session\n            dummy_pairs = [(\"warmup query\", \"warmup document\")]\n            rerank_local(dummy_pairs)\n        except Exception:\n            pass\n    _WARMUP_DONE = True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__start_background_warmup_132": {
+      "name": "_start_background_warmup",
+      "type": "function",
+      "start_line": 132,
+      "end_line": 136,
+      "content_hash": "37974c0f1f121ced72c3c394f2e1adca84dee338",
+      "content": "def _start_background_warmup():\n    \"\"\"Start background thread to warm up reranker.\"\"\"\n    if os.environ.get(\"RERANK_WARMUP\", \"1\") == \"1\":\n        t = threading.Thread(target=warmup_reranker, daemon=True)\n        t.start()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__norm_under_143": {
+      "name": "_norm_under",
+      "type": "function",
+      "start_line": 143,
+      "end_line": 154,
+      "content_hash": "66945601b4e6a17533ffae5001a564fab0d99f72",
+      "content": "def _norm_under(u: str | None) -> str | None:\n    if not u:\n        return None\n    u = str(u).strip().replace(\"\\\\\", \"/\")\n    u = \"/\".join([p for p in u.split(\"/\") if p])\n    if not u:\n        return None\n    if not u.startswith(\"/\"):\n        return \"/work/\" + u\n    if not u.startswith(\"/work/\"):\n        return \"/work/\" + u.lstrip(\"/\")\n    return u",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__select_dense_vector_name_157": {
+      "name": "_select_dense_vector_name",
+      "type": "function",
+      "start_line": 157,
+      "end_line": 178,
+      "content_hash": "632a041a57aba272b3bf006fd8bc791e5686c4a2",
+      "content": "def _select_dense_vector_name(\n    client: QdrantClient, collection: str, model: \"TextEmbedding\", dim: int\n) -> str:\n    try:\n        info = client.get_collection(collection)\n        cfg = info.config.params.vectors\n        if isinstance(cfg, dict) and cfg:\n            # Prefer name whose size matches embedding dim\n            for name, params in cfg.items():\n                psize = getattr(params, \"size\", None) or getattr(params, \"dim\", None)\n                if psize and int(psize) == int(dim):\n                    return name\n            # If LEX exists, pick the other name as dense\n            if hasattr(models, \"VectorParams\"):\n                pass\n            if \"lex\" in cfg:\n                for name in cfg.keys():\n                    if name != \"lex\":\n                        return name\n    except Exception:\n        pass\n    return _sanitize_vector_name(MODEL_NAME)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_dense_results_181": {
+      "name": "dense_results",
+      "type": "function",
+      "start_line": 181,
+      "end_line": 210,
+      "content_hash": "061d27c546facf97c7da632070eb30d6dbbe597a",
+      "content": "def dense_results(\n    client: QdrantClient,\n    model: \"TextEmbedding\",\n    vec_name: str,\n    query: str,\n    flt,\n    topk: int,\n    collection_name: str,\n) -> List[Any]:\n    vec = next(model.embed([query])).tolist()\n    try:\n        qp = client.query_points(\n            collection_name=collection_name,\n            query=vec,\n            using=vec_name,\n            query_filter=flt,\n            search_params=models.SearchParams(hnsw_ef=EF_SEARCH),\n            limit=topk,\n            with_payload=True,\n        )\n        return getattr(qp, \"points\", qp)\n    except Exception:\n        res = client.search(\n            collection_name=collection_name,\n            query_vector={\"name\": vec_name, \"vector\": vec},\n            limit=topk,\n            with_payload=True,\n            query_filter=flt,\n        )\n        return res",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_prepare_pairs_213": {
+      "name": "prepare_pairs",
+      "type": "function",
+      "start_line": 213,
+      "end_line": 227,
+      "content_hash": "b445470734f7d0e97c0c866bdd35b79166550d4b",
+      "content": "def prepare_pairs(query: str, points: List[Any]) -> List[tuple[str, str]]:\n    pairs: List[tuple[str, str]] = []\n    for p in points:\n        md = (p.payload or {}).get(\"metadata\") or {}\n        path = md.get(\"path\") or \"\"\n        lang = md.get(\"language\") or \"\"\n        kind = md.get(\"kind\") or \"\"\n        symp = md.get(\"symbol_path\") or md.get(\"symbol\") or \"\"\n        code = (md.get(\"code\") or \"\")[:600]\n        header = f\"[{lang}/{kind}] {symp} \u2014 {path}\".strip()\n        doc = (header + (\"\\n\" + code if code else \"\")).strip()\n        if not doc:\n            doc = (p.payload or {}).get(\"information\") or \"\"\n        pairs.append((query, doc))\n    return pairs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_rerank_local_230": {
+      "name": "rerank_local",
+      "type": "function",
+      "start_line": 230,
+      "end_line": 275,
+      "content_hash": "ca08b1b124d5e739c769c28574d933fcc827a93b",
+      "content": "def rerank_local(pairs: List[tuple[str, str]]) -> List[float]:\n    # Cached ONNX session + tokenizer\n    sess, tok = _get_rerank_session()\n    if not (sess and tok):\n        return [0.0 for _ in pairs]\n    # Proper pair encoding for token_type_ids\n    enc = tok.encode_batch(pairs)\n    input_ids = [e.ids for e in enc]\n    attn = [e.attention_mask for e in enc]\n    max_len = max((len(ids) for ids in input_ids), default=0)\n\n    def pad(seq, pad_id=0):\n        return seq + [pad_id] * (max_len - len(seq))\n\n    input_ids = [pad(s) for s in input_ids]\n    attn = [pad(s) for s in attn]\n    input_names = [i.name for i in sess.get_inputs()]\n    token_type_ids = (\n        [[0] * max_len for _ in input_ids] if \"token_type_ids\" in input_names else None\n    )\n    feeds = {}\n    if \"input_ids\" in input_names:\n        feeds[\"input_ids\"] = input_ids\n    if \"attention_mask\" in input_names:\n        feeds[\"attention_mask\"] = attn\n    if token_type_ids is not None:\n        feeds[\"token_type_ids\"] = token_type_ids\n    if not feeds:\n        feeds = {\n            sess.get_inputs()[0].name: input_ids,\n            sess.get_inputs()[1].name: attn,\n        }\n    out = sess.run(None, feeds)\n    logits = out[0]\n    scores: List[float] = []\n    for row in logits:\n        try:\n            if isinstance(row, list) and len(row) == 2:\n                scores.append(float(row[1]))\n            elif hasattr(row, \"__len__\") and len(row) == 1:\n                scores.append(float(row[0]))\n            else:\n                scores.append(float(sum(row) / max(1, len(row))))\n        except Exception:\n            scores.append(0.0)\n    return scores",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_pad_241": {
+      "name": "pad",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 242,
+      "content_hash": "e38772392f9e107ef940c64eaebe154bd86665af",
+      "content": "    def pad(seq, pad_id=0):\n        return seq + [pad_id] * (max_len - len(seq))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_rerank_in_process_282": {
+      "name": "rerank_in_process",
+      "type": "function",
+      "start_line": 282,
+      "end_line": 345,
+      "content_hash": "5f20d5ff68f6e97740c91f803a263b01dc9745e0",
+      "content": "def rerank_in_process(\n    query: str,\n    topk: int = 50,\n    limit: int = 12,\n    language: str | None = None,\n    under: str | None = None,\n    model: \"TextEmbedding | None\" = None,\n    collection: str | None = None,\n) -> List[Dict[str, Any]]:\n    eff_collection = (\n        str(collection).strip()\n        if isinstance(collection, str) and collection.strip()\n        else (os.environ.get(\"COLLECTION_NAME\") or \"codebase\")\n    )\n    client = QdrantClient(url=QDRANT_URL, api_key=API_KEY or None)\n    if model:\n        _model = model\n    elif _EMBEDDER_FACTORY:\n        _model = _get_embedding_model(MODEL_NAME)\n    else:\n        _model = TextEmbedding(model_name=MODEL_NAME)\n    dim = len(next(_model.embed([\"dimension probe\"])))\n    vec_name = _select_dense_vector_name(client, eff_collection, _model, dim)\n\n    must = []\n    if language:\n        must.append(\n            models.FieldCondition(\n                key=\"metadata.language\", match=models.MatchValue(value=language)\n            )\n        )\n    eff_under = _norm_under(under)\n    if eff_under:\n        must.append(\n            models.FieldCondition(\n                key=\"metadata.path_prefix\", match=models.MatchValue(value=eff_under)\n            )\n        )\n    flt = models.Filter(must=must) if must else None\n\n    pts = dense_results(client, _model, vec_name, query, flt, topk, eff_collection)\n    if not pts and flt is not None:\n        pts = dense_results(client, _model, vec_name, query, None, topk, eff_collection)\n    if not pts:\n        return []\n\n    pairs = prepare_pairs(query, pts)\n    scores = rerank_local(pairs)\n    ranked = list(zip(scores, pts))\n    ranked.sort(key=lambda x: x[0], reverse=True)\n    items: List[Dict[str, Any]] = []\n    for s, p in ranked[: max(0, int(limit))]:\n        md = (p.payload or {}).get(\"metadata\") or {}\n        items.append(\n            {\n                \"score\": float(s),\n                \"path\": md.get(\"path\"),\n                \"symbol\": md.get(\"symbol_path\") or md.get(\"symbol\") or \"\",\n                \"start_line\": md.get(\"start_line\"),\n                \"end_line\": md.get(\"end_line\"),\n                \"components\": {\"rerank_onnx\": float(s)},\n            }\n        )\n    return items",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_348": {
+      "name": "main",
+      "type": "function",
+      "start_line": 348,
+      "end_line": 402,
+      "content_hash": "723bb09210c056d4bed6805c2f684d7d34375bde",
+      "content": "def main():\n    ap = argparse.ArgumentParser(description=\"Local cross-encoder rerank (ONNX)\")\n    ap.add_argument(\"--query\", \"-q\", required=True)\n    ap.add_argument(\"--topk\", type=int, default=50)\n    ap.add_argument(\"--limit\", type=int, default=12)\n    ap.add_argument(\"--language\", type=str, default=None)\n    ap.add_argument(\"--under\", type=str, default=None)\n    ap.add_argument(\"--collection\", type=str, default=None)\n    args = ap.parse_args()\n\n    client = QdrantClient(url=QDRANT_URL, api_key=API_KEY or None)\n    if _EMBEDDER_FACTORY:\n        model = _get_embedding_model(MODEL_NAME)\n    else:\n        model = TextEmbedding(model_name=MODEL_NAME)\n    dim = len(next(model.embed([\"dimension probe\"])))\n\n    eff_collection = (\n        str(args.collection).strip()\n        if isinstance(args.collection, str) and args.collection.strip()\n        else (os.environ.get(\"COLLECTION_NAME\") or \"codebase\")\n    )\n    vec_name = _select_dense_vector_name(client, eff_collection, model, dim)\n\n    must = []\n    if args.language:\n        must.append(\n            models.FieldCondition(\n                key=\"metadata.language\", match=models.MatchValue(value=args.language)\n            )\n        )\n    eff_under = _norm_under(args.under)\n    if eff_under:\n        must.append(\n            models.FieldCondition(\n                key=\"metadata.path_prefix\", match=models.MatchValue(value=eff_under)\n            )\n        )\n    flt = models.Filter(must=must) if must else None\n\n    pts = dense_results(client, model, vec_name, args.query, flt, args.topk, eff_collection)\n    # Fallback: if filtered search yields nothing, retry without filters to avoid empty rerank\n    if not pts and flt is not None:\n        pts = dense_results(client, model, vec_name, args.query, None, args.topk, eff_collection)\n    if not pts:\n        return\n    pairs = prepare_pairs(args.query, pts)\n    scores = rerank_local(pairs)\n    ranked = list(zip(scores, pts))\n    ranked.sort(key=lambda x: x[0], reverse=True)\n    for s, p in ranked[: args.limit]:\n        md = (p.payload or {}).get(\"metadata\") or {}\n        print(\n            f\"{s:.3f}\\t{md.get('path')}\\t{md.get('symbol_path') or md.get('symbol') or ''}\\t{md.get('start_line')}-{md.get('end_line')}\"\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/storage_core/metadata.rs",
+  "file_hash": "4d158b229a61292574072abcb33110f3d12c8bd3",
+  "updated_at": "2025-12-26T17:34:19.694287",
+  "symbols": {
+    "enum_StorageMetadata_11": {
+      "name": "StorageMetadata",
+      "type": "enum",
+      "start_line": 11,
+      "end_line": 24,
+      "content_hash": "7044ad2cd8b4541283e22e889732a8c779680333",
+      "content": "pub enum StorageMetadata {\n    /// Data is stored in a version before the metadata table existed.\n    PreMetadata,\n    /// The first version that introduced storing vectors in native-endian.\n    /// Stores VectorEndianness so the vectors can be migrated to native-endian\n    /// when the database is copied to a machine with a different endianness.\n    VectorNativeEndianness { vector_endianness: VectorEndianness },\n}\n\nmod storage_version_tag {\n    pub const VECTOR_NATIVE_ENDIANNESS: u64 = 1;\n}\n\n#[derive(Debug, Clone, Copy, Eq, PartialEq)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_VectorEndianness_25": {
+      "name": "VectorEndianness",
+      "type": "enum",
+      "start_line": 25,
+      "end_line": 40,
+      "content_hash": "9ad784b7d67a2bcdb9365e5fc997de0dcab260c2",
+      "content": "pub enum VectorEndianness {\n    BigEndian,\n    LittleEndian,\n}\n\npub const NATIVE_VECTOR_ENDIANNESS: VectorEndianness = if cfg!(target_endian = \"little\") {\n    VectorEndianness::LittleEndian\n} else {\n    VectorEndianness::BigEndian\n};\n\nmod vector_endianness_value {\n    pub const BIG_ENDIAN: &[u8] = b\"big\";\n    pub const LITTLE_ENDIAN: &[u8] = b\"lil\";\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_StorageMetadata_41": {
+      "name": "StorageMetadata",
+      "type": "impl",
+      "start_line": 41,
+      "end_line": 41,
+      "content_hash": "749581b9d83eac75c5feceb4509b9a6dd509589d",
+      "content": "impl StorageMetadata {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_read_42": {
+      "name": "read",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 60,
+      "content_hash": "6be09dfceee2b283ef1687755673c113e6561ffe",
+      "content": "    pub fn read(\n        txn: &RoTxn<WithTls>,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<Self, GraphError> {\n        match metadata_db.get(txn, STORAGE_VERSION_KEY)? {\n            None => Ok(Self::PreMetadata),\n            Some(version_bytes) => {\n                let version_byte_array: [u8; std::mem::size_of::<u64>()] =\n                    version_bytes.try_into().map_err(|e| {\n                        GraphError::New(format!(\"storage metadata version tag is not a u64: {e:?}\"))\n                    })?;\n\n                let version = u64::from_le_bytes(version_byte_array);\n\n                Self::parse(version, txn, metadata_db)\n            }\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_save_61": {
+      "name": "save",
+      "type": "method",
+      "start_line": 61,
+      "end_line": 82,
+      "content_hash": "35a1a140f68f44387e08b79cb5e74af60d3efb23",
+      "content": "    pub fn save(\n        &self,\n        txn: &mut RwTxn,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<(), GraphError> {\n        match self {\n            Self::PreMetadata => {\n                panic!(\"can't save metadata that represents a version before metadata table\")\n            }\n            Self::VectorNativeEndianness { vector_endianness } => {\n                Self::save_version(\n                    storage_version_tag::VECTOR_NATIVE_ENDIANNESS,\n                    txn,\n                    metadata_db,\n                )?;\n                vector_endianness.save(txn, metadata_db)?;\n            }\n        }\n\n        Ok(())\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parse_83": {
+      "name": "parse",
+      "type": "method",
+      "start_line": 83,
+      "end_line": 97,
+      "content_hash": "9b4425fd754e315131128c40e9f3e26f0d86ac92",
+      "content": "    fn parse(\n        version: u64,\n        txn: &RoTxn<WithTls>,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<Self, GraphError> {\n        match version {\n            storage_version_tag::VECTOR_NATIVE_ENDIANNESS => {\n                Self::parse_vector_native_endianness(txn, metadata_db)\n            }\n            _ => Err(GraphError::New(format!(\n                \"storage metadata version tag unknown: {version}\"\n            ))),\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parse_vector_native_endianness_98": {
+      "name": "parse_vector_native_endianness",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 106,
+      "content_hash": "e8f46e20f84d3c34d5361482bc473540354eff44",
+      "content": "    fn parse_vector_native_endianness(\n        txn: &RoTxn<WithTls>,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<Self, GraphError> {\n        Ok(Self::VectorNativeEndianness {\n            vector_endianness: VectorEndianness::read(txn, metadata_db)?,\n        })\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_save_version_107": {
+      "name": "save_version",
+      "type": "method",
+      "start_line": 107,
+      "end_line": 117,
+      "content_hash": "ee77c20f5fef9e7af2e77bc23847242a5c70658b",
+      "content": "    fn save_version(\n        version: u64,\n        txn: &mut RwTxn,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<(), GraphError> {\n        metadata_db.put(txn, STORAGE_VERSION_KEY, &version.to_le_bytes())?;\n\n        Ok(())\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_VectorEndianness_118": {
+      "name": "VectorEndianness",
+      "type": "impl",
+      "start_line": 118,
+      "end_line": 118,
+      "content_hash": "c7461ab83c9c9fe19aa3ebc2ceb6d0119dec686c",
+      "content": "impl VectorEndianness {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_read_119": {
+      "name": "read",
+      "type": "method",
+      "start_line": 119,
+      "end_line": 137,
+      "content_hash": "13b98d9852f6b65eb5c205b8cbdf2efe0e66cd3a",
+      "content": "    fn read(\n        txn: &RoTxn<WithTls>,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<Self, GraphError> {\n        let endianness_bytes = metadata_db\n            .get(txn, VECTOR_ENDIANNESS_KEY)?\n            .ok_or_else(|| {\n                GraphError::New(\"missing vector endianness key in metadata db\".into())\n            })?;\n\n        match endianness_bytes {\n            vector_endianness_value::BIG_ENDIAN => Ok(Self::BigEndian),\n            vector_endianness_value::LITTLE_ENDIAN => Ok(Self::LittleEndian),\n            _ => Err(GraphError::New(\n                \"unknown vector endianness value in metadata db\".into(),\n            )),\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_save_138": {
+      "name": "save",
+      "type": "method",
+      "start_line": 138,
+      "end_line": 152,
+      "content_hash": "c515139a09f507399b026d96f8ff72bcf28b58fe",
+      "content": "    fn save(\n        &self,\n        txn: &mut RwTxn,\n        metadata_db: &Database<Bytes, Bytes>,\n    ) -> Result<(), GraphError> {\n        let endianness_bytes = match self {\n            Self::BigEndian => vector_endianness_value::BIG_ENDIAN,\n            Self::LittleEndian => vector_endianness_value::LITTLE_ENDIAN,\n        };\n\n        metadata_db.put(txn, VECTOR_ENDIANNESS_KEY, endianness_bytes)?;\n\n        Ok(())\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

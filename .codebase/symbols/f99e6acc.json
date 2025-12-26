@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/sdk/mistral/examples/basic/main.go",
+  "file_hash": "140b07a6d1a41eeee346dace457211797c576090",
+  "updated_at": "2025-12-26T17:34:19.718286",
+  "symbols": {
+    "function_main_12": {
+      "name": "main",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 54,
+      "content_hash": "7fd64aa760f9049dfa11b6fbae92155f398d50bc",
+      "content": "func main() {\n\t// Get API key from environment\n\tapiKey := os.Getenv(\"MISTRAL_API_KEY\")\n\tif apiKey == \"\" {\n\t\tlog.Fatal(\"Please set MISTRAL_API_KEY environment variable\")\n\t}\n\n\t// Create client\n\tclient := mistral.NewClient(apiKey)\n\n\tctx := context.Background()\n\n\t// Create a simple chat completion\n\treq := mistral.CreateChatCompletionRequestWithDefaults(\n\t\t\"mistral-small-latest\",\n\t\t[]interface{}{\n\t\t\tmap[string]string{\n\t\t\t\t\"role\":    \"user\",\n\t\t\t\t\"content\": \"What is the capital of France? Say it in one word.\",\n\t\t\t},\n\t\t},\n\t)\n\n\t// Enable JSON mode for structured output\n\treq.EnableJSONMode()\n\n\t// Set temperature for creativity\n\ttemp := 0.3\n\treq.Temperature = &temp\n\n\t// Make the request\n\tresp, err := client.CreateChatCompletion(ctx, req)\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to create chat completion: %v\", err)\n\t}\n\n\t// Print the response\n\tfmt.Printf(\"Model: %s\\n\", resp.Model)\n\tfmt.Printf(\"Usage: %+v\\n\", resp.Usage)\n\tif resp.Choices[0].Message.Content != nil {\n\t\tfmt.Printf(\"Response: %s\\n\", *resp.Choices[0].Message.Content)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

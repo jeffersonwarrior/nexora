@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/ratelimit/bucket_test.go",
+  "file_hash": "dd26a465070c07b8db11f8f3c7174b5b599d6b32",
+  "updated_at": "2025-12-26T17:34:22.415215",
+  "symbols": {
+    "function_setupTestDB_13": {
+      "name": "setupTestDB",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 28,
+      "content_hash": "b240f648dfa8c2f6ca346fe8fd2569e6503a9892",
+      "content": "func setupTestDB(t *testing.T) string {\n\tdbPath := \"/tmp/test_ratelimit_\" + t.Name() + \".db\"\n\tos.Remove(dbPath)\n\n\tif err := storage.InitRateLimitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"Failed to init test DB: %v\", err)\n\t}\n\n\t// Seed test data\n\tif err := scraper.SeedInitialRateLimits(); err != nil {\n\t\tt.Fatalf(\"Failed to seed test data: %v\", err)\n\t}\n\n\treturn dbPath\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_teardownTestDB_29": {
+      "name": "teardownTestDB",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 33,
+      "content_hash": "9d8f7c05777fd0e8cbc06fe7557d9cd6fd8d53ad",
+      "content": "func teardownTestDB(t *testing.T, dbPath string) {\n\tstorage.CloseRateLimitDB()\n\tos.Remove(dbPath)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewRateLimiter_LoadsFromDatabase_34": {
+      "name": "TestNewRateLimiter_LoadsFromDatabase",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 61,
+      "content_hash": "3b4a8b2307f85024b027eb340141a6366bdbcfb2",
+      "content": "func TestNewRateLimiter_LoadsFromDatabase(t *testing.T) {\n\tdbPath := setupTestDB(t)\n\tdefer teardownTestDB(t, dbPath)\n\n\t// Act\n\tlimiter, err := NewRateLimiter(\"openai\", \"tier-1\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create rate limiter: %v\", err)\n\t}\n\n\t// Assert\n\tif limiter.providerName != \"openai\" {\n\t\tt.Errorf(\"Expected provider openai, got %s\", limiter.providerName)\n\t}\n\tif len(limiter.buckets) == 0 {\n\t\tt.Error(\"No buckets loaded from database\")\n\t}\n\n\t// Check RPM bucket exists\n\tbucket, exists := limiter.buckets[\"rpm\"]\n\tif !exists {\n\t\tt.Fatal(\"RPM bucket not loaded\")\n\t}\n\tif bucket.capacity != 500 { // tier-1 rpm = 500\n\t\tt.Errorf(\"Expected RPM capacity 500, got %d\", bucket.capacity)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTokenBucket_Acquire_Success_62": {
+      "name": "TestTokenBucket_Acquire_Success",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 82,
+      "content_hash": "bc60a3abd8d2a6e6444665adc2c57f6430d8a799",
+      "content": "func TestTokenBucket_Acquire_Success(t *testing.T) {\n\tbucket := &TokenBucket{\n\t\tcapacity:       100,\n\t\ttokens:         100,\n\t\trefillRate:     100,\n\t\trefillInterval: time.Minute,\n\t\tlastRefill:     time.Now(),\n\t}\n\n\tctx := context.Background()\n\terr := bucket.Acquire(ctx, 10)\n\tif err != nil {\n\t\tt.Errorf(\"Acquire failed: %v\", err)\n\t}\n\n\tavailable := bucket.GetAvailableTokens()\n\tif available != 90 {\n\t\tt.Errorf(\"Expected 90 tokens, got %d\", available)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTokenBucket_Acquire_Exhaustion_83": {
+      "name": "TestTokenBucket_Acquire_Exhaustion",
+      "type": "function",
+      "start_line": 83,
+      "end_line": 111,
+      "content_hash": "fd89e6f83728c4be4987202815ded2fa881d2a4a",
+      "content": "func TestTokenBucket_Acquire_Exhaustion(t *testing.T) {\n\tbucket := &TokenBucket{\n\t\tcapacity:       10,\n\t\ttokens:         10,\n\t\trefillRate:     10,\n\t\trefillInterval: 100 * time.Millisecond,\n\t\tlastRefill:     time.Now(),\n\t}\n\n\tctx := context.Background()\n\n\t// Exhaust all tokens\n\tif err := bucket.Acquire(ctx, 10); err != nil {\n\t\tt.Fatalf(\"First acquire failed: %v\", err)\n\t}\n\n\t// Try to acquire more immediately (should wait)\n\tstart := time.Now()\n\tif err := bucket.Acquire(ctx, 5); err != nil {\n\t\tt.Fatalf(\"Second acquire failed: %v\", err)\n\t}\n\telapsed := time.Since(start)\n\n\t// Should have waited for refill (at least 80ms, allowing 20ms tolerance)\n\tif elapsed < 80*time.Millisecond {\n\t\tt.Errorf(\"Expected wait time ~100ms, got %v\", elapsed)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTokenBucket_Acquire_ContextCancellation_112": {
+      "name": "TestTokenBucket_Acquire_ContextCancellation",
+      "type": "function",
+      "start_line": 112,
+      "end_line": 132,
+      "content_hash": "b34e4e79eba0881d58499c32fcb02158de7f1b2d",
+      "content": "func TestTokenBucket_Acquire_ContextCancellation(t *testing.T) {\n\tbucket := &TokenBucket{\n\t\tcapacity:       10,\n\t\ttokens:         0, // Empty bucket\n\t\trefillRate:     10,\n\t\trefillInterval: time.Hour, // Very slow refill\n\t\tlastRefill:     time.Now(),\n\t}\n\n\tctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)\n\tdefer cancel()\n\n\terr := bucket.Acquire(ctx, 5)\n\tif err == nil {\n\t\tt.Error(\"Expected context deadline exceeded error\")\n\t}\n\tif ctx.Err() == nil {\n\t\tt.Error(\"Context should be cancelled\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTokenBucket_Refill_AddsTokens_133": {
+      "name": "TestTokenBucket_Refill_AddsTokens",
+      "type": "function",
+      "start_line": 133,
+      "end_line": 151,
+      "content_hash": "59bb589416985451c9dfcec4ad134a828eedf890",
+      "content": "func TestTokenBucket_Refill_AddsTokens(t *testing.T) {\n\tbucket := &TokenBucket{\n\t\tcapacity:       100,\n\t\ttokens:         50,\n\t\trefillRate:     100,\n\t\trefillInterval: 100 * time.Millisecond,\n\t\tlastRefill:     time.Now().Add(-100 * time.Millisecond), // Last refill was 100ms ago\n\t}\n\n\tbucket.mu.Lock()\n\tbucket.refill()\n\tbucket.mu.Unlock()\n\n\tavailable := bucket.GetAvailableTokens()\n\tif available < 100 {\n\t\tt.Errorf(\"Expected full refill to 100 tokens, got %d\", available)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRateLimiter_Acquire_MultipleTypes_152": {
+      "name": "TestRateLimiter_Acquire_MultipleTypes",
+      "type": "function",
+      "start_line": 152,
+      "end_line": 182,
+      "content_hash": "b6808126aa68a1de603eab1422753d6eefc948e9",
+      "content": "func TestRateLimiter_Acquire_MultipleTypes(t *testing.T) {\n\tdbPath := setupTestDB(t)\n\tdefer teardownTestDB(t, dbPath)\n\n\tlimiter, err := NewRateLimiter(\"openai\", \"tier-1\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create limiter: %v\", err)\n\t}\n\n\tctx := context.Background()\n\n\t// Acquire RPM\n\tif err := limiter.Acquire(ctx, \"rpm\", 1); err != nil {\n\t\tt.Errorf(\"RPM acquire failed: %v\", err)\n\t}\n\n\t// Acquire TPM\n\tif err := limiter.Acquire(ctx, \"tpm\", 1000); err != nil {\n\t\tt.Errorf(\"TPM acquire failed: %v\", err)\n\t}\n\n\t// Check info\n\tinfo := limiter.GetRateLimitInfo()\n\tif info[\"rpm\"][\"available\"].(int64) >= 500 {\n\t\tt.Error(\"RPM tokens should have decreased\")\n\t}\n\tif info[\"tpm\"][\"available\"].(int64) >= 200000 {\n\t\tt.Error(\"TPM tokens should have decreased\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMultiLimitCoordinator_AcquireAll_Success_183": {
+      "name": "TestMultiLimitCoordinator_AcquireAll_Success",
+      "type": "function",
+      "start_line": 183,
+      "end_line": 209,
+      "content_hash": "03393ab1c2f1a5cc775aab8a9592f8e53f5e56db",
+      "content": "func TestMultiLimitCoordinator_AcquireAll_Success(t *testing.T) {\n\tdbPath := setupTestDB(t)\n\tdefer teardownTestDB(t, dbPath)\n\n\tlimiter1, _ := NewRateLimiter(\"openai\", \"tier-1\")\n\tlimiter2, _ := NewRateLimiter(\"anthropic\", \"tier-1\")\n\n\tcoordinator := NewMultiLimitCoordinator(limiter1, limiter2)\n\n\tctx := context.Background()\n\terr := coordinator.AcquireAll(ctx, 1, 1000)\n\tif err != nil {\n\t\tt.Errorf(\"AcquireAll failed: %v\", err)\n\t}\n\n\t// Check both limiters consumed tokens\n\tinfo1 := limiter1.GetRateLimitInfo()\n\tinfo2 := limiter2.GetRateLimitInfo()\n\n\tif info1[\"rpm\"][\"available\"].(int64) >= 500 {\n\t\tt.Error(\"Limiter1 RPM should have decreased\")\n\t}\n\tif info2[\"rpm\"][\"available\"].(int64) >= 50 {\n\t\tt.Error(\"Limiter2 RPM should have decreased\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMultiLimitCoordinator_AcquireAll_Rollback_210": {
+      "name": "TestMultiLimitCoordinator_AcquireAll_Rollback",
+      "type": "function",
+      "start_line": 210,
+      "end_line": 256,
+      "content_hash": "0ad5d6b9e486a2a4dff3d41b779b293c7d5a814d",
+      "content": "func TestMultiLimitCoordinator_AcquireAll_Rollback(t *testing.T) {\n\tdbPath := setupTestDB(t)\n\tdefer teardownTestDB(t, dbPath)\n\n\t// Create limiter with very low RPM\n\tstorage.InsertRateLimit(storage.RateLimit{\n\t\tProviderName:       \"test-provider\",\n\t\tPlanType:           \"test\",\n\t\tLimitType:          \"rpm\",\n\t\tLimitValue:         2,\n\t\tResetWindowSeconds: 60,\n\t\tAppliesTo:          \"account\",\n\t\tLastVerified:       time.Now(),\n\t})\n\n\tlimiter1, _ := NewRateLimiter(\"openai\", \"tier-1\")\n\tlimiter2, _ := NewRateLimiter(\"test-provider\", \"test\")\n\n\tcoordinator := NewMultiLimitCoordinator(limiter1, limiter2)\n\n\t// Exhaust test-provider's RPM\n\tctx := context.Background()\n\tlimiter2.Acquire(ctx, \"rpm\", 2)\n\n\t// Get initial state\n\tinfo1Before := limiter1.GetRateLimitInfo()\n\trpm1Before := info1Before[\"rpm\"][\"available\"].(int64)\n\n\t// Try to acquire more (should fail and rollback)\n\tctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)\n\tdefer cancel()\n\n\terr := coordinator.AcquireAll(ctx, 1, 0)\n\tif err == nil {\n\t\tt.Error(\"Expected AcquireAll to fail due to test-provider exhaustion\")\n\t}\n\n\t// Check that limiter1 tokens were rolled back\n\ttime.Sleep(10 * time.Millisecond) // Allow rollback to complete\n\tinfo1After := limiter1.GetRateLimitInfo()\n\trpm1After := info1After[\"rpm\"][\"available\"].(int64)\n\n\tif rpm1After < rpm1Before-5 {\n\t\tt.Errorf(\"Limiter1 tokens not rolled back properly: before=%d, after=%d\", rpm1Before, rpm1After)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestEstimateTokens_ReasonableApproximation_257": {
+      "name": "TestEstimateTokens_ReasonableApproximation",
+      "type": "function",
+      "start_line": 257,
+      "end_line": 275,
+      "content_hash": "e1bf82f0209fe2b1756c2385b4fc346584af0bbb",
+      "content": "func TestEstimateTokens_ReasonableApproximation(t *testing.T) {\n\ttests := []struct {\n\t\ttext     string\n\t\texpected int64\n\t}{\n\t\t{\"Hello world\", 2},                      // 11 chars / 4 = 2\n\t\t{\"The quick brown fox\", 4},              // 19 chars / 4 = 4\n\t\t{\"A much longer piece of text here\", 8}, // 34 chars / 4 = 8\n\t\t{\"\", 0},                                 // Empty string\n\t}\n\n\tfor _, test := range tests {\n\t\tresult := EstimateTokens(test.text)\n\t\tif result != test.expected {\n\t\t\tt.Errorf(\"EstimateTokens(%q) = %d, expected %d\", test.text, result, test.expected)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRateLimiter_BurstAllowance_276": {
+      "name": "TestRateLimiter_BurstAllowance",
+      "type": "function",
+      "start_line": 276,
+      "end_line": 305,
+      "content_hash": "3c600e69e966c5eab3896d343db875f395ca363a",
+      "content": "func TestRateLimiter_BurstAllowance(t *testing.T) {\n\t// Insert rate limit with burst allowance\n\tdbPath := setupTestDB(t)\n\tdefer teardownTestDB(t, dbPath)\n\n\tstorage.InsertRateLimit(storage.RateLimit{\n\t\tProviderName:       \"test-burst\",\n\t\tPlanType:           \"test\",\n\t\tLimitType:          \"rpm\",\n\t\tLimitValue:         100,\n\t\tBurstAllowance:     50, // 50% burst\n\t\tResetWindowSeconds: 60,\n\t\tAppliesTo:          \"account\",\n\t\tLastVerified:       time.Now(),\n\t})\n\n\tlimiter, err := NewRateLimiter(\"test-burst\", \"test\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create limiter: %v\", err)\n\t}\n\n\tbucket := limiter.buckets[\"rpm\"]\n\tif bucket.capacity != 150 { // 100 + 50 burst\n\t\tt.Errorf(\"Expected capacity 150 with burst, got %d\", bucket.capacity)\n\t}\n\tif bucket.tokens != 150 {\n\t\tt.Errorf(\"Expected initial tokens 150, got %d\", bucket.tokens)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRateLimiter_NoLimitType_AllowsImmediate_306": {
+      "name": "TestRateLimiter_NoLimitType_AllowsImmediate",
+      "type": "function",
+      "start_line": 306,
+      "end_line": 318,
+      "content_hash": "4bbd89c3cf9bdd199aaa6f994583e0b171d6f79e",
+      "content": "func TestRateLimiter_NoLimitType_AllowsImmediate(t *testing.T) {\n\tdbPath := setupTestDB(t)\n\tdefer teardownTestDB(t, dbPath)\n\n\tlimiter, _ := NewRateLimiter(\"openai\", \"tier-1\")\n\n\tctx := context.Background()\n\t// Request a limit type that doesn't exist\n\terr := limiter.Acquire(ctx, \"nonexistent\", 9999999)\n\tif err != nil {\n\t\tt.Errorf(\"Should allow requests for non-existent limit types, got error: %v\", err)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

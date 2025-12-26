@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/models_test.go",
+  "file_hash": "105ff0f217956782a21dffee4976a4462193fee5",
+  "updated_at": "2025-12-26T17:34:20.766433",
+  "symbols": {
+    "function_TestModelListRendering_9": {
+      "name": "TestModelListRendering",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 21,
+      "content_hash": "e458f4fac8cba21274c98f2041ec4e589e7ad1f2",
+      "content": "func TestModelListRendering(t *testing.T) {\n\t// Test that model list renders correctly\n\tmodels := []Model{\n\t\t{Name: \"MiniMax M2.1\", Provider: \"MiniMax\"},\n\t\t{Name: \"Claude Opus 4\", Provider: \"Anthropic\"},\n\t\t{Name: \"Grok 4\", Provider: \"xAI\"},\n\t}\n\t\n\tif len(models) != 3 {\n\t\tt.Errorf(\"Expected 3 models, got %d\", len(models))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelSelection_22": {
+      "name": "TestModelSelection",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 42,
+      "content_hash": "630702d82a15ac69312a063132ef575e7cd84bd9",
+      "content": "func TestModelSelection(t *testing.T) {\n\tmodels := []Model{\n\t\t{ID: \"model1\", Name: \"MiniMax M2.1\", Selected: false},\n\t\t{ID: \"model2\", Name: \"Claude Opus 4\", Selected: true},\n\t}\n\t\n\tselected := false\n\tfor _, m := range models {\n\t\tif m.Selected {\n\t\t\tselected = true\n\t\t\tif m.ID != \"model2\" {\n\t\t\t\tt.Errorf(\"Wrong model selected: %s\", m.ID)\n\t\t\t}\n\t\t}\n\t}\n\t\n\tif !selected {\n\t\tt.Error(\"No model selected\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelSelectionToggle_43": {
+      "name": "TestModelSelectionToggle",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 55,
+      "content_hash": "a8b74bcd0093f203aa22c477fef759eb5d07006f",
+      "content": "func TestModelSelectionToggle(t *testing.T) {\n\tm := Model{ID: \"test\", Name: \"Test Model\", Selected: false}\n\t\n\tif m.Selected {\n\t\tt.Error(\"Model should not be selected initially\")\n\t}\n\t\n\tm.Selected = true\n\tif !m.Selected {\n\t\tt.Error(\"Model should be selected after toggle\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestProviderFiltering_56": {
+      "name": "TestProviderFiltering",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 74,
+      "content_hash": "4af29984ebe7b099843e01a2ab600bf9c1cc751b",
+      "content": "func TestProviderFiltering(t *testing.T) {\n\tallModels := []Model{\n\t\t{Name: \"Model1\", Provider: \"Anthropic\"},\n\t\t{Name: \"Model2\", Provider: \"MiniMax\"},\n\t\t{Name: \"Model3\", Provider: \"Anthropic\"},\n\t\t{Name: \"Model4\", Provider: \"xAI\"},\n\t}\n\t\n\tanthropic := filterByProvider(allModels, \"Anthropic\")\n\tif len(anthropic) != 2 {\n\t\tt.Errorf(\"Expected 2 Anthropic models, got %d\", len(anthropic))\n\t}\n\t\n\tminimax := filterByProvider(allModels, \"MiniMax\")\n\tif len(minimax) != 1 {\n\t\tt.Errorf(\"Expected 1 MiniMax model, got %d\", len(minimax))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelSearch_75": {
+      "name": "TestModelSearch",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 97,
+      "content_hash": "0182f13e43e21da65e3ae5b1a9b2a1d67cfe93e0",
+      "content": "func TestModelSearch(t *testing.T) {\n\tmodels := []Model{\n\t\t{Name: \"MiniMax M2.1 Reasoning\"},\n\t\t{Name: \"MiniMax M2.1 Fast\"},\n\t\t{Name: \"Claude Opus 4\"},\n\t}\n\t\n\tresults := searchModels(models, \"MiniMax\")\n\tif len(results) != 2 {\n\t\tt.Errorf(\"Expected 2 MiniMax results, got %d\", len(results))\n\t}\n\t\n\tresults = searchModels(models, \"Opus\")\n\tif len(results) != 1 {\n\t\tt.Errorf(\"Expected 1 Opus result, got %d\", len(results))\n\t}\n\t\n\tresults = searchModels(models, \"NotExist\")\n\tif len(results) != 0 {\n\t\tt.Errorf(\"Expected 0 results for non-existent, got %d\", len(results))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelSorting_98": {
+      "name": "TestModelSorting",
+      "type": "function",
+      "start_line": 98,
+      "end_line": 115,
+      "content_hash": "3bfeb54e6edfc5fb91100e8c6d713bc22ff98b2b",
+      "content": "func TestModelSorting(t *testing.T) {\n\tmodels := []Model{\n\t\t{Name: \"Z-Model\", Provider: \"Z-Provider\"},\n\t\t{Name: \"A-Model\", Provider: \"A-Provider\"},\n\t\t{Name: \"M-Model\", Provider: \"M-Provider\"},\n\t}\n\t\n\tsorted := sortByName(models)\n\t\n\tif sorted[0].Name != \"A-Model\" {\n\t\tt.Error(\"First model should be A-Model after sorting\")\n\t}\n\t\n\tif sorted[2].Name != \"Z-Model\" {\n\t\tt.Error(\"Last model should be Z-Model after sorting\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelValidation_116": {
+      "name": "TestModelValidation",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 135,
+      "content_hash": "d04a1728a2d1fb5d7af325928d4831fa23c99388",
+      "content": "func TestModelValidation(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\tmodel   Model\n\t\tvalid   bool\n\t}{\n\t\t{\"valid model\", Model{ID: \"m1\", Name: \"Test\", Provider: \"Provider\"}, true},\n\t\t{\"empty name\", Model{ID: \"m1\", Name: \"\", Provider: \"Provider\"}, false},\n\t\t{\"empty id\", Model{ID: \"\", Name: \"Test\", Provider: \"Provider\"}, false},\n\t}\n\t\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := tt.model.IsValid(); got != tt.valid {\n\t\t\t\tt.Errorf(\"Model.IsValid() = %v, want %v\", got, tt.valid)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelType_136": {
+      "name": "TestModelType",
+      "type": "function",
+      "start_line": 136,
+      "end_line": 155,
+      "content_hash": "a7e24720813f34387ff335840581570ab53273bd",
+      "content": "func TestModelType(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tmodel    Model\n\t\texpected ModelType\n\t}{\n\t\t{\"reasoning\", Model{Name: \"MiniMax Reasoning\", Type: ModelTypeReasoning}, ModelTypeReasoning},\n\t\t{\"fast\", Model{Name: \"MiniMax Fast\", Type: ModelTypeFast}, ModelTypeFast},\n\t\t{\"default\", Model{Name: \"Default\"}, ModelTypeFast},\n\t}\n\t\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif tt.model.Type != tt.expected {\n\t\t\t\tt.Errorf(\"Model.Type = %v, want %v\", tt.model.Type, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecentlyUsedModels_156": {
+      "name": "TestRecentlyUsedModels",
+      "type": "function",
+      "start_line": 156,
+      "end_line": 169,
+      "content_hash": "b72808fb860308fc74b166e633fdc434c455e2a2",
+      "content": "func TestRecentlyUsedModels(t *testing.T) {\n\tmodels := []Model{\n\t\t{Name: \"Used1\", LastUsed: timeNow().Add(-1 * time.Hour)},\n\t\t{Name: \"Used2\", LastUsed: timeNow().Add(-2 * time.Hour)},\n\t\t{Name: \"Used3\", LastUsed: timeNow().Add(-30 * time.Minute)},\n\t}\n\t\n\tsorted := sortByRecentlyUsed(models)\n\t\n\tif sorted[0].Name != \"Used3\" {\n\t\tt.Error(\"Most recently used should be first\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelCategories_170": {
+      "name": "TestModelCategories",
+      "type": "function",
+      "start_line": 170,
+      "end_line": 185,
+      "content_hash": "9d731994a6ad9b9d0ff291b06e232efd4014463b",
+      "content": "func TestModelCategories(t *testing.T) {\n\tmodels := []Model{\n\t\t{Name: \"R1\", Category: \"Reasoning\"},\n\t\t{Name: \"F1\", Category: \"Fast\"},\n\t\t{Name: \"R2\", Category: \"Reasoning\"},\n\t\t{Name: \"F2\", Category: \"Fast\"},\n\t}\n\t\n\tcategories := extractCategories(models)\n\t\n\tif len(categories) != 2 {\n\t\tt.Errorf(\"Expected 2 categories, got %d\", len(categories))\n\t}\n}\n\n// Helper types and functions (would use actual implementation)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Model_186": {
+      "name": "Model",
+      "type": "struct",
+      "start_line": 186,
+      "end_line": 202,
+      "content_hash": "e053e1b8f6ed14851deeb76ff4559ec67f3eb831",
+      "content": "type Model struct {\n\tID        string\n\tName      string\n\tProvider  string\n\tSelected  bool\n\tType      ModelType\n\tCategory  string\n\tLastUsed  time.Time\n}\n\ntype ModelType int\n\nconst (\n\tModelTypeFast ModelType = iota\n\tModelTypeReasoning\n)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsValid_203": {
+      "name": "IsValid",
+      "type": "method",
+      "start_line": 203,
+      "end_line": 206,
+      "content_hash": "b3baac3acb0597eedbe32396cbf33753e4fb6b89",
+      "content": "func (m Model) IsValid() bool {\n\treturn m.ID != \"\" && m.Name != \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_filterByProvider_207": {
+      "name": "filterByProvider",
+      "type": "function",
+      "start_line": 207,
+      "end_line": 216,
+      "content_hash": "ac1fe8e38a9ce878692aecb767dde4dc3c14893a",
+      "content": "func filterByProvider(models []Model, provider string) []Model {\n\tvar result []Model\n\tfor _, m := range models {\n\t\tif m.Provider == provider {\n\t\t\tresult = append(result, m)\n\t\t}\n\t}\n\treturn result\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_searchModels_217": {
+      "name": "searchModels",
+      "type": "function",
+      "start_line": 217,
+      "end_line": 226,
+      "content_hash": "5facb0cd36a4af4a9cc7acb488875298a10ce2ca",
+      "content": "func searchModels(models []Model, query string) []Model {\n\tvar result []Model\n\tfor _, m := range models {\n\t\tif strings.Contains(strings.ToLower(m.Name), strings.ToLower(query)) {\n\t\t\tresult = append(result, m)\n\t\t}\n\t}\n\treturn result\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sortByName_227": {
+      "name": "sortByName",
+      "type": "function",
+      "start_line": 227,
+      "end_line": 240,
+      "content_hash": "c32c2e9aa34b4c2705e878d49abe1f97fcbcc0a5",
+      "content": "func sortByName(models []Model) []Model {\n\tsorted := make([]Model, len(models))\n\tcopy(sorted, models)\n\t// Simple sort for testing\n\tfor i := 0; i < len(sorted)-1; i++ {\n\t\tfor j := i + 1; j < len(sorted); j++ {\n\t\t\tif sorted[i].Name > sorted[j].Name {\n\t\t\t\tsorted[i], sorted[j] = sorted[j], sorted[i]\n\t\t\t}\n\t\t}\n\t}\n\treturn sorted\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sortByRecentlyUsed_241": {
+      "name": "sortByRecentlyUsed",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 253,
+      "content_hash": "ceb647abe49a4e2e7d395cf74cc2e11dff35c20b",
+      "content": "func sortByRecentlyUsed(models []Model) []Model {\n\tsorted := make([]Model, len(models))\n\tcopy(sorted, models)\n\tfor i := 0; i < len(sorted)-1; i++ {\n\t\tfor j := i + 1; j < len(sorted); j++ {\n\t\t\tif sorted[i].LastUsed.Before(sorted[j].LastUsed) {\n\t\t\t\tsorted[i], sorted[j] = sorted[j], sorted[i]\n\t\t\t}\n\t\t}\n\t}\n\treturn sorted\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractCategories_254": {
+      "name": "extractCategories",
+      "type": "function",
+      "start_line": 254,
+      "end_line": 268,
+      "content_hash": "293a5d9bc3762ba0dfecc7a45544a4394d9c712e",
+      "content": "func extractCategories(models []Model) []string {\n\tset := make(map[string]bool)\n\tfor _, m := range models {\n\t\tif m.Category != \"\" {\n\t\t\tset[m.Category] = true\n\t\t}\n\t}\n\t\n\tcategories := make([]string, 0, len(set))\n\tfor c := range set {\n\t\tcategories = append(categories, c)\n\t}\n\treturn categories\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_timeNow_269": {
+      "name": "timeNow",
+      "type": "function",
+      "start_line": 269,
+      "end_line": 271,
+      "content_hash": "ff3487e227b9e22a4484220f3fb5bb4fab257a68",
+      "content": "func timeNow() time.Time {\n\treturn time.Now()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

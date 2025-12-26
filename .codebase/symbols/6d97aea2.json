@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/.local/tools/modelscan/providers/interface.go",
+  "file_hash": "e536fd2a0a029d1f1d4349d628b5c474afa63e35",
+  "updated_at": "2025-12-26T17:34:23.074502",
+  "symbols": {
+    "struct_Model_9": {
+      "name": "Model",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 28,
+      "content_hash": "815100be05f3d7cf7d4ef7b199141759cbba4b40",
+      "content": "type Model struct {\n\tID             string            `json:\"id\"`\n\tName           string            `json:\"name\"`\n\tDescription    string            `json:\"description,omitempty\"`\n\tCostPer1MIn    float64           `json:\"cost_per_1m_in\"`\n\tCostPer1MOut   float64           `json:\"cost_per_1m_out\"`\n\tContextWindow  int               `json:\"context_window\"`\n\tMaxTokens      int               `json:\"max_tokens,omitempty\"`\n\tSupportsImages bool              `json:\"supports_images\"`\n\tSupportsTools  bool              `json:\"supports_tools\"`\n\tCanReason      bool              `json:\"can_reason\"`\n\tCanStream      bool              `json:\"can_stream\"`\n\tCreatedAt      string            `json:\"created_at,omitempty\"`\n\tdeprecated     bool              `json:\"deprecated,omitempty\"`\n\tDeprecatedAt   *time.Time        `json:\"deprecated_at,omitempty\"`\n\tCategories     []string          `json:\"categories,omitempty\"`   // e.g., [\"coding\", \"chat\", \"embedding\"]\n\tCapabilities   map[string]string `json:\"capabilities,omitempty\"` // e.g., {\"function_calling\": \"full\", \"vision\": \"high\"}\n}\n\n// Endpoint represents an API endpoint that can be validated",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Endpoint_29": {
+      "name": "Endpoint",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 49,
+      "content_hash": "b4dea05fd75aa45a255ce660b7196ffcfae7537d",
+      "content": "type Endpoint struct {\n\tPath        string            `json:\"path\"`\n\tMethod      string            `json:\"method\"`\n\tDescription string            `json:\"description\"`\n\tHeaders     map[string]string `json:\"headers,omitempty\"`\n\tTestParams  interface{}       `json:\"test_params,omitempty\"`\n\tStatus      EndpointStatus    `json:\"status\"`\n\tLatency     time.Duration     `json:\"latency,omitempty\"`\n\tError       string            `json:\"error,omitempty\"`\n}\n\ntype EndpointStatus string\n\nconst (\n\tStatusUnknown    EndpointStatus = \"unknown\"\n\tStatusWorking    EndpointStatus = \"working\"\n\tStatusFailed     EndpointStatus = \"failed\"\n\tStatusDeprecated EndpointStatus = \"deprecated\"\n)\n\n// ProviderCapabilities describes what a provider supports",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ProviderCapabilities_50": {
+      "name": "ProviderCapabilities",
+      "type": "struct",
+      "start_line": 50,
+      "end_line": 67,
+      "content_hash": "d072182e3388e9c24d0bf42268a6cad368fce8db",
+      "content": "type ProviderCapabilities struct {\n\tSupportsChat         bool     `json:\"supports_chat\"`\n\tSupportsFIM          bool     `json:\"supports_fim\"` // Fill-in-the-middle\n\tSupportsEmbeddings   bool     `json:\"supports_embeddings\"`\n\tSupportsFineTuning   bool     `json:\"supports_fine_tuning\"`\n\tSupportsAgents       bool     `json:\"supports_agents\"`\n\tSupportsFileUpload   bool     `json:\"supports_file_upload\"`\n\tSupportsStreaming    bool     `json:\"supports_streaming\"`\n\tSupportsJSONMode     bool     `json:\"supports_json_mode\"`\n\tSupportsVision       bool     `json:\"supports_vision\"`\n\tSupportsAudio        bool     `json:\"supports_audio\"`\n\tSupportedParameters  []string `json:\"supported_parameters\"`\n\tSecurityFeatures     []string `json:\"security_features\"`\n\tMaxRequestsPerMinute int      `json:\"max_requests_per_minute\"`\n\tMaxTokensPerRequest  int      `json:\"max_tokens_per_request\"`\n}\n\n// Provider defines the interface for all provider validations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_Provider_68": {
+      "name": "Provider",
+      "type": "interface",
+      "start_line": 68,
+      "end_line": 90,
+      "content_hash": "2260120a4248d07a30d81e7ba2c4e133288f0269",
+      "content": "type Provider interface {\n\t// ValidateEndpoints tests all known endpoints for the provider\n\tValidateEndpoints(ctx context.Context, verbose bool) error\n\n\t// ListModels retrieves all available models from the provider\n\tListModels(ctx context.Context, verbose bool) ([]Model, error)\n\n\t// GetCapabilities returns the provider's capabilities\n\tGetCapabilities() ProviderCapabilities\n\n\t// GetEndpoints returns all endpoints that should be validated\n\tGetEndpoints() []Endpoint\n\n\t// TestModel tests a specific model can respond to requests\n\tTestModel(ctx context.Context, modelID string, verbose bool) error\n}\n\n// ProviderFactory creates a new provider instance\ntype ProviderFactory func(apiKey string) Provider\n\nvar providerFactories = make(map[string]ProviderFactory)\n\n// RegisterProvider registers a new provider factory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RegisterProvider_91": {
+      "name": "RegisterProvider",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 95,
+      "content_hash": "be5ff910211ca4c046b76efd0bcf6d1e555def27",
+      "content": "func RegisterProvider(name string, factory ProviderFactory) {\n\tproviderFactories[name] = factory\n}\n\n// GetProviderFactory returns a provider factory by name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetProviderFactory_96": {
+      "name": "GetProviderFactory",
+      "type": "function",
+      "start_line": 96,
+      "end_line": 101,
+      "content_hash": "7f2979489bef4cabeccdf9e59391954b75ca70e2",
+      "content": "func GetProviderFactory(name string) (ProviderFactory, bool) {\n\tfactory, exists := providerFactories[name]\n\treturn factory, exists\n}\n\n// ListProviders returns all registered provider names",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ListProviders_102": {
+      "name": "ListProviders",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 108,
+      "content_hash": "50378de0b307d6581b1dafbfbdb8f5516c571e3c",
+      "content": "func ListProviders() []string {\n\tnames := make([]string, 0, len(providerFactories))\n\tfor name := range providerFactories {\n\t\tnames = append(names, name)\n\t}\n\treturn names\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

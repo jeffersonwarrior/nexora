@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/complexity-detector.test.ts",
+  "file_hash": "1b6a46ce6f8ed658080a2bccf379075733a4594d",
+  "updated_at": "2025-12-26T17:34:20.995506",
+  "symbols": {
+    "function_createFeature_20": {
+      "name": "createFeature",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 26,
+      "content_hash": "aa065753f3dea24edceed263429fea8557dfdeee",
+      "content": "  const createFeature = (description: string, dependsOn: string[] = []): Feature => ({\n    id: 'test-feature',\n    description,\n    status: 'pending',\n    attempts: 0,\n    dependsOn,\n  });",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

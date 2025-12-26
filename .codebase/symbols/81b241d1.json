@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/coordinator_test.go",
+  "file_hash": "ae42f168274d3042064084541337aa8d776abace",
+  "updated_at": "2025-12-26T17:34:20.519500",
+  "symbols": {
+    "function_TestCoordinator_NewCoordinator_11": {
+      "name": "TestCoordinator_NewCoordinator",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 20,
+      "content_hash": "0de66bb8d6285719a3b61af13784b801ea0377e7",
+      "content": "func TestCoordinator_NewCoordinator(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\tassert.NotNil(t, coordinator)\n\tassert.Equal(t, team, coordinator.team)\n\tassert.Equal(t, DistributionStrategyRoundRobin, coordinator.strategy)\n\tassert.NotNil(t, coordinator.capability)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_NewCoordinatorWithStrategy_21": {
+      "name": "TestCoordinator_NewCoordinatorWithStrategy",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 27,
+      "content_hash": "e1bbc663e677f6db18577868520246b9b877b662",
+      "content": "func TestCoordinator_NewCoordinatorWithStrategy(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinatorWithStrategy(team, DistributionStrategyCapabilityBased)\n\n\tassert.Equal(t, DistributionStrategyCapabilityBased, coordinator.strategy)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_SubmitTask_28": {
+      "name": "TestCoordinator_SubmitTask",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 47,
+      "content_hash": "daa65e1b314fee9f253eea2756af49c7ee4807f6",
+      "content": "func TestCoordinator_SubmitTask(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\t// Create a task\n\ttask := NewTask(\"Test task\", 5)\n\ttask.CreatedBy = \"test\"\n\n\t// Submit task\n\tctx := context.Background()\n\terr := coordinator.SubmitTask(ctx, task)\n\trequire.NoError(t, err)\n\n\t// Verify task is stored\n\tstoredTask, exists := coordinator.GetTask(task.ID)\n\tassert.True(t, exists)\n\tassert.Equal(t, task.ID, storedTask.ID)\n\tassert.Equal(t, task.Description, storedTask.Description)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_ExecuteTask_RoundRobin_48": {
+      "name": "TestCoordinator_ExecuteTask_RoundRobin",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 95,
+      "content_hash": "1b7e9bc8ebf2adf6467e5f6c77239a933e1d4aaa",
+      "content": "func TestCoordinator_ExecuteTask_RoundRobin(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinatorWithStrategy(team, DistributionStrategyRoundRobin)\n\n\t// Add agents to team\n\tmemory1 := &MockMemory{}\n\tmemory2 := &MockMemory{}\n\n\ttool1 := NewMockTool(\"calculator\", \"Math calculations\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"42\"}, nil\n\t})\n\ttool2 := NewMockTool(\"echo\", \"Echo tool\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"echoed\"}, nil\n\t})\n\n\tagent1 := NewAgent(WithMemory(memory1), WithTools(tool1))\n\tagent2 := NewAgent(WithMemory(memory2), WithTools(tool2))\n\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"agent2\", agent2)\n\trequire.NoError(t, err)\n\n\t// Execute multiple tasks and verify round-robin distribution\n\tctx := context.Background()\n\n\t// First task should go to agent1\n\ttask1 := NewTask(\"Task 1\", 1)\n\ttask1.CreatedBy = \"test\"\n\tresult1, err := coordinator.ExecuteTask(ctx, *task1)\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"agent1\", result1.AgentID)\n\n\t// Second task should go to agent2\n\ttask2 := NewTask(\"Task 2\", 1)\n\ttask2.CreatedBy = \"test\"\n\tresult2, err := coordinator.ExecuteTask(ctx, *task2)\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"agent2\", result2.AgentID)\n\n\t// Third task should go back to agent1\n\ttask3 := NewTask(\"Task 3\", 1)\n\ttask3.CreatedBy = \"test\"\n\tresult3, err := coordinator.ExecuteTask(ctx, *task3)\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"agent1\", result3.AgentID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_ExecuteTask_CapabilityBased_96": {
+      "name": "TestCoordinator_ExecuteTask_CapabilityBased",
+      "type": "function",
+      "start_line": 96,
+      "end_line": 148,
+      "content_hash": "9dc503a599e3baed1d3429be4e62e69c1301d1d2",
+      "content": "func TestCoordinator_ExecuteTask_CapabilityBased(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinatorWithStrategy(team, DistributionStrategyCapabilityBased)\n\n\t// Add agents with different capabilities\n\tmemory1 := &MockMemory{}\n\tmemory2 := &MockMemory{}\n\n\tcalculatorTool := NewMockTool(\"calculator\", \"Math calculations\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"42\"}, nil\n\t})\n\techoTool := NewMockTool(\"echo\", \"Echo tool\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"echoed\"}, nil\n\t})\n\n\tagent1 := NewAgent(WithMemory(memory1), WithTools(calculatorTool))\n\tagent2 := NewAgent(WithMemory(memory2), WithTools(echoTool))\n\n\terr := team.AddAgent(\"calculator_agent\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"echo_agent\", agent2)\n\trequire.NoError(t, err)\n\n\t// Create capability matcher\n\tmatcher := NewCapabilityMatcher()\n\n\t// Register agent capabilities\n\tmatcher.RegisterCapability(\"calculator_agent\", []string{\"calculator\", \"math\"})\n\tmatcher.RegisterCapability(\"echo_agent\", []string{\"echo\", \"text\"})\n\n\tcoordinator.SetCapabilityMatcher(matcher)\n\n\tctx := context.Background()\n\n\t// Math task should go to calculator agent\n\tmathTask := NewTask(\"Calculate 5 * 7\", 5)\n\tmathTask.CreatedBy = \"test\"\n\tmathTask.SetData(\"required_capabilities\", []string{\"calculator\"})\n\n\tresult, err := coordinator.ExecuteTask(ctx, *mathTask)\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"calculator_agent\", result.AgentID)\n\n\t// Echo task should go to echo agent\n\techoTask := NewTask(\"Echo hello world\", 3)\n\techoTask.CreatedBy = \"test\"\n\techoTask.SetData(\"required_capabilities\", []string{\"echo\"})\n\n\tresult2, err := coordinator.ExecuteTask(ctx, *echoTask)\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"echo_agent\", result2.AgentID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_ExecuteTask_LoadBalance_149": {
+      "name": "TestCoordinator_ExecuteTask_LoadBalance",
+      "type": "function",
+      "start_line": 149,
+      "end_line": 189,
+      "content_hash": "43b70510e7dc0079afcd3043a83970291aced0a7",
+      "content": "func TestCoordinator_ExecuteTask_LoadBalance(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinatorWithStrategy(team, DistributionStrategyLoadBalance)\n\n\t// Add agents to team\n\tmemory1 := &MockMemory{}\n\tmemory2 := &MockMemory{}\n\n\ttool1 := NewMockTool(\"tool1\", \"Tool 1\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"1\"}, nil\n\t})\n\ttool2 := NewMockTool(\"tool2\", \"Tool 2\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"2\"}, nil\n\t})\n\n\tagent1 := NewAgent(WithMemory(memory1), WithTools(tool1))\n\tagent2 := NewAgent(WithMemory(memory2), WithTools(tool2))\n\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"agent2\", agent2)\n\trequire.NoError(t, err)\n\n\tctx := context.Background()\n\n\t// First task should go to either agent (equal load)\n\ttask1 := NewTask(\"Task 1\", 1)\n\ttask1.CreatedBy = \"test\"\n\tresult1, err := coordinator.ExecuteTask(ctx, *task1)\n\trequire.NoError(t, err)\n\n\t// Second task should go to the other agent\n\ttask2 := NewTask(\"Task 2\", 1)\n\ttask2.CreatedBy = \"test\"\n\tresult2, err := coordinator.ExecuteTask(ctx, *task2)\n\trequire.NoError(t, err)\n\n\t// Results should be from different agents\n\tassert.NotEqual(t, result1.AgentID, result2.AgentID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_ExecuteTask_Priority_190": {
+      "name": "TestCoordinator_ExecuteTask_Priority",
+      "type": "function",
+      "start_line": 190,
+      "end_line": 240,
+      "content_hash": "2baaadc65a3c80cec8c98447486eed8a266c7a55",
+      "content": "func TestCoordinator_ExecuteTask_Priority(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinatorWithStrategy(team, DistributionStrategyPriority)\n\n\t// Add agents to team\n\tmemory1 := &MockMemory{}\n\tmemory2 := &MockMemory{}\n\n\ttool1 := NewMockTool(\"tool1\", \"Tool 1\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"1\"}, nil\n\t})\n\ttool2 := NewMockTool(\"tool2\", \"Tool 2\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\"result\": \"2\"}, nil\n\t})\n\n\tagent1 := NewAgent(WithMemory(memory1), WithTools(tool1))\n\tagent2 := NewAgent(WithMemory(memory2), WithTools(tool2))\n\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"agent2\", agent2)\n\trequire.NoError(t, err)\n\n\tctx := context.Background()\n\n\t// Submit high priority task first\n\thighPriorityTask := NewTask(\"High priority task\", 10)\n\thighPriorityTask.CreatedBy = \"test\"\n\n\t// Submit low priority task second\n\tlowPriorityTask := NewTask(\"Low priority task\", 1)\n\tlowPriorityTask.CreatedBy = \"test\"\n\n\t// Submit both tasks\n\terr = coordinator.SubmitTask(ctx, highPriorityTask)\n\trequire.NoError(t, err)\n\terr = coordinator.SubmitTask(ctx, lowPriorityTask)\n\trequire.NoError(t, err)\n\n\t// Execute both - high priority should be executed first\n\tresult1, err := coordinator.ExecuteTask(ctx, *highPriorityTask)\n\trequire.NoError(t, err)\n\n\tresult2, err := coordinator.ExecuteTask(ctx, *lowPriorityTask)\n\trequire.NoError(t, err)\n\n\t// Verify tasks were executed\n\tassert.NotNil(t, result1)\n\tassert.NotNil(t, result2)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_GetTask_241": {
+      "name": "TestCoordinator_GetTask",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 263,
+      "content_hash": "2b7a8ba36afe26d9091a4cac9f8592fffae540c1",
+      "content": "func TestCoordinator_GetTask(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\t// Create and submit a task\n\ttask := NewTask(\"Test task\", 5)\n\ttask.CreatedBy = \"test\"\n\n\tctx := context.Background()\n\terr := coordinator.SubmitTask(ctx, task)\n\trequire.NoError(t, err)\n\n\t// Get the task\n\tstoredTask, exists := coordinator.GetTask(task.ID)\n\tassert.True(t, exists)\n\tassert.Equal(t, task.Description, storedTask.Description)\n\tassert.Equal(t, task.Priority, storedTask.Priority)\n\n\t// Try to get non-existent task\n\t_, exists = coordinator.GetTask(\"non-existent\")\n\tassert.False(t, exists)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_ListTasks_264": {
+      "name": "TestCoordinator_ListTasks",
+      "type": "function",
+      "start_line": 264,
+      "end_line": 296,
+      "content_hash": "979caa23a1b6d0a87adf688f8c39090278bae1ee",
+      "content": "func TestCoordinator_ListTasks(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\tctx := context.Background()\n\n\t// Initially empty\n\ttasks := coordinator.ListTasks()\n\tassert.Empty(t, tasks)\n\n\t// Add some tasks\n\ttask1 := NewTask(\"Task 1\", 1)\n\ttask1.CreatedBy = \"test\"\n\terr := coordinator.SubmitTask(ctx, task1)\n\trequire.NoError(t, err)\n\n\ttask2 := NewTask(\"Task 2\", 5)\n\ttask2.CreatedBy = \"test\"\n\terr = coordinator.SubmitTask(ctx, task2)\n\trequire.NoError(t, err)\n\n\t// List tasks\n\ttasks = coordinator.ListTasks()\n\tassert.Len(t, tasks, 2)\n\n\ttaskIDs := make(map[string]bool)\n\tfor _, task := range tasks {\n\t\ttaskIDs[task.ID] = true\n\t}\n\tassert.True(t, taskIDs[task1.ID])\n\tassert.True(t, taskIDs[task2.ID])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_CancelTask_297": {
+      "name": "TestCoordinator_CancelTask",
+      "type": "function",
+      "start_line": 297,
+      "end_line": 318,
+      "content_hash": "278ec1a33f71a0dc109a228129502e5d761c6a16",
+      "content": "func TestCoordinator_CancelTask(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\t// Create and submit a task\n\ttask := NewTask(\"Test task\", 5)\n\ttask.CreatedBy = \"test\"\n\n\tctx := context.Background()\n\terr := coordinator.SubmitTask(ctx, task)\n\trequire.NoError(t, err)\n\n\t// Cancel the task\n\terr = coordinator.CancelTask(task.ID)\n\trequire.NoError(t, err)\n\n\t// Verify task is cancelled\n\tstoredTask, exists := coordinator.GetTask(task.ID)\n\tassert.True(t, exists)\n\tassert.Equal(t, TaskStatusCancelled, storedTask.Status)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_CancelNonExistentTask_319": {
+      "name": "TestCoordinator_CancelNonExistentTask",
+      "type": "function",
+      "start_line": 319,
+      "end_line": 328,
+      "content_hash": "c102052432fbf7879afeaffcbcf9ffb9d0634bf2",
+      "content": "func TestCoordinator_CancelNonExistentTask(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\t// Try to cancel non-existent task\n\terr := coordinator.CancelTask(\"non-existent\")\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"not found\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCapabilityMatcher_NewCapabilityMatcher_329": {
+      "name": "TestCapabilityMatcher_NewCapabilityMatcher",
+      "type": "function",
+      "start_line": 329,
+      "end_line": 335,
+      "content_hash": "752f9823a299a1b92f94a017215fcbb67d916828",
+      "content": "func TestCapabilityMatcher_NewCapabilityMatcher(t *testing.T) {\n\tmatcher := NewCapabilityMatcher()\n\n\tassert.NotNil(t, matcher)\n\tassert.Empty(t, matcher.agentCapabilities)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCapabilityMatcher_RegisterCapability_336": {
+      "name": "TestCapabilityMatcher_RegisterCapability",
+      "type": "function",
+      "start_line": 336,
+      "end_line": 346,
+      "content_hash": "90410dff5db78376f9a782cab9ff9f95daf005fd",
+      "content": "func TestCapabilityMatcher_RegisterCapability(t *testing.T) {\n\tmatcher := NewCapabilityMatcher()\n\n\t// Register capabilities for an agent\n\tcapabilities := []string{\"calculator\", \"math\", \"analysis\"}\n\tmatcher.RegisterCapability(\"agent1\", capabilities)\n\n\t// Verify capabilities are stored\n\tassert.Equal(t, capabilities, matcher.GetAgentCapabilities(\"agent1\"))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCapabilityMatcher_FindBestAgent_Simple_347": {
+      "name": "TestCapabilityMatcher_FindBestAgent_Simple",
+      "type": "function",
+      "start_line": 347,
+      "end_line": 364,
+      "content_hash": "d62810fd93b4cdb5a9179c017b12043bbde6d8cd",
+      "content": "func TestCapabilityMatcher_FindBestAgent_Simple(t *testing.T) {\n\tmatcher := NewCapabilityMatcher()\n\n\t// Register capabilities for agents\n\tmatcher.RegisterCapability(\"agent1\", []string{\"calculator\", \"math\"})\n\tmatcher.RegisterCapability(\"agent2\", []string{\"echo\", \"text\"})\n\n\t// Find agent for calculator task\n\trequired := []string{\"calculator\"}\n\tagentID := matcher.FindBestAgent(required, []string{\"agent1\", \"agent2\"})\n\tassert.Equal(t, \"agent1\", agentID)\n\n\t// Find agent for echo task\n\trequired = []string{\"echo\"}\n\tagentID = matcher.FindBestAgent(required, []string{\"agent1\", \"agent2\"})\n\tassert.Equal(t, \"agent2\", agentID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCapabilityMatcher_FindBestAgent_MultipleCapabilities_365": {
+      "name": "TestCapabilityMatcher_FindBestAgent_MultipleCapabilities",
+      "type": "function",
+      "start_line": 365,
+      "end_line": 383,
+      "content_hash": "ef8c02de2aae7305c7facbd9bd69436feff681e6",
+      "content": "func TestCapabilityMatcher_FindBestAgent_MultipleCapabilities(t *testing.T) {\n\tmatcher := NewCapabilityMatcher()\n\n\t// Register capabilities for agents\n\tmatcher.RegisterCapability(\"agent1\", []string{\"calculator\", \"math\"})\n\tmatcher.RegisterCapability(\"agent2\", []string{\"calculator\", \"echo\", \"text\"})\n\tmatcher.RegisterCapability(\"agent3\", []string{\"analysis\"})\n\n\t// Find agent for calculator + echo task\n\trequired := []string{\"calculator\", \"echo\"}\n\tagentID := matcher.FindBestAgent(required, []string{\"agent1\", \"agent2\", \"agent3\"})\n\tassert.Equal(t, \"agent2\", agentID) // agent2 has both capabilities\n\n\t// No agent has all required capabilities\n\trequired = []string{\"calculator\", \"nonexistent\"}\n\tagentID = matcher.FindBestAgent(required, []string{\"agent1\", \"agent2\", \"agent3\"})\n\tassert.Empty(t, agentID) // Should return empty string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCapabilityMatcher_FindBestAgent_PartialMatch_384": {
+      "name": "TestCapabilityMatcher_FindBestAgent_PartialMatch",
+      "type": "function",
+      "start_line": 384,
+      "end_line": 401,
+      "content_hash": "0fe5a59b57b0cb8ff3ec110ec8d9cd80f26aba64",
+      "content": "func TestCapabilityMatcher_FindBestAgent_PartialMatch(t *testing.T) {\n\tmatcher := NewCapabilityMatcher()\n\n\t// Register capabilities for agents\n\tmatcher.RegisterCapability(\"agent1\", []string{\"calculator\"})\n\tmatcher.RegisterCapability(\"agent2\", []string{\"echo\"})\n\n\t// Find agent for calculator task (perfect match)\n\trequired := []string{\"calculator\"}\n\tagentID := matcher.FindBestAgent(required, []string{\"agent1\", \"agent2\"})\n\tassert.Equal(t, \"agent1\", agentID)\n\n\t// Find agent for math task (partial match with calculator)\n\trequired = []string{\"math\"}\n\tagentID = matcher.FindBestAgent(required, []string{\"agent1\", \"agent2\"})\n\tassert.Equal(t, \"agent1\", agentID) // agent1 has calculator which is related\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCapabilityMatcher_GetAgentCapabilities_402": {
+      "name": "TestCapabilityMatcher_GetAgentCapabilities",
+      "type": "function",
+      "start_line": 402,
+      "end_line": 416,
+      "content_hash": "fe6e16e786349923b97ba7fe5814fca2f09e4b61",
+      "content": "func TestCapabilityMatcher_GetAgentCapabilities(t *testing.T) {\n\tmatcher := NewCapabilityMatcher()\n\n\t// Non-existent agent should return empty\n\tcapabilities := matcher.GetAgentCapabilities(\"nonexistent\")\n\tassert.Empty(t, capabilities)\n\n\t// Register capabilities and verify retrieval\n\texpected := []string{\"calculator\", \"math\"}\n\tmatcher.RegisterCapability(\"agent1\", expected)\n\n\tactual := matcher.GetAgentCapabilities(\"agent1\")\n\tassert.Equal(t, expected, actual)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_SetStrategy_417": {
+      "name": "TestCoordinator_SetStrategy",
+      "type": "function",
+      "start_line": 417,
+      "end_line": 434,
+      "content_hash": "7b73f35a423c037ecc780495762653e36f14391f",
+      "content": "func TestCoordinator_SetStrategy(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\t// Default should be round-robin\n\tassert.Equal(t, DistributionStrategyRoundRobin, coordinator.strategy)\n\n\t// Change strategy\n\tcoordinator.SetStrategy(DistributionStrategyCapabilityBased)\n\tassert.Equal(t, DistributionStrategyCapabilityBased, coordinator.strategy)\n\n\tcoordinator.SetStrategy(DistributionStrategyLoadBalance)\n\tassert.Equal(t, DistributionStrategyLoadBalance, coordinator.strategy)\n\n\tcoordinator.SetStrategy(DistributionStrategyPriority)\n\tassert.Equal(t, DistributionStrategyPriority, coordinator.strategy)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_SetCapabilityMatcher_435": {
+      "name": "TestCoordinator_SetCapabilityMatcher",
+      "type": "function",
+      "start_line": 435,
+      "end_line": 446,
+      "content_hash": "7728f2c9f97ed1330c74471717f038e57b66cded",
+      "content": "func TestCoordinator_SetCapabilityMatcher(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\t// Create custom matcher\n\tmatcher := NewCapabilityMatcher()\n\tmatcher.RegisterCapability(\"special_agent\", []string{\"special\"})\n\n\t// Set custom matcher\n\tcoordinator.SetCapabilityMatcher(matcher)\n\tassert.Equal(t, matcher, coordinator.capability)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

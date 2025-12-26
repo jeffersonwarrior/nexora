@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/agent/metrics/metrics.go",
+  "file_hash": "840b981722f3a9a43338db12c5a081d98ef90cf3",
+  "updated_at": "2025-12-26T17:34:23.809969",
+  "symbols": {
+    "struct_Metric_10": {
+      "name": "Metric",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 19,
+      "content_hash": "3c5da80ac6a6d05b8e8eb75cdfeee754ca615bac",
+      "content": "type Metric struct {\n\tToolName      string        `json:\"tool_name\"`\n\tExecutionTime time.Duration `json:\"execution_time\"`\n\tSuccess       bool          `json:\"success\"`\n\tError         string        `json:\"error,omitempty\"`\n\tMemoryUsed    int64         `json:\"memory_used\"`\n\tTimestamp     time.Time     `json:\"timestamp\"`\n}\n\n// AggregatedMetrics holds aggregated statistics for a tool.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_AggregatedMetrics_20": {
+      "name": "AggregatedMetrics",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 32,
+      "content_hash": "dc9fad3235418552ca12502810c462ba7586d7f3",
+      "content": "type AggregatedMetrics struct {\n\tToolName         string\n\tExecutionCount   int\n\tSuccessCount     int\n\tFailureCount     int\n\tAvgExecutionTime time.Duration\n\tMaxExecutionTime time.Duration\n\tMinExecutionTime time.Duration\n\tTotalMemoryUsed  int64\n\tAvgMemoryUsed    int64\n}\n\n// Collector tracks and stores metrics for tools.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Collector_33": {
+      "name": "Collector",
+      "type": "struct",
+      "start_line": 33,
+      "end_line": 39,
+      "content_hash": "a4cc34a63ba3253ef0e54c27add9e50121e4ead9",
+      "content": "type Collector struct {\n\tmu      sync.RWMutex\n\tmetrics []Metric\n\tlimits  CollectorConfig\n}\n\n// CollectorConfig defines the configuration for metrics collection.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CollectorConfig_40": {
+      "name": "CollectorConfig",
+      "type": "struct",
+      "start_line": 40,
+      "end_line": 44,
+      "content_hash": "8217e1824ec4988f9cbf9b3255bc0e129dce04e0",
+      "content": "type CollectorConfig struct {\n\tMaxMetrics int\n}\n\n// NewCollector creates a new metrics collector.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewCollector_45": {
+      "name": "NewCollector",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 55,
+      "content_hash": "3d1c522243bd9b1a4b14090b41a8c1f2f6fba814",
+      "content": "func NewCollector(cfg CollectorConfig) *Collector {\n\tif cfg.MaxMetrics <= 0 {\n\t\tcfg.MaxMetrics = 10000\n\t}\n\treturn &Collector{\n\t\tmetrics: make([]Metric, 0, cfg.MaxMetrics),\n\t\tlimits:  cfg,\n\t}\n}\n\n// RecordMetric records a new tool execution metric.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordMetric_56": {
+      "name": "RecordMetric",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 69,
+      "content_hash": "96a22b2ba99fb652d48fb8f6b7b2f517ab9201f4",
+      "content": "func (c *Collector) RecordMetric(m Metric) {\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\n\t// If at capacity, remove oldest metric\n\tif len(c.metrics) >= c.limits.MaxMetrics {\n\t\tc.metrics = c.metrics[1:]\n\t}\n\n\tm.Timestamp = time.Now()\n\tc.metrics = append(c.metrics, m)\n}\n\n// GetMetrics returns all recorded metrics.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetMetrics_70": {
+      "name": "GetMetrics",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 80,
+      "content_hash": "3323f52fa527153b256e0c5d556cd320887100ce",
+      "content": "func (c *Collector) GetMetrics() []Metric {\n\tc.mu.RLock()\n\tdefer c.mu.RUnlock()\n\n\t// Return a copy to prevent external modification\n\tresult := make([]Metric, len(c.metrics))\n\tcopy(result, c.metrics)\n\treturn result\n}\n\n// GetAggregated returns aggregated metrics for a specific tool.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAggregated_81": {
+      "name": "GetAggregated",
+      "type": "method",
+      "start_line": 81,
+      "end_line": 127,
+      "content_hash": "c6de5c17b21e7c22ea5040511c17df7f23793b9e",
+      "content": "func (c *Collector) GetAggregated(toolName string) *AggregatedMetrics {\n\tc.mu.RLock()\n\tdefer c.mu.RUnlock()\n\n\tagg := &AggregatedMetrics{\n\t\tToolName:         toolName,\n\t\tMinExecutionTime: time.Duration(1<<63 - 1), // Max int64\n\t}\n\n\tvar totalTime time.Duration\n\tfor _, m := range c.metrics {\n\t\tif m.ToolName != toolName {\n\t\t\tcontinue\n\t\t}\n\n\t\tagg.ExecutionCount++\n\t\tagg.TotalMemoryUsed += m.MemoryUsed\n\n\t\tif m.Success {\n\t\t\tagg.SuccessCount++\n\t\t} else {\n\t\t\tagg.FailureCount++\n\t\t}\n\n\t\ttotalTime += m.ExecutionTime\n\n\t\tif m.ExecutionTime > agg.MaxExecutionTime {\n\t\t\tagg.MaxExecutionTime = m.ExecutionTime\n\t\t}\n\t\tif m.ExecutionTime < agg.MinExecutionTime {\n\t\t\tagg.MinExecutionTime = m.ExecutionTime\n\t\t}\n\t}\n\n\tif agg.ExecutionCount > 0 {\n\t\tagg.AvgExecutionTime = totalTime / time.Duration(agg.ExecutionCount)\n\t\tagg.AvgMemoryUsed = agg.TotalMemoryUsed / int64(agg.ExecutionCount)\n\t}\n\n\tif agg.MinExecutionTime == time.Duration(1<<63-1) {\n\t\tagg.MinExecutionTime = 0\n\t}\n\n\treturn agg\n}\n\n// GetAllAggregated returns aggregated metrics for all tools.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAllAggregated_128": {
+      "name": "GetAllAggregated",
+      "type": "method",
+      "start_line": 128,
+      "end_line": 145,
+      "content_hash": "100f505a4993786c8f6c868762a189b9166eb5f0",
+      "content": "func (c *Collector) GetAllAggregated() map[string]*AggregatedMetrics {\n\tc.mu.RLock()\n\tdefer c.mu.RUnlock()\n\n\ttoolNames := make(map[string]bool)\n\tfor _, m := range c.metrics {\n\t\ttoolNames[m.ToolName] = true\n\t}\n\n\tresult := make(map[string]*AggregatedMetrics)\n\tfor toolName := range toolNames {\n\t\tresult[toolName] = c.GetAggregated(toolName)\n\t}\n\n\treturn result\n}\n\n// Clear removes all recorded metrics.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Clear_146": {
+      "name": "Clear",
+      "type": "method",
+      "start_line": 146,
+      "end_line": 152,
+      "content_hash": "7ecd3a735854be48edc50782b260c78a0ce2f7d7",
+      "content": "func (c *Collector) Clear() {\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\tc.metrics = c.metrics[:0]\n}\n\n// GetSuccessRate returns the success rate as a percentage (0-100).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetSuccessRate_153": {
+      "name": "GetSuccessRate",
+      "type": "method",
+      "start_line": 153,
+      "end_line": 159,
+      "content_hash": "971695c03a7afb9a0447cc5822af954c1a97a651",
+      "content": "func (c *Collector) GetSuccessRate(toolName string) float64 {\n\tagg := c.GetAggregated(toolName)\n\tif agg.ExecutionCount == 0 {\n\t\treturn 0\n\t}\n\treturn float64(agg.SuccessCount) / float64(agg.ExecutionCount) * 100\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

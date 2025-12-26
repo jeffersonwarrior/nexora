@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/tools/job_output.go",
+  "file_hash": "4e39ecfaaca08030f10d23012d08fa5f82cd12fe",
+  "updated_at": "2025-12-26T17:34:20.585781",
+  "symbols": {
+    "struct_JobOutputParams_20": {
+      "name": "JobOutputParams",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 23,
+      "content_hash": "202f48c5472d3b586c43b17701da82e4b0ae6244",
+      "content": "type JobOutputParams struct {\n\tShellID string `json:\"shell_id\" description:\"The ID of the background shell to retrieve output from\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_JobOutputResponseMetadata_24": {
+      "name": "JobOutputResponseMetadata",
+      "type": "struct",
+      "start_line": 24,
+      "end_line": 31,
+      "content_hash": "9c0232aa0cbcb7554a9657ff235ea63926756340",
+      "content": "type JobOutputResponseMetadata struct {\n\tShellID          string `json:\"shell_id\"`\n\tCommand          string `json:\"command\"`\n\tDescription      string `json:\"description\"`\n\tDone             bool   `json:\"done\"`\n\tWorkingDirectory string `json:\"working_directory\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewJobOutputTool_32": {
+      "name": "NewJobOutputTool",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 85,
+      "content_hash": "966214904f3ab07f770a857a99ff63a599f69a00",
+      "content": "func NewJobOutputTool() fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\tJobOutputToolName,\n\t\tstring(jobOutputDescription),\n\t\tfunc(ctx context.Context, params JobOutputParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif params.ShellID == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"missing shell_id\"), nil\n\t\t\t}\n\n\t\t\tbgManager := shell.GetBackgroundShellManager()\n\t\t\tbgShell, ok := bgManager.Get(params.ShellID)\n\t\t\tif !ok {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"background shell not found: %s\", params.ShellID)), nil\n\t\t\t}\n\n\t\t\tstdout, stderr, done, err := bgShell.GetOutput()\n\n\t\t\tvar outputParts []string\n\t\t\tif stdout != \"\" {\n\t\t\t\toutputParts = append(outputParts, stdout)\n\t\t\t}\n\t\t\tif stderr != \"\" {\n\t\t\t\toutputParts = append(outputParts, stderr)\n\t\t\t}\n\n\t\t\tstatus := \"running\"\n\t\t\tif done {\n\t\t\t\tstatus = \"completed\"\n\t\t\t\tif err != nil {\n\t\t\t\t\texitCode := shell.ExitCode(err)\n\t\t\t\t\tif exitCode != 0 {\n\t\t\t\t\t\toutputParts = append(outputParts, fmt.Sprintf(\"Exit code %d\", exitCode))\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\toutput := strings.Join(outputParts, \"\\n\")\n\n\t\t\tmetadata := JobOutputResponseMetadata{\n\t\t\t\tShellID:          params.ShellID,\n\t\t\t\tCommand:          bgShell.Command,\n\t\t\t\tDescription:      bgShell.Description,\n\t\t\t\tDone:             done,\n\t\t\t\tWorkingDirectory: bgShell.WorkingDir,\n\t\t\t}\n\n\t\t\tif output == \"\" {\n\t\t\t\toutput = BashNoOutput\n\t\t\t}\n\n\t\t\tresult := fmt.Sprintf(\"Status: %s\\n\\n%s\", status, output)\n\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil\n\t\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

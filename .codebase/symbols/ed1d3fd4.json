@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/utils/tag-stripping.ts",
+  "file_hash": "1568f7b35ff5954e6112687b8e03105637376b9e",
+  "updated_at": "2025-12-26T17:34:24.174721",
+  "symbols": {
+    "function_countTags_27": {
+      "name": "countTags",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 31,
+      "content_hash": "559c610052e3a825fbc6edc94835dab78afe0a7e",
+      "content": "function countTags(content: string): number {\n  const privateCount = (content.match(/<private>/g) || []).length;\n  const contextCount = (content.match(/<claude-mem-context>/g) || []).length;\n  return privateCount + contextCount;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_stripTagsInternal_37": {
+      "name": "stripTagsInternal",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 53,
+      "content_hash": "38ff432e0bb0f1084502d700417d57f486667a39",
+      "content": "function stripTagsInternal(content: string): string {\n  // ReDoS protection: limit tag count before regex processing\n  const tagCount = countTags(content);\n  if (tagCount > MAX_TAG_COUNT) {\n    logger.warn('SYSTEM', 'tag count exceeds limit', undefined, {\n      tagCount,\n      maxAllowed: MAX_TAG_COUNT,\n      contentLength: content.length\n    });\n    // Still process but log the anomaly\n  }\n\n  return content\n    .replace(/<claude-mem-context>[\\s\\S]*?<\\/claude-mem-context>/g, '')\n    .replace(/<private>[\\s\\S]*?<\\/private>/g, '')\n    .trim();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_stripMemoryTagsFromJson_61": {
+      "name": "stripMemoryTagsFromJson",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 63,
+      "content_hash": "66128a896635186da2ff7695afa2f4fa6536bad2",
+      "content": "export function stripMemoryTagsFromJson(content: string): string {\n  return stripTagsInternal(content);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_stripMemoryTagsFromPrompt_71": {
+      "name": "stripMemoryTagsFromPrompt",
+      "type": "function",
+      "start_line": 71,
+      "end_line": 73,
+      "content_hash": "14548c6595a82bb601724ff911ee835dbce0e05a",
+      "content": "export function stripMemoryTagsFromPrompt(content: string): string {\n  return stripTagsInternal(content);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

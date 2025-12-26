@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/write.go",
+  "file_hash": "84f4841c0642f00f5a65b6429ff9e3e276aa146d",
+  "updated_at": "2025-12-26T17:34:24.539860",
+  "symbols": {
+    "struct_WriteParams_27": {
+      "name": "WriteParams",
+      "type": "struct",
+      "start_line": 27,
+      "end_line": 31,
+      "content_hash": "7a123aed3b76801ef40f5413c87e90945894f73c",
+      "content": "type WriteParams struct {\n\tFilePath string `json:\"file_path\" description:\"The path to the file to write\"`\n\tContent  string `json:\"content\" description:\"The content to write to the file\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_WritePermissionsParams_32": {
+      "name": "WritePermissionsParams",
+      "type": "struct",
+      "start_line": 32,
+      "end_line": 37,
+      "content_hash": "9f93c8e81b580776e17558c5ed72be25de324ab5",
+      "content": "type WritePermissionsParams struct {\n\tFilePath   string `json:\"file_path\"`\n\tOldContent string `json:\"old_content,omitempty\"`\n\tNewContent string `json:\"new_content,omitempty\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_writeTool_38": {
+      "name": "writeTool",
+      "type": "struct",
+      "start_line": 38,
+      "end_line": 44,
+      "content_hash": "8c257f71fe57c9dbf2c199da94252a0ebc6e6807",
+      "content": "type writeTool struct {\n\tlspClients  *csync.Map[string, *lsp.Client]\n\tpermissions permission.Service\n\tfiles       history.Service\n\tworkingDir  string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_WriteResponseMetadata_45": {
+      "name": "WriteResponseMetadata",
+      "type": "struct",
+      "start_line": 45,
+      "end_line": 52,
+      "content_hash": "ae59854c1b13be65ad2653cb0313f88c19b13f72",
+      "content": "type WriteResponseMetadata struct {\n\tDiff      string `json:\"diff\"`\n\tAdditions int    `json:\"additions\"`\n\tRemovals  int    `json:\"removals\"`\n}\n\nconst WriteToolName = \"write\"\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewWriteTool_53": {
+      "name": "NewWriteTool",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 175,
+      "content_hash": "14213c2d7e08e39b3ec5dad2aeb13820a0d31e32",
+      "content": "func NewWriteTool(lspClients *csync.Map[string, *lsp.Client], permissions permission.Service, files history.Service, workingDir string) fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\tWriteToolName,\n\t\tstring(writeDescription),\n\t\tfunc(ctx context.Context, params WriteParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif params.FilePath == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"file_path is required\"), nil\n\t\t\t}\n\n\t\t\tif params.Content == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"content is required\"), nil\n\t\t\t}\n\n\t\t\tfilePath := filepathext.SmartJoin(workingDir, params.FilePath)\n\n\t\t\tfileInfo, err := os.Stat(filePath)\n\t\t\tif err == nil {\n\t\t\t\tif fileInfo.IsDir() {\n\t\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"Path is a directory, not a file: %s\", filePath)), nil\n\t\t\t\t}\n\n\t\t\t\tmodTime := fileInfo.ModTime()\n\t\t\t\tlastRead := getLastReadTime(filePath)\n\t\t\t\tif modTime.After(lastRead) {\n\t\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"File %s has been modified since it was last read.\\nLast modification: %s\\nLast read: %s\\n\\nPlease read the file again before modifying it.\",\n\t\t\t\t\t\tfilePath, modTime.Format(time.RFC3339), lastRead.Format(time.RFC3339))), nil\n\t\t\t\t}\n\n\t\t\t\toldContent, readErr := os.ReadFile(filePath)\n\t\t\t\tif readErr == nil && string(oldContent) == params.Content {\n\t\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"File %s already contains the exact content. No changes made.\", filePath)), nil\n\t\t\t\t}\n\t\t\t} else if !os.IsNotExist(err) {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"error checking file: %w\", err)\n\t\t\t}\n\n\t\t\tdir := filepath.Dir(filePath)\n\t\t\tif err = os.MkdirAll(dir, 0o755); err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"error creating directory: %w\", err)\n\t\t\t}\n\n\t\t\toldContent := \"\"\n\t\t\tif fileInfo != nil && !fileInfo.IsDir() {\n\t\t\t\toldBytes, readErr := os.ReadFile(filePath)\n\t\t\t\tif readErr == nil {\n\t\t\t\t\toldContent = string(oldBytes)\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tsessionID := GetSessionFromContext(ctx)\n\t\t\tif sessionID == \"\" {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"session_id is required\")\n\t\t\t}\n\n\t\t\tdiff, additions, removals := diff.GenerateDiff(\n\t\t\t\toldContent,\n\t\t\t\tparams.Content,\n\t\t\t\tstrings.TrimPrefix(filePath, workingDir),\n\t\t\t)\n\n\t\t\tp := permissions.Request(\n\t\t\t\tpermission.CreatePermissionRequest{\n\t\t\t\t\tSessionID:   sessionID,\n\t\t\t\t\tPath:        fsext.PathOrPrefix(filePath, workingDir),\n\t\t\t\t\tToolCallID:  call.ID,\n\t\t\t\t\tToolName:    WriteToolName,\n\t\t\t\t\tAction:      \"write\",\n\t\t\t\t\tDescription: fmt.Sprintf(\"Create file %s\", filePath),\n\t\t\t\t\tParams: WritePermissionsParams{\n\t\t\t\t\t\tFilePath:   filePath,\n\t\t\t\t\t\tOldContent: oldContent,\n\t\t\t\t\t\tNewContent: params.Content,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t)\n\t\t\tif !p {\n\t\t\t\treturn fantasy.ToolResponse{}, permission.ErrorPermissionDenied\n\t\t\t}\n\n\t\t\terr = os.WriteFile(filePath, []byte(params.Content), 0o644)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"error writing file: %w\", err)\n\t\t\t}\n\n\t\t\t// Check if file exists in history\n\t\t\tfile, err := files.GetByPathAndSession(ctx, filePath, sessionID)\n\t\t\tif err != nil {\n\t\t\t\t_, err = files.Create(ctx, sessionID, filePath, oldContent)\n\t\t\t\tif err != nil {\n\t\t\t\t\t// Log error but don't fail the operation\n\t\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"error creating file history: %w\", err)\n\t\t\t\t}\n\t\t\t}\n\t\t\tif file.Content != oldContent {\n\t\t\t\t// User Manually changed the content store an intermediate version\n\t\t\t\t_, err = files.CreateVersion(ctx, sessionID, filePath, oldContent)\n\t\t\t\tif err != nil {\n\t\t\t\t\tslog.Error(\"Error creating file history version\", \"error\", err)\n\t\t\t\t}\n\t\t\t}\n\t\t\t// Store the new version\n\t\t\t_, err = files.CreateVersion(ctx, sessionID, filePath, params.Content)\n\t\t\tif err != nil {\n\t\t\t\tslog.Error(\"Error creating file history version\", \"error\", err)\n\t\t\t}\n\n\t\t\trecordFileWrite(filePath)\n\t\t\trecordFileRead(filePath)\n\n\t\t\tnotifyLSPs(ctx, lspClients, params.FilePath)\n\n\t\t\tresult := fmt.Sprintf(\"File successfully written: %s\", filePath)\n\t\t\tresult = fmt.Sprintf(\"<result>\\n%s\\n</result>\", result)\n\t\t\tresult += getDiagnostics(filePath, lspClients)\n\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(result),\n\t\t\t\tWriteResponseMetadata{\n\t\t\t\t\tDiff:      diff,\n\t\t\t\t\tAdditions: additions,\n\t\t\t\t\tRemovals:  removals,\n\t\t\t\t},\n\t\t\t), nil\n\t\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

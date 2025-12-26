@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/tools/fuzzy_match_test.go",
+  "file_hash": "7f994eeb7926f0e1a3a57614d33633cecd257892",
+  "updated_at": "2025-12-26T17:34:23.861859",
+  "symbols": {
+    "function_TestFuzzyMatching_7": {
+      "name": "TestFuzzyMatching",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 64,
+      "content_hash": "c6756ec944881764d8d63a238226c3ba963ed183",
+      "content": "func TestFuzzyMatching(t *testing.T) {\n\ttests := []struct {\n\t\tname       string\n\t\tcontent    string\n\t\ttarget     string\n\t\tshouldFind bool\n\t\tconfidence float64\n\t}{\n\t\t{\n\t\t\tname:       \"exact match\",\n\t\t\tcontent:    \"func main() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\",\n\t\t\ttarget:     \"func main() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\",\n\t\t\tshouldFind: true,\n\t\t\tconfidence: 1.0,\n\t\t},\n\t\t{\n\t\t\tname:       \"tab normalization\",\n\t\t\tcontent:    \"func main() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\",\n\t\t\ttarget:     \"func main() {\\n\u2192\\tfmt.Println(\\\"hello\\\")\\n}\", // View tool display\n\t\t\tshouldFind: true,\n\t\t\tconfidence: 0.95,\n\t\t},\n\t\t{\n\t\t\tname:       \"line content match (different indentation)\",\n\t\t\tcontent:    \"func main() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\",\n\t\t\ttarget:     \"func main() {\\n  fmt.Println(\\\"hello\\\")\\n}\", // 2 spaces instead of tab\n\t\t\tshouldFind: true,\n\t\t\tconfidence: 0.90,\n\t\t},\n\t\t{\n\t\t\tname:       \"no match\",\n\t\t\tcontent:    \"func main() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\",\n\t\t\ttarget:     \"func foo() {\\n\\treturn nil\\n}\",\n\t\t\tshouldFind: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := findBestMatch(tt.content, tt.target)\n\n\t\t\tif tt.shouldFind {\n\t\t\t\tif result == nil {\n\t\t\t\t\tt.Errorf(\"Expected to find match but got nil\")\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\tif result.confidence != tt.confidence {\n\t\t\t\t\tt.Errorf(\"Expected confidence %v, got %v\", tt.confidence, result.confidence)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tif result != nil && result.confidence >= 0.90 {\n\t\t\t\t\tt.Errorf(\"Expected no match but found one with confidence %v\", result.confidence)\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLineContentMatching_65": {
+      "name": "TestLineContentMatching",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 69,
+      "content_hash": "decd94c6c8f2fb3cb41706b951466e79cca93cc4",
+      "content": "func TestLineContentMatching(t *testing.T) {\n\tcontent := `package main\n\nimport \"fmt\"\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_70": {
+      "name": "main",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 107,
+      "content_hash": "90e95b423ab3504b3cd59753147008ec8993f73d",
+      "content": "func main() {\n\tfmt.Println(\"hello\")\n\tfmt.Println(\"world\")\n}`\n\n\ttests := []struct {\n\t\tname       string\n\t\ttarget     string\n\t\tshouldFind bool\n\t}{\n\t\t{\n\t\t\tname:       \"exact line match\",\n\t\t\ttarget:     \"\\tfmt.Println(\\\"hello\\\")\\n\\tfmt.Println(\\\"world\\\")\",\n\t\t\tshouldFind: true,\n\t\t},\n\t\t{\n\t\t\tname:       \"different indent same content\",\n\t\t\ttarget:     \"  fmt.Println(\\\"hello\\\")\\n  fmt.Println(\\\"world\\\")\", // spaces instead of tabs\n\t\t\tshouldFind: true,\n\t\t},\n\t\t{\n\t\t\tname:       \"wrong content\",\n\t\t\ttarget:     \"\\tfmt.Println(\\\"goodbye\\\")\\n\\tfmt.Println(\\\"world\\\")\",\n\t\t\tshouldFind: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tindex := matchByLineContent(content, tt.target)\n\t\t\tfound := index != -1\n\n\t\t\tif found != tt.shouldFind {\n\t\t\t\tt.Errorf(\"Expected shouldFind=%v, got index=%d\", tt.shouldFind, index)\n\t\t\t}\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

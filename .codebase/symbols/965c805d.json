@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/feedback.rs",
+  "file_hash": "765ef146dd1990567fe90c2da6db46749b91a77b",
+  "updated_at": "2025-12-26T17:34:22.262210",
+  "symbols": {
+    "enum_FeedbackType_10": {
+      "name": "FeedbackType",
+      "type": "enum",
+      "start_line": 10,
+      "end_line": 15,
+      "content_hash": "aaee2aae3f2d874e30cb9741e572a297532c0760",
+      "content": "pub enum FeedbackType {\n    Bug,\n    FeatureRequest,\n    General,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_FeedbackType_16": {
+      "name": "FeedbackType",
+      "type": "impl",
+      "start_line": 16,
+      "end_line": 17,
+      "content_hash": "ff99faab7eb5d72b103f776188dc10c764f88190",
+      "content": "impl FeedbackType {\n    /// Get the GitHub issue type parameter",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_issue_type_18": {
+      "name": "issue_type",
+      "type": "method",
+      "start_line": 18,
+      "end_line": 26,
+      "content_hash": "37364d33e89ff5a147f81b4c1d037eac004691b6",
+      "content": "    fn issue_type(&self) -> &'static str {\n        match self {\n            FeedbackType::Bug => \"Bug\",\n            FeedbackType::FeatureRequest => \"Feature\",\n            FeedbackType::General => \"Feature\",\n        }\n    }\n\n    /// Get the GitHub labels for this feedback type",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_labels_27": {
+      "name": "labels",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 35,
+      "content_hash": "77691299a6b532bcf2df1de1fb6fe2f4d9ef9ad6",
+      "content": "    fn labels(&self) -> &'static str {\n        match self {\n            FeedbackType::Bug => \"bug,cli\",\n            FeedbackType::FeatureRequest => \"enhancement\",\n            FeedbackType::General => \"feedback\",\n        }\n    }\n\n    /// Get a title prefix for the issue",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_title_prefix_36": {
+      "name": "title_prefix",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 78,
+      "content_hash": "115b62564e50ef7b56ffdf07ce6d5e7eefb5b76e",
+      "content": "    fn title_prefix(&self) -> &'static str {\n        match self {\n            FeedbackType::Bug => \"bug: \",\n            FeedbackType::FeatureRequest => \"feature: \",\n            FeedbackType::General => \"feedback: \",\n        }\n    }\n}\n\n/// Run the feedback command\npub async fn run(message: Option<String>) -> Result<()> {\n    let (feedback_type, feedback_message) = if let Some(msg) = message {\n        // Inline message provided - default to General feedback\n        (FeedbackType::General, msg)\n    } else {\n        // Interactive mode\n        if !prompts::is_interactive() {\n            return Err(eyre!(\n                \"No feedback message provided. Run 'helix feedback \\\"your message\\\"' or run in an interactive terminal.\"\n            ));\n        }\n\n        prompts::intro(\"helix feedback\", Some(\"Submit feedback for Helix\"))?;\n        let feedback_type = prompts::select_feedback_type()?;\n        let feedback_message = prompts::input_feedback_message()?;\n\n        if !prompts::confirm(\"Open browser to submit feedback?\")? {\n            print_info(\"Feedback cancelled.\");\n            return Ok(());\n        }\n\n        (feedback_type, feedback_message)\n    };\n\n    // Build and open the GitHub issue URL\n    print_info(\"Opening browser to submit feedback...\");\n    build_issue_builder(feedback_type, &feedback_message).open_in_browser()?;\n\n    print_success(\"Browser opened! Complete your feedback submission on GitHub.\");\n    Ok(())\n}\n\n/// Build the GitHub issue URL builder with pre-filled content",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_build_issue_builder_79": {
+      "name": "build_issue_builder",
+      "type": "method",
+      "start_line": 79,
+      "end_line": 94,
+      "content_hash": "35f74a924b2be1572676fb173b8a3c0be1846e46",
+      "content": "fn build_issue_builder(feedback_type: FeedbackType, message: &str) -> GitHubIssueUrlBuilder {\n    let title = format!(\n        \"{}{}\",\n        feedback_type.title_prefix(),\n        truncate_for_title(message)\n    );\n\n    let body = build_issue_body(message);\n\n    GitHubIssueUrlBuilder::new(title)\n        .body(body)\n        .labels(feedback_type.labels())\n        .issue_type(feedback_type.issue_type())\n}\n\n/// Build the full issue body",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_build_issue_body_95": {
+      "name": "build_issue_body",
+      "type": "method",
+      "start_line": 95,
+      "end_line": 113,
+      "content_hash": "812ea34eedf0d800956fbf1940b7f3066e33fb83",
+      "content": "fn build_issue_body(message: &str) -> String {\n    let mut body = String::new();\n\n    // Environment section\n    body.push_str(\"## Environment\\n\");\n    body.push_str(&format!(\n        \"- Helix CLI version: {}\\n\",\n        env!(\"CARGO_PKG_VERSION\")\n    ));\n    body.push_str(&format!(\"- OS: {}\\n\\n\", std::env::consts::OS));\n\n    // Feedback section\n    body.push_str(\"## Feedback\\n\");\n    body.push_str(message);\n\n    body\n}\n\n/// Truncate message to create a reasonable issue title",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_truncate_for_title_114": {
+      "name": "truncate_for_title",
+      "type": "method",
+      "start_line": 114,
+      "end_line": 122,
+      "content_hash": "f46117d52fda0c345b74e7a49ae3a42745c2729d",
+      "content": "fn truncate_for_title(message: &str) -> String {\n    let first_line = message.lines().next().unwrap_or(message);\n    if first_line.chars().count() > 50 {\n        let truncated: String = first_line.chars().take(47).collect();\n        format!(\"{}...\", truncated)\n    } else {\n        first_line.to_string()\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

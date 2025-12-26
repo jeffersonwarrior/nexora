@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/storage_core/version_info.rs",
+  "file_hash": "5c6305e28b8836ddb54598d4dd5da101a905198c",
+  "updated_at": "2025-12-26T17:34:24.479699",
+  "symbols": {
+    "struct_VersionInfo_8": {
+      "name": "VersionInfo",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 9,
+      "content_hash": "a9c5704e96630c2162dc6c023edf2d057bb9b383",
+      "content": "pub struct VersionInfo(pub HashMap<&'static str, ItemInfo>);\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_VersionInfo_10": {
+      "name": "VersionInfo",
+      "type": "impl",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "c1a2adf635df28d0f5e22c7443fa112717bdb832",
+      "content": "impl<'arena> VersionInfo {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_upgrade_to_node_latest_11": {
+      "name": "upgrade_to_node_latest",
+      "type": "method",
+      "start_line": 11,
+      "end_line": 17,
+      "content_hash": "b5a88bcc50a64657da7dc5809ac37efdecdb76aa",
+      "content": "    pub fn upgrade_to_node_latest(&self, node: Node<'arena>) -> Node<'arena> {\n        match self.0.get(&node.label) {\n            Some(item_info) => item_info.upgrade_node_to_latest(node),\n            None => node,\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_upgrade_to_edge_latest_18": {
+      "name": "upgrade_to_edge_latest",
+      "type": "method",
+      "start_line": 18,
+      "end_line": 24,
+      "content_hash": "e5dac71d4bc4dc6ba8487ae508a676663f3d29fc",
+      "content": "    pub fn upgrade_to_edge_latest(&self, node: Edge<'arena>) -> Edge<'arena> {\n        match self.0.get(&node.label) {\n            Some(item_info) => item_info.upgrade_edge_to_latest(node),\n            None => node,\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_latest_25": {
+      "name": "get_latest",
+      "type": "method",
+      "start_line": 25,
+      "end_line": 34,
+      "content_hash": "d3a3ca314e46792a176ed8b79644bce206b6fc98",
+      "content": "    pub fn get_latest(&self, label: &str) -> u8 {\n        self.0\n            .get(label)\n            .map(|item_info| item_info.latest)\n            .unwrap_or(1)\n    }\n}\n\ntype Props<'arena> = ImmutablePropertiesMap<'arena>;\n#[derive(Clone, Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TransitionFn_35": {
+      "name": "TransitionFn",
+      "type": "struct",
+      "start_line": 35,
+      "end_line": 41,
+      "content_hash": "66299ac2373ecd47f3a05ce287edfe0094967a66",
+      "content": "pub struct TransitionFn {\n    pub from_version: u8,\n    pub to_version: u8,\n    pub func: fn(Props) -> Props,\n}\n\n#[derive(Clone, Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ItemInfo_42": {
+      "name": "ItemInfo",
+      "type": "struct",
+      "start_line": 42,
+      "end_line": 49,
+      "content_hash": "e86b1a07db404486fd2301c76da5882d759fe60b",
+      "content": "pub struct ItemInfo {\n    /// The latest version of this item\n    /// All writes should be done with this version\n    pub latest: u8,\n    /// Stores transition from version x and index x-1\n    pub transition_fns: Vec<TransitionFn>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_ItemInfo_50": {
+      "name": "ItemInfo",
+      "type": "impl",
+      "start_line": 50,
+      "end_line": 50,
+      "content_hash": "e23f0591e30692ef20fd227c629120475f951041",
+      "content": "impl<'arena> ItemInfo {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_upgrade_node_to_latest_51": {
+      "name": "upgrade_node_to_latest",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 66,
+      "content_hash": "0ded634f6763aedeb5a667422491d93550de4010",
+      "content": "    fn upgrade_node_to_latest(&self, mut node: Node<'arena>) -> Node<'arena> {\n        if node.version < self.latest\n            && let Some(mut node_props) = node.properties.take()\n        {\n            for TransitionFn { func, .. } in\n                self.transition_fns.iter().skip(node.version as usize - 1)\n            {\n                node_props = func(node_props);\n            }\n\n            node.properties = Some(node_props);\n        }\n\n        node\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_upgrade_edge_to_latest_67": {
+      "name": "upgrade_edge_to_latest",
+      "type": "method",
+      "start_line": 67,
+      "end_line": 83,
+      "content_hash": "8cfe62147a796572add34e47f255ab5376c1c333",
+      "content": "    fn upgrade_edge_to_latest(&self, mut edge: Edge<'arena>) -> Edge<'arena> {\n        if edge.version < self.latest\n            && let Some(mut edge_props) = edge.properties.take()\n        {\n            for TransitionFn { func, .. } in\n                self.transition_fns.iter().skip(edge.version as usize - 1)\n            {\n                edge_props = func(edge_props);\n            }\n\n            edge.properties = Some(edge_props);\n        }\n\n        edge\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Default_84": {
+      "name": "Default",
+      "type": "impl",
+      "start_line": 84,
+      "end_line": 84,
+      "content_hash": "bff3ab29577cd37de3cbbfa535294c8a0cfe8342",
+      "content": "impl Default for ItemInfo {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_default_85": {
+      "name": "default",
+      "type": "method",
+      "start_line": 85,
+      "end_line": 93,
+      "content_hash": "640a29ab7afba5c5d3c38bd165fb95832cbf5709",
+      "content": "    fn default() -> Self {\n        Self {\n            latest: 1,\n            transition_fns: vec![],\n        }\n    }\n}\n\n#[derive(Clone, Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Transition_94": {
+      "name": "Transition",
+      "type": "struct",
+      "start_line": 94,
+      "end_line": 100,
+      "content_hash": "0cbd334fe2c0cfb148683ebe4473543a86a209cc",
+      "content": "pub struct Transition {\n    pub item_label: &'static str,\n    pub from_version: u8,\n    pub to_version: u8,\n    pub func: fn(Props) -> Props,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Transition_101": {
+      "name": "Transition",
+      "type": "impl",
+      "start_line": 101,
+      "end_line": 117,
+      "content_hash": "75fa388e164ff1eba5083a3529032db5e207a55d",
+      "content": "impl Transition {\n    pub const fn new(\n        item_label: &'static str,\n        from_version: u8,\n        to_version: u8,\n        func: fn(Props) -> Props,\n    ) -> Self {\n        Self {\n            item_label,\n            from_version,\n            to_version,\n            func,\n        }\n    }\n}\n\n#[derive(Clone, Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TransitionSubmission_118": {
+      "name": "TransitionSubmission",
+      "type": "struct",
+      "start_line": 118,
+      "end_line": 153,
+      "content_hash": "f81150937f275cd846f2d8355596618d995323d7",
+      "content": "pub struct TransitionSubmission(pub Transition);\n\ninventory::collect!(TransitionSubmission);\n\n#[macro_export]\nmacro_rules! field_addition_from_old_field {\n    ($old_props:expr, $new_props:expr, $new_name:expr, $old_name:expr) => {{\n        let value = $old_props.remove($old_name).unwrap();\n        $new_props.insert($new_name.to_string(), value);\n    }};\n}\n\n#[macro_export]\nmacro_rules! field_type_cast {\n    ($old_props:expr, $new_props:expr, $field_to_cast:expr, $new_field_type:ident) => {{\n        let value = cast(\n            $old_props.remove($field_to_cast).unwrap(),\n            CastType::$new_field_type,\n        );\n        $new_props.insert($field_to_cast.to_string(), value);\n    }};\n}\n\n#[macro_export]\nmacro_rules! field_addition_from_value {\n    ($new_props:expr, $new_field_name:expr, $new_field_type:ident, $value:expr) => {{\n        $new_props.insert($new_field_name.to_string(), Value::$new_field_type($value));\n    }};\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use crate::protocol::value::Value;\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_field_renaming_154": {
+      "name": "test_field_renaming",
+      "type": "method",
+      "start_line": 154,
+      "end_line": 172,
+      "content_hash": "e9821c4981768faa4789da4c75d949bb514713f1",
+      "content": "    fn test_field_renaming() {\n        let mut props = HashMap::from([(\n            \"some_name\".to_string(),\n            Value::String(\"some_value\".to_string()),\n        )]);\n\n        let mut new_props = HashMap::new();\n        field_addition_from_old_field!(&mut props, &mut new_props, \"new_name\", \"some_name\");\n\n        assert_eq!(\n            new_props,\n            HashMap::from([(\n                \"new_name\".to_string(),\n                Value::String(\"some_value\".to_string())\n            )])\n        );\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_field_type_cast_173": {
+      "name": "test_field_type_cast",
+      "type": "method",
+      "start_line": 173,
+      "end_line": 187,
+      "content_hash": "5183e6853ae06b0b8c103e5483e5cb341cfd5298",
+      "content": "    fn test_field_type_cast() {\n        use crate::protocol::value::casting::{CastType, cast};\n\n        let mut props =\n            HashMap::from([(\"some_name\".to_string(), Value::String(\"123\".to_string()))]);\n        let mut new_props = HashMap::new();\n        field_type_cast!(&mut props, &mut new_props, \"some_name\", U32);\n\n        assert_eq!(\n            new_props,\n            HashMap::from([(\"some_name\".to_string(), Value::U32(123))])\n        );\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_field_addition_from_value_188": {
+      "name": "test_field_addition_from_value",
+      "type": "method",
+      "start_line": 188,
+      "end_line": 198,
+      "content_hash": "4af82d259b8b3c2e3777daf7b2588577c446bcfe",
+      "content": "    fn test_field_addition_from_value() {\n        let mut new_props = HashMap::new();\n\n        field_addition_from_value!(&mut new_props, \"new_name\", U32, 123);\n\n        assert_eq!(\n            new_props,\n            HashMap::from([(\"new_name\".to_string(), Value::U32(123))])\n        );\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

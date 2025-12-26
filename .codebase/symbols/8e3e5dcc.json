@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/internal/tui/exp/list/list_test.go",
+  "file_hash": "1764760a0b138ea70eefb15ad0d2ee2116d30724",
+  "updated_at": "2025-12-26T17:34:22.261113",
+  "symbols": {
+    "function_TestList_18": {
+      "name": "TestList",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 255,
+      "content_hash": "6b93d346e660624e98c6cae16ccc81bd03899791",
+      "content": "func TestList(t *testing.T) {\n\tt.Parallel()\n\tt.Run(\"should have correct positions in list that fits the items\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 5 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 20)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 0, l.selectedItemIdx)\n\t\tassert.Equal(t, 0, l.offset)\n\t\trequire.Equal(t, 5, len(l.indexMap))\n\t\trequire.Equal(t, 5, len(l.items))\n\t\trequire.Equal(t, 5, len(l.renderedItems))\n\t\tassert.Equal(t, 5, lipgloss.Height(l.rendered))\n\t\tassert.NotEqual(t, \"\\n\", string(l.rendered[len(l.rendered)-1]), \"should not end in newline\")\n\t\tstart, end := l.viewPosition()\n\t\tassert.Equal(t, 0, start)\n\t\tassert.Equal(t, 4, end)\n\t\tfor i := range 5 {\n\t\t\titem, ok := l.renderedItems[items[i].ID()]\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, i, item.start)\n\t\t\tassert.Equal(t, i, item.end)\n\t\t}\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should have correct positions in list that fits the items backwards\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 5 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 20)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 4, l.selectedItemIdx)\n\t\tassert.Equal(t, 0, l.offset)\n\t\trequire.Equal(t, 5, len(l.indexMap))\n\t\trequire.Equal(t, 5, len(l.items))\n\t\trequire.Equal(t, 5, len(l.renderedItems))\n\t\tassert.Equal(t, 5, lipgloss.Height(l.rendered))\n\t\tassert.NotEqual(t, \"\\n\", string(l.rendered[len(l.rendered)-1]), \"should not end in newline\")\n\t\tstart, end := l.viewPosition()\n\t\tassert.Equal(t, 0, start)\n\t\tassert.Equal(t, 4, end)\n\t\tfor i := range 5 {\n\t\t\titem, ok := l.renderedItems[items[i].ID()]\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, i, item.start)\n\t\t\tassert.Equal(t, i, item.end)\n\t\t}\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should have correct positions in list that does not fits the items\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 0, l.selectedItemIdx)\n\t\tassert.Equal(t, 0, l.offset)\n\t\trequire.Equal(t, 30, len(l.indexMap))\n\t\trequire.Equal(t, 30, len(l.items))\n\t\trequire.Equal(t, 30, len(l.renderedItems))\n\t\tassert.Equal(t, 30, lipgloss.Height(l.rendered))\n\t\tassert.NotEqual(t, \"\\n\", string(l.rendered[len(l.rendered)-1]), \"should not end in newline\")\n\t\tstart, end := l.viewPosition()\n\t\tassert.Equal(t, 0, start)\n\t\tassert.Equal(t, 9, end)\n\t\tfor i := range 30 {\n\t\t\titem, ok := l.renderedItems[items[i].ID()]\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, i, item.start)\n\t\t\tassert.Equal(t, i, item.end)\n\t\t}\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should have correct positions in list that does not fits the items backwards\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 29, l.selectedItemIdx)\n\t\tassert.Equal(t, 0, l.offset)\n\t\trequire.Equal(t, 30, len(l.indexMap))\n\t\trequire.Equal(t, 30, len(l.items))\n\t\trequire.Equal(t, 30, len(l.renderedItems))\n\t\tassert.Equal(t, 30, lipgloss.Height(l.rendered))\n\t\tassert.NotEqual(t, \"\\n\", string(l.rendered[len(l.rendered)-1]), \"should not end in newline\")\n\t\tstart, end := l.viewPosition()\n\t\tassert.Equal(t, 20, start)\n\t\tassert.Equal(t, 29, end)\n\t\tfor i := range 30 {\n\t\t\titem, ok := l.renderedItems[items[i].ID()]\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, i, item.start)\n\t\t\tassert.Equal(t, i, item.end)\n\t\t}\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should have correct positions in list that does not fits the items and has multi line items\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 0, l.selectedItemIdx)\n\t\tassert.Equal(t, 0, l.offset)\n\t\trequire.Equal(t, 30, len(l.indexMap))\n\t\trequire.Equal(t, 30, len(l.items))\n\t\trequire.Equal(t, 30, len(l.renderedItems))\n\t\texpectedLines := 0\n\t\tfor i := range 30 {\n\t\t\texpectedLines += (i + 1) * 1\n\t\t}\n\t\tassert.Equal(t, expectedLines, lipgloss.Height(l.rendered))\n\t\tassert.NotEqual(t, \"\\n\", string(l.rendered[len(l.rendered)-1]), \"should not end in newline\")\n\t\tstart, end := l.viewPosition()\n\t\tassert.Equal(t, 0, start)\n\t\tassert.Equal(t, 9, end)\n\t\tcurrentPosition := 0\n\t\tfor i := range 30 {\n\t\t\trItem, ok := l.renderedItems[items[i].ID()]\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, currentPosition, rItem.start)\n\t\t\tassert.Equal(t, currentPosition+i, rItem.end)\n\t\t\tcurrentPosition += i + 1\n\t\t}\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should have correct positions in list that does not fits the items and has multi line items backwards\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 29, l.selectedItemIdx)\n\t\tassert.Equal(t, 0, l.offset)\n\t\trequire.Equal(t, 30, len(l.indexMap))\n\t\trequire.Equal(t, 30, len(l.items))\n\t\trequire.Equal(t, 30, len(l.renderedItems))\n\t\texpectedLines := 0\n\t\tfor i := range 30 {\n\t\t\texpectedLines += (i + 1) * 1\n\t\t}\n\t\tassert.Equal(t, expectedLines, lipgloss.Height(l.rendered))\n\t\tassert.NotEqual(t, \"\\n\", string(l.rendered[len(l.rendered)-1]), \"should not end in newline\")\n\t\tstart, end := l.viewPosition()\n\t\tassert.Equal(t, expectedLines-10, start)\n\t\tassert.Equal(t, expectedLines-1, end)\n\t\tcurrentPosition := 0\n\t\tfor i := range 30 {\n\t\t\trItem, ok := l.renderedItems[items[i].ID()]\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, currentPosition, rItem.start)\n\t\t\tassert.Equal(t, currentPosition+i, rItem.end)\n\t\t\tcurrentPosition += i + 1\n\t\t}\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should go to selected item at the beginning\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10), WithSelectedItem(items[10].ID())).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 10, l.selectedItemIdx)\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should go to selected item at the beginning backwards\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10), WithSelectedItem(items[10].ID())).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\t// should select the last item\n\t\tassert.Equal(t, 10, l.selectedItemIdx)\n\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestListMovement_256": {
+      "name": "TestListMovement",
+      "type": "function",
+      "start_line": 256,
+      "end_line": 567,
+      "content_hash": "a0139e8543558dea3643fe6a091efd6173d549f8",
+      "content": "func TestListMovement(t *testing.T) {\n\tt.Parallel()\n\tt.Run(\"should move viewport up\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(25))\n\n\t\tassert.Equal(t, 25, l.offset)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should move viewport up and down\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(25))\n\t\texecCmd(l, l.MoveDown(25))\n\n\t\tassert.Equal(t, 0, l.offset)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should move viewport down\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(25))\n\n\t\tassert.Equal(t, 25, l.offset)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should move viewport down and up\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(25))\n\t\texecCmd(l, l.MoveUp(25))\n\n\t\tassert.Equal(t, 0, l.offset)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should not change offset when new items are appended and we are at the bottom in backwards list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\t\texecCmd(l, l.AppendItem(NewSelectableItem(\"Testing\")))\n\n\t\tassert.Equal(t, 0, l.offset)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should stay at the position it is when new items are added but we moved up in backwards list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(2))\n\t\tviewBefore := l.View()\n\t\texecCmd(l, l.AppendItem(NewSelectableItem(\"Testing\\nHello\\n\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 5, l.offset)\n\t\tassert.Equal(t, 33, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should stay at the position it is when the hight of an item below is increased in backwards list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(2))\n\t\tviewBefore := l.View()\n\t\titem := items[29]\n\t\texecCmd(l, l.UpdateItem(item.ID(), NewSelectableItem(\"Item 29\\nLine 2\\nLine 3\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 4, l.offset)\n\t\tassert.Equal(t, 32, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should stay at the position it is when the hight of an item below is decreases in backwards list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\titems = append(items, NewSelectableItem(\"Item 30\\nLine 2\\nLine 3\"))\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(2))\n\t\tviewBefore := l.View()\n\t\titem := items[30]\n\t\texecCmd(l, l.UpdateItem(item.ID(), NewSelectableItem(\"Item 30\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 0, l.offset)\n\t\tassert.Equal(t, 31, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should stay at the position it is when the hight of an item above is increased in backwards list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(2))\n\t\tviewBefore := l.View()\n\t\titem := items[1]\n\t\texecCmd(l, l.UpdateItem(item.ID(), NewSelectableItem(\"Item 1\\nLine 2\\nLine 3\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 2, l.offset)\n\t\tassert.Equal(t, 32, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should stay at the position it is if an item is prepended and we are in backwards list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionBackward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveUp(2))\n\t\tviewBefore := l.View()\n\t\texecCmd(l, l.PrependItem(NewSelectableItem(\"New\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 2, l.offset)\n\t\tassert.Equal(t, 31, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should not change offset when new items are prepended and we are at the top in forward list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\tcontent := strings.Repeat(fmt.Sprintf(\"Item %d\\n\", i), i+1)\n\t\t\tcontent = strings.TrimSuffix(content, \"\\n\")\n\t\t\titem := NewSelectableItem(content)\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\t\texecCmd(l, l.PrependItem(NewSelectableItem(\"Testing\")))\n\n\t\tassert.Equal(t, 0, l.offset)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should stay at the position it is when new items are added but we moved down in forward list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(2))\n\t\tviewBefore := l.View()\n\t\texecCmd(l, l.PrependItem(NewSelectableItem(\"Testing\\nHello\\n\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 5, l.offset)\n\t\tassert.Equal(t, 33, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should stay at the position it is when the hight of an item above is increased in forward list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(2))\n\t\tviewBefore := l.View()\n\t\titem := items[0]\n\t\texecCmd(l, l.UpdateItem(item.ID(), NewSelectableItem(\"Item 29\\nLine 2\\nLine 3\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 4, l.offset)\n\t\tassert.Equal(t, 32, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should stay at the position it is when the hight of an item above is decreases in forward list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\titems = append(items, NewSelectableItem(\"At top\\nLine 2\\nLine 3\"))\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(3))\n\t\tviewBefore := l.View()\n\t\titem := items[0]\n\t\texecCmd(l, l.UpdateItem(item.ID(), NewSelectableItem(\"At top\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 1, l.offset)\n\t\tassert.Equal(t, 31, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\n\tt.Run(\"should stay at the position it is when the hight of an item below is increased in forward list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(2))\n\t\tviewBefore := l.View()\n\t\titem := items[29]\n\t\texecCmd(l, l.UpdateItem(item.ID(), NewSelectableItem(\"Item 29\\nLine 2\\nLine 3\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 2, l.offset)\n\t\tassert.Equal(t, 32, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n\tt.Run(\"should stay at the position it is if an item is appended and we are in forward list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []Item{}\n\t\tfor i := range 30 {\n\t\t\titem := NewSelectableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := New(items, WithDirectionForward(), WithSize(10, 10)).(*list[Item])\n\t\texecCmd(l, l.Init())\n\n\t\texecCmd(l, l.MoveDown(2))\n\t\tviewBefore := l.View()\n\t\texecCmd(l, l.AppendItem(NewSelectableItem(\"New\")))\n\t\tviewAfter := l.View()\n\t\tassert.Equal(t, viewBefore, viewAfter)\n\t\tassert.Equal(t, 2, l.offset)\n\t\tassert.Equal(t, 31, lipgloss.Height(l.rendered))\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_SelectableItem_568": {
+      "name": "SelectableItem",
+      "type": "interface",
+      "start_line": 568,
+      "end_line": 572,
+      "content_hash": "36c823803ab62acf66878664cd5fc4ca8e4aa25c",
+      "content": "type SelectableItem interface {\n\tItem\n\tcore.Focusable\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_simpleItem_573": {
+      "name": "simpleItem",
+      "type": "struct",
+      "start_line": 573,
+      "end_line": 577,
+      "content_hash": "741240305f6c006d2fb1408d85e3cb9728d6c283",
+      "content": "type simpleItem struct {\n\twidth   int\n\tcontent string\n\tid      string\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_selectableItem_578": {
+      "name": "selectableItem",
+      "type": "struct",
+      "start_line": 578,
+      "end_line": 582,
+      "content_hash": "4124ba274a85e24ab49dbed95bcd6ab2456edfde",
+      "content": "type selectableItem struct {\n\t*simpleItem\n\tfocused bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSimpleItem_583": {
+      "name": "NewSimpleItem",
+      "type": "function",
+      "start_line": 583,
+      "end_line": 590,
+      "content_hash": "2a6ccee16a53c22d2962a6a43edcaf54c8f02631",
+      "content": "func NewSimpleItem(content string) *simpleItem {\n\treturn &simpleItem{\n\t\tid:      uuid.NewString(),\n\t\twidth:   0,\n\t\tcontent: content,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSelectableItem_591": {
+      "name": "NewSelectableItem",
+      "type": "function",
+      "start_line": 591,
+      "end_line": 597,
+      "content_hash": "15842f7e7d62045684212356675803ebae01f607",
+      "content": "func NewSelectableItem(content string) SelectableItem {\n\treturn &selectableItem{\n\t\tsimpleItem: NewSimpleItem(content),\n\t\tfocused:    false,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ID_598": {
+      "name": "ID",
+      "type": "method",
+      "start_line": 598,
+      "end_line": 601,
+      "content_hash": "f8fdae619a408a28771b8f60012e3549e026e107",
+      "content": "func (s *simpleItem) ID() string {\n\treturn s.id\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_602": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 602,
+      "end_line": 605,
+      "content_hash": "6d9f09f45df8579c56de3dfd97d26963eae55418",
+      "content": "func (s *simpleItem) Init() tea.Cmd {\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_606": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 606,
+      "end_line": 609,
+      "content_hash": "eb245d495278bd8328a91c6c1b335bb929998993",
+      "content": "func (s *simpleItem) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\treturn s, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_610": {
+      "name": "View",
+      "type": "method",
+      "start_line": 610,
+      "end_line": 613,
+      "content_hash": "a664f4f740af7f20d4736de9d803ba594de53a84",
+      "content": "func (s *simpleItem) View() string {\n\treturn lipgloss.NewStyle().Width(s.width).Render(s.content)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetSize_614": {
+      "name": "GetSize",
+      "type": "method",
+      "start_line": 614,
+      "end_line": 618,
+      "content_hash": "634ce97e344dcf076e4127f47dd057350395114d",
+      "content": "func (l *simpleItem) GetSize() (int, int) {\n\treturn l.width, 0\n}\n\n// SetSize implements Item.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetSize_619": {
+      "name": "SetSize",
+      "type": "method",
+      "start_line": 619,
+      "end_line": 623,
+      "content_hash": "16aba6cf476884a09a3fcd2b094d7fd6bbebc158",
+      "content": "func (s *simpleItem) SetSize(width int, height int) tea.Cmd {\n\ts.width = width\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_624": {
+      "name": "View",
+      "type": "method",
+      "start_line": 624,
+      "end_line": 631,
+      "content_hash": "f1b1b2fa78dc7343e3d1ba61caff4821a9e23cfc",
+      "content": "func (s *selectableItem) View() string {\n\tif s.focused {\n\t\treturn lipgloss.NewStyle().BorderLeft(true).BorderStyle(lipgloss.NormalBorder()).Width(s.width).Render(s.content)\n\t}\n\treturn lipgloss.NewStyle().Width(s.width).Render(s.content)\n}\n\n// Blur implements SimpleItem.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Blur_632": {
+      "name": "Blur",
+      "type": "method",
+      "start_line": 632,
+      "end_line": 637,
+      "content_hash": "5d40dd01b0aaf80628a370e88beafbcd19363e6d",
+      "content": "func (s *selectableItem) Blur() tea.Cmd {\n\ts.focused = false\n\treturn nil\n}\n\n// Focus implements SimpleItem.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Focus_638": {
+      "name": "Focus",
+      "type": "method",
+      "start_line": 638,
+      "end_line": 643,
+      "content_hash": "d71433cfbc9f3da38c23bb76d385276089bc7e8f",
+      "content": "func (s *selectableItem) Focus() tea.Cmd {\n\ts.focused = true\n\treturn nil\n}\n\n// IsFocused implements SimpleItem.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsFocused_644": {
+      "name": "IsFocused",
+      "type": "method",
+      "start_line": 644,
+      "end_line": 647,
+      "content_hash": "cebcc650a51a8e687c03f1a98ce110360910607e",
+      "content": "func (s *selectableItem) IsFocused() bool {\n\treturn s.focused\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_execCmd_648": {
+      "name": "execCmd",
+      "type": "function",
+      "start_line": 648,
+      "end_line": 653,
+      "content_hash": "0e7edcda99cbb406cc84880628dbed2b4018bfe3",
+      "content": "func execCmd(m util.Model, cmd tea.Cmd) {\n\tfor cmd != nil {\n\t\tmsg := cmd()\n\t\tm, cmd = m.Update(msg)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

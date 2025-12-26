@@ -1,0 +1,227 @@
+{
+  "file_path": "/work/internal/task/manager.go",
+  "file_hash": "8092f9ab1eae190d14df992167d5bff626f50d3a",
+  "updated_at": "2025-12-26T17:34:19.941350",
+  "symbols": {
+    "struct_Task_10": {
+      "name": "Task",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 24,
+      "content_hash": "66c0eda5b2ee8acfc2eb34f5aeb42cb2d204ee6a",
+      "content": "type Task struct {\n\tID          string                 `json:\"id\"`\n\tTitle       string                 `json:\"title\"`\n\tDescription string                 `json:\"description\"`\n\tContext     string                 `json:\"context\"` // Current working context\n\tMilestones  []Milestone            `json:\"milestones\"`\n\tStatus      TaskStatus             `json:\"status\"`\n\tPriority    Priority               `json:\"priority\"`\n\tSessionID   string                 `json:\"session_id\"`\n\tCreated     time.Time              `json:\"created\"`\n\tUpdated     time.Time              `json:\"updated\"`\n\tMetadata    map[string]interface{} `json:\"metadata\"`\n}\n\n// Milestone represents a checkable progress point",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Milestone_25": {
+      "name": "Milestone",
+      "type": "struct",
+      "start_line": 25,
+      "end_line": 52,
+      "content_hash": "7bc55368ec9c9e93bef0149f49afb2e8805a6449",
+      "content": "type Milestone struct {\n\tID          string     `json:\"id\"`\n\tTitle       string     `json:\"title\"`\n\tDescription string     `json:\"description\"`\n\tStatus      TaskStatus `json:\"status\"`\n\tDueTime     time.Time  `json:\"due_time,omitempty\"`\n\tEvidence    string     `json:\"evidence,omitempty\"` // What was done to complete this\n}\n\ntype TaskStatus string\n\nconst (\n\tStatusActive    TaskStatus = \"active\"\n\tStatusBlocked   TaskStatus = \"blocked\"\n\tStatusCompleted TaskStatus = \"completed\"\n\tStatusPaused    TaskStatus = \"paused\"\n\tStatusCancelled TaskStatus = \"cancelled\"\n)\n\ntype Priority string\n\nconst (\n\tPriorityHigh   Priority = \"high\"\n\tPriorityMedium Priority = \"medium\"\n\tPriorityLow    Priority = \"low\"\n)\n\n// Manager tracks active tasks and detects drift",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Manager_53": {
+      "name": "Manager",
+      "type": "struct",
+      "start_line": 53,
+      "end_line": 57,
+      "content_hash": "ea868f645eea79ff15a52be5637a1b2db4496aed",
+      "content": "type Manager struct {\n\tactiveTasks map[string]*Task // sessionID -> Task\n\tdriftRules  []DriftRule\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DriftRule_58": {
+      "name": "DriftRule",
+      "type": "struct",
+      "start_line": 58,
+      "end_line": 65,
+      "content_hash": "afed0a3c234facf73afc223dedbb8e898b3073dd",
+      "content": "type DriftRule struct {\n\tName     string\n\tPattern  string\n\tAction   string\n\tKeywords []string\n}\n\n// NewManager creates a new task manager",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewManager_66": {
+      "name": "NewManager",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 73,
+      "content_hash": "d1b5a2bcf290650eb8d3a4f0ca6c9fcdf561237a",
+      "content": "func NewManager() *Manager {\n\treturn &Manager{\n\t\tactiveTasks: make(map[string]*Task),\n\t\tdriftRules:  defaultDriftRules(),\n\t}\n}\n\n// CreateTask creates a new focused task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateTask_74": {
+      "name": "CreateTask",
+      "type": "method",
+      "start_line": 74,
+      "end_line": 103,
+      "content_hash": "cae3ad3f993c86cc2db3a654ccbcfcb4ce7062cd",
+      "content": "func (m *Manager) CreateTask(sessionID, title, description, context string, milestones []string) *Task {\n\ttask := &Task{\n\t\tID:          fmt.Sprintf(\"task-%d\", time.Now().UnixNano()),\n\t\tTitle:       title,\n\t\tDescription: description,\n\t\tContext:     context,\n\t\tStatus:      StatusActive,\n\t\tPriority:    PriorityHigh,\n\t\tSessionID:   sessionID,\n\t\tCreated:     time.Now(),\n\t\tUpdated:     time.Now(),\n\t\tMilestones:  make([]Milestone, 0),\n\t}\n\n\t// Create milestones from descriptions\n\tfor i, milestoneDesc := range milestones {\n\t\tmilestone := Milestone{\n\t\t\tID:          fmt.Sprintf(\"milestone-%d-%d\", time.Now().UnixNano(), i),\n\t\t\tTitle:       fmt.Sprintf(\"Milestone %d\", i+1),\n\t\t\tDescription: milestoneDesc,\n\t\t\tStatus:      StatusBlocked,\n\t\t}\n\t\ttask.Milestones = append(task.Milestones, milestone)\n\t}\n\n\tm.activeTasks[sessionID] = task\n\treturn task\n}\n\n// GetTask retrieves active task for a session",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetTask_104": {
+      "name": "GetTask",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 109,
+      "content_hash": "8187ff02e551c92f1d1cce6cfebbae4223f2a9a1",
+      "content": "func (m *Manager) GetTask(sessionID string) (*Task, bool) {\n\ttask, exists := m.activeTasks[sessionID]\n\treturn task, exists\n}\n\n// UpdateTaskContext updates the current working context",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_UpdateTaskContext_110": {
+      "name": "UpdateTaskContext",
+      "type": "method",
+      "start_line": 110,
+      "end_line": 117,
+      "content_hash": "23864185feb2c1e74e2426a3518940ae2438e30f",
+      "content": "func (m *Manager) UpdateTaskContext(sessionID, newContext string) {\n\tif task, exists := m.activeTasks[sessionID]; exists {\n\t\ttask.Context = newContext\n\t\ttask.Updated = time.Now()\n\t}\n}\n\n// AnalyzeDrift analyzes AI response for task drift",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AnalyzeDrift_118": {
+      "name": "AnalyzeDrift",
+      "type": "method",
+      "start_line": 118,
+      "end_line": 165,
+      "content_hash": "a12810a62ec8b0a33a3a624cfbead18f9be86c95",
+      "content": "func (m *Manager) AnalyzeDrift(sessionID, aiResponse string) DriftAnalysis {\n\ttask, exists := m.activeTasks[sessionID]\n\tif !exists {\n\t\treturn DriftAnalysis{Drifted: false, Message: \"No active task\"}\n\t}\n\n\tanalysis := DriftAnalysis{\n\t\tDrifted:         false,\n\t\tConfidence:      1.0,\n\t\tRecommendations: make([]string, 0),\n\t\tActionNeeded:    false,\n\t}\n\n\t// Check for task relevance\n\tif !isRelevantToTask(aiResponse, task) {\n\t\tanalysis.Drifted = true\n\t\tanalysis.Confidence = 0.8\n\t\tanalysis.Recommendations = append(analysis.Recommendations,\n\t\t\tfmt.Sprintf(\"Your response doesn't seem to relate to the current task: %s\", task.Title))\n\t}\n\n\t// Check for drift rules\n\tfor _, rule := range m.driftRules {\n\t\tif matchesDriftRule(aiResponse, rule) {\n\t\t\tanalysis.Drifted = true\n\t\t\tanalysis.Recommendations = append(analysis.Recommendations,\n\t\t\t\tfmt.Sprintf(\"Detected potential drift: %s. Please refocus on: %s\", rule.Name, task.Title))\n\t\t\tanalysis.ActionNeeded = true\n\t\t\tbreak\n\t\t}\n\t}\n\n\t// Check milestone completion hints\n\tif suggestsMilestoneCompletion(aiResponse, task) {\n\t\tanalysis.MilestoneProgress = m.checkMilestoneProgress(aiResponse, task)\n\t}\n\n\t// Set appropriate message\n\tif analysis.Drifted {\n\t\tanalysis.Message = \"Drift detected - see recommendations\"\n\t} else {\n\t\tanalysis.Message = \"Response is on track\"\n\t}\n\n\treturn analysis\n}\n\n// GetCorrectionPrompt returns a prompt to steer AI back on track",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCorrectionPrompt_166": {
+      "name": "GetCorrectionPrompt",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 191,
+      "content_hash": "fc6112dc414231ef931fc5a8ca5d042024272de6",
+      "content": "func (m *Manager) GetCorrectionPrompt(sessionID string) string {\n\ttask, exists := m.activeTasks[sessionID]\n\tif !exists {\n\t\treturn \"\"\n\t}\n\n\tprompt := fmt.Sprintf(\"## Task Focus Required\\n\\nYou appear to have drifted from your current task: **%s**\\n\\n\", task.Title)\n\tprompt += fmt.Sprintf(\"**Context:** %s\\n\\n\", task.Context)\n\n\tif len(task.Milestones) > 0 {\n\t\tprompt += \"**Current Milestones:**\\n\"\n\t\tfor _, milestone := range task.Milestones {\n\t\t\tif milestone.Status == StatusActive || milestone.Status == StatusBlocked {\n\t\t\t\tprompt += fmt.Sprintf(\"- %s: %s\\n\", milestone.Title, milestone.Description)\n\t\t\t\tbreak // Show next milestone to focus on\n\t\t\t}\n\t\t}\n\t\tprompt += \"\\n\"\n\t}\n\n\tprompt += \"Please refocus on this task and ignore unrelated requests or distractions.\"\n\n\treturn prompt\n}\n\n// MarkMilestoneProgress updates milestone based on AI work",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MarkMilestoneProgress_192": {
+      "name": "MarkMilestoneProgress",
+      "type": "method",
+      "start_line": 192,
+      "end_line": 205,
+      "content_hash": "9db1ff37f9291af450cf1f0712aea6ef8c629104",
+      "content": "func (m *Manager) MarkMilestoneProgress(sessionID, milestoneID, evidence string) {\n\tif task, exists := m.activeTasks[sessionID]; exists {\n\t\tfor i, milestone := range task.Milestones {\n\t\t\tif milestone.ID == milestoneID {\n\t\t\t\ttask.Milestones[i].Status = StatusCompleted\n\t\t\t\ttask.Milestones[i].Evidence = evidence\n\t\t\t\ttask.Updated = time.Now()\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n}\n\n// CompleteTask marks task as completed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CompleteTask_206": {
+      "name": "CompleteTask",
+      "type": "method",
+      "start_line": 206,
+      "end_line": 213,
+      "content_hash": "357813c9488edaf6d3f3f0d061107ff92393ba51",
+      "content": "func (m *Manager) CompleteTask(sessionID string) {\n\tif task, exists := m.activeTasks[sessionID]; exists {\n\t\ttask.Status = StatusCompleted\n\t\ttask.Updated = time.Now()\n\t}\n}\n\n// CloseTask removes task from active tracking",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CloseTask_214": {
+      "name": "CloseTask",
+      "type": "method",
+      "start_line": 214,
+      "end_line": 217,
+      "content_hash": "5ac01379c649603c45f04639162d396657f821b9",
+      "content": "func (m *Manager) CloseTask(sessionID string) {\n\tdelete(m.activeTasks, sessionID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DriftAnalysis_218": {
+      "name": "DriftAnalysis",
+      "type": "struct",
+      "start_line": 218,
+      "end_line": 226,
+      "content_hash": "e390800aae02109b6c36ada23f79f4359362e45c",
+      "content": "type DriftAnalysis struct {\n\tDrifted           bool                `json:\"drifted\"`\n\tConfidence        float64             `json:\"confidence\"`\n\tRecommendations   []string            `json:\"recommendations\"`\n\tMilestoneProgress []MilestoneProgress `json:\"milestone_progress,omitempty\"`\n\tActionNeeded      bool                `json:\"action_needed\"`\n\tMessage           string              `json:\"message\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MilestoneProgress_227": {
+      "name": "MilestoneProgress",
+      "type": "struct",
+      "start_line": 227,
+      "end_line": 233,
+      "content_hash": "2190cd7421ba9fb989a256a152682fc49b12a6c9",
+      "content": "type MilestoneProgress struct {\n\tMilestoneID string `json:\"milestone_id\"`\n\tCompleted   bool   `json:\"completed\"`\n\tEvidence    string `json:\"evidence\"`\n}\n\n// Helper functions",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isRelevantToTask_234": {
+      "name": "isRelevantToTask",
+      "type": "function",
+      "start_line": 234,
+      "end_line": 254,
+      "content_hash": "79762cd250ffafcf4d1955e667524a9fc4d2c7c5",
+      "content": "func isRelevantToTask(response string, task *Task) bool {\n\tresponse = strings.ToLower(response)\n\ttaskContext := strings.ToLower(task.Context + \" \" + task.Title + \" \" + task.Description)\n\n\t// Simple keyword overlap check\n\tresponseWords := strings.Fields(response)\n\ttaskWords := strings.Fields(taskContext)\n\n\toverlap := 0\n\tfor _, word := range responseWords {\n\t\tfor _, taskWord := range taskWords {\n\t\t\tif strings.Contains(taskWord, word) || strings.Contains(word, taskWord) {\n\t\t\t\toverlap++\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n\n\treturn float64(overlap)/float64(len(responseWords)) > 0.1 // At least 10% word overlap\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_matchesDriftRule_255": {
+      "name": "matchesDriftRule",
+      "type": "function",
+      "start_line": 255,
+      "end_line": 267,
+      "content_hash": "5959dbe871c74e23b54b7aadcd87b05da40ce5a5",
+      "content": "func matchesDriftRule(response string, rule DriftRule) bool {\n\tresponse = strings.ToLower(response)\n\n\t// Check for rule keywords\n\tfor _, keyword := range rule.Keywords {\n\t\tif strings.Contains(response, strings.ToLower(keyword)) {\n\t\t\treturn true\n\t\t}\n\t}\n\n\treturn false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_suggestsMilestoneCompletion_268": {
+      "name": "suggestsMilestoneCompletion",
+      "type": "function",
+      "start_line": 268,
+      "end_line": 279,
+      "content_hash": "9c6d52460936b9d3fe0c28b16a1b836242b00953",
+      "content": "func suggestsMilestoneCompletion(response string, task *Task) bool {\n\tcompletionWords := []string{\"done\", \"completed\", \"finished\", \"implemented\", \"fixed\", \"added\", \"updated\"}\n\tresponse = strings.ToLower(response)\n\n\tfor _, word := range completionWords {\n\t\tif strings.Contains(response, word) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_checkMilestoneProgress_280": {
+      "name": "checkMilestoneProgress",
+      "type": "method",
+      "start_line": 280,
+      "end_line": 298,
+      "content_hash": "129ee0fffa1198e4fc32cf73a9a892b3d47a4e08",
+      "content": "func (m *Manager) checkMilestoneProgress(response string, task *Task) []MilestoneProgress {\n\tvar progress []MilestoneProgress\n\n\tfor _, milestone := range task.Milestones {\n\t\tif milestone.Status == StatusActive || milestone.Status == StatusBlocked {\n\t\t\tif strings.Contains(strings.ToLower(response), strings.ToLower(milestone.Title)) ||\n\t\t\t\tstrings.Contains(strings.ToLower(response), strings.ToLower(milestone.Description)) {\n\t\t\t\tprogress = append(progress, MilestoneProgress{\n\t\t\t\t\tMilestoneID: milestone.ID,\n\t\t\t\t\tCompleted:   true,\n\t\t\t\t\tEvidence:    response,\n\t\t\t\t})\n\t\t\t}\n\t\t}\n\t}\n\n\treturn progress\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_defaultDriftRules_299": {
+      "name": "defaultDriftRules",
+      "type": "function",
+      "start_line": 299,
+      "end_line": 320,
+      "content_hash": "ed52b9b9e6d6f67c6107ff2cc6628108632fff93",
+      "content": "func defaultDriftRules() []DriftRule {\n\treturn []DriftRule{\n\t\t{\n\t\t\tName:     \"Unrelated Topic\",\n\t\t\tPattern:  \".*\",\n\t\t\tAction:   \"refocus\",\n\t\t\tKeywords: []string{\"weather\", \"news\", \"sports\", \"celebrities\", \"politics\", \"random\", \"fun fact\"},\n\t\t},\n\t\t{\n\t\t\tName:     \"Technical Distraction\",\n\t\t\tPattern:  \".*\",\n\t\t\tAction:   \"refocus\",\n\t\t\tKeywords: []string{\"latest iPhone\", \"new framework\", \"another database\", \"different approach\", \"alternative solution\"},\n\t\t},\n\t\t{\n\t\t\tName:     \"Scope Creep\",\n\t\t\tPattern:  \".*\",\n\t\t\tAction:   \"refocus\",\n\t\t\tKeywords: []string{\"also\", \"additionally\", \"could also\", \"might want to\", \"while we're at it\"},\n\t\t},\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

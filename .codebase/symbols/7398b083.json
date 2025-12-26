@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/tests/capacity_optimization_tests.rs",
+  "file_hash": "1039c4b9392ae875fda9dd1c5b0e7b9cf2f7b0a4",
+  "updated_at": "2025-12-26T17:34:21.554090",
+  "symbols": {
+    "function_setup_test_db_32": {
+      "name": "setup_test_db",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 42,
+      "content_hash": "6443f0161004053c5d42cc30eeaae22146a39d40",
+      "content": "fn setup_test_db() -> (Arc<HelixGraphStorage>, TempDir) {\n    let temp_dir = TempDir::new().unwrap();\n    let db_path = temp_dir.path().to_str().unwrap();\n\n    let mut config = Config::default();\n    config.bm25 = Some(true);\n\n    let storage = HelixGraphStorage::new(db_path, config, Default::default()).unwrap();\n    (Arc::new(storage), temp_dir)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setup_test_db_with_nodes_43": {
+      "name": "setup_test_db_with_nodes",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 72,
+      "content_hash": "5ff5d987235b59e4b9a2aeac9d253e6f8e78f07a",
+      "content": "fn setup_test_db_with_nodes(count: usize) -> (Arc<HelixGraphStorage>, TempDir) {\n    let (storage, temp_dir) = setup_test_db();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    let arena = Bump::new();\n\n    // Create nodes with properties for testing aggregate/group operations\n    for i in 0..count {\n        let props_vec = props! {\n            \"name\" => format!(\"User{}\", i),\n            \"age\" => (20 + (i % 50)) as i64,\n            \"department\" => format!(\"Dept{}\", i % 5),\n            \"score\" => (i % 100) as i64,\n        };\n        let props_map = ImmutablePropertiesMap::new(\n            props_vec.len(),\n            props_vec\n                .iter()\n                .map(|(k, v): &(String, Value)| (arena.alloc_str(k) as &str, v.clone())),\n            &arena,\n        );\n        let _ = G::new_mut(&storage, &arena, &mut txn)\n            .add_n(arena.alloc_str(\"User\"), Some(props_map), None)\n            .collect_to_obj();\n    }\n\n    txn.commit().unwrap();\n    (storage, temp_dir)\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_aggregate_correctness_small_73": {
+      "name": "test_aggregate_correctness_small",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 96,
+      "content_hash": "aa354247819c85087823f285156e3d777ece1020",
+      "content": "fn test_aggregate_correctness_small() {\n    let (storage, _temp_dir) = setup_test_db_with_nodes(10);\n    let txn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n\n    let properties = vec![\"department\".to_string()];\n\n    let result = G::new(&storage, &txn, &arena)\n        .n_from_type(\"User\")\n        .aggregate_by(&properties, false);\n\n    assert!(result.is_ok(), \"Aggregate should succeed\");\n    let aggregate = result.unwrap();\n\n    // Should have 5 departments (Dept0-Dept4)\n    match aggregate {\n        crate::utils::aggregate::Aggregate::Group(groups) => {\n            assert_eq!(groups.len(), 5, \"Should have 5 distinct departments\");\n        }\n        _ => panic!(\"Expected Group aggregate\"),\n    }\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_aggregate_correctness_large_97": {
+      "name": "test_aggregate_correctness_large",
+      "type": "function",
+      "start_line": 97,
+      "end_line": 112,
+      "content_hash": "608d3b3261b4e5eaa8fc26cc682786ca371d4349",
+      "content": "fn test_aggregate_correctness_large() {\n    // Test with larger dataset to stress-test capacity allocation\n    let (storage, _temp_dir) = setup_test_db_with_nodes(1000);\n    let txn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n\n    let properties = vec![\"department\".to_string(), \"age\".to_string()];\n\n    let result = G::new(&storage, &txn, &arena)\n        .n_from_type(\"User\")\n        .aggregate_by(&properties, true);\n\n    assert!(result.is_ok(), \"Aggregate with 1000 nodes should succeed\");\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_group_by_correctness_113": {
+      "name": "test_group_by_correctness",
+      "type": "function",
+      "start_line": 113,
+      "end_line": 127,
+      "content_hash": "056b85aefeb191fc69d3fa82a0e34579bba84b25",
+      "content": "fn test_group_by_correctness() {\n    let (storage, _temp_dir) = setup_test_db_with_nodes(100);\n    let txn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n\n    let properties = vec![\"department\".to_string()];\n\n    let result = G::new(&storage, &txn, &arena)\n        .n_from_type(\"User\")\n        .group_by(&properties, false);\n\n    assert!(result.is_ok(), \"GroupBy should succeed\");\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_update_operation_correctness_128": {
+      "name": "test_update_operation_correctness",
+      "type": "function",
+      "start_line": 128,
+      "end_line": 154,
+      "content_hash": "13f45948dc482a744a784bf819f4738ec2d7a703",
+      "content": "fn test_update_operation_correctness() {\n    let (storage, _temp_dir) = setup_test_db_with_nodes(50);\n    let read_arena = Bump::new();\n\n    // Update all users' scores\n    // First get the nodes to update\n    let update_tr = {\n        let rtxn = storage.graph_env.read_txn().unwrap();\n        G::new(&storage, &rtxn, &read_arena)\n            .n_from_type(\"User\")\n            .collect::<Result<Vec<_>, _>>()\n            .unwrap()\n    };\n\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    let result = G::new_mut_from_iter(&storage, &mut txn, update_tr.into_iter(), &arena)\n        .update(&[(\"score\", 999.into())])\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(result.len(), 50, \"Should update all 50 nodes\");\n\n    txn.commit().unwrap();\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_bm25_search_correctness_155": {
+      "name": "test_bm25_search_correctness",
+      "type": "function",
+      "start_line": 155,
+      "end_line": 186,
+      "content_hash": "095f2ec7d61c8612e1bfb7a7028ecf11b86367d0",
+      "content": "fn test_bm25_search_correctness() {\n    let (storage, _temp_dir) = setup_test_db();\n    let mut wtxn = storage.graph_env.write_txn().unwrap();\n\n    let bm25 = storage.bm25.as_ref().expect(\"BM25 should be enabled\");\n\n    // Insert test documents\n    let docs = vec![\n        (v6_uuid(), \"The quick brown fox jumps over the lazy dog\"),\n        (v6_uuid(), \"A fast brown fox leaps over a sleepy dog\"),\n        (v6_uuid(), \"The lazy dog sleeps under the tree\"),\n        (v6_uuid(), \"Quick foxes and lazy dogs are common\"),\n    ];\n\n    for (id, doc) in &docs {\n        bm25.insert_doc(&mut wtxn, *id, doc).unwrap();\n    }\n\n    wtxn.commit().unwrap();\n\n    // Search\n    let rtxn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n    let results = bm25.search(&rtxn, \"quick fox\", 10, &arena);\n\n    assert!(results.is_ok(), \"BM25 search should succeed\");\n    let results = results.unwrap();\n    assert!(!results.is_empty(), \"Should find matching documents\");\n    assert!(results.len() <= 10, \"Should respect limit\");\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_bm25_search_with_large_limit_187": {
+      "name": "test_bm25_search_with_large_limit",
+      "type": "function",
+      "start_line": 187,
+      "end_line": 213,
+      "content_hash": "e22ac2fd7d45123393e64a0f41825e17e9a7906e",
+      "content": "fn test_bm25_search_with_large_limit() {\n    let (storage, _temp_dir) = setup_test_db();\n    let mut wtxn = storage.graph_env.write_txn().unwrap();\n\n    let bm25 = storage.bm25.as_ref().expect(\"BM25 should be enabled\");\n\n    // Insert 100 documents\n    for i in 0..100 {\n        let doc = format!(\"Document {} contains search terms and keywords\", i);\n        bm25.insert_doc(&mut wtxn, v6_uuid(), &doc).unwrap();\n    }\n\n    wtxn.commit().unwrap();\n\n    // Search with large limit\n    let rtxn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n    let results = bm25.search(&rtxn, \"document search\", 1000, &arena);\n\n    assert!(\n        results.is_ok(),\n        \"BM25 search with large limit should succeed\"\n    );\n}\n\n/// Test that demonstrates capacity optimization doesn't break edge cases\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_empty_result_sets_214": {
+      "name": "test_empty_result_sets",
+      "type": "function",
+      "start_line": 214,
+      "end_line": 229,
+      "content_hash": "16cfc261f35ca2c9bf0fee896cccbd046d817012",
+      "content": "fn test_empty_result_sets() {\n    let (storage, _temp_dir) = setup_test_db();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n\n    // Test aggregate on empty set\n    let properties = vec![\"nonexistent\".to_string()];\n    let result = G::new(&storage, &txn, &arena)\n        .n_from_type(\"NonExistentType\")\n        .aggregate_by(&properties, false);\n\n    assert!(result.is_ok(), \"Aggregate on empty set should succeed\");\n}\n\n/// Test with properties of varying lengths\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_aggregate_varying_property_counts_230": {
+      "name": "test_aggregate_varying_property_counts",
+      "type": "function",
+      "start_line": 230,
+      "end_line": 262,
+      "content_hash": "0b978c36170e3f6770931ca04f88b0e49737d622",
+      "content": "fn test_aggregate_varying_property_counts() {\n    let (storage, _temp_dir) = setup_test_db_with_nodes(100);\n    let txn = storage.graph_env.read_txn().unwrap();\n    let arena = Bump::new();\n\n    // Test with 1 property\n    let props1 = vec![\"department\".to_string()];\n    let result = G::new(&storage, &txn, &arena)\n        .n_from_type(\"User\")\n        .aggregate_by(&props1, false);\n    assert!(result.is_ok(), \"Aggregate with 1 property should work\");\n\n    // Test with 3 properties\n    let props3 = vec![\n        \"department\".to_string(),\n        \"age\".to_string(),\n        \"score\".to_string(),\n    ];\n    let result = G::new(&storage, &txn, &arena)\n        .n_from_type(\"User\")\n        .aggregate_by(&props3, false);\n    assert!(result.is_ok(), \"Aggregate with 3 properties should work\");\n}\n\n#[cfg(test)]\nmod performance_tests {\n    use super::*;\n    use std::time::Instant;\n\n    /// This test measures relative performance\n    /// Run with: cargo test test_aggregate_performance -- --nocapture --ignored\n    #[test]\n    #[ignore] // Ignore by default, run explicitly for performance testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_aggregate_performance_263": {
+      "name": "test_aggregate_performance",
+      "type": "function",
+      "start_line": 263,
+      "end_line": 289,
+      "content_hash": "b873cbb1354ad4f3db542425333df1955fc1b1af",
+      "content": "    fn test_aggregate_performance() {\n        let sizes = vec![100, 1000, 10000];\n\n        for size in sizes {\n            let (storage, _temp_dir) = setup_test_db_with_nodes(size);\n            let txn = storage.graph_env.read_txn().unwrap();\n            let arena = Bump::new();\n\n            let properties = vec![\n                \"department\".to_string(),\n                \"age\".to_string(),\n                \"score\".to_string(),\n            ];\n\n            let start = Instant::now();\n            let result = G::new(&storage, &txn, &arena)\n                .n_from_type(\"User\")\n                .aggregate_by(&properties, false);\n            let elapsed = start.elapsed();\n\n            assert!(result.is_ok(), \"Aggregate should succeed\");\n            println!(\"Aggregate {} nodes with 3 properties: {:?}\", size, elapsed);\n        }\n    }\n\n    #[test]\n    #[ignore]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_update_performance_290": {
+      "name": "test_update_performance",
+      "type": "function",
+      "start_line": 290,
+      "end_line": 323,
+      "content_hash": "9170a4773c905332f2b8c78181bdf4c7ceb0f8db",
+      "content": "    fn test_update_performance() {\n        let sizes = vec![10, 100, 1000];\n\n        for size in sizes {\n            let (storage, _temp_dir) = setup_test_db_with_nodes(size);\n            let read_arena = Bump::new();\n\n            // Get nodes to update\n            let update_tr = {\n                let rtxn = storage.graph_env.read_txn().unwrap();\n                G::new(&storage, &rtxn, &read_arena)\n                    .n_from_type(\"User\")\n                    .collect::<Result<Vec<_>, _>>()\n                    .unwrap()\n            };\n\n            let arena = Bump::new();\n            let mut txn = storage.graph_env.write_txn().unwrap();\n            let start = Instant::now();\n            let result = G::new_mut_from_iter(&storage, &mut txn, update_tr.into_iter(), &arena)\n                .update(&[(\"score\", 999.into())])\n                .collect::<Result<Vec<_>, _>>()\n                .unwrap();\n            let elapsed = start.elapsed();\n\n            assert_eq!(result.len(), size, \"Update should succeed\");\n            println!(\"Update {} nodes: {:?}\", size, elapsed);\n\n            txn.commit().unwrap();\n        }\n    }\n\n    #[test]\n    #[ignore]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_bm25_search_performance_324": {
+      "name": "test_bm25_search_performance",
+      "type": "function",
+      "start_line": 324,
+      "end_line": 354,
+      "content_hash": "99bc36728be32f66e8dc8dfcb94b57f630149274",
+      "content": "    fn test_bm25_search_performance() {\n        let (storage, _temp_dir) = setup_test_db();\n        let mut wtxn = storage.graph_env.write_txn().unwrap();\n\n        let bm25 = storage.bm25.as_ref().expect(\"BM25 should be enabled\");\n\n        // Insert 10,000 documents\n        for i in 0..10000 {\n            let doc = format!(\n                \"Document {} contains various search terms and keywords for testing performance\",\n                i\n            );\n            bm25.insert_doc(&mut wtxn, v6_uuid(), &doc).unwrap();\n        }\n\n        wtxn.commit().unwrap();\n\n        let rtxn = storage.graph_env.read_txn().unwrap();\n\n        let limits = vec![10, 100, 1000];\n        for limit in limits {\n            let arena = Bump::new();\n            let start = Instant::now();\n            let results = bm25.search(&rtxn, \"document search performance\", limit, &arena);\n            let elapsed = start.elapsed();\n\n            assert!(results.is_ok(), \"BM25 search should succeed\");\n            println!(\"BM25 search (limit={}): {:?}\", limit, elapsed);\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/.local/tools/modelscan/providers/utils_test.go",
+  "file_hash": "31a71a20be0e76049ac02281d4a3b076ea057ed3",
+  "updated_at": "2025-12-26T17:34:23.869830",
+  "symbols": {
+    "function_TestContainsSubstring_5": {
+      "name": "TestContainsSubstring",
+      "type": "function",
+      "start_line": 5,
+      "end_line": 28,
+      "content_hash": "238286897e05016119f2be60a5bc821e3a2caa9d",
+      "content": "func TestContainsSubstring(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\ts        string\n\t\tsubstr   string\n\t\texpected bool\n\t}{\n\t\t{\"found\", \"hello world\", \"world\", true},\n\t\t{\"not found\", \"hello world\", \"xyz\", false},\n\t\t{\"empty substr\", \"hello\", \"\", true},\n\t\t{\"empty string\", \"\", \"test\", false},\n\t\t{\"case sensitive\", \"Hello\", \"hello\", false},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := containsSubstring(tt.s, tt.substr)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"containsSubstring(%q, %q) = %v, want %v\", tt.s, tt.substr, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestContainsAny_29": {
+      "name": "TestContainsAny",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 52,
+      "content_hash": "eff47c47cc9d2ef279d70803e449869fc4d88f33",
+      "content": "func TestContainsAny(t *testing.T) {\n\ttests := []struct {\n\t\tname       string\n\t\ts          string\n\t\tsubstrings []string\n\t\texpected   bool\n\t}{\n\t\t{\"found first\", \"hello world\", []string{\"hello\", \"xyz\"}, true},\n\t\t{\"found second\", \"hello world\", []string{\"xyz\", \"world\"}, true},\n\t\t{\"not found\", \"hello world\", []string{\"xyz\", \"abc\"}, false},\n\t\t{\"empty slice\", \"hello\", []string{}, false},\n\t\t{\"empty string\", \"\", []string{\"test\"}, false},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := containsAny(tt.s, tt.substrings)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"containsAny(%q, %v) = %v, want %v\", tt.s, tt.substrings, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHasPrefix_53": {
+      "name": "TestHasPrefix",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 76,
+      "content_hash": "6d25909adf80702b3401b628d8719d11a4a4f77e",
+      "content": "func TestHasPrefix(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\ts        string\n\t\tprefixes []string\n\t\texpected bool\n\t}{\n\t\t{\"found first\", \"hello world\", []string{\"hello\", \"xyz\"}, true},\n\t\t{\"found second\", \"hello world\", []string{\"xyz\", \"hello\"}, true},\n\t\t{\"not found\", \"hello world\", []string{\"xyz\", \"abc\"}, false},\n\t\t{\"empty slice\", \"hello\", []string{}, false},\n\t\t{\"empty string\", \"\", []string{\"test\"}, false},\n\t\t{\"exact match\", \"test\", []string{\"test\"}, true},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := hasPrefix(tt.s, tt.prefixes)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"hasPrefix(%q, %v) = %v, want %v\", tt.s, tt.prefixes, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -43,14 +43,34 @@ func setupAgent(t *testing.T, pair modelPair) (SessionAgent, fakeEnv) {
 	return agent, env
 }
 
+func hasAPIKey(provider string) bool {
+	keys := map[string]string{
+		"anthropic":   os.Getenv("NEXORA_ANTHROPIC_API_KEY"),
+		"openai":      os.Getenv("NEXORA_OPENAI_API_KEY"),
+		"openrouter":   os.Getenv("NEXORA_OPENROUTER_API_KEY"),
+		"zai":         os.Getenv("NEXORA_ZAI_API_KEY"),
+	}
+	return keys[provider] != ""
+}
+
 func TestCoderAgent(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows for now")
 	}
-	t.Skip("Agent tests require VCR re-recording with valid API keys")
+
+	// Check if at least one provider has API keys
+	hasAnyKey := hasAPIKey("anthropic") || hasAPIKey("openai") || hasAPIKey("openrouter") || hasAPIKey("zai")
+	if !hasAnyKey {
+		t.Skip("Agent tests skipped - no API keys set (set NEXORA_ANTHROPIC_API_KEY, NEXORA_OPENAI_API_KEY, etc.)")
+	}
 
 	for _, pair := range modelPairs {
 		t.Run(pair.name, func(t *testing.T) {
+			// Skip known VCR failing providers
+			if pair.name == "openai-gpt-5" || pair.name == "zai-glm4.6" {
+				t.Skip("Skipping known VCR failing provider - see NEXORA.md for details")
+			}
+			
 			t.Run("simple test", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
 

@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/context-engine/deploy/kubernetes/deploy.sh",
+  "file_hash": "26be4d04470d872a70dbb0277038826a93b17072",
+  "updated_at": "2025-12-26T17:34:22.465909",
+  "symbols": {
+    "function_log_info_22": {
+      "name": "log_info",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 22,
+      "content_hash": "a91415c6f1c45396f7cb73d6960b026a8b0e4b22",
+      "content": "log_info() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_success_26": {
+      "name": "log_success",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 26,
+      "content_hash": "653f8b34a1b865506f885ffc5371f597ad0e65ad",
+      "content": "log_success() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_warning_30": {
+      "name": "log_warning",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 30,
+      "content_hash": "d60a2f5d9d10baec6b9d4fdaae64685473b5f9be",
+      "content": "log_warning() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_error_34": {
+      "name": "log_error",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 34,
+      "content_hash": "1e38ccbd2de2f3a10a4dc47dda61b7ff8a54a495",
+      "content": "log_error() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_kubectl_39": {
+      "name": "check_kubectl",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 39,
+      "content_hash": "a958e2b1dfe02ae915f0127b4f74192f92a80532",
+      "content": "check_kubectl() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_namespace_54": {
+      "name": "create_namespace",
+      "type": "function",
+      "start_line": 54,
+      "end_line": 54,
+      "content_hash": "52253828ac6e4caa724ec5e82c04d082dedad3b6",
+      "content": "create_namespace() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_config_61": {
+      "name": "deploy_config",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 61,
+      "content_hash": "4ff7b9a83a09a191077f1ec5501f84f8819815b3",
+      "content": "deploy_config() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_core_68": {
+      "name": "deploy_core",
+      "type": "function",
+      "start_line": 68,
+      "end_line": 68,
+      "content_hash": "b86b5c44c9eab91fe48d4b6fbd0353d540ccda26",
+      "content": "deploy_core() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_mcp_servers_83": {
+      "name": "deploy_mcp_servers",
+      "type": "function",
+      "start_line": 83,
+      "end_line": 83,
+      "content_hash": "ef4ad0701981f9aebb49d666eb4d95034b7c2bb2",
+      "content": "deploy_mcp_servers() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_http_servers_99": {
+      "name": "deploy_http_servers",
+      "type": "function",
+      "start_line": 99,
+      "end_line": 99,
+      "content_hash": "c2f23273427cf9203de0cbcf09e950b9df64c718",
+      "content": "deploy_http_servers() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_indexer_services_111": {
+      "name": "deploy_indexer_services",
+      "type": "function",
+      "start_line": 111,
+      "end_line": 111,
+      "content_hash": "0789d8f11b2d82b32a4aee89c14eb5d7d0a6b996",
+      "content": "deploy_indexer_services() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_llamacpp_119": {
+      "name": "deploy_llamacpp",
+      "type": "function",
+      "start_line": 119,
+      "end_line": 119,
+      "content_hash": "59d432b37c3db41f1e617c0bb0924be27f9e8cc2",
+      "content": "deploy_llamacpp() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deploy_ingress_130": {
+      "name": "deploy_ingress",
+      "type": "function",
+      "start_line": 130,
+      "end_line": 130,
+      "content_hash": "70debbe54d2108d601069bf5554615c5920fac19",
+      "content": "deploy_ingress() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_show_status_141": {
+      "name": "show_status",
+      "type": "function",
+      "start_line": 141,
+      "end_line": 141,
+      "content_hash": "8652684eb3bd66e6ef168f10cec5e1c1d45b399f",
+      "content": "show_status() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_set_images_170": {
+      "name": "set_images",
+      "type": "function",
+      "start_line": 170,
+      "end_line": 170,
+      "content_hash": "1920bb7e04bc760ac37f0c3e23c137e7b602e32a",
+      "content": "set_images() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_apply_with_kustomize_185": {
+      "name": "apply_with_kustomize",
+      "type": "function",
+      "start_line": 185,
+      "end_line": 185,
+      "content_hash": "c462ca1bb6b5aa14f93b5b976be1fce46a20e9d4",
+      "content": "apply_with_kustomize() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_241": {
+      "name": "main",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 241,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_show_help_268": {
+      "name": "show_help",
+      "type": "function",
+      "start_line": 268,
+      "end_line": 268,
+      "content_hash": "aaaec5a23269a038245fc518a0c137f4257cdf56",
+      "content": "show_help() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

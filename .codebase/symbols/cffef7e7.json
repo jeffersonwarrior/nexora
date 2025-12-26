@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/reranker/fusion/score_normalizer.rs",
+  "file_hash": "07bb94f38fb1e9245620642acf601212077a8a33",
+  "updated_at": "2025-12-26T17:34:23.614343",
+  "symbols": {
+    "enum_NormalizationMethod_10": {
+      "name": "NormalizationMethod",
+      "type": "enum",
+      "start_line": 10,
+      "end_line": 27,
+      "content_hash": "3119a28cc1be4c83dfc83135fe870f004a467702",
+      "content": "pub enum NormalizationMethod {\n    /// Min-Max normalization: (x - min) / (max - min)\n    MinMax,\n    /// Z-score normalization: (x - mean) / stddev\n    ZScore,\n    /// No normalization\n    None,\n}\n\n/// Normalize a list of scores using the specified method.\n///\n/// # Arguments\n/// * `scores` - Slice of scores to normalize\n/// * `method` - Normalization method to use\n///\n/// # Returns\n/// A vector of normalized scores in the range [0, 1] for MinMax,\n/// or z-scores for ZScore method.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_normalize_scores_28": {
+      "name": "normalize_scores",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 40,
+      "content_hash": "371ac09577eb4ea695ebbef377588928c958efa8",
+      "content": "pub fn normalize_scores(scores: &[f64], method: NormalizationMethod) -> RerankerResult<Vec<f64>> {\n    if scores.is_empty() {\n        return Err(RerankerError::EmptyInput);\n    }\n\n    match method {\n        NormalizationMethod::MinMax => normalize_minmax(scores),\n        NormalizationMethod::ZScore => normalize_zscore(scores),\n        NormalizationMethod::None => Ok(scores.to_vec()),\n    }\n}\n\n/// Min-Max normalization: scales scores to [0, 1] range.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_normalize_minmax_41": {
+      "name": "normalize_minmax",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 62,
+      "content_hash": "6996562b27b93bdb0ca83f571d675f2053c6e1ca",
+      "content": "fn normalize_minmax(scores: &[f64]) -> RerankerResult<Vec<f64>> {\n    let min = scores\n        .iter()\n        .fold(f64::INFINITY, |a, &b| a.min(b));\n    let max = scores\n        .iter()\n        .fold(f64::NEG_INFINITY, |a, &b| a.max(b));\n\n    let range = max - min;\n\n    if range == 0.0 {\n        // All scores are the same, return all 0.5\n        return Ok(vec![0.5; scores.len()]);\n    }\n\n    Ok(scores\n        .iter()\n        .map(|&score| (score - min) / range)\n        .collect())\n}\n\n/// Z-score normalization: centers scores around mean with unit variance.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_normalize_zscore_63": {
+      "name": "normalize_zscore",
+      "type": "function",
+      "start_line": 63,
+      "end_line": 90,
+      "content_hash": "186df5f50bd77820d573b95bc00efd0f4d4bb427",
+      "content": "fn normalize_zscore(scores: &[f64]) -> RerankerResult<Vec<f64>> {\n    let n = scores.len() as f64;\n    let mean = scores.iter().sum::<f64>() / n;\n\n    let variance = scores\n        .iter()\n        .map(|&score| (score - mean).powi(2))\n        .sum::<f64>()\n        / n;\n\n    let stddev = variance.sqrt();\n\n    if stddev == 0.0 {\n        // All scores are the same, return all zeros\n        return Ok(vec![0.0; scores.len()]);\n    }\n\n    Ok(scores\n        .iter()\n        .map(|&score| (score - mean) / stddev)\n        .collect())\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_minmax_normalization_91": {
+      "name": "test_minmax_normalization",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 100,
+      "content_hash": "8f23a2106b241ad87986ad8f8798c6fcb47e074e",
+      "content": "    fn test_minmax_normalization() {\n        let scores = vec![1.0, 2.0, 3.0, 4.0, 5.0];\n        let normalized = normalize_scores(&scores, NormalizationMethod::MinMax).unwrap();\n\n        assert_eq!(normalized[0], 0.0);\n        assert_eq!(normalized[4], 1.0);\n        assert!((normalized[2] - 0.5).abs() < 1e-10);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_minmax_same_scores_101": {
+      "name": "test_minmax_same_scores",
+      "type": "function",
+      "start_line": 101,
+      "end_line": 108,
+      "content_hash": "7384cb46da15a79d73612d7b2d1ed19d68225f33",
+      "content": "    fn test_minmax_same_scores() {\n        let scores = vec![5.0, 5.0, 5.0];\n        let normalized = normalize_scores(&scores, NormalizationMethod::MinMax).unwrap();\n\n        assert!(normalized.iter().all(|&x| x == 0.5));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_zscore_normalization_109": {
+      "name": "test_zscore_normalization",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 118,
+      "content_hash": "83d9eb1ae0d2646d9e9b00e1e324fd38a981fead",
+      "content": "    fn test_zscore_normalization() {\n        let scores = vec![1.0, 2.0, 3.0, 4.0, 5.0];\n        let normalized = normalize_scores(&scores, NormalizationMethod::ZScore).unwrap();\n\n        // Mean should be close to 0\n        let mean: f64 = normalized.iter().sum::<f64>() / normalized.len() as f64;\n        assert!(mean.abs() < 1e-10);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_empty_scores_119": {
+      "name": "test_empty_scores",
+      "type": "function",
+      "start_line": 119,
+      "end_line": 125,
+      "content_hash": "4f8973f3c630c43e8fea357db25f7e80111f2483",
+      "content": "    fn test_empty_scores() {\n        let scores: Vec<f64> = vec![];\n        let result = normalize_scores(&scores, NormalizationMethod::MinMax);\n\n        assert!(result.is_err());\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

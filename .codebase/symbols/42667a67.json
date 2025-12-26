@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/qa/local_models_test.go",
+  "file_hash": "85b087d2089dd4dd8d361576d3695966405daa02",
+  "updated_at": "2025-12-26T17:34:21.021304",
+  "symbols": {
+    "function_TestLocalModelsFullFlow_15": {
+      "name": "TestLocalModelsFullFlow",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 140,
+      "content_hash": "b0561f93a43c6757a889033edecf68bf0159be6c",
+      "content": "func TestLocalModelsFullFlow(t *testing.T) {\n\t// Test 1: Ollama detection + model list + context window\n\tt.Run(\"OllamaFullFlow\", func(t *testing.T) {\n\t\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tswitch r.URL.Path {\n\t\t\tcase \"/api/tags\":\n\t\t\t\tw.Write([]byte(`{\"models\":[{\"name\":\"llama3.1:70b\",\"size\":43762291200,\"digest\":\"sha256:abc\"}]}`))\n\t\t\tcase \"/api/generate\":\n\t\t\t\tw.Write([]byte(`{\"model\":\"llama3.1:70b\",\"context_window\":131072}`))\n\t\t\tdefault:\n\t\t\t\thttp.Error(w, \"Not Found\", http.StatusNotFound)\n\t\t\t}\n\t\t}))\n\t\tdefer server.Close()\n\n\t\tdetector := providers.NewLocalDetector(server.URL)\n\t\tprovider, err := detector.Detect(\"ollama\", \"\")\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif provider.Type != \"local\" || provider.Endpoint != server.URL {\n\t\t\tt.Errorf(\"Expected local provider, got %v\", provider)\n\t\t}\n\t\tif len(provider.Models) == 0 {\n\t\t\tt.Fatal(\"No models detection failed\")\n\t\t}\n\t\tif provider.Models[0].Matched != \"llama-3.1-70b-instruct\" {\n\t\t\tt.Error(\"Model matching failed\")\n\t\t}\n\t})\n\n\t// Test 2: vLLM/OpenAI-compatible detection\n\tt.Run(\"VLLMOpenAICompatible\", func(t *testing.T) {\n\t\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tif r.URL.Path == \"/v1/models\" {\n\t\t\t\tw.Write([]byte(`{\"data\":[{\"id\":\"meta-llama/Llama-3.1-70B-Instruct\",\"context_window\":131072}]}`))\n\t\t\t} else {\n\t\t\t\thttp.Error(w, \"Not Found\", http.StatusNotFound)\n\t\t\t}\n\t\t}))\n\t\tdefer server.Close()\n\n\t\tdetector := providers.NewLocalDetector(server.URL)\n\t\tprovider, err := detector.Detect(\"openai\", \"\")\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif provider.Models[0].ID != \"meta-llama/Llama-3.1-70B-Instruct\" {\n\t\t\tt.Error(\"vLLM model detection failed\")\n\t\t}\n\t\tif provider.Models[0].Context != 131072 {\n\t\t\tt.Errorf(\"Expected context 131072, got %d\", provider.Models[0].Context)\n\t\t}\n\t})\n\n\t// Test 2b: vLLM with max_model_len field\n\tt.Run(\"VLLMMaxModelLen\", func(t *testing.T) {\n\t\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tif r.URL.Path == \"/v1/models\" {\n\t\t\t\t// vLLM returns max_model_len instead of context_window\n\t\t\t\tw.Write([]byte(`{\"data\":[{\"id\":\"Qwen/Qwen2.5-72B-Instruct\",\"max_model_len\":131072,\"owned_by\":\"vllm\"}]}`))\n\t\t\t} else {\n\t\t\t\thttp.Error(w, \"Not Found\", http.StatusNotFound)\n\t\t\t}\n\t\t}))\n\t\tdefer server.Close()\n\n\t\tdetector := providers.NewLocalDetector(server.URL)\n\t\tprovider, err := detector.Detect(\"openai\", \"\")\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif provider.Models[0].ID != \"Qwen/Qwen2.5-72B-Instruct\" {\n\t\t\tt.Error(\"vLLM model detection failed\")\n\t\t}\n\t\t// This should now correctly detect 128k context\n\t\tif provider.Models[0].Context != 131072 {\n\t\t\tt.Errorf(\"Expected context 131072 from max_model_len, got %d\", provider.Models[0].Context)\n\t\t}\n\t})\n\n\t// Test 3: API Key required (401 \u2192 key prompt simulation)\n\tt.Run(\"APIKeyRequired\", func(t *testing.T) {\n\t\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tw.WriteHeader(401)\n\t\t}))\n\t\tdefer server.Close()\n\n\t\tdetector := providers.NewLocalDetector(server.URL)\n\t\tprovider, err := detector.Detect(\"openai\", \"test-key-123\")\n\t\tif err == nil {\n\t\t\tt.Error(\"Expected auth error without key\")\n\t\t}\n\t\tif provider != nil {\n\t\t\tt.Error(\"Provider should be nil on auth error\")\n\t\t}\n\t})\n\n\t// Test 4: Test timeout with actual delay using context\n\tt.Run(\"Timeout30s\", func(t *testing.T) {\n\t\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\t// Simulate a slow server that takes longer than our timeout\n\t\t\ttime.Sleep(2 * time.Second) // Explicit delay\n\t\t\tw.Write([]byte(`{\"models\":[]}`))\n\t\t}))\n\t\tdefer server.Close()\n\n\t\t// Test with a shorter timeout than the server delay\n\t\ttestutil.RunWithTimeout(t, 1*time.Second, func(ctx context.Context) {\n\t\t\t// Create detector\n\t\t\tdetector := providers.NewLocalDetector(server.URL)\n\n\t\t\t// This should either succeed (if server responds fast) or timeout gracefully\n\t\t\t_, err := detector.Detect(\"ollama\", \"\")\n\t\t\tif err != nil {\n\t\t\t\t// Expect timeout or context cancellation, not a hang\n\t\t\t\tif err == context.DeadlineExceeded || err == context.Canceled {\n\t\t\t\t\tt.Log(\"\u2705 Timeout worked as expected\")\n\t\t\t\t} else {\n\t\t\t\t\tt.Error(\"Unexpected error:\", err)\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelMatching_141": {
+      "name": "TestModelMatching",
+      "type": "function",
+      "start_line": 141,
+      "end_line": 162,
+      "content_hash": "bbdfecee53469a7f0a217ca2b7b9f0be8c4a7a9f",
+      "content": "func TestModelMatching(t *testing.T) {\n\ttests := []struct {\n\t\trawModel string\n\t\texpected string\n\t}{\n\t\t{\"llama3.1:70b\", \"llama-3.1-70b-instruct\"},\n\t\t{\"llama3.1:405b\", \"llama-3.1-405b-instruct\"},\n\t\t{\"codellama:34b\", \"codellama-34b-instruct\"},\n\t\t{\"mixtral:8x22b\", \"mixtral-8x22b-instruct\"},\n\t\t{\"meta-llama/Llama-3.1-70B-Instruct\", \"llama-3.1-70b-instruct\"},\n\t\t{\"70b\", \"llama-3-70b-instruct\"},\n\t\t{\"8b\", \"llama-3-8b-instruct\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tresult := providers.MatchModelToLibrary(tt.rawModel)\n\t\tif result != tt.expected {\n\t\t\tt.Errorf(\"MatchModel(%q) = %q, want %q\", tt.rawModel, result, tt.expected)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestContextWindowPrioritization_163": {
+      "name": "TestContextWindowPrioritization",
+      "type": "function",
+      "start_line": 163,
+      "end_line": 181,
+      "content_hash": "25c41a6e3c737141b307a823f2d5f80638545da4",
+      "content": "func TestContextWindowPrioritization(t *testing.T) {\n\tmodels := []providers.LocalModel{\n\t\t{ID: \"small-7b\", Context: 4096},\n\t\t{ID: \"medium-32k\", Context: 32768},\n\t\t{ID: \"large-128k\", Context: 131072},\n\t}\n\n\tprioritized := providers.PrioritizeModels(models)\n\tif prioritized[0].ID != \"large-128k\" {\n\t\tt.Error(\"Expected >64k first\")\n\t}\n\tif prioritized[1].ID != \"medium-32k\" {\n\t\tt.Error(\"Expected 32-64k second\")\n\t}\n\tif prioritized[2].ID != \"small-7b\" {\n\t\tt.Error(\"Expected <32k last\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestContextWindowDetection_182": {
+      "name": "TestContextWindowDetection",
+      "type": "function",
+      "start_line": 182,
+      "end_line": 222,
+      "content_hash": "f6752f3888ff785383dafc86d886e28297ee7138",
+      "content": "func TestContextWindowDetection(t *testing.T) {\n\t// Test that context window detection works correctly and doesn't\n\t// pick up weird numbers from version strings or other parts of model name\n\ttests := []struct {\n\t\tmodelName string\n\t\texpected  int\n\t\treason    string\n\t}{\n\t\t// Explicit context window indicators should take priority\n\t\t{\"model-128k\", 131072, \"Explicit 128k indicator\"},\n\t\t{\"llama3.1:70b-128k\", 131072, \"Explicit 128k overrides param size\"},\n\t\t{\"model:32k\", 32768, \"Explicit 32k indicator\"},\n\t\t{\"model:16k\", 16384, \"Explicit 16k indicator\"},\n\n\t\t// Parameter count based detection (specific patterns only)\n\t\t{\"llama3.1:70b\", 131072, \"70b models get 128k\"},\n\t\t{\"llama3.1:8b\", 8192, \"8b models get 8k\"},\n\t\t{\"codellama:34b\", 131072, \"34b models get 128k\"},\n\n\t\t// Should NOT match just digits without 'b' suffix\n\t\t{\"model-v3.1.8\", 4096, \"Version number '8' should not match '8b' pattern\"},\n\t\t{\"qwen2.5-72b-instruct\", 131072, \"Should match 72b pattern\"},\n\t\t{\"deepseek-coder-33b\", 131072, \"Should match 33b pattern\"},\n\n\t\t// Unknown models get default\n\t\t{\"random-model\", 4096, \"Unknown models default to 4096\"},\n\t\t{\"gpt-custom\", 4096, \"Unknown models default to 4096\"},\n\t}\n\n\tdetector := providers.NewLocalDetector(\"http://localhost:11434\")\n\tfor _, tt := range tests {\n\t\tt.Run(tt.modelName, func(t *testing.T) {\n\t\t\t// This is a private method, so we test via the public flow\n\t\t\t// For now, test the estimation function indirectly\n\t\t\tresult := detector.EstimateContext(tt.modelName)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"%s: got context %d, want %d\", tt.reason, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

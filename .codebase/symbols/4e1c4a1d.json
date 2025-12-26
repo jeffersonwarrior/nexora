@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/context-engine/scripts/rerank_recursive/vicreg.py",
+  "file_hash": "28a4c939696a9d890b923e2d713d8ca2a33240d0",
+  "updated_at": "2025-12-26T17:34:21.874487",
+  "symbols": {
+    "class_VICReg_11": {
+      "name": "VICReg",
+      "type": "class",
+      "start_line": 11,
+      "end_line": 76,
+      "content_hash": "f6188b34759a8b3c1c759d41c0868e29261b1107",
+      "content": "class VICReg:\n    \"\"\"\n    VICReg regularization for refinement residuals.\n\n    Regularizes the refiner's residual (z_refined - z) to have:\n    - Unit variance per dimension (prevents collapse)\n    - Decorrelated dimensions (prevents redundancy)\n    - Bounded magnitude (stable updates)\n    \"\"\"\n\n    def __init__(\n        self,\n        lambda_var: float = 1.0,\n        lambda_cov: float = 0.04,\n        lambda_inv: float = 0.1,\n        var_target: float = 1.0,\n    ):\n        self.lambda_var = lambda_var\n        self.lambda_cov = lambda_cov\n        self.lambda_inv = lambda_inv\n        self.var_target = var_target\n\n    def forward(\n        self, z_batch: np.ndarray, z_refined_batch: np.ndarray\n    ) -> Tuple[float, np.ndarray, Dict[str, float]]:\n        \"\"\"\n        Compute VICReg loss and gradient w.r.t. z_refined.\n\n        Args:\n            z_batch: (N, dim) original latent states\n            z_refined_batch: (N, dim) refined latent states\n\n        Returns:\n            (total_loss, grad_z_refined, loss_components)\n        \"\"\"\n        N, dim = z_batch.shape\n        eps = 1e-8\n\n        residual = z_refined_batch - z_batch\n        mean_res = residual.mean(axis=0, keepdims=True)\n        residual_centered = residual - mean_res\n\n        # Variance loss\n        std = residual.std(axis=0) + eps\n        var_diff = self.var_target - std\n        var_loss = float(np.maximum(0, var_diff).mean())\n        hinge_mask = (var_diff > 0).astype(np.float32)\n        d_var = -hinge_mask[None, :] * residual_centered / (N * std[None, :] * dim)\n\n        # Covariance loss\n        cov = (residual_centered.T @ residual_centered) / (N - 1 + eps)\n        off_diag_mask = 1.0 - np.eye(dim, dtype=np.float32)\n        off_diag = cov * off_diag_mask\n        cov_loss = float((off_diag ** 2).sum() / dim)\n        d_cov = 4 * residual_centered @ (off_diag * off_diag_mask) / ((N - 1 + eps) * dim)\n\n        # Invariance loss\n        inv_loss = float((residual ** 2).mean())\n        d_inv = 2 * residual / (N * dim)\n\n        # Total\n        total_loss = self.lambda_var * var_loss + self.lambda_cov * cov_loss + self.lambda_inv * inv_loss\n        grad = (self.lambda_var * d_var + self.lambda_cov * d_cov + self.lambda_inv * d_inv).astype(np.float32)\n\n        components = {\"var_loss\": var_loss, \"cov_loss\": cov_loss, \"inv_loss\": inv_loss}\n        return total_loss, grad, components",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___21": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 31,
+      "content_hash": "ac2484b7a9c5695fc349a0ba89ea86f2597e3a76",
+      "content": "    def __init__(\n        self,\n        lambda_var: float = 1.0,\n        lambda_cov: float = 0.04,\n        lambda_inv: float = 0.1,\n        var_target: float = 1.0,\n    ):\n        self.lambda_var = lambda_var\n        self.lambda_cov = lambda_cov\n        self.lambda_inv = lambda_inv\n        self.var_target = var_target",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_forward_33": {
+      "name": "forward",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 76,
+      "content_hash": "2e5195b5290c5b5296a8378164f6c8dfadb6a2a4",
+      "content": "    def forward(\n        self, z_batch: np.ndarray, z_refined_batch: np.ndarray\n    ) -> Tuple[float, np.ndarray, Dict[str, float]]:\n        \"\"\"\n        Compute VICReg loss and gradient w.r.t. z_refined.\n\n        Args:\n            z_batch: (N, dim) original latent states\n            z_refined_batch: (N, dim) refined latent states\n\n        Returns:\n            (total_loss, grad_z_refined, loss_components)\n        \"\"\"\n        N, dim = z_batch.shape\n        eps = 1e-8\n\n        residual = z_refined_batch - z_batch\n        mean_res = residual.mean(axis=0, keepdims=True)\n        residual_centered = residual - mean_res\n\n        # Variance loss\n        std = residual.std(axis=0) + eps\n        var_diff = self.var_target - std\n        var_loss = float(np.maximum(0, var_diff).mean())\n        hinge_mask = (var_diff > 0).astype(np.float32)\n        d_var = -hinge_mask[None, :] * residual_centered / (N * std[None, :] * dim)\n\n        # Covariance loss\n        cov = (residual_centered.T @ residual_centered) / (N - 1 + eps)\n        off_diag_mask = 1.0 - np.eye(dim, dtype=np.float32)\n        off_diag = cov * off_diag_mask\n        cov_loss = float((off_diag ** 2).sum() / dim)\n        d_cov = 4 * residual_centered @ (off_diag * off_diag_mask) / ((N - 1 + eps) * dim)\n\n        # Invariance loss\n        inv_loss = float((residual ** 2).mean())\n        d_inv = 2 * residual / (N * dim)\n\n        # Total\n        total_loss = self.lambda_var * var_loss + self.lambda_cov * cov_loss + self.lambda_inv * inv_loss\n        grad = (self.lambda_var * d_var + self.lambda_cov * d_cov + self.lambda_inv * d_inv).astype(np.float32)\n\n        components = {\"var_loss\": var_loss, \"cov_loss\": cov_loss, \"inv_loss\": inv_loss}\n        return total_loss, grad, components",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

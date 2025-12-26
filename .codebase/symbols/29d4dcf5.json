@@ -1,0 +1,183 @@
+{
+  "file_path": "/work/context-engine/scripts/rerank_recursive/refiner.py",
+  "file_hash": "b968158b6e82b59b2ed29feacdc3d0c9bcd5b721",
+  "updated_at": "2025-12-26T17:34:20.367834",
+  "symbols": {
+    "class_LatentRefiner_14": {
+      "name": "LatentRefiner",
+      "type": "class",
+      "start_line": 14,
+      "end_line": 335,
+      "content_hash": "83134f396bfa25c10bc2fc1d347ad98f40048610",
+      "content": "class LatentRefiner:\n    \"\"\"\n    Refines the latent state z based on current results.\n\n    Supports:\n    - Per-collection weight persistence\n    - Hot-reload from background worker updates\n    - Online learning via learn_from_teacher()\n    \"\"\"\n\n    WEIGHTS_DIR = os.environ.get(\"RERANKER_WEIGHTS_DIR\", \"/tmp/rerank_weights\")\n    WEIGHTS_RELOAD_INTERVAL = float(os.environ.get(\"RERANKER_WEIGHTS_RELOAD_INTERVAL\", \"60\"))\n\n    def __init__(self, dim: int = 256, hidden_dim: int = 256, lr: float = 0.001):\n        self.dim = dim\n        self.hidden_dim = hidden_dim\n        self.base_lr = lr\n        self.lr = lr\n        self._collection = \"default\"\n        self._weights_path = self._get_weights_path(\"default\")\n        self._weights_mtime = 0.0\n        self._last_reload_check = 0.0\n        self._weights_loaded = False\n\n        self._update_count = 0\n        self._version = 0\n\n        self._momentum_W1: Optional[np.ndarray] = None\n        self._momentum_b1: Optional[np.ndarray] = None\n        self._momentum_W2: Optional[np.ndarray] = None\n        self._momentum_b2: Optional[np.ndarray] = None\n\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n                return\n            except Exception as e:\n                from scripts.logger import get_logger\n                get_logger(__name__).warning(f\"LatentRefiner: failed to load {self._weights_path}: {e}\")\n\n        self._init_random_weights()\n\n    @staticmethod\n    def _sanitize_collection(collection: str) -> str:\n        return \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)\n\n    def _get_weights_path(self, collection: str) -> str:\n        safe_name = self._sanitize_collection(collection)\n        return os.path.join(self.WEIGHTS_DIR, f\"refiner_{safe_name}.npz\")\n\n    def set_collection(self, collection: str):\n        self._collection = collection\n        self._weights_path = self._get_weights_path(collection)\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n            except Exception:\n                pass\n\n    def maybe_reload_weights(self):\n        now = time.time()\n        if now - self._last_reload_check < self.WEIGHTS_RELOAD_INTERVAL:\n            return\n        self._last_reload_check = now\n        try:\n            if os.path.exists(self._weights_path):\n                mtime = os.path.getmtime(self._weights_path)\n                if mtime > self._weights_mtime:\n                    self._load_weights_safe()\n        except Exception:\n            pass\n\n    def _load_weights_safe(self):\n        import fcntl\n        lock_path = self._weights_path + \".lock\"\n        try:\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)\n                try:\n                    self._load_weights()\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n        except Exception:\n            self._load_weights()\n\n    def _init_random_weights(self):\n        rng = np.random.RandomState(43)\n        scale = np.float32(np.sqrt(2.0 / (self.dim * 3)))\n        self.W1 = rng.randn(self.dim * 3, self.hidden_dim).astype(np.float32) * scale\n        self.b1 = np.zeros(self.hidden_dim, dtype=np.float32)\n        w2_scale = np.float32(np.sqrt(2.0 / self.hidden_dim))\n        self.W2 = rng.randn(self.hidden_dim, self.dim).astype(np.float32) * w2_scale\n        self.b2 = np.zeros(self.dim, dtype=np.float32)\n\n        self._momentum_W1 = np.zeros_like(self.W1)\n        self._momentum_b1 = np.zeros_like(self.b1)\n        self._momentum_W2 = np.zeros_like(self.W2)\n        self._momentum_b2 = np.zeros_like(self.b2)\n\n    def _load_weights(self) -> bool:\n        from scripts.logger import get_logger\n        logger = get_logger(__name__)\n        try:\n            data = np.load(self._weights_path, allow_pickle=True)\n\n            def _get(key: str, default):\n                return data[key] if key in data.files else default\n\n            w1 = _get(\"W1\", None)\n            w2 = _get(\"W2\", None)\n            b1 = _get(\"b1\", None)\n            b2 = _get(\"b2\", None)\n\n            if w1 is None or w2 is None:\n                data.close()\n                return False\n\n            expected_w1 = (self.dim * 3, self.hidden_dim)\n            expected_w2 = (self.hidden_dim, self.dim)\n\n            if w1.shape != expected_w1 or w2.shape != expected_w2:\n                logger.warning(f\"LatentRefiner: shape mismatch\")\n                data.close()\n                return False\n\n            self.W1 = w1.astype(np.float32, copy=False)\n            self.b1 = b1.astype(np.float32, copy=False) if b1 is not None else np.zeros(self.hidden_dim, dtype=np.float32)\n            self.W2 = w2.astype(np.float32, copy=False)\n            self.b2 = b2.astype(np.float32, copy=False) if b2 is not None else np.zeros(self.dim, dtype=np.float32)\n            self._update_count = int(_get(\"update_count\", 0))\n            self._version = int(_get(\"version\", 0))\n\n            if self._momentum_W1 is None or self._momentum_W1.shape != self.W1.shape:\n                self._momentum_W1 = np.zeros_like(self.W1)\n                self._momentum_b1 = np.zeros_like(self.b1)\n                self._momentum_W2 = np.zeros_like(self.W2)\n                self._momentum_b2 = np.zeros_like(self.b2)\n\n            self._weights_loaded = True\n            self._weights_mtime = os.path.getmtime(self._weights_path)\n            data.close()\n            return True\n        except Exception as e:\n            logger.warning(f\"LatentRefiner: failed to load weights: {e}\")\n            return False\n\n    def refine(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        alpha: float = 0.5\n    ) -> np.ndarray:\n        \"\"\"Refine latent state based on current ranking.\"\"\"\n        self.maybe_reload_weights()\n\n        weights = np.exp(scores - scores.max())\n        weights = weights / (weights.sum() + 1e-8)\n        doc_summary = (weights[:, None] * doc_embs).sum(axis=0)\n        x = np.concatenate([z, query_emb, doc_summary])\n        h = np.maximum(0, x @ self.W1 + self.b1)\n        z_new = h @ self.W2 + self.b2\n        z_refined = alpha * z_new + (1 - alpha) * z\n        z_refined = z_refined / (np.linalg.norm(z_refined) + 1e-8)\n        return z_refined\n\n    def refine_with_cache(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        alpha: float = 0.5\n    ) -> Tuple[np.ndarray, Dict[str, Any]]:\n        \"\"\"Refine with cache for backprop.\"\"\"\n        weights = np.exp(scores - scores.max())\n        weights = weights / (weights.sum() + 1e-8)\n        doc_summary = (weights[:, None] * doc_embs).sum(axis=0)\n        x = np.concatenate([z, query_emb, doc_summary])\n        h = np.maximum(0, x @ self.W1 + self.b1)\n        z_new = h @ self.W2 + self.b2\n        z_refined = alpha * z_new + (1 - alpha) * z\n        z_refined = z_refined / (np.linalg.norm(z_refined) + 1e-8)\n        cache = {\"x\": x, \"h\": h, \"z\": z, \"z_new\": z_new, \"alpha\": alpha, \"weights\": weights}\n        return z_refined, cache\n\n    def learn_from_teacher(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        teacher_z: np.ndarray,\n    ) -> float:\n        \"\"\"Online learning: update weights so refined z moves toward teacher_z.\"\"\"\n        z_refined, cache = self.refine_with_cache(z, query_emb, doc_embs, scores)\n        diff = z_refined - teacher_z\n        loss = float(np.sum(diff ** 2))\n\n        if loss < 1e-8:\n            return 0.0\n\n        dz_refined = 2.0 * diff\n        dz_new = cache[\"alpha\"] * dz_refined\n        dW2 = np.outer(cache[\"h\"], dz_new)\n        db2 = dz_new\n        dh = dz_new @ self.W2.T\n        dh = dh * (cache[\"h\"] > 0).astype(np.float32)\n        dW1 = np.outer(cache[\"x\"], dh)\n        db1 = dh\n\n        momentum = 0.9\n        if self._momentum_W1 is None:\n            self._momentum_W1 = np.zeros_like(self.W1)\n            self._momentum_b1 = np.zeros_like(self.b1)\n            self._momentum_W2 = np.zeros_like(self.W2)\n            self._momentum_b2 = np.zeros_like(self.b2)\n\n        self._momentum_W1 = momentum * self._momentum_W1 - self.lr * dW1\n        self._momentum_b1 = momentum * self._momentum_b1 - self.lr * db1\n        self._momentum_W2 = momentum * self._momentum_W2 - self.lr * dW2\n        self._momentum_b2 = momentum * self._momentum_b2 - self.lr * db2\n\n        self.W1 += self._momentum_W1\n        self.b1 += self._momentum_b1\n        self.W2 += self._momentum_W2\n        self.b2 += self._momentum_b2\n        self._update_count += 1\n        return loss\n\n    def learn_from_teacher_with_cache(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        teacher_z: np.ndarray,\n    ) -> Tuple[float, np.ndarray, np.ndarray, Dict[str, Any]]:\n        \"\"\"Online learning with cache for VICReg backprop.\"\"\"\n        z_refined, cache = self.refine_with_cache(z, query_emb, doc_embs, scores)\n        diff = z_refined - teacher_z\n        loss = float(np.sum(diff ** 2))\n\n        if loss >= 1e-8:\n            dz_refined = 2.0 * diff\n            dz_new = cache[\"alpha\"] * dz_refined\n            dW2 = np.outer(cache[\"h\"], dz_new)\n            db2 = dz_new\n            dh = dz_new @ self.W2.T\n            dh = dh * (cache[\"h\"] > 0).astype(np.float32)\n            dW1 = np.outer(cache[\"x\"], dh)\n            db1 = dh\n\n            momentum = 0.9\n            if self._momentum_W1 is None:\n                self._momentum_W1 = np.zeros_like(self.W1)\n                self._momentum_b1 = np.zeros_like(self.b1)\n                self._momentum_W2 = np.zeros_like(self.W2)\n                self._momentum_b2 = np.zeros_like(self.b2)\n\n            self._momentum_W1 = momentum * self._momentum_W1 - self.lr * dW1\n            self._momentum_b1 = momentum * self._momentum_b1 - self.lr * db1\n            self._momentum_W2 = momentum * self._momentum_W2 - self.lr * dW2\n            self._momentum_b2 = momentum * self._momentum_b2 - self.lr * db2\n\n            self.W1 += self._momentum_W1\n            self.b1 += self._momentum_b1\n            self.W2 += self._momentum_W2\n            self.b2 += self._momentum_b2\n            self._update_count += 1\n\n        return loss, z, z_refined, cache\n\n    def apply_vicreg_gradient(self, grad_z_refined: np.ndarray, cache: Dict[str, Any], weight: float = 0.1):\n        \"\"\"Apply VICReg gradient to refiner weights.\"\"\"\n        dz_new = cache[\"alpha\"] * grad_z_refined * weight\n        dW2 = np.outer(cache[\"h\"], dz_new)\n        db2 = dz_new\n        dh = dz_new @ self.W2.T\n        dh = dh * (cache[\"h\"] > 0).astype(np.float32)\n        dW1 = np.outer(cache[\"x\"], dh)\n        db1 = dh\n\n        self.W1 -= self.lr * dW1\n        self.b1 -= self.lr * db1\n        self.W2 -= self.lr * dW2\n        self.b2 -= self.lr * db2\n\n    def _save_weights(self, checkpoint: bool = False):\n        \"\"\"Save weights to disk atomically.\"\"\"\n        import fcntl\n        os.makedirs(self.WEIGHTS_DIR, exist_ok=True)\n        self._version += 1\n\n        tmp_base = self._weights_path.replace(\".npz\", \".tmp\")\n        tmp_path = tmp_base + \".npz\"\n        lock_path = self._weights_path + \".lock\"\n\n        try:\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)\n                try:\n                    np.savez(\n                        tmp_base,\n                        W1=self.W1, b1=self.b1, W2=self.W2, b2=self.b2,\n                        update_count=self._update_count,\n                        version=self._version,\n                        dim=self.dim,\n                        hidden_dim=self.hidden_dim,\n                    )\n                    os.replace(tmp_path, self._weights_path)\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n        except Exception:\n            if os.path.exists(tmp_path):\n                try:\n                    os.remove(tmp_path)\n                except Exception:\n                    pass\n            raise",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___27": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 54,
+      "content_hash": "74fba5d0f3fc857ab3d18818a60738acc187ba31",
+      "content": "    def __init__(self, dim: int = 256, hidden_dim: int = 256, lr: float = 0.001):\n        self.dim = dim\n        self.hidden_dim = hidden_dim\n        self.base_lr = lr\n        self.lr = lr\n        self._collection = \"default\"\n        self._weights_path = self._get_weights_path(\"default\")\n        self._weights_mtime = 0.0\n        self._last_reload_check = 0.0\n        self._weights_loaded = False\n\n        self._update_count = 0\n        self._version = 0\n\n        self._momentum_W1: Optional[np.ndarray] = None\n        self._momentum_b1: Optional[np.ndarray] = None\n        self._momentum_W2: Optional[np.ndarray] = None\n        self._momentum_b2: Optional[np.ndarray] = None\n\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n                return\n            except Exception as e:\n                from scripts.logger import get_logger\n                get_logger(__name__).warning(f\"LatentRefiner: failed to load {self._weights_path}: {e}\")\n\n        self._init_random_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__sanitize_collection_57": {
+      "name": "_sanitize_collection",
+      "type": "method",
+      "start_line": 57,
+      "end_line": 58,
+      "content_hash": "cdbd85077085baad363b24f06dafd0ea2c67f8d3",
+      "content": "    def _sanitize_collection(collection: str) -> str:\n        return \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__get_weights_path_60": {
+      "name": "_get_weights_path",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 62,
+      "content_hash": "eba094c4716b522e7b1cd78a46835f46c09fde76",
+      "content": "    def _get_weights_path(self, collection: str) -> str:\n        safe_name = self._sanitize_collection(collection)\n        return os.path.join(self.WEIGHTS_DIR, f\"refiner_{safe_name}.npz\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_set_collection_64": {
+      "name": "set_collection",
+      "type": "method",
+      "start_line": 64,
+      "end_line": 71,
+      "content_hash": "5d86e95df72e0d5a0b102dca9bbef687d38ca49a",
+      "content": "    def set_collection(self, collection: str):\n        self._collection = collection\n        self._weights_path = self._get_weights_path(collection)\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n            except Exception:\n                pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_maybe_reload_weights_73": {
+      "name": "maybe_reload_weights",
+      "type": "method",
+      "start_line": 73,
+      "end_line": 84,
+      "content_hash": "79eb969a72675628e425d388cf0fbf2ba511cda2",
+      "content": "    def maybe_reload_weights(self):\n        now = time.time()\n        if now - self._last_reload_check < self.WEIGHTS_RELOAD_INTERVAL:\n            return\n        self._last_reload_check = now\n        try:\n            if os.path.exists(self._weights_path):\n                mtime = os.path.getmtime(self._weights_path)\n                if mtime > self._weights_mtime:\n                    self._load_weights_safe()\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__load_weights_safe_86": {
+      "name": "_load_weights_safe",
+      "type": "method",
+      "start_line": 86,
+      "end_line": 98,
+      "content_hash": "796f8dcfa7a6fe791e354d5b640fcd3be7e0b3a8",
+      "content": "    def _load_weights_safe(self):\n        import fcntl\n        lock_path = self._weights_path + \".lock\"\n        try:\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)\n                try:\n                    self._load_weights()\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n        except Exception:\n            self._load_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__init_random_weights_100": {
+      "name": "_init_random_weights",
+      "type": "method",
+      "start_line": 100,
+      "end_line": 112,
+      "content_hash": "b45e55be91de6561f0fa125c7b5bed618979b172",
+      "content": "    def _init_random_weights(self):\n        rng = np.random.RandomState(43)\n        scale = np.float32(np.sqrt(2.0 / (self.dim * 3)))\n        self.W1 = rng.randn(self.dim * 3, self.hidden_dim).astype(np.float32) * scale\n        self.b1 = np.zeros(self.hidden_dim, dtype=np.float32)\n        w2_scale = np.float32(np.sqrt(2.0 / self.hidden_dim))\n        self.W2 = rng.randn(self.hidden_dim, self.dim).astype(np.float32) * w2_scale\n        self.b2 = np.zeros(self.dim, dtype=np.float32)\n\n        self._momentum_W1 = np.zeros_like(self.W1)\n        self._momentum_b1 = np.zeros_like(self.b1)\n        self._momentum_W2 = np.zeros_like(self.W2)\n        self._momentum_b2 = np.zeros_like(self.b2)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__load_weights_114": {
+      "name": "_load_weights",
+      "type": "method",
+      "start_line": 114,
+      "end_line": 159,
+      "content_hash": "8dc093ace0c0c7625d17a214903eba7d3956bfdc",
+      "content": "    def _load_weights(self) -> bool:\n        from scripts.logger import get_logger\n        logger = get_logger(__name__)\n        try:\n            data = np.load(self._weights_path, allow_pickle=True)\n\n            def _get(key: str, default):\n                return data[key] if key in data.files else default\n\n            w1 = _get(\"W1\", None)\n            w2 = _get(\"W2\", None)\n            b1 = _get(\"b1\", None)\n            b2 = _get(\"b2\", None)\n\n            if w1 is None or w2 is None:\n                data.close()\n                return False\n\n            expected_w1 = (self.dim * 3, self.hidden_dim)\n            expected_w2 = (self.hidden_dim, self.dim)\n\n            if w1.shape != expected_w1 or w2.shape != expected_w2:\n                logger.warning(f\"LatentRefiner: shape mismatch\")\n                data.close()\n                return False\n\n            self.W1 = w1.astype(np.float32, copy=False)\n            self.b1 = b1.astype(np.float32, copy=False) if b1 is not None else np.zeros(self.hidden_dim, dtype=np.float32)\n            self.W2 = w2.astype(np.float32, copy=False)\n            self.b2 = b2.astype(np.float32, copy=False) if b2 is not None else np.zeros(self.dim, dtype=np.float32)\n            self._update_count = int(_get(\"update_count\", 0))\n            self._version = int(_get(\"version\", 0))\n\n            if self._momentum_W1 is None or self._momentum_W1.shape != self.W1.shape:\n                self._momentum_W1 = np.zeros_like(self.W1)\n                self._momentum_b1 = np.zeros_like(self.b1)\n                self._momentum_W2 = np.zeros_like(self.W2)\n                self._momentum_b2 = np.zeros_like(self.b2)\n\n            self._weights_loaded = True\n            self._weights_mtime = os.path.getmtime(self._weights_path)\n            data.close()\n            return True\n        except Exception as e:\n            logger.warning(f\"LatentRefiner: failed to load weights: {e}\")\n            return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__get_120": {
+      "name": "_get",
+      "type": "method",
+      "start_line": 120,
+      "end_line": 121,
+      "content_hash": "4fff3505da9167a31a9ea4b26b1edd806f258c7d",
+      "content": "            def _get(key: str, default):\n                return data[key] if key in data.files else default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_refine_161": {
+      "name": "refine",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 180,
+      "content_hash": "c2ba65c75376351b1bc2ac8ae18ecfe875bba57b",
+      "content": "    def refine(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        alpha: float = 0.5\n    ) -> np.ndarray:\n        \"\"\"Refine latent state based on current ranking.\"\"\"\n        self.maybe_reload_weights()\n\n        weights = np.exp(scores - scores.max())\n        weights = weights / (weights.sum() + 1e-8)\n        doc_summary = (weights[:, None] * doc_embs).sum(axis=0)\n        x = np.concatenate([z, query_emb, doc_summary])\n        h = np.maximum(0, x @ self.W1 + self.b1)\n        z_new = h @ self.W2 + self.b2\n        z_refined = alpha * z_new + (1 - alpha) * z\n        z_refined = z_refined / (np.linalg.norm(z_refined) + 1e-8)\n        return z_refined",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_refine_with_cache_182": {
+      "name": "refine_with_cache",
+      "type": "method",
+      "start_line": 182,
+      "end_line": 200,
+      "content_hash": "1616670bc0997ad430c234c8436f5ce44f020ab9",
+      "content": "    def refine_with_cache(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        alpha: float = 0.5\n    ) -> Tuple[np.ndarray, Dict[str, Any]]:\n        \"\"\"Refine with cache for backprop.\"\"\"\n        weights = np.exp(scores - scores.max())\n        weights = weights / (weights.sum() + 1e-8)\n        doc_summary = (weights[:, None] * doc_embs).sum(axis=0)\n        x = np.concatenate([z, query_emb, doc_summary])\n        h = np.maximum(0, x @ self.W1 + self.b1)\n        z_new = h @ self.W2 + self.b2\n        z_refined = alpha * z_new + (1 - alpha) * z\n        z_refined = z_refined / (np.linalg.norm(z_refined) + 1e-8)\n        cache = {\"x\": x, \"h\": h, \"z\": z, \"z_new\": z_new, \"alpha\": alpha, \"weights\": weights}\n        return z_refined, cache",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_learn_from_teacher_202": {
+      "name": "learn_from_teacher",
+      "type": "method",
+      "start_line": 202,
+      "end_line": 244,
+      "content_hash": "2e468f3077c7b530a0c2372d44d85fd917eaedc7",
+      "content": "    def learn_from_teacher(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        teacher_z: np.ndarray,\n    ) -> float:\n        \"\"\"Online learning: update weights so refined z moves toward teacher_z.\"\"\"\n        z_refined, cache = self.refine_with_cache(z, query_emb, doc_embs, scores)\n        diff = z_refined - teacher_z\n        loss = float(np.sum(diff ** 2))\n\n        if loss < 1e-8:\n            return 0.0\n\n        dz_refined = 2.0 * diff\n        dz_new = cache[\"alpha\"] * dz_refined\n        dW2 = np.outer(cache[\"h\"], dz_new)\n        db2 = dz_new\n        dh = dz_new @ self.W2.T\n        dh = dh * (cache[\"h\"] > 0).astype(np.float32)\n        dW1 = np.outer(cache[\"x\"], dh)\n        db1 = dh\n\n        momentum = 0.9\n        if self._momentum_W1 is None:\n            self._momentum_W1 = np.zeros_like(self.W1)\n            self._momentum_b1 = np.zeros_like(self.b1)\n            self._momentum_W2 = np.zeros_like(self.W2)\n            self._momentum_b2 = np.zeros_like(self.b2)\n\n        self._momentum_W1 = momentum * self._momentum_W1 - self.lr * dW1\n        self._momentum_b1 = momentum * self._momentum_b1 - self.lr * db1\n        self._momentum_W2 = momentum * self._momentum_W2 - self.lr * dW2\n        self._momentum_b2 = momentum * self._momentum_b2 - self.lr * db2\n\n        self.W1 += self._momentum_W1\n        self.b1 += self._momentum_b1\n        self.W2 += self._momentum_W2\n        self.b2 += self._momentum_b2\n        self._update_count += 1\n        return loss",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_learn_from_teacher_with_cache_246": {
+      "name": "learn_from_teacher_with_cache",
+      "type": "method",
+      "start_line": 246,
+      "end_line": 287,
+      "content_hash": "339981c0be6ff3c890d55b204448cef27464bded",
+      "content": "    def learn_from_teacher_with_cache(\n        self,\n        z: np.ndarray,\n        query_emb: np.ndarray,\n        doc_embs: np.ndarray,\n        scores: np.ndarray,\n        teacher_z: np.ndarray,\n    ) -> Tuple[float, np.ndarray, np.ndarray, Dict[str, Any]]:\n        \"\"\"Online learning with cache for VICReg backprop.\"\"\"\n        z_refined, cache = self.refine_with_cache(z, query_emb, doc_embs, scores)\n        diff = z_refined - teacher_z\n        loss = float(np.sum(diff ** 2))\n\n        if loss >= 1e-8:\n            dz_refined = 2.0 * diff\n            dz_new = cache[\"alpha\"] * dz_refined\n            dW2 = np.outer(cache[\"h\"], dz_new)\n            db2 = dz_new\n            dh = dz_new @ self.W2.T\n            dh = dh * (cache[\"h\"] > 0).astype(np.float32)\n            dW1 = np.outer(cache[\"x\"], dh)\n            db1 = dh\n\n            momentum = 0.9\n            if self._momentum_W1 is None:\n                self._momentum_W1 = np.zeros_like(self.W1)\n                self._momentum_b1 = np.zeros_like(self.b1)\n                self._momentum_W2 = np.zeros_like(self.W2)\n                self._momentum_b2 = np.zeros_like(self.b2)\n\n            self._momentum_W1 = momentum * self._momentum_W1 - self.lr * dW1\n            self._momentum_b1 = momentum * self._momentum_b1 - self.lr * db1\n            self._momentum_W2 = momentum * self._momentum_W2 - self.lr * dW2\n            self._momentum_b2 = momentum * self._momentum_b2 - self.lr * db2\n\n            self.W1 += self._momentum_W1\n            self.b1 += self._momentum_b1\n            self.W2 += self._momentum_W2\n            self.b2 += self._momentum_b2\n            self._update_count += 1\n\n        return loss, z, z_refined, cache",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_apply_vicreg_gradient_289": {
+      "name": "apply_vicreg_gradient",
+      "type": "method",
+      "start_line": 289,
+      "end_line": 302,
+      "content_hash": "9f9ddc4fc13c4d54c031d229f0c0c7e352f42140",
+      "content": "    def apply_vicreg_gradient(self, grad_z_refined: np.ndarray, cache: Dict[str, Any], weight: float = 0.1):\n        \"\"\"Apply VICReg gradient to refiner weights.\"\"\"\n        dz_new = cache[\"alpha\"] * grad_z_refined * weight\n        dW2 = np.outer(cache[\"h\"], dz_new)\n        db2 = dz_new\n        dh = dz_new @ self.W2.T\n        dh = dh * (cache[\"h\"] > 0).astype(np.float32)\n        dW1 = np.outer(cache[\"x\"], dh)\n        db1 = dh\n\n        self.W1 -= self.lr * dW1\n        self.b1 -= self.lr * db1\n        self.W2 -= self.lr * dW2\n        self.b2 -= self.lr * db2",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__save_weights_304": {
+      "name": "_save_weights",
+      "type": "method",
+      "start_line": 304,
+      "end_line": 335,
+      "content_hash": "1ef0b846ef85c7d24f0eb0b64cfca6bb2d0e49b5",
+      "content": "    def _save_weights(self, checkpoint: bool = False):\n        \"\"\"Save weights to disk atomically.\"\"\"\n        import fcntl\n        os.makedirs(self.WEIGHTS_DIR, exist_ok=True)\n        self._version += 1\n\n        tmp_base = self._weights_path.replace(\".npz\", \".tmp\")\n        tmp_path = tmp_base + \".npz\"\n        lock_path = self._weights_path + \".lock\"\n\n        try:\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)\n                try:\n                    np.savez(\n                        tmp_base,\n                        W1=self.W1, b1=self.b1, W2=self.W2, b2=self.b2,\n                        update_count=self._update_count,\n                        version=self._version,\n                        dim=self.dim,\n                        hidden_dim=self.hidden_dim,\n                    )\n                    os.replace(tmp_path, self._weights_path)\n                finally:\n                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n        except Exception:\n            if os.path.exists(tmp_path):\n                try:\n                    os.remove(tmp_path)\n                except Exception:\n                    pass\n            raise",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

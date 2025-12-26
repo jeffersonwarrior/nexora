@@ -183,6 +183,23 @@ func (cm *ConversationManager) scheduleAutoClose(sessionID string) {
 func analyzeCompletion(content string) float64 {
 	content = strings.ToLower(content)
 
+	// Check work continuators FIRST - assistant is still working
+	workContinuers := []string{
+		"now let me",
+		"next, i'll",
+		"i'll now",
+		"let me also",
+		"let me create",
+		"let me implement",
+		"let me update",
+		"next step",
+	}
+	for _, phrase := range workContinuers {
+		if strings.Contains(content, phrase) {
+			return 0.1 // Very low completion score
+		}
+	}
+
 	// Strong completion indicators (0.9 confidence)
 	completionPhrases := []string{
 		"is there anything else",
@@ -194,7 +211,6 @@ func analyzeCompletion(content string) float64 {
 		"done",
 		"complete",
 	}
-
 	for _, phrase := range completionPhrases {
 		if strings.Contains(content, phrase) {
 			return 0.9
@@ -209,30 +225,16 @@ func analyzeCompletion(content string) float64 {
 		"successfully",
 		"as requested",
 	}
-
 	moderateScore := 0.0
 	for _, phrase := range moderatePhrases {
 		if strings.Contains(content, phrase) {
 			moderateScore += 0.2
 		}
 	}
-	return minFloat(0.7, moderateScore)
-	// Work continuators reduce completion score
-	workContinuers := []string{
-		"now let me",
-		"next, i'll",
-		"i'll now",
-		"let me also",
-		"let me create",
-		"let me implement",
-		"let me update",
-		"next step",
-	}
 
-	for _, phrase := range workContinuers {
-		if strings.Contains(content, phrase) {
-			return 0.1 // Very low completion score
-		}
+	// If moderate phrases found, return that score
+	if moderateScore > 0 {
+		return minFloat(0.7, moderateScore)
 	}
 
 	// Default moderate confidence

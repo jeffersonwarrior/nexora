@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/context-engine/tests/test_router_batching_demux.py",
+  "file_hash": "4cfe022dc8f78dc87ae91dff6e7d9e2b007a9798",
+  "updated_at": "2025-12-26T17:34:24.946398",
+  "symbols": {
+    "class__Counter_7": {
+      "name": "_Counter",
+      "type": "class",
+      "start_line": 7,
+      "end_line": 15,
+      "content_hash": "747258a08afd76e0551434954a9d9c19343bfe88",
+      "content": "class _Counter:\n    def __init__(self):\n        self.n = 0\n        self.lock = threading.Lock()\n\n    def inc(self):\n        with self.lock:\n            self.n += 1\n            return self.n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___8": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 8,
+      "end_line": 10,
+      "content_hash": "67c58481d7625819f51a2435e2befb98eea9aa03",
+      "content": "    def __init__(self):\n        self.n = 0\n        self.lock = threading.Lock()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_inc_12": {
+      "name": "inc",
+      "type": "method",
+      "start_line": 12,
+      "end_line": 15,
+      "content_hash": "8ecf5ad3e1907aa22a3675a826d4582b38684a70",
+      "content": "    def inc(self):\n        with self.lock:\n            self.n += 1\n            return self.n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__fake_call_factory_18": {
+      "name": "_fake_call_factory",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 42,
+      "content_hash": "020e719deb370f0843538cf71835d20b603686da",
+      "content": "def _fake_call_factory(counter: _Counter):\n    def _fake_call(base_url: str, tool: str, args: dict, timeout: float = 1.0):\n        counter.inc()\n        time.sleep(0.01)\n        q = args.get(\"query\")\n        queries = args.get(\"queries\") or ([q] if q else ([] if q is None else ([q] if not isinstance(q, list) else q)))\n        answers_by_query = None\n        if isinstance(q, list) and len(q) > 1:\n            answers_by_query = [\n                {\"query\": str(qi), \"answer\": f\"ok:{qi}\", \"citations\": []} for qi in q\n            ]\n        return {\n            \"result\": {\n                \"structuredContent\": {\n                    \"result\": {\n                        \"answer\": f\"ok:{q}\",\n                        \"citations\": [],\n                        \"query\": queries,\n                        **({\"answers_by_query\": answers_by_query} if answers_by_query else {}),\n                    }\n                }\n            }\n        }\n\n    return _fake_call",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__fake_call_19": {
+      "name": "_fake_call",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 40,
+      "content_hash": "f784002e9b8bbcac2fa9bd4138018c781333da4b",
+      "content": "    def _fake_call(base_url: str, tool: str, args: dict, timeout: float = 1.0):\n        counter.inc()\n        time.sleep(0.01)\n        q = args.get(\"query\")\n        queries = args.get(\"queries\") or ([q] if q else ([] if q is None else ([q] if not isinstance(q, list) else q)))\n        answers_by_query = None\n        if isinstance(q, list) and len(q) > 1:\n            answers_by_query = [\n                {\"query\": str(qi), \"answer\": f\"ok:{qi}\", \"citations\": []} for qi in q\n            ]\n        return {\n            \"result\": {\n                \"structuredContent\": {\n                    \"result\": {\n                        \"answer\": f\"ok:{q}\",\n                        \"citations\": [],\n                        \"query\": queries,\n                        **({\"answers_by_query\": answers_by_query} if answers_by_query else {}),\n                    }\n                }\n            }\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_demultiplex_different_queries_results_are_isolated_45": {
+      "name": "test_demultiplex_different_queries_results_are_isolated",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 80,
+      "content_hash": "079fd102fb70037b6f5115a9a2a693a2369a0162",
+      "content": "def test_demultiplex_different_queries_results_are_isolated():\n    counter = _Counter()\n    client = BatchingContextAnswerClient(\n        call_func=_fake_call_factory(counter),\n        enable=True,\n        window_ms=120,\n        max_batch=8,\n        budget_ms=2000,\n    )\n\n    results: list[tuple[str, dict]] = []\n    barrier = threading.Barrier(3)\n\n    def worker(q: str):\n        barrier.wait()\n        res = client.call_or_enqueue(\n            \"http://localhost:8003/mcp\",\n            \"context_answer\",\n            {\"query\": q, \"limit\": 5},\n            timeout=1.0,\n        )\n        results.append((q, res))\n\n    t1 = threading.Thread(target=worker, args=(\"Q1\",))\n    t2 = threading.Thread(target=worker, args=(\"Q2\",))\n    t1.start(); t2.start()\n    barrier.wait()\n    t1.join(); t2.join()\n\n    # Aggregated call once, demux per-query reply\n    assert counter.n == 1\n    assert len(results) == 2\n    for q, r in results:\n        rq = r.get(\"result\", {}).get(\"structuredContent\", {}).get(\"result\", {}).get(\"query\")\n        # Each result should reflect only its own query\n        assert rq == [q]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_worker_58": {
+      "name": "worker",
+      "type": "function",
+      "start_line": 58,
+      "end_line": 66,
+      "content_hash": "ab12a3c6a7aac2d5dba86cc342fee68d7347dcbb",
+      "content": "    def worker(q: str):\n        barrier.wait()\n        res = client.call_or_enqueue(\n            \"http://localhost:8003/mcp\",\n            \"context_answer\",\n            {\"query\": q, \"limit\": 5},\n            timeout=1.0,\n        )\n        results.append((q, res))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_budget_fallback_does_not_double_call_83": {
+      "name": "test_budget_fallback_does_not_double_call",
+      "type": "function",
+      "start_line": 83,
+      "end_line": 102,
+      "content_hash": "668843e008041dbb7643a3a4d9e1dffc1fcf1a91",
+      "content": "def test_budget_fallback_does_not_double_call():\n    counter = _Counter()\n    client = BatchingContextAnswerClient(\n        call_func=_fake_call_factory(counter),\n        enable=True,\n        window_ms=500,   # long window so timer would fire later\n        max_batch=8,\n        budget_ms=10,    # tiny budget to force immediate fallback\n    )\n\n    res = client.call_or_enqueue(\n        \"http://localhost:8003/mcp\",\n        \"context_answer\",\n        {\"query\": \"late\", \"limit\": 5},\n        timeout=1.0,\n    )\n    assert res\n    # Wait beyond the window; if slot was not removed, we'd see a second call when timer flushes\n    time.sleep(0.6)\n    assert counter.n == 1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

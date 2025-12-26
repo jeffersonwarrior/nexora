@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var Version = "0.29.0"
+var Version = "v0.29.2"
 
 func init() {
 	info, ok := debug.ReadBuildInfo()
@@ -13,13 +13,13 @@ func init() {
 		return
 	}
 	mainVersion := info.Main.Version
-	// Use VCS info if available and we're on a tagged version (not devel)
-	if mainVersion == "(devel)" {
+	// Use VCS info only if it's a clean tagged version (vX.Y.Z format)
+	if mainVersion == "(devel)" || mainVersion == "" {
 		// Keep the version as set by the file/ldflags
 		return
-	} else if mainVersion != "" && !strings.HasPrefix(mainVersion, "v0.29") && Version != "0.29.0" {
-		// Only override if we're not building for version 0.28.x
-		// and the version hasn't already been set to 0.29.0 by ldflags
+	}
+	// Only use build info version if it's a clean semver tag (not pseudo-version)
+	if strings.Count(mainVersion, "-") == 0 || strings.HasPrefix(mainVersion, "v0.29") {
 		Version = mainVersion
 	}
 }

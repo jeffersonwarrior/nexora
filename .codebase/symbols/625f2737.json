@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/context-engine/tests/test_ingest_micro_chunks.py",
+  "file_hash": "c70bc1302e82497b9bf6e6a0112abd57152dd654",
+  "updated_at": "2025-12-26T17:34:24.313980",
+  "symbols": {
+    "function_test_chunk_by_tokens_basic_overlap_and_bounds_15": {
+      "name": "test_chunk_by_tokens_basic_overlap_and_bounds",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 60,
+      "content_hash": "7fc0c8090f5105b91270ddd2c527dba63ff3a4b3",
+      "content": "def test_chunk_by_tokens_basic_overlap_and_bounds(monkeypatch):\n    # Force small token windows for the test\n    monkeypatch.setenv(\"MICRO_CHUNK_TOKENS\", \"8\")\n    monkeypatch.setenv(\"MICRO_CHUNK_STRIDE\", \"4\")\n\n    # Synthetic text with multiple identifiers and varying line lengths\n    text = (\n        \"def foo(x):\\n\"  # 1\n        \"    return x + 1\\n\"  # 2\n        \"\\n\"  # 3\n        \"class Bar:\\n\"  # 4\n        \"    def baz(self, y):\\n\"  # 5\n        \"        v = y * 2\\n\"  # 6\n        \"        return v\\n\"  # 7\n        \"\\n\"  # 8\n        \"# some comment and extra text to increase token count\\n\"  # 9\n        \"for i in range(10):\\n\"  # 10\n        \"    print(i)\\n\"  # 11\n    )\n\n    chunks = chunk_by_tokens(text)\n\n    # Should generate multiple micro-chunks\n    assert isinstance(chunks, list)\n    assert len(chunks) >= 2\n\n    lines = text.splitlines()\n    total_lines = len(lines)\n\n    # Each chunk must have non-empty text and valid line bounds\n    for ch in chunks:\n        assert ch[\"text\"], \"chunk text should not be empty\"\n        assert 1 <= ch[\"start\"] <= total_lines\n        assert 1 <= ch[\"end\"] <= total_lines\n        assert ch[\"end\"] >= ch[\"start\"]\n\n    # Starts should be non-decreasing and there should be overlap due to stride < k\n    starts = [c[\"start\"] for c in chunks]\n    assert starts == sorted(starts), \"chunk starts should be non-decreasing\"\n\n    # There should be at least one pair of chunks with an overlapping line range\n    overlaps = 0\n    for a, b in zip(chunks, chunks[1:]):\n        if a[\"end\"] >= b[\"start\"]:\n            overlaps += 1\n    assert overlaps >= 1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

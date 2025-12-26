@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/cmd/login.go",
+  "file_hash": "ad735fb354b2004d4aa5ae8aa732d5c7c07d77dc",
+  "updated_at": "2025-12-26T17:34:22.700998",
+  "symbols": {
+    "function_loginClaude_56": {
+      "name": "loginClaude",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 108,
+      "content_hash": "31bac7d4e9b1dc7b3516f076458c2f65b6387f06",
+      "content": "func loginClaude() error {\n\tctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)\n\tgo func() {\n\t\t<-ctx.Done()\n\t\tcancel()\n\t\tos.Exit(1)\n\t}()\n\n\tverifier, challenge, err := claude.GetChallenge()\n\tif err != nil {\n\t\treturn err\n\t}\n\turl, err := claude.AuthorizeURL(verifier, challenge)\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Println(\"Open the following URL and follow the instructions to authenticate with Claude Code Max:\")\n\tfmt.Println()\n\tfmt.Println(lipgloss.NewStyle().Hyperlink(url, \"id=claude\").Render(url))\n\tfmt.Println()\n\tfmt.Println(\"Press enter to continue...\")\n\tif _, err := fmt.Scanln(); err != nil {\n\t\treturn err\n\t}\n\n\tfmt.Println(\"Now paste and code from Anthropic and press enter...\")\n\tfmt.Println()\n\tfmt.Print(\"> \")\n\tvar code string\n\tfor code == \"\" {\n\t\t_, _ = fmt.Scanln(&code)\n\t\tcode = strings.TrimSpace(code)\n\t}\n\n\tfmt.Println()\n\tfmt.Println(\"Exchanging authorization code...\")\n\ttoken, err := claude.ExchangeToken(ctx, code, verifier)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tcfg := config.Get()\n\tif err := cmp.Or(\n\t\tcfg.SetConfigField(\"providers.anthropic.api_key\", token.AccessToken),\n\t\tcfg.SetConfigField(\"providers.anthropic.oauth\", token),\n\t); err != nil {\n\t\treturn err\n\t}\n\n\tfmt.Println()\n\tfmt.Println(\"You're now authenticated with Claude Code Max!\")\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

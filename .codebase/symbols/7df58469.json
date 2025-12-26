@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/analyze-transformations-smart.js",
+  "file_hash": "be0f4ab28f85f950717313704d7e4dabc04011f5",
+  "updated_at": "2025-12-26T17:34:20.770470",
+  "symbols": {
+    "function_discoverAgentFiles_73": {
+      "name": "discoverAgentFiles",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 108,
+      "content_hash": "729fc3e13dda4819b8d1eddd572d7009ebb8bce4",
+      "content": "async function discoverAgentFiles(mainTranscriptPath) {\n  console.log('Discovering linked agent transcripts...');\n\n  const agentIds = new Set();\n  const fileStream = fs.createReadStream(mainTranscriptPath);\n  const rl = readline.createInterface({\n    input: fileStream,\n    crlfDelay: Infinity\n  });\n\n  for await (const line of rl) {\n    if (!line.includes('agentId')) continue;\n\n    try {\n      const obj = JSON.parse(line);\n\n      // Check for agentId in toolUseResult\n      if (obj.toolUseResult?.agentId) {\n        agentIds.add(obj.toolUseResult.agentId);\n      }\n    } catch (e) {\n      // Skip malformed lines\n    }\n  }\n\n  // Build agent file paths\n  const directory = path.dirname(mainTranscriptPath);\n  const agentFiles = Array.from(agentIds).map(id =>\n    path.join(directory, `agent-${id}.jsonl`)\n  ).filter(filePath => fs.existsSync(filePath));\n\n  console.log(`  \u2192 Found ${agentIds.size} agent IDs`);\n  console.log(`  \u2192 ${agentFiles.length} agent files exist on disk\\n`);\n\n  return agentFiles;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadOriginalContentFromFile_112": {
+      "name": "loadOriginalContentFromFile",
+      "type": "function",
+      "start_line": 112,
+      "end_line": 175,
+      "content_hash": "045f3327d98af2794ac7b80ae86a0c86c3dfa011",
+      "content": "async function loadOriginalContentFromFile(filePath, fileLabel) {\n  const fileStream = fs.createReadStream(filePath);\n  const rl = readline.createInterface({\n    input: fileStream,\n    crlfDelay: Infinity\n  });\n\n  let count = 0;\n  let isContaminated = false;\n  const toolUseIdsFromThisFile = new Set();\n\n  for await (const line of rl) {\n    if (!line.includes('toolu_')) continue;\n\n    try {\n      const obj = JSON.parse(line);\n\n      if (obj.message?.content) {\n        for (const item of obj.message.content) {\n          // Capture tool_use (inputs)\n          if (item.type === 'tool_use' && item.id) {\n            const existing = originalContent.get(item.id) || { input: '', output: '', name: '' };\n            existing.input = JSON.stringify(item.input || {});\n            existing.name = item.name;\n            originalContent.set(item.id, existing);\n            toolUseIdsFromThisFile.add(item.id);\n            count++;\n          }\n\n          // Capture tool_result (outputs)\n          if (item.type === 'tool_result' && item.tool_use_id) {\n            const content = typeof item.content === 'string' ? item.content : JSON.stringify(item.content);\n\n            // Check for transformation marker - if found, transcript is contaminated\n            if (content.includes(TRANSFORMATION_MARKER)) {\n              isContaminated = true;\n            }\n\n            const existing = originalContent.get(item.tool_use_id) || { input: '', output: '', name: '' };\n            existing.output = content;\n            originalContent.set(item.tool_use_id, existing);\n            toolUseIdsFromThisFile.add(item.tool_use_id);\n          }\n        }\n      }\n    } catch (e) {\n      // Skip malformed lines\n    }\n  }\n\n  // If contaminated, remove all data from this file and report\n  if (isContaminated) {\n    for (const id of toolUseIdsFromThisFile) {\n      originalContent.delete(id);\n    }\n    console.log(`  \u26a0\ufe0f  Skipped ${fileLabel} (already transformed)`);\n    return false;\n  }\n\n  if (count > 0) {\n    console.log(`  \u2192 Found ${count} tool uses in ${fileLabel}`);\n  }\n  return true;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadOriginalContent_177": {
+      "name": "loadOriginalContent",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 213,
+      "content_hash": "580fb9e17918b252ea55e5b00ec57c5968deda57",
+      "content": "async function loadOriginalContent() {\n  console.log('Loading original content from transcripts...');\n  console.log(`  \u2192 Scanning ${transcriptFiles.length} transcript files...\\n`);\n\n  let cleanTranscripts = 0;\n\n  // Load from all transcript files\n  for (const transcriptFile of transcriptFiles) {\n    const filename = path.basename(transcriptFile);\n    const isClean = await loadOriginalContentFromFile(transcriptFile, filename);\n    if (isClean) {\n      cleanTranscripts++;\n    } else {\n      skippedTranscripts++;\n    }\n  }\n\n  // Also check for any agent files not already included\n  for (const transcriptFile of transcriptFiles) {\n    if (transcriptFile.includes('agent-')) continue; // Already an agent file\n    const agentFiles = await discoverAgentFiles(transcriptFile);\n    for (const agentFile of agentFiles) {\n      if (transcriptFiles.includes(agentFile)) continue; // Already processed\n      const filename = path.basename(agentFile);\n      const isClean = await loadOriginalContentFromFile(agentFile, `agent transcript (${filename})`);\n      if (!isClean) {\n        skippedTranscripts++;\n      }\n    }\n  }\n\n  console.log(`\\nTotal: Loaded original content for ${originalContent.size} tool uses (inputs + outputs)`);\n  if (skippedTranscripts > 0) {\n    console.log(`\u26a0\ufe0f  Skipped ${skippedTranscripts} transcripts (already transformed with endless mode)`);\n  }\n  console.log();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBaseToolUseId_216": {
+      "name": "getBaseToolUseId",
+      "type": "function",
+      "start_line": 216,
+      "end_line": 218,
+      "content_hash": "9d7086e2f771df2fc373e9f130c3970d961051df",
+      "content": "function getBaseToolUseId(id) {\n  return id ? id.replace(/__\\d+$/, '') : id;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_queryObservations_222": {
+      "name": "queryObservations",
+      "type": "function",
+      "start_line": 222,
+      "end_line": 264,
+      "content_hash": "efc517b5f1570c8b394de1b7e03e723fb6863828",
+      "content": "function queryObservations() {\n  // Get tool_use_ids from the loaded transcript content\n  const toolUseIds = Array.from(originalContent.keys());\n\n  if (toolUseIds.length === 0) {\n    console.log('No tool use IDs found in transcripts\\n');\n    return [];\n  }\n\n  console.log(`Querying observations for ${toolUseIds.length} tool use IDs from transcripts...`);\n\n  const db = new Database(DB_PATH, { readonly: true });\n\n  // Build LIKE clauses to match both exact IDs and suffixed variants (toolu_abc, toolu_abc__1, etc)\n  const likeConditions = toolUseIds.map(() => 'tool_use_id LIKE ?').join(' OR ');\n  const likeParams = toolUseIds.map(id => `${id}%`);\n\n  const query = `\n    SELECT\n      id,\n      tool_use_id,\n      type,\n      narrative,\n      title,\n      facts,\n      concepts,\n      LENGTH(COALESCE(facts,'')) as facts_len,\n      LENGTH(COALESCE(title,'')) + LENGTH(COALESCE(facts,'')) as title_facts_len,\n      LENGTH(COALESCE(title,'')) + LENGTH(COALESCE(facts,'')) + LENGTH(COALESCE(concepts,'')) as compact_len,\n      LENGTH(COALESCE(narrative,'')) as narrative_len,\n      LENGTH(COALESCE(title,'')) + LENGTH(COALESCE(narrative,'')) + LENGTH(COALESCE(facts,'')) + LENGTH(COALESCE(concepts,'')) as full_obs_len\n    FROM observations\n    WHERE ${likeConditions}\n    ORDER BY created_at DESC\n  `;\n\n  const observations = db.prepare(query).all(...likeParams);\n  db.close();\n\n  console.log(`Found ${observations.length} observations matching tool use IDs (including suffixed variants)\\n`);\n\n  return observations;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_analyzeTransformations_270": {
+      "name": "analyzeTransformations",
+      "type": "function",
+      "start_line": 270,
+      "end_line": 398,
+      "content_hash": "75053640627a3aa0543ff99792007e31cbf6813c",
+      "content": "function analyzeTransformations(observations) {\n  console.log('='.repeat(110));\n  console.log('OUTPUT REPLACEMENT ANALYSIS (Eligible Tools Only)');\n  console.log('='.repeat(110));\n  console.log();\n  console.log('Eligible tools:', Array.from(REPLACEABLE_TOOLS).join(', '));\n  console.log();\n\n  // Group observations by BASE tool_use_id (strip __N suffix)\n  // This groups toolu_abc, toolu_abc__1, toolu_abc__2 together\n  const obsByToolId = new Map();\n  observations.forEach(obs => {\n    const baseId = getBaseToolUseId(obs.tool_use_id);\n    if (!obsByToolId.has(baseId)) {\n      obsByToolId.set(baseId, []);\n    }\n    obsByToolId.get(baseId).push(obs);\n  });\n\n  // Define strategies to test\n  const strategies = [\n    { name: 'facts_only', field: 'facts_len', desc: 'Facts only (~400 chars)' },\n    { name: 'title_facts', field: 'title_facts_len', desc: 'Title + Facts (~450 chars)' },\n    { name: 'compact', field: 'compact_len', desc: 'Title + Facts + Concepts (~500 chars)' },\n    { name: 'narrative', field: 'narrative_len', desc: 'Narrative only (~700 chars)' },\n    { name: 'full', field: 'full_obs_len', desc: 'Full observation (~1200 chars)' }\n  ];\n\n  // Track results per strategy\n  const results = {};\n  strategies.forEach(s => {\n    results[s.name] = {\n      transforms: 0,\n      noTransform: 0,\n      saved: 0,\n      totalOriginal: 0\n    };\n  });\n\n  // Track stats\n  let eligible = 0;\n  let ineligible = 0;\n  let noTranscript = 0;\n  const toolCounts = {};\n\n  // Analyze each tool use\n  obsByToolId.forEach((obsArray, toolUseId) => {\n    const original = originalContent.get(toolUseId);\n    const toolName = original?.name || 'unknown';\n    const outputLen = original?.output?.length || 0;\n\n    // Skip if no transcript data\n    if (!original || outputLen === 0) {\n      noTranscript++;\n      return;\n    }\n\n    // Skip if tool not eligible for replacement\n    if (!REPLACEABLE_TOOLS.has(toolName)) {\n      ineligible++;\n      return;\n    }\n\n    eligible++;\n    toolCounts[toolName] = (toolCounts[toolName] || 0) + 1;\n\n    // Sum lengths across ALL observations for this tool use (handles multiple obs per tool_use_id)\n    // Test each strategy - OUTPUT replacement only\n    strategies.forEach(strategy => {\n      const obsLen = obsArray.reduce((sum, obs) => sum + (obs[strategy.field] || 0), 0);\n      const r = results[strategy.name];\n\n      r.totalOriginal += outputLen;\n\n      if (obsLen > 0 && obsLen < outputLen) {\n        r.transforms++;\n        r.saved += (outputLen - obsLen);\n      } else {\n        r.noTransform++;\n      }\n    });\n  });\n\n  // Print results\n  console.log('TOOL BREAKDOWN:');\n  Object.entries(toolCounts).sort((a, b) => b[1] - a[1]).forEach(([tool, count]) => {\n    console.log(`  ${tool}: ${count}`);\n  });\n  console.log();\n  console.log('-'.repeat(100));\n  console.log(`Eligible tool uses: ${eligible}`);\n  console.log(`Ineligible (Edit/Write/etc): ${ineligible}`);\n  console.log(`No transcript data: ${noTranscript}`);\n  console.log('-'.repeat(100));\n  console.log();\n  console.log('Strategy                          Transforms   No Transform   Chars Saved      Original Size    Savings %');\n  console.log('-'.repeat(100));\n\n  strategies.forEach(strategy => {\n    const r = results[strategy.name];\n    const pct = r.totalOriginal > 0 ? ((r.saved / r.totalOriginal) * 100).toFixed(1) : '0.0';\n    console.log(\n      `${strategy.desc.padEnd(35)} ${String(r.transforms).padStart(10)}   ${String(r.noTransform).padStart(12)}   ${String(r.saved.toLocaleString()).padStart(13)}   ${String(r.totalOriginal.toLocaleString()).padStart(15)}   ${pct.padStart(8)}%`\n    );\n  });\n\n  console.log('-'.repeat(100));\n  console.log();\n\n  // Find best strategy\n  let bestStrategy = null;\n  let bestSavings = 0;\n  strategies.forEach(strategy => {\n    if (results[strategy.name].saved > bestSavings) {\n      bestSavings = results[strategy.name].saved;\n      bestStrategy = strategy;\n    }\n  });\n\n  if (bestStrategy) {\n    const r = results[bestStrategy.name];\n    const pct = ((r.saved / r.totalOriginal) * 100).toFixed(1);\n    console.log(`BEST STRATEGY: ${bestStrategy.desc}`);\n    console.log(`  - Transforms ${r.transforms} of ${eligible} eligible tool uses (${((r.transforms/eligible)*100).toFixed(1)}%)`);\n    console.log(`  - Saves ${r.saved.toLocaleString()} of ${r.totalOriginal.toLocaleString()} chars (${pct}% reduction)`);\n  }\n\n  console.log();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_401": {
+      "name": "main",
+      "type": "function",
+      "start_line": 401,
+      "end_line": 405,
+      "content_hash": "1cb96436703dbc26d6c9b4b06e69486d3aa7d2bd",
+      "content": "async function main() {\n  await loadOriginalContent();\n  const observations = queryObservations();\n  analyzeTransformations(observations);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/tui/util/shell.go",
+  "file_hash": "d61d0589cd3231b28834189030c3bb3903e1ad84",
+  "updated_at": "2025-12-26T17:34:20.473143",
+  "symbols": {
+    "function_ExecShell_15": {
+      "name": "ExecShell",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 26,
+      "content_hash": "ee2677e22c3576f52dfa25a10fd7c6ddb7cd2440",
+      "content": "func ExecShell(ctx context.Context, cmdStr string, callback tea.ExecCallback) tea.Cmd {\n\tfields, err := shell.Fields(cmdStr, nil)\n\tif err != nil {\n\t\treturn ReportError(err)\n\t}\n\tif len(fields) == 0 {\n\t\treturn ReportError(errors.New(\"empty command\"))\n\t}\n\n\tcmd := exec.CommandContext(ctx, fields[0], fields[1:]...)\n\treturn tea.ExecProcess(cmd, callback)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

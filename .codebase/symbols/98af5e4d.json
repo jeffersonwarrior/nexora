@@ -1,0 +1,282 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/ctx-mcp-bridge/src/mcpServer.js",
+  "file_hash": "6b6e02e632ac6d739d65fae7573e6771149332fe",
+  "updated_at": "2025-12-26T17:34:20.711405",
+  "symbols": {
+    "function_debugLog_16": {
+      "name": "debugLog",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 26,
+      "content_hash": "34ce7a019d9f187610e82ce8ab6f0d6d3f1586c2",
+      "content": "function debugLog(message) {\n  try {\n    const text = typeof message === \"string\" ? message : String(message);\n    console.error(text);\n    const dest = process.env.CTXCE_DEBUG_LOG;\n    if (dest) {\n      fs.appendFileSync(dest, `${new Date().toISOString()} ${text}\\n`, \"utf8\");\n    }\n  } catch {\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sendSessionDefaults_28": {
+      "name": "sendSessionDefaults",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 41,
+      "content_hash": "b1cee57f83bba3501ba4ed58096e03032d55b8c4",
+      "content": "async function sendSessionDefaults(client, payload, label) {\n  if (!client) {\n    return;\n  }\n  try {\n    await client.callTool({\n      name: \"set_session_defaults\",\n      arguments: payload,\n    });\n  } catch (err) {\n    // eslint-disable-next-line no-console\n    console.error(`[ctxce] Failed to call set_session_defaults on ${label}:`, err);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_dedupeTools_42": {
+      "name": "dedupeTools",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 59,
+      "content_hash": "b7f62a82f553302d50bcb6f728308ade6c35214c",
+      "content": "function dedupeTools(tools) {\n  const seen = new Set();\n  const out = [];\n  for (const tool of tools) {\n    const key = (tool && typeof tool.name === \"string\" && tool.name) || \"\";\n    if (!key || seen.has(key)) {\n      if (key === \"\" || key !== \"set_session_defaults\") {\n        continue;\n      }\n      if (seen.has(key)) {\n        continue;\n      }\n    }\n    seen.add(key);\n    out.push(tool);\n  }\n  return out;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_listMemoryTools_61": {
+      "name": "listMemoryTools",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 76,
+      "content_hash": "f06bd8b6773f215d5b92b637937e01c6359ca534",
+      "content": "async function listMemoryTools(client) {\n  if (!client) {\n    return [];\n  }\n  try {\n    const remote = await withTimeout(\n      client.listTools(),\n      5000,\n      \"memory tools/list\",\n    );\n    return Array.isArray(remote?.tools) ? remote.tools.slice() : [];\n  } catch (err) {\n    debugLog(\"[ctxce] Error calling memory tools/list: \" + String(err));\n    return [];\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_withTimeout_78": {
+      "name": "withTimeout",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 110,
+      "content_hash": "852f8fa0222f3b3fac545df6af719f0fce24eb0c",
+      "content": "function withTimeout(promise, ms, label) {\n  return new Promise((resolve, reject) => {\n    let settled = false;\n    const timer = setTimeout(() => {\n      if (settled) {\n        return;\n      }\n      settled = true;\n      const errorMessage =\n        label != null\n          ? `[ctxce] Timeout after ${ms}ms in ${label}`\n          : `[ctxce] Timeout after ${ms}ms`;\n      reject(new Error(errorMessage));\n    }, ms);\n    promise\n      .then((value) => {\n        if (settled) {\n          return;\n        }\n        settled = true;\n        clearTimeout(timer);\n        resolve(value);\n      })\n      .catch((err) => {\n        if (settled) {\n          return;\n        }\n        settled = true;\n        clearTimeout(timer);\n        reject(err);\n      });\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBridgeToolTimeoutMs_112": {
+      "name": "getBridgeToolTimeoutMs",
+      "type": "function",
+      "start_line": 112,
+      "end_line": 126,
+      "content_hash": "5685808b1f2d8c66bbc28377b8538c2f4f768945",
+      "content": "function getBridgeToolTimeoutMs() {\n  try {\n    const raw = process.env.CTXCE_TOOL_TIMEOUT_MSEC;\n    if (!raw) {\n      return 300000;\n    }\n    const parsed = Number.parseInt(String(raw), 10);\n    if (!Number.isFinite(parsed) || parsed <= 0) {\n      return 300000;\n    }\n    return parsed;\n  } catch {\n    return 300000;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_selectClientForTool_128": {
+      "name": "selectClientForTool",
+      "type": "function",
+      "start_line": 128,
+      "end_line": 137,
+      "content_hash": "a0ad46472439fd10cfd81ab73d08f2c949c67a3b",
+      "content": "function selectClientForTool(name, indexerClient, memoryClient) {\n  if (!name) {\n    return indexerClient;\n  }\n  const lowered = name.toLowerCase();\n  if (memoryClient && (lowered.startsWith(\"memory.\") || lowered.startsWith(\"mcp_memory_\") || lowered.includes(\"memory\"))) {\n    return memoryClient;\n  }\n  return indexerClient;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isSessionError_139": {
+      "name": "isSessionError",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 156,
+      "content_hash": "8da3a5e52ae29a66cdd8ec0bac7579ef1b4d776e",
+      "content": "function isSessionError(error) {\n  try {\n    const msg =\n      (error && typeof error.message === \"string\" && error.message) ||\n      (typeof error === \"string\" ? error : String(error || \"\"));\n    if (!msg) {\n      return false;\n    }\n    return (\n      msg.includes(\"No valid session ID\") ||\n      msg.includes(\"Mcp-Session-Id header is required\") ||\n      msg.includes(\"Server not initialized\") ||\n      msg.includes(\"Session not found\")\n    );\n  } catch {\n    return false;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBridgeRetryAttempts_158": {
+      "name": "getBridgeRetryAttempts",
+      "type": "function",
+      "start_line": 158,
+      "end_line": 172,
+      "content_hash": "998864d650c898af435483a399d64fceed17eb42",
+      "content": "function getBridgeRetryAttempts() {\n  try {\n    const raw = process.env.CTXCE_TOOL_RETRY_ATTEMPTS;\n    if (!raw) {\n      return 2;\n    }\n    const parsed = Number.parseInt(String(raw), 10);\n    if (!Number.isFinite(parsed) || parsed <= 0) {\n      return 1;\n    }\n    return parsed;\n  } catch {\n    return 2;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBridgeRetryDelayMs_174": {
+      "name": "getBridgeRetryDelayMs",
+      "type": "function",
+      "start_line": 174,
+      "end_line": 188,
+      "content_hash": "a29676a97cdd4a1378c29e2991d7e0559ee4213a",
+      "content": "function getBridgeRetryDelayMs() {\n  try {\n    const raw = process.env.CTXCE_TOOL_RETRY_DELAY_MSEC;\n    if (!raw) {\n      return 200;\n    }\n    const parsed = Number.parseInt(String(raw), 10);\n    if (!Number.isFinite(parsed) || parsed < 0) {\n      return 0;\n    }\n    return parsed;\n  } catch {\n    return 200;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isTransientToolError_190": {
+      "name": "isTransientToolError",
+      "type": "function",
+      "start_line": 190,
+      "end_line": 249,
+      "content_hash": "4ec25cba10eb3435c2e200fb1afa88c9833193a5",
+      "content": "function isTransientToolError(error) {\n  try {\n    const msg =\n      (error && typeof error.message === \"string\" && error.message) ||\n      (typeof error === \"string\" ? error : String(error || \"\"));\n    if (!msg) {\n      return false;\n    }\n    const lower = msg.toLowerCase();\n\n    if (\n      lower.includes(\"timed out\") ||\n      lower.includes(\"timeout\") ||\n      lower.includes(\"time-out\")\n    ) {\n      return true;\n    }\n\n    if (\n      lower.includes(\"econnreset\") ||\n      lower.includes(\"econnrefused\") ||\n      lower.includes(\"etimedout\") ||\n      lower.includes(\"enotfound\") ||\n      lower.includes(\"ehostunreach\") ||\n      lower.includes(\"enetunreach\")\n    ) {\n      return true;\n    }\n\n    if (\n      lower.includes(\"bad gateway\") ||\n      lower.includes(\"gateway timeout\") ||\n      lower.includes(\"service unavailable\") ||\n      lower.includes(\" 502 \") ||\n      lower.includes(\" 503 \") ||\n      lower.includes(\" 504 \")\n    ) {\n      return true;\n    }\n\n    if (lower.includes(\"network error\")) {\n      return true;\n    }\n\n    if (typeof error.code === \"number\" && error.code === -32001 && !isSessionError(error)) {\n      return true;\n    }\n    if (\n      typeof error.code === \"string\" &&\n      error.code.toLowerCase &&\n      error.code.toLowerCase().includes(\"timeout\")\n    ) {\n      return true;\n    }\n\n    return false;\n  } catch {\n    return false;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_normalizeBackendUrl_258": {
+      "name": "normalizeBackendUrl",
+      "type": "function",
+      "start_line": 258,
+      "end_line": 272,
+      "content_hash": "9f0d8b5ca157be1019a686e1a838b59f344a304d",
+      "content": "function normalizeBackendUrl(candidate) {\n  const trimmed = (candidate || \"\").trim();\n  if (!trimmed) {\n    return \"\";\n  }\n  try {\n    const parsed = new URL(trimmed);\n    if (parsed.protocol && parsed.host) {\n      return `${parsed.protocol}//${parsed.host}`;\n    }\n  } catch {\n    // ignore parse failures\n  }\n  return trimmed.replace(/\\/+$/, \"\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveAuthBackendContext_274": {
+      "name": "resolveAuthBackendContext",
+      "type": "function",
+      "start_line": 274,
+      "end_line": 289,
+      "content_hash": "efe0786284b07de7d27c72877f2cf80e7cd7222f",
+      "content": "function resolveAuthBackendContext() {\n  const envBackend = normalizeBackendUrl(process.env.CTXCE_AUTH_BACKEND_URL || \"\");\n  if (envBackend) {\n    return { backendUrl: envBackend, source: \"CTXCE_AUTH_BACKEND_URL\" };\n  }\n  try {\n    const any = loadAnyAuthEntry();\n    const stored = normalizeBackendUrl(any?.backendUrl || \"\");\n    if (stored) {\n      return { backendUrl: stored, source: \"auth_entry\" };\n    }\n  } catch {\n    // ignore auth config read failures\n  }\n  return { backendUrl: \"\", source: \"\" };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fetchBridgeCollectionState_304": {
+      "name": "fetchBridgeCollectionState",
+      "type": "function",
+      "start_line": 304,
+      "end_line": 357,
+      "content_hash": "f79504bf245646d34a22764bb5412d64cb1f97bf",
+      "content": "async function fetchBridgeCollectionState({\n  workspace,\n  collection,\n  sessionId,\n  repoName,\n  bridgeStateToken,\n}) {\n  try {\n    if (!UPLOAD_SERVICE_URL) {\n      debugLog(\"[ctxce] Skipping bridge/state fetch: no upload endpoint configured.\");\n      return null;\n    }\n    const url = new URL(\"/bridge/state\", UPLOAD_SERVICE_URL);\n    if (collection && collection.trim()) {\n      url.searchParams.set(\"collection\", collection.trim());\n    } else if (workspace && workspace.trim()) {\n      url.searchParams.set(\"workspace\", workspace.trim());\n    }\n    if (repoName && repoName.trim()) {\n      url.searchParams.set(\"repo_name\", repoName.trim());\n    }\n\n    const headers = {\n      Accept: \"application/json\",\n    };\n    if (bridgeStateToken && bridgeStateToken.trim()) {\n      headers[\"X-Bridge-State-Token\"] = bridgeStateToken.trim();\n    }\n    if (sessionId) {\n      headers.Cookie = `${ADMIN_SESSION_COOKIE_NAME}=${sessionId}`;\n    }\n\n    debugLog(`[ctxce] Fetching bridge/state from ${url.toString()} (repo=${repoName || \"<none>\"}).`);\n    const resp = await fetch(url, {\n      method: \"GET\",\n      headers,\n    });\n    if (!resp.ok) {\n      if (resp.status === 401 || resp.status === 403) {\n        debugLog(\n          `[ctxce] /bridge/state responded ${resp.status}; missing or invalid token/session, falling back to ctx_config defaults.`,\n        );\n        return null;\n      }\n      throw new Error(`bridge/state responded ${resp.status}`);\n    }\n    debugLog(`[ctxce] bridge/state responded ${resp.status}`);\n    const data = await resp.json();\n    return data && typeof data === \"object\" ? data : null;\n  } catch (err) {\n    debugLog(\"[ctxce] Failed to fetch /bridge/state: \" + String(err));\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createBridgeServer_359": {
+      "name": "createBridgeServer",
+      "type": "function",
+      "start_line": 359,
+      "end_line": 721,
+      "content_hash": "3ea6e4b4c5a2162775ebee3f0e93ebed581467f2",
+      "content": "async function createBridgeServer(options) {\n  const workspace = options.workspace || process.cwd();\n  const indexerUrl = options.indexerUrl;\n  const memoryUrl = options.memoryUrl;\n\n  const config = loadConfig(workspace);\n  const defaultCollection =\n    config && typeof config.default_collection === \"string\"\n      ? config.default_collection\n      : null;\n  const defaultMode =\n    config && typeof config.default_mode === \"string\" ? config.default_mode : null;\n  const defaultUnder =\n    config && typeof config.default_under === \"string\" ? config.default_under : null;\n\n  debugLog(\n    `[ctxce] MCP low-level stdio bridge starting: workspace=${workspace}, indexerUrl=${indexerUrl}`,\n  );\n\n  if (defaultCollection) {\n    // eslint-disable-next-line no-console\n    console.error(\n      `[ctxce] Using default collection from ctx_config.json: ${defaultCollection}`,\n    );\n  }\n\n  let indexerClient = null;\n  let memoryClient = null;\n\n  // Derive a simple session identifier for this bridge process. In the\n  // future this can be made user-aware (e.g. from auth), but for now we\n  // keep it deterministic per workspace to help the indexer reuse\n  // session-scoped defaults.\n  const explicitSession = process.env.CTXCE_SESSION_ID || \"\";\n  const authBackendEnv = (process.env.CTXCE_AUTH_BACKEND_URL || \"\").trim();\n  let backendHint = authBackendEnv || UPLOAD_AUTH_BACKEND || \"\";\n  let sessionId = explicitSession;\n\n  function sessionFromEntry(entry) {\n    if (!entry || typeof entry.sessionId !== \"string\" || !entry.sessionId) {\n      return \"\";\n    }\n    const expiresAt = entry.expiresAt;\n    if (\n      typeof expiresAt === \"number\" &&\n      Number.isFinite(expiresAt) &&\n      expiresAt > 0 &&\n      expiresAt < Math.floor(Date.now() / 1000)\n    ) {\n      debugLog(\"[ctxce] Stored auth session appears expired; please run `ctxce auth login` again.\");\n      return \"\";\n    }\n    return entry.sessionId;\n  }\n\n  function findSavedSession(backends) {\n    for (const backend of backends) {\n      const trimmed = (backend || \"\").trim();\n      if (!trimmed) {\n        continue;\n      }\n      try {\n        const entry = loadAuthEntry(trimmed);\n        const session = sessionFromEntry(entry);\n        if (session) {\n          backendHint = trimmed;\n          return session;\n        }\n      } catch {\n        // ignore lookup failures\n      }\n    }\n    try {\n      const any = loadAnyAuthEntry();\n      const session = any ? sessionFromEntry(any.entry) : \"\";\n      if (session && any?.backendUrl) {\n        backendHint = any.backendUrl;\n        return session;\n      }\n    } catch {\n      // ignore lookup failures\n    }\n    return \"\";\n  }\n\n  function resolveSessionId() {\n    const explicit = (process.env.CTXCE_SESSION_ID || \"\").trim();\n    if (explicit) {\n      return explicit;\n    }\n    return findSavedSession([backendHint, UPLOAD_AUTH_BACKEND, authBackendEnv]);\n  }\n\n  if (!sessionId) {\n    sessionId = resolveSessionId();\n  }\n\n  if (!sessionId) {\n    sessionId = `ctxce-${Buffer.from(workspace).toString(\"hex\").slice(0, 24)}`;\n  }\n\n  // Best-effort: inform the indexer of default collection and session.\n  // If this fails we still proceed, falling back to per-call injection.\n  const defaultsPayload = { session: sessionId };\n  if (defaultCollection) {\n    defaultsPayload.collection = defaultCollection;\n  }\n\n  const repoName = detectRepoName(workspace, config);\n\n  try {\n    const state = await fetchBridgeCollectionState({\n      workspace,\n      collection: defaultCollection,\n      sessionId,\n      repoName,\n      bridgeStateToken: BRIDGE_STATE_TOKEN,\n    });\n    if (state) {\n      const serving = state.serving_collection || state.active_collection;\n      if (serving) {\n        defaultsPayload.collection = serving;\n        if (!defaultCollection || defaultCollection !== serving) {\n          debugLog(\n            `[ctxce] Using serving collection from /bridge/state: ${serving}`,\n          );\n        }\n      }\n    }\n  } catch (err) {\n    debugLog(\"[ctxce] bridge/state lookup failed: \" + String(err));\n  }\n\n  if (defaultMode) {\n    defaultsPayload.mode = defaultMode;\n  }\n  if (defaultUnder) {\n    defaultsPayload.under = defaultUnder;\n  }\n\n  async function initializeRemoteClients(forceRecreate = false) {\n    if (!forceRecreate && indexerClient) {\n      return;\n    }\n\n    if (forceRecreate) {\n      try {\n        debugLog(\"[ctxce] Reinitializing remote MCP clients after session error.\");\n      } catch {\n        // ignore logging failures\n      }\n    }\n\n    let nextIndexerClient = null;\n    try {\n      const indexerTransport = new StreamableHTTPClientTransport(indexerUrl);\n      const client = new Client(\n        {\n          name: \"ctx-context-engine-bridge-http-client\",\n          version: \"0.0.1\",\n        },\n        {\n          capabilities: {\n            tools: {},\n            resources: {},\n            prompts: {},\n          },\n        },\n      );\n      await client.connect(indexerTransport);\n      nextIndexerClient = client;\n    } catch (err) {\n      debugLog(\"[ctxce] Failed to connect MCP HTTP client to indexer: \" + String(err));\n      nextIndexerClient = null;\n    }\n\n    let nextMemoryClient = null;\n    if (memoryUrl) {\n      try {\n        const memoryTransport = new StreamableHTTPClientTransport(memoryUrl);\n        const client = new Client(\n          {\n            name: \"ctx-context-engine-bridge-memory-client\",\n            version: \"0.0.1\",\n          },\n          {\n            capabilities: {\n              tools: {},\n              resources: {},\n              prompts: {},\n            },\n          },\n        );\n        await client.connect(memoryTransport);\n        debugLog(`[ctxce] Connected memory MCP client: ${memoryUrl}`);\n        nextMemoryClient = client;\n      } catch (err) {\n        debugLog(\"[ctxce] Failed to connect memory MCP client: \" + String(err));\n        nextMemoryClient = null;\n      }\n    }\n\n    indexerClient = nextIndexerClient;\n    memoryClient = nextMemoryClient;\n\n    if (Object.keys(defaultsPayload).length > 1 && indexerClient) {\n      await sendSessionDefaults(indexerClient, defaultsPayload, \"indexer\");\n      if (memoryClient) {\n        await sendSessionDefaults(memoryClient, defaultsPayload, \"memory\");\n      }\n    }\n  }\n\n  await initializeRemoteClients(false);\n\n  const server = new Server( // TODO: marked as depreciated\n    {\n      name: \"ctx-context-engine-bridge\",\n      version: \"0.0.1\",\n    },\n    {\n      capabilities: {\n        tools: {},\n      },\n    },\n  );\n\n  // tools/list \u2192 fetch tools from remote indexer\n  server.setRequestHandler(ListToolsRequestSchema, async () => {\n    let remote;\n    try {\n      debugLog(\"[ctxce] tools/list: fetching tools from indexer\");\n      await initializeRemoteClients(false);\n      if (!indexerClient) {\n        throw new Error(\"Indexer MCP client not initialized\");\n      }\n      remote = await withTimeout(\n        indexerClient.listTools(),\n        10000,\n        \"indexer tools/list\",\n      );\n    } catch (err) {\n      debugLog(\"[ctxce] Error calling remote tools/list: \" + String(err));\n      const memoryToolsFallback = await listMemoryTools(memoryClient);\n      const toolsFallback = dedupeTools([...memoryToolsFallback]);\n      return { tools: toolsFallback };\n    }\n\n    try {\n      const toolNames =\n        remote && Array.isArray(remote.tools)\n          ? remote.tools.map((t) => (t && typeof t.name === \"string\" ? t.name : \"<unnamed>\"))\n          : [];\n      debugLog(\"[ctxce] tools/list remote result tools: \" + JSON.stringify(toolNames));\n    } catch (err) {\n      debugLog(\"[ctxce] tools/list remote result: <unserializable> \" + String(err));\n    }\n\n    const indexerTools = Array.isArray(remote?.tools) ? remote.tools.slice() : [];\n    const memoryTools = await listMemoryTools(memoryClient);\n    const tools = dedupeTools([...indexerTools, ...memoryTools]);\n    debugLog(`[ctxce] tools/list: returning ${tools.length} tools`);\n    return { tools };\n  });\n\n  // tools/call \u2192 proxied to indexer or memory server\n  server.setRequestHandler(CallToolRequestSchema, async (request) => {\n    const params = request.params || {};\n    const name = params.name;\n    let args = params.arguments;\n\n    debugLog(`[ctxce] tools/call: ${name || \"<no-name>\"}`);\n\n    // Refresh session before each call; re-init clients if session changes.\n    const freshSession = resolveSessionId() || sessionId;\n    if (freshSession && freshSession !== sessionId) {\n      sessionId = freshSession;\n      try {\n        await initializeRemoteClients(true);\n      } catch (err) {\n        debugLog(\"[ctxce] Failed to reinitialize clients after session refresh: \" + String(err));\n      }\n    }\n    if (sessionId && (args === undefined || args === null || typeof args === \"object\")) {\n      const obj = args && typeof args === \"object\" ? { ...args } : {};\n      if (!Object.prototype.hasOwnProperty.call(obj, \"session\")) {\n        obj.session = sessionId;\n      }\n      args = obj;\n    }\n\n    args = maybeRemapToolArgs(name, args, workspace);\n\n    if (name === \"set_session_defaults\") {\n      const indexerResult = await indexerClient.callTool({ name, arguments: args });\n      if (memoryClient) {\n        try {\n          await memoryClient.callTool({ name, arguments: args });\n        } catch (err) {\n          debugLog(\"[ctxce] Memory set_session_defaults failed: \" + String(err));\n        }\n      }\n      return indexerResult;\n    }\n\n    await initializeRemoteClients(false);\n\n    const timeoutMs = getBridgeToolTimeoutMs();\n    const maxAttempts = getBridgeRetryAttempts();\n    const retryDelayMs = getBridgeRetryDelayMs();\n    let sessionRetried = false;\n    let lastError;\n\n    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {\n      if (attempt > 0 && retryDelayMs > 0) {\n        await new Promise((resolve) => setTimeout(resolve, retryDelayMs));\n      }\n\n      const targetClient = selectClientForTool(name, indexerClient, memoryClient);\n      if (!targetClient) {\n        throw new Error(`Tool ${name} not available on any configured MCP server`);\n      }\n\n      try {\n        const result = await targetClient.callTool(\n          {\n            name,\n            arguments: args,\n          },\n          undefined,\n          { timeout: timeoutMs },\n        );\n        return maybeRemapToolResult(name, result, workspace);\n      } catch (err) {\n        lastError = err;\n\n        if (isSessionError(err) && !sessionRetried) {\n          debugLog(\n            \"[ctxce] tools/call: detected remote MCP session error; reinitializing clients and retrying once: \" +\n              String(err),\n          );\n          await initializeRemoteClients(true);\n          sessionRetried = true;\n          continue;\n        }\n\n        if (!isTransientToolError(err) || attempt === maxAttempts - 1) {\n          throw err;\n        }\n\n        debugLog(\n          `[ctxce] tools/call: transient error (attempt ${attempt + 1}/${maxAttempts}), retrying: ` +\n            String(err),\n        );\n        // Loop will retry\n      }\n    }\n\n    throw lastError || new Error(\"Unknown MCP tools/call error\");\n  });\n\n  return server;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sessionFromEntry_397": {
+      "name": "sessionFromEntry",
+      "type": "function",
+      "start_line": 397,
+      "end_line": 412,
+      "content_hash": "4956780ea1244635978c9653446aeb91a153c747",
+      "content": "  function sessionFromEntry(entry) {\n    if (!entry || typeof entry.sessionId !== \"string\" || !entry.sessionId) {\n      return \"\";\n    }\n    const expiresAt = entry.expiresAt;\n    if (\n      typeof expiresAt === \"number\" &&\n      Number.isFinite(expiresAt) &&\n      expiresAt > 0 &&\n      expiresAt < Math.floor(Date.now() / 1000)\n    ) {\n      debugLog(\"[ctxce] Stored auth session appears expired; please run `ctxce auth login` again.\");\n      return \"\";\n    }\n    return entry.sessionId;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_findSavedSession_414": {
+      "name": "findSavedSession",
+      "type": "function",
+      "start_line": 414,
+      "end_line": 442,
+      "content_hash": "fd2601660941ab2caa7b5cbb021c3b00b04ecdcd",
+      "content": "  function findSavedSession(backends) {\n    for (const backend of backends) {\n      const trimmed = (backend || \"\").trim();\n      if (!trimmed) {\n        continue;\n      }\n      try {\n        const entry = loadAuthEntry(trimmed);\n        const session = sessionFromEntry(entry);\n        if (session) {\n          backendHint = trimmed;\n          return session;\n        }\n      } catch {\n        // ignore lookup failures\n      }\n    }\n    try {\n      const any = loadAnyAuthEntry();\n      const session = any ? sessionFromEntry(any.entry) : \"\";\n      if (session && any?.backendUrl) {\n        backendHint = any.backendUrl;\n        return session;\n      }\n    } catch {\n      // ignore lookup failures\n    }\n    return \"\";\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveSessionId_444": {
+      "name": "resolveSessionId",
+      "type": "function",
+      "start_line": 444,
+      "end_line": 450,
+      "content_hash": "76430de12f650e2aee575e6d4dda2f0acbb0209d",
+      "content": "  function resolveSessionId() {\n    const explicit = (process.env.CTXCE_SESSION_ID || \"\").trim();\n    if (explicit) {\n      return explicit;\n    }\n    return findSavedSession([backendHint, UPLOAD_AUTH_BACKEND, authBackendEnv]);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_initializeRemoteClients_499": {
+      "name": "initializeRemoteClients",
+      "type": "function",
+      "start_line": 499,
+      "end_line": 570,
+      "content_hash": "34ec09b5720cd29de84f8c5212c4f3c635f8e433",
+      "content": "  async function initializeRemoteClients(forceRecreate = false) {\n    if (!forceRecreate && indexerClient) {\n      return;\n    }\n\n    if (forceRecreate) {\n      try {\n        debugLog(\"[ctxce] Reinitializing remote MCP clients after session error.\");\n      } catch {\n        // ignore logging failures\n      }\n    }\n\n    let nextIndexerClient = null;\n    try {\n      const indexerTransport = new StreamableHTTPClientTransport(indexerUrl);\n      const client = new Client(\n        {\n          name: \"ctx-context-engine-bridge-http-client\",\n          version: \"0.0.1\",\n        },\n        {\n          capabilities: {\n            tools: {},\n            resources: {},\n            prompts: {},\n          },\n        },\n      );\n      await client.connect(indexerTransport);\n      nextIndexerClient = client;\n    } catch (err) {\n      debugLog(\"[ctxce] Failed to connect MCP HTTP client to indexer: \" + String(err));\n      nextIndexerClient = null;\n    }\n\n    let nextMemoryClient = null;\n    if (memoryUrl) {\n      try {\n        const memoryTransport = new StreamableHTTPClientTransport(memoryUrl);\n        const client = new Client(\n          {\n            name: \"ctx-context-engine-bridge-memory-client\",\n            version: \"0.0.1\",\n          },\n          {\n            capabilities: {\n              tools: {},\n              resources: {},\n              prompts: {},\n            },\n          },\n        );\n        await client.connect(memoryTransport);\n        debugLog(`[ctxce] Connected memory MCP client: ${memoryUrl}`);\n        nextMemoryClient = client;\n      } catch (err) {\n        debugLog(\"[ctxce] Failed to connect memory MCP client: \" + String(err));\n        nextMemoryClient = null;\n      }\n    }\n\n    indexerClient = nextIndexerClient;\n    memoryClient = nextMemoryClient;\n\n    if (Object.keys(defaultsPayload).length > 1 && indexerClient) {\n      await sendSessionDefaults(indexerClient, defaultsPayload, \"indexer\");\n      if (memoryClient) {\n        await sendSessionDefaults(memoryClient, defaultsPayload, \"memory\");\n      }\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runMcpServer_723": {
+      "name": "runMcpServer",
+      "type": "function",
+      "start_line": 723,
+      "end_line": 748,
+      "content_hash": "60a9073e75de8d454802aaccd4b95421fed5f9ec",
+      "content": "export async function runMcpServer(options) {\n  const server = await createBridgeServer(options);\n  const transport = new StdioServerTransport();\n  await server.connect(transport);\n\n  const exitOnStdinClose = process.env.CTXCE_EXIT_ON_STDIN_CLOSE !== \"0\";\n  if (exitOnStdinClose) {\n    const handleStdioClosed = () => {\n      try {\n        debugLog(\"[ctxce] Stdio transport closed; exiting MCP bridge process.\");\n      } catch {\n        // ignore\n      }\n      // Allow any in-flight logs to flush, then exit.\n      setTimeout(() => {\n        process.exit(0);\n      }, 10).unref();\n    };\n\n    if (process.stdin && typeof process.stdin.on === \"function\") {\n      process.stdin.on(\"end\", handleStdioClosed);\n      process.stdin.on(\"close\", handleStdioClosed);\n      process.stdin.on(\"error\", handleStdioClosed);\n    }\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_handleStdioClosed_730": {
+      "name": "handleStdioClosed",
+      "type": "function",
+      "start_line": 730,
+      "end_line": 740,
+      "content_hash": "33b7115a45054ab7bd34e0ec920ba849f18568bf",
+      "content": "    const handleStdioClosed = () => {\n      try {\n        debugLog(\"[ctxce] Stdio transport closed; exiting MCP bridge process.\");\n      } catch {\n        // ignore\n      }\n      // Allow any in-flight logs to flush, then exit.\n      setTimeout(() => {\n        process.exit(0);\n      }, 10).unref();\n    };",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runHttpMcpServer_750": {
+      "name": "runHttpMcpServer",
+      "type": "function",
+      "start_line": 750,
+      "end_line": 905,
+      "content_hash": "309d20461128184bf64e270ac58295c5dd3fd921",
+      "content": "export async function runHttpMcpServer(options) {\n  const server = await createBridgeServer(options);\n  const port =\n    typeof options.port === \"number\"\n      ? options.port\n      : Number.parseInt(process.env.CTXCE_HTTP_PORT || \"30810\", 10) || 30810;\n\n  const transport = new StreamableHTTPServerTransport({\n    sessionIdGenerator: undefined,\n  });\n\n  await server.connect(transport);\n\n  // Build issuer URL for OAuth\n  // Note: Local-only bridge uses 127.0.0.1. For remote access, this would need to be configurable.\n  const issuerUrl = `http://127.0.0.1:${port}`;\n\n  const httpServer = createServer((req, res) => {\n    try {\n      const url = req.url || \"/\";\n\n      // Parse URL for query params\n      const parsedUrl = new URL(url, `http://${req.headers.host || 'localhost'}`);\n\n      // ================================================================\n      // OAuth 2.0 Endpoints (RFC9728 Protected Resource Metadata + RFC7591)\n      // ================================================================\n\n      // OAuth metadata endpoint (RFC9728)\n      if (parsedUrl.pathname === \"/.well-known/oauth-authorization-server\") {\n        oauthHandler.handleOAuthMetadata(req, res, issuerUrl);\n        return;\n      }\n\n      // OAuth Dynamic Client Registration endpoint (RFC7591)\n      if (parsedUrl.pathname === \"/oauth/register\" && req.method === \"POST\") {\n        oauthHandler.handleOAuthRegister(req, res);\n        return;\n      }\n\n      // OAuth authorize endpoint\n      if (parsedUrl.pathname === \"/oauth/authorize\") {\n        oauthHandler.handleOAuthAuthorize(req, res, parsedUrl.searchParams);\n        return;\n      }\n\n      // Store session endpoint (helper for login page)\n      if (parsedUrl.pathname === \"/oauth/store-session\" && req.method === \"POST\") {\n        oauthHandler.handleOAuthStoreSession(req, res);\n        return;\n      }\n\n      // OAuth token endpoint\n      if (parsedUrl.pathname === \"/oauth/token\" && req.method === \"POST\") {\n        oauthHandler.handleOAuthToken(req, res);\n        return;\n      }\n\n      // ================================================================\n      // MCP Endpoint\n      // ================================================================\n\n      // Check Bearer token for MCP endpoint (accept /mcp and /mcp/ for compatibility)\n      if (parsedUrl.pathname === \"/mcp\" || parsedUrl.pathname === \"/mcp/\") {\n        const authHeader = req.headers[\"authorization\"] || \"\";\n        const token = authHeader.startsWith(\"Bearer \") ? authHeader.slice(7) : null;\n\n        // TODO: Validate token and inject session\n        // For now, allow unauthenticated (backward compatible)\n\n        if (req.method !== \"POST\") {\n          res.statusCode = 405;\n          res.setHeader(\"Content-Type\", \"application/json\");\n          res.end(\n            JSON.stringify({\n              jsonrpc: \"2.0\",\n              error: { code: -32000, message: \"Method not allowed\" },\n              id: null,\n            }),\n          );\n          return;\n        }\n\n        let body = \"\";\n        req.on(\"data\", (chunk) => {\n          body += chunk;\n        });\n        req.on(\"end\", async () => {\n          let parsed;\n          try {\n            parsed = body ? JSON.parse(body) : {};\n          } catch (err) {\n            debugLog(\"[ctxce] Failed to parse HTTP MCP request body: \" + String(err));\n            res.statusCode = 400;\n            res.setHeader(\"Content-Type\", \"application/json\");\n            res.end(\n              JSON.stringify({\n                jsonrpc: \"2.0\",\n                error: { code: -32700, message: \"Invalid JSON\" },\n                id: null,\n              }),\n            );\n            return;\n          }\n\n          try {\n            await transport.handleRequest(req, res, parsed);\n          } catch (err) {\n            debugLog(\"[ctxce] Error handling HTTP MCP request: \" + String(err));\n            if (!res.headersSent) {\n              res.statusCode = 500;\n              res.setHeader(\"Content-Type\", \"application/json\");\n              res.end(\n                JSON.stringify({\n                  jsonrpc: \"2.0\",\n                  error: { code: -32603, message: \"Internal server error\" },\n                  id: null,\n                }),\n              );\n            }\n          }\n        });\n        return;\n      }\n\n      // 404 for everything else\n      res.statusCode = 404;\n      res.setHeader(\"Content-Type\", \"application/json\");\n      res.end(\n        JSON.stringify({\n          jsonrpc: \"2.0\",\n          error: { code: -32000, message: \"Not found\" },\n          id: null,\n        }),\n      );\n    } catch (err) {\n      debugLog(\"[ctxce] Unexpected error in HTTP MCP server: \" + String(err));\n      if (!res.headersSent) {\n        res.statusCode = 500;\n        res.setHeader(\"Content-Type\", \"application/json\");\n        res.end(\n          JSON.stringify({\n            jsonrpc: \"2.0\",\n            error: { code: -32603, message: \"Internal server error\" },\n            id: null,\n          }),\n        );\n      }\n    }\n  });\n\n  // Bind to 127.0.0.1 only (localhost) for local-only OAuth security\n  httpServer.listen(port, '127.0.0.1', () => {\n    debugLog(`[ctxce] HTTP MCP bridge listening on 127.0.0.1:${port}`);\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadConfig_907": {
+      "name": "loadConfig",
+      "type": "function",
+      "start_line": 907,
+      "end_line": 936,
+      "content_hash": "5f849b66fe4ce8501b36476e1aea3c50c76a3356",
+      "content": "function loadConfig(startDir) {\n  try {\n    let dir = startDir;\n    for (let i = 0; i < 5; i += 1) {\n      const cfgPath = path.join(dir, \"ctx_config.json\");\n      if (fs.existsSync(cfgPath)) {\n        try {\n          const raw = fs.readFileSync(cfgPath, \"utf8\");\n          const parsed = JSON.parse(raw);\n          if (parsed && typeof parsed === \"object\") {\n            return parsed;\n          }\n        } catch (err) {\n          // eslint-disable-next-line no-console\n          console.error(\"[ctxce] Failed to parse ctx_config.json:\", err);\n          return null;\n        }\n      }\n      const parent = path.dirname(dir);\n      if (!parent || parent === dir) {\n        break;\n      }\n      dir = parent;\n    }\n  } catch (err) {\n    // eslint-disable-next-line no-console\n    console.error(\"[ctxce] Error while loading ctx_config.json:\", err);\n  }\n  return null;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_detectGitBranch_938": {
+      "name": "detectGitBranch",
+      "type": "function",
+      "start_line": 938,
+      "end_line": 949,
+      "content_hash": "37f0db70a80f4764228178824a5fe97a696775a6",
+      "content": "function detectGitBranch(workspace) {\n  try {\n    const out = execSync(\"git rev-parse --abbrev-ref HEAD\", {\n      cwd: workspace,\n      stdio: [\"ignore\", \"pipe\", \"ignore\"],\n    });\n    const name = out.toString(\"utf8\").trim();\n    return name || null;\n  } catch {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_detectRepoName_951": {
+      "name": "detectRepoName",
+      "type": "function",
+      "start_line": 951,
+      "end_line": 970,
+      "content_hash": "eccd420f1efdbbcfd65ce4a1b00d817c99bd197d",
+      "content": "function detectRepoName(workspace, config) {\n  const envRepo =\n    (process.env.CURRENT_REPO && process.env.CURRENT_REPO.trim()) ||\n    (process.env.REPO_NAME && process.env.REPO_NAME.trim());\n  if (envRepo) {\n    return envRepo;\n  }\n\n  if (config) {\n    const cfgRepo =\n      (typeof config.repo_name === \"string\" && config.repo_name.trim()) ||\n      (typeof config.default_repo === \"string\" && config.default_repo.trim());\n    if (cfgRepo) {\n      return cfgRepo;\n    }\n  }\n\n  const leaf = workspace ? path.basename(workspace) : \"\";\n  return leaf && SLUGGED_REPO_RE.test(leaf) ? leaf : null;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

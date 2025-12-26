@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/cmd/aiops_cmd.go",
+  "file_hash": "a0fc187b20297e572f74e2a50be4f09ba849f077",
+  "updated_at": "2025-12-26T17:34:20.846349",
+  "symbols": {
+    "function_init_32": {
+      "name": "init",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 36,
+      "content_hash": "504473486b2346950f6f0920affd9ebd09ebab8a",
+      "content": "func init() {\n\taiopsCmd.AddCommand(aiopsStatusCmd)\n\taiopsCmd.AddCommand(aiopsTestCmd)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runAIOpsStatus_37": {
+      "name": "runAIOpsStatus",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 89,
+      "content_hash": "82e931d8a2a057a0a08e21ede62ba3fdc798e628",
+      "content": "func runAIOpsStatus(cmd *cobra.Command, args []string) error {\n\tcwd, err := cmd.Flags().GetString(\"cwd\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get current working directory: %v\", err)\n\t}\n\n\tdataDir, err := cmd.Flags().GetString(\"data-dir\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get data directory: %v\", err)\n\t}\n\n\tcfg, err := config.Load(cwd, dataDir, false)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to load config: %w\", err)\n\t}\n\n\tif !cfg.AIOPS.Enabled {\n\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"241\")).Render(\"AIOPS: disabled\"))\n\t\treturn nil\n\t}\n\n\t// Create AIOPS client\n\taiopsCfg := aiops.Config{\n\t\tEnabled:  cfg.AIOPS.Enabled,\n\t\tEndpoint: cfg.AIOPS.Endpoint,\n\t\tTimeout:  cfg.AIOPS.Timeout,\n\t\tFallback: cfg.AIOPS.Fallback,\n\t}\n\tclient := aiops.NewClient(aiopsCfg)\n\n\t// Check availability\n\tif !client.Available() {\n\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"196\")).Render(\"AIOPS: unavailable\"))\n\t\tfmt.Printf(\"Endpoint: %s\\n\", cfg.AIOPS.Endpoint)\n\t\treturn nil\n\t}\n\n\t// Get model info\n\tmodelInfo := client.ModelInfo()\n\tstyle := lipgloss.NewStyle().\n\t\tForeground(lipgloss.Color(\"10\")).\n\t\tBold(true)\n\n\tfmt.Println(style.Render(\"AIOPS: available\"))\n\tfmt.Printf(\"Endpoint: %s\\n\", cfg.AIOPS.Endpoint)\n\tfmt.Printf(\"Model: %s (%s)\\n\", modelInfo.Name, modelInfo.Runtime)\n\tif modelInfo.Latency > 0 {\n\t\tfmt.Printf(\"Latency: %s\\n\", modelInfo.Latency)\n\t}\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runAIOpsTest_90": {
+      "name": "runAIOpsTest",
+      "type": "function",
+      "start_line": 90,
+      "end_line": 173,
+      "content_hash": "7e53e7be7370c0fdbc2a5e23bd87eb576d630bce",
+      "content": "func runAIOpsTest(cmd *cobra.Command, args []string) error {\n\tcwd, err := cmd.Flags().GetString(\"cwd\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get current working directory: %v\", err)\n\t}\n\n\tdataDir, err := cmd.Flags().GetString(\"data-dir\")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get data directory: %v\", err)\n\t}\n\n\tcfg, err := config.Load(cwd, dataDir, false)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to load config: %w\", err)\n\t}\n\n\tif !cfg.AIOPS.Enabled {\n\t\treturn fmt.Errorf(\"AIOPS is disabled in config\")\n\t}\n\n\t// Create AIOPS client\n\taiopsCfg := aiops.Config{\n\t\tEnabled:  cfg.AIOPS.Enabled,\n\t\tEndpoint: cfg.AIOPS.Endpoint,\n\t\tTimeout:  cfg.AIOPS.Timeout,\n\t\tFallback: cfg.AIOPS.Fallback,\n\t}\n\tclient := aiops.NewClient(aiopsCfg)\n\tif !client.Available() {\n\t\treturn fmt.Errorf(\"AIOPS service not available at %s\", cfg.AIOPS.Endpoint)\n\t}\n\n\t// Test edit resolution\n\tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\tdefer cancel()\n\n\tfmt.Println(lipgloss.NewStyle().Bold(true).Render(\"Testing AIOPS service...\"))\n\n\t// Test edit resolution\n\tres, err := client.ResolveEdit(ctx,\n\t\t\"func hello() {\\n\\tfmt.Println(\\\"Hello\\\")\\n}\",\n\t\t\"Hello\", \"World\")\n\tif err != nil {\n\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"196\")).Render(fmt.Sprintf(\"Edit resolution test failed: %v\", err)))\n\t} else {\n\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"10\")).Render(fmt.Sprintf(\"\u2713 Edit resolution: confidence %.2f\", res.Confidence)))\n\t}\n\n\t// Test loop detection\n\ttestCalls := []aiops.ToolCall{\n\t\t{Name: \"edit\", Result: \"old_string not found\", Timestamp: time.Now()},\n\t\t{Name: \"edit\", Result: \"old_string not found\", Timestamp: time.Now()},\n\t\t{Name: \"edit\", Result: \"old_string not found\", Timestamp: time.Now()},\n\t}\n\tloop, err := client.DetectLoop(ctx, testCalls)\n\tif err != nil {\n\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"196\")).Render(fmt.Sprintf(\"Loop detection test failed: %v\", err)))\n\t} else {\n\t\tif loop.IsLooping {\n\t\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"11\")).Render(fmt.Sprintf(\"\u2713 Loop detection: %s\", loop.PatternType)))\n\t\t} else {\n\t\t\tmsg := lipgloss.NewStyle().Foreground(lipgloss.Color(\"10\")).Render(\"\u2713 Loop detection: no loop detected\\n\")\n\t\t\tfmt.Print(msg)\n\t\t}\n\t}\n\n\t// Test drift detection\n\ttestActions := []aiops.Action{\n\t\t{Description: \"Edit file\", Timestamp: time.Now()},\n\t\t{Description: \"Another edit\", Timestamp: time.Now()},\n\t}\n\tdrift, err := client.DetectDrift(ctx, \"Add error handling\", testActions)\n\tif err != nil {\n\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"196\")).Render(fmt.Sprintf(\"Drift detection test failed: %v\", err)))\n\t} else {\n\t\tif drift.IsDrifting {\n\t\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"11\")).Render(fmt.Sprintf(\"\u2713 Drift detection: drift detected (score: %.2f)\", drift.DriftScore)))\n\t\t} else {\n\t\t\tfmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color(\"10\")).Render(fmt.Sprintf(\"\u2713 Drift detection: on track (score: %.2f)\", drift.DriftScore)))\n\t\t}\n\t}\n\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/shell/shell_test.go",
+  "file_hash": "d7d184765158944e77aea14717fb156d271ca427",
+  "updated_at": "2025-12-26T17:34:22.025740",
+  "symbols": {
+    "function_BenchmarkShellQuickCommands_13": {
+      "name": "BenchmarkShellQuickCommands",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 26,
+      "content_hash": "1887e5aaf0ab1e93f6d05b898fe33170cb5cc402",
+      "content": "func BenchmarkShellQuickCommands(b *testing.B) {\n\tshell := NewShell(&Options{WorkingDir: b.TempDir()})\n\n\tb.ReportAllocs()\n\n\tfor b.Loop() {\n\t\t_, _, err := shell.Exec(b.Context(), \"echo test\")\n\t\texitCode := ExitCode(err)\n\t\tif err != nil || exitCode != 0 {\n\t\t\tb.Fatalf(\"Command failed: %v, exit code: %d\", err, exitCode)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTestTimeout_27": {
+      "name": "TestTestTimeout",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 48,
+      "content_hash": "067726889b9538de61090fb3b232ac40d4169200",
+      "content": "func TestTestTimeout(t *testing.T) {\n\t// XXX(@andreynering): This fails on Windows. Address once possible.\n\tif runtime.GOOS == \"windows\" {\n\t\tt.Skip(\"Skipping test on Windows\")\n\t}\n\n\tctx, cancel := context.WithTimeout(t.Context(), time.Millisecond)\n\tt.Cleanup(cancel)\n\n\tshell := NewShell(&Options{WorkingDir: t.TempDir()})\n\t_, _, err := shell.Exec(ctx, \"sleep 10\")\n\tif status := ExitCode(err); status == 0 {\n\t\tt.Fatalf(\"Expected non-zero exit status, got %d\", status)\n\t}\n\tif !IsInterrupt(err) {\n\t\tt.Fatalf(\"Expected command to be interrupted, but it was not\")\n\t}\n\tif err == nil {\n\t\tt.Fatalf(\"Expected an error due to timeout, but got none\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTestCancel_49": {
+      "name": "TestTestCancel",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 65,
+      "content_hash": "2058fb332834aee90851517b6e225c1dfea830be",
+      "content": "func TestTestCancel(t *testing.T) {\n\tctx, cancel := context.WithCancel(t.Context())\n\tcancel() // immediately cancel the context\n\n\tshell := NewShell(&Options{WorkingDir: t.TempDir()})\n\t_, _, err := shell.Exec(ctx, \"sleep 10\")\n\tif status := ExitCode(err); status == 0 {\n\t\tt.Fatalf(\"Expected non-zero exit status, got %d\", status)\n\t}\n\tif !IsInterrupt(err) {\n\t\tt.Fatalf(\"Expected command to be interrupted, but it was not\")\n\t}\n\tif err == nil {\n\t\tt.Fatalf(\"Expected an error due to cancel, but got none\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRunCommandError_66": {
+      "name": "TestRunCommandError",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 79,
+      "content_hash": "b099bc206ca288471afa0b3a031dc0a3100b9d64",
+      "content": "func TestRunCommandError(t *testing.T) {\n\tshell := NewShell(&Options{WorkingDir: t.TempDir()})\n\t_, _, err := shell.Exec(t.Context(), \"nopenopenope\")\n\tif status := ExitCode(err); status == 0 {\n\t\tt.Fatalf(\"Expected non-zero exit status, got %d\", status)\n\t}\n\tif IsInterrupt(err) {\n\t\tt.Fatalf(\"Expected command to not be interrupted, but it was\")\n\t}\n\tif err == nil {\n\t\tt.Fatalf(\"Expected an error, got nil\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRunContinuity_80": {
+      "name": "TestRunContinuity",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 100,
+      "content_hash": "d3feef29e1b06fd61344a5301ff6d5cdeb6d4359",
+      "content": "func TestRunContinuity(t *testing.T) {\n\ttempDir1 := t.TempDir()\n\ttempDir2 := t.TempDir()\n\n\tshell := NewShell(&Options{WorkingDir: tempDir1})\n\tif _, _, err := shell.Exec(t.Context(), \"export FOO=bar\"); err != nil {\n\t\tt.Fatalf(\"failed to set env: %v\", err)\n\t}\n\tif _, _, err := shell.Exec(t.Context(), \"cd \"+filepath.ToSlash(tempDir2)); err != nil {\n\t\tt.Fatalf(\"failed to change directory: %v\", err)\n\t}\n\tout, _, err := shell.Exec(t.Context(), \"echo $FOO ; pwd\")\n\tif err != nil {\n\t\tt.Fatalf(\"failed to echo: %v\", err)\n\t}\n\texpect := \"bar\\n\" + tempDir2 + \"\\n\"\n\tif out != expect {\n\t\tt.Fatalf(\"expected output %q, got %q\", expect, out)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCrossPlatformExecution_101": {
+      "name": "TestCrossPlatformExecution",
+      "type": "function",
+      "start_line": 101,
+      "end_line": 120,
+      "content_hash": "7db62ff8d6dcedb867c08f57919cad058876d40c",
+      "content": "func TestCrossPlatformExecution(t *testing.T) {\n\tshell := NewShell(&Options{WorkingDir: \".\"})\n\tctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)\n\tdefer cancel()\n\n\t// Test a simple command that should work on all platforms\n\tstdout, stderr, err := shell.Exec(ctx, \"echo hello\")\n\tif err != nil {\n\t\tt.Fatalf(\"Echo command failed: %v, stderr: %s\", err, stderr)\n\t}\n\n\tif stdout == \"\" {\n\t\tt.Error(\"Echo command produced no output\")\n\t}\n\n\t// The output should contain \"hello\" regardless of platform\n\tif !strings.Contains(strings.ToLower(stdout), \"hello\") {\n\t\tt.Errorf(\"Echo output should contain 'hello', got: %q\", stdout)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

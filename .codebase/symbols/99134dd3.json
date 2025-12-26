@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/components/ErrorBoundary.tsx",
+  "file_hash": "a8ebbcdc0e620e0b73da47ebe89b4c4a4022b6b5",
+  "updated_at": "2025-12-26T17:34:19.943436",
+  "symbols": {
+    "method_constructor_14": {
+      "name": "constructor",
+      "type": "method",
+      "start_line": 14,
+      "end_line": 21,
+      "content_hash": "784f08f85046d326df79a0e90f31241f51711ee9",
+      "content": "  constructor(props: Props) {\n    super(props);\n    this.state = {\n      hasError: false,\n      error: null,\n      errorInfo: null\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getDerivedStateFromError_23": {
+      "name": "getDerivedStateFromError",
+      "type": "method",
+      "start_line": 23,
+      "end_line": 25,
+      "content_hash": "2964a1458bfbee1294dcf87d03059c8126d90b6f",
+      "content": "  static getDerivedStateFromError(error: Error): Partial<State> {\n    return { hasError: true, error };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_componentDidCatch_27": {
+      "name": "componentDidCatch",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 33,
+      "content_hash": "047055d7ca8229b017a7d82d72d7aea74e3c0ffe",
+      "content": "  componentDidCatch(error: Error, errorInfo: ErrorInfo) {\n    console.error('[ErrorBoundary] Caught error:', error, errorInfo);\n    this.setState({\n      error,\n      errorInfo\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/internal/cmd/query_cmd_test.go",
+  "file_hash": "6804f4a4cb6df9748a5e258db45595da27087b2d",
+  "updated_at": "2025-12-26T17:34:24.432965",
+  "symbols": {
+    "function_TestParseQueryType_11": {
+      "name": "TestParseQueryType",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 79,
+      "content_hash": "372821c8cd7e581b1e438b04a31d3e02cade303b",
+      "content": "func TestParseQueryType(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected indexer.QueryType\n\t\twantErr  bool\n\t}{\n\t\t{\n\t\t\tname:     \"All type\",\n\t\t\tinput:    \"all\",\n\t\t\texpected: indexer.QueryTypeAll,\n\t\t\twantErr:  false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Semantic type\",\n\t\t\tinput:    \"semantic\",\n\t\t\texpected: indexer.QueryTypeSemantic,\n\t\t\twantErr:  false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Text type\",\n\t\t\tinput:    \"text\",\n\t\t\texpected: indexer.QueryTypeText,\n\t\t\twantErr:  false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Graph type\",\n\t\t\tinput:    \"graph\",\n\t\t\texpected: indexer.QueryTypeGraph,\n\t\t\twantErr:  false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Case insensitive - ALL\",\n\t\t\tinput:    \"ALL\",\n\t\t\texpected: indexer.QueryTypeAll,\n\t\t\twantErr:  false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Case insensitive - Semantic\",\n\t\t\tinput:    \"Semantic\",\n\t\t\texpected: indexer.QueryTypeSemantic,\n\t\t\twantErr:  false,\n\t\t},\n\t\t{\n\t\t\tname:    \"Unknown type\",\n\t\t\tinput:   \"unknown\",\n\t\t\twantErr: true,\n\t\t},\n\t\t{\n\t\t\tname:    \"Invalid type\",\n\t\t\tinput:   \"invalid\",\n\t\t\twantErr: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult, err := parseQueryType(tt.input)\n\t\t\tif tt.wantErr {\n\t\t\t\tassert.Error(t, err)\n\t\t\t\tassert.Contains(t, err.Error(), \"unknown query type\")\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.Equal(t, tt.expected, result)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestQueryCmdMetadata_80": {
+      "name": "TestQueryCmdMetadata",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 113,
+      "content_hash": "1a9af26bcc323cb7216236f370d7a41207290017",
+      "content": "func TestQueryCmdMetadata(t *testing.T) {\n\tt.Run(\"Command has correct metadata\", func(t *testing.T) {\n\t\tassert.Equal(t, \"query [search terms]\", queryCmd.Use)\n\t\tassert.Equal(t, \"Search indexed code using AI-accelerated search\", queryCmd.Short)\n\t\tassert.Contains(t, queryCmd.Long, \"Semantic similarity\")\n\t\tassert.NotEmpty(t, queryCmd.Long)\n\t})\n\n\tt.Run(\"Has correct flags\", func(t *testing.T) {\n\t\tflags := queryCmd.Flags()\n\n\t\tdbFlag := flags.Lookup(\"database\")\n\t\tassert.NotNil(t, dbFlag)\n\t\tassert.Equal(t, \"b\", dbFlag.Shorthand)\n\n\t\ttypeFlag := flags.Lookup(\"type\")\n\t\tassert.NotNil(t, typeFlag)\n\t\tassert.Equal(t, \"t\", typeFlag.Shorthand)\n\t\tassert.Equal(t, \"all\", typeFlag.DefValue)\n\n\t\tlimitFlag := flags.Lookup(\"limit\")\n\t\tassert.NotNil(t, limitFlag)\n\t\tassert.Equal(t, \"l\", limitFlag.Shorthand)\n\t\tassert.Equal(t, \"20\", limitFlag.DefValue)\n\n\t\texplainFlag := flags.Lookup(\"explain\")\n\t\tassert.NotNil(t, explainFlag)\n\t\tassert.Equal(t, \"e\", explainFlag.Shorthand)\n\n\t\tcontextFlag := flags.Lookup(\"context\")\n\t\tassert.NotNil(t, contextFlag)\n\t\tassert.Equal(t, \"x\", contextFlag.Shorthand)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

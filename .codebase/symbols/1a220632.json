@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/hooks/cleanup-hook.ts",
+  "file_hash": "e932b66e3e5fc227172edc723a25eb95866ab202",
+  "updated_at": "2025-12-26T17:34:23.241915",
+  "symbols": {
+    "function_cleanupHook_21": {
+      "name": "cleanupHook",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 50,
+      "content_hash": "ea3584d74706b080b9db398e1bfb70e75570cb83",
+      "content": "async function cleanupHook(input?: SessionEndInput): Promise<void> {\n  // Ensure worker is running before any other logic\n  await ensureWorkerRunning();\n\n  if (!input) {\n    throw new Error('cleanup-hook requires input from Claude Code');\n  }\n\n  const { session_id, reason } = input;\n\n  const port = getWorkerPort();\n\n  // Send to worker - worker handles finding session, marking complete, and stopping spinner\n  const response = await fetch(`http://127.0.0.1:${port}/api/sessions/complete`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      claudeSessionId: session_id,\n      reason\n    }),\n    signal: AbortSignal.timeout(HOOK_TIMEOUTS.DEFAULT)\n  });\n\n  if (!response.ok) {\n    throw new Error(`Session cleanup failed: ${response.status}`);\n  }\n\n  console.log('{\"continue\": true, \"suppressOutput\": true}');\n  process.exit(0);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

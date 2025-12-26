@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/context-engine/scripts/ingest/qdrant.py",
+  "file_hash": "53655f57adf95e2416090961002938950b0491f9",
+  "updated_at": "2025-12-26T17:34:20.553249",
+  "symbols": {
+    "class_CollectionNeedsRecreateError_36": {
+      "name": "CollectionNeedsRecreateError",
+      "type": "class",
+      "start_line": 36,
+      "end_line": 38,
+      "content_hash": "2af613fa7c113b08f293cd82d30a993442ead2ed",
+      "content": "class CollectionNeedsRecreateError(Exception):\n    \"\"\"Raised when a collection needs to be recreated to add new vector types.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensure_collection_41": {
+      "name": "ensure_collection",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 144,
+      "content_hash": "34589e68f354224712ae875ecfef9490881a9fab",
+      "content": "def ensure_collection(client: QdrantClient, name: str, dim: int, vector_name: str):\n    \"\"\"Ensure collection exists with named vectors.\n    \n    Always includes dense (vector_name) and lexical (LEX_VECTOR_NAME).\n    When REFRAG_MODE=1, also includes a compact mini vector (MINI_VECTOR_NAME).\n    \"\"\"\n    backup_file = None\n    try:\n        info = client.get_collection(name)\n        try:\n            cfg = getattr(info.config.params, \"vectors\", None)\n            sparse_cfg = getattr(info.config.params, \"sparse_vectors\", None)\n            if isinstance(cfg, dict):\n                has_lex = LEX_VECTOR_NAME in cfg\n                has_mini = MINI_VECTOR_NAME in cfg\n                has_sparse = sparse_cfg and LEX_SPARSE_NAME in (sparse_cfg if isinstance(sparse_cfg, dict) else {})\n\n                if LEX_SPARSE_MODE and not has_sparse:\n                    print(f\"[COLLECTION_INFO] Collection {name} lacks sparse vector '{LEX_SPARSE_NAME}' - recreating...\")\n                    backup_file = _backup_memories_before_recreate(name)\n                    try:\n                        client.delete_collection(name)\n                        print(f\"[COLLECTION_INFO] Deleted existing collection {name}\")\n                    except Exception:\n                        pass\n                    raise CollectionNeedsRecreateError(f\"Collection {name} needs sparse vectors\")\n\n                missing = {}\n                if not has_lex:\n                    missing[LEX_VECTOR_NAME] = models.VectorParams(\n                        size=LEX_VECTOR_DIM, distance=models.Distance.COSINE\n                    )\n\n                try:\n                    refrag_on = os.environ.get(\"REFRAG_MODE\", \"\").strip().lower() in {\n                        \"1\", \"true\", \"yes\", \"on\",\n                    }\n                except Exception:\n                    refrag_on = False\n\n                if refrag_on and not has_mini:\n                    missing[MINI_VECTOR_NAME] = models.VectorParams(\n                        size=int(os.environ.get(\"MINI_VEC_DIM\", MINI_VEC_DIM) or MINI_VEC_DIM),\n                        distance=models.Distance.COSINE,\n                    )\n\n                if missing:\n                    try:\n                        client.update_collection(\n                            collection_name=name, vectors_config=missing\n                        )\n                        print(f\"[COLLECTION_SUCCESS] Successfully updated collection {name} with missing vectors\")\n                    except Exception as update_e:\n                        print(f\"[COLLECTION_WARNING] Cannot add missing vectors to {name} ({update_e}). Recreating collection...\")\n                        backup_file = _backup_memories_before_recreate(name)\n                        try:\n                            client.delete_collection(name)\n                            print(f\"[COLLECTION_INFO] Deleted existing collection {name}\")\n                        except Exception:\n                            pass\n                        raise CollectionNeedsRecreateError(f\"Collection {name} needs recreation for new vectors\")\n        except CollectionNeedsRecreateError:\n            print(f\"[COLLECTION_INFO] Collection {name} needs recreation - proceeding...\")\n            raise\n        except Exception as e:\n            print(f\"[COLLECTION_ERROR] Failed to update collection {name}: {e}\")\n            pass\n        return\n    except Exception as e:\n        print(f\"[COLLECTION_INFO] Creating new collection {name}: {type(e).__name__}\")\n        pass\n\n    vectors_cfg = {\n        vector_name: models.VectorParams(size=dim, distance=models.Distance.COSINE),\n        LEX_VECTOR_NAME: models.VectorParams(\n            size=LEX_VECTOR_DIM, distance=models.Distance.COSINE\n        ),\n    }\n    try:\n        if os.environ.get(\"REFRAG_MODE\", \"\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}:\n            vectors_cfg[MINI_VECTOR_NAME] = models.VectorParams(\n                size=int(os.environ.get(\"MINI_VEC_DIM\", MINI_VEC_DIM) or MINI_VEC_DIM),\n                distance=models.Distance.COSINE,\n            )\n    except Exception:\n        pass\n\n    sparse_cfg = None\n    if LEX_SPARSE_MODE:\n        sparse_cfg = {\n            LEX_SPARSE_NAME: models.SparseVectorParams(\n                index=models.SparseIndexParams(full_scan_threshold=5000)\n            )\n        }\n    client.create_collection(\n        collection_name=name,\n        vectors_config=vectors_cfg,\n        sparse_vectors_config=sparse_cfg,\n        hnsw_config=models.HnswConfigDiff(m=16, ef_construct=256),\n    )\n    sparse_info = f\", sparse: [{LEX_SPARSE_NAME}]\" if sparse_cfg else \"\"\n    print(f\"[COLLECTION_INFO] Successfully created new collection {name} with vectors: {list(vectors_cfg.keys())}{sparse_info}\")\n\n    _restore_memories_after_recreate(name, backup_file)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__backup_memories_before_recreate_147": {
+      "name": "_backup_memories_before_recreate",
+      "type": "function",
+      "start_line": 147,
+      "end_line": 169,
+      "content_hash": "21d08dd008b8472014685aa25847724ce404dac0",
+      "content": "def _backup_memories_before_recreate(name: str) -> Optional[str]:\n    \"\"\"Backup memories before recreating a collection.\"\"\"\n    backup_file = None\n    try:\n        import tempfile\n        import subprocess\n        import sys\n        with tempfile.NamedTemporaryFile(mode='w', suffix='_memories_backup.json', delete=False) as f:\n            backup_file = f.name\n        print(f\"[MEMORY_BACKUP] Backing up memories from {name} to {backup_file}\")\n        backup_script = Path(__file__).parent.parent / \"memory_backup.py\"\n        result = subprocess.run([\n            sys.executable, str(backup_script),\n            \"--collection\", name,\n            \"--output\", backup_file\n        ], capture_output=True, text=True, cwd=Path(__file__).parent.parent.parent)\n        if result.returncode != 0:\n            print(f\"[MEMORY_BACKUP_WARNING] Backup script failed: {result.stderr}\")\n            backup_file = None\n    except Exception as backup_e:\n        print(f\"[MEMORY_BACKUP_WARNING] Failed to backup memories: {backup_e}\")\n        backup_file = None\n    return backup_file",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__restore_memories_after_recreate_172": {
+      "name": "_restore_memories_after_recreate",
+      "type": "function",
+      "start_line": 172,
+      "end_line": 227,
+      "content_hash": "c2c2847fe0b7f96d3cd421b5adc7a343b371c792",
+      "content": "def _restore_memories_after_recreate(name: str, backup_file: Optional[str]):\n    \"\"\"Restore memories after recreating a collection.\"\"\"\n    strict_restore = False\n    try:\n        val = os.environ.get(\"STRICT_MEMORY_RESTORE\", \"\")\n        strict_restore = str(val or \"\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}\n    except Exception:\n        strict_restore = False\n\n    try:\n        if backup_file and os.path.exists(backup_file):\n            print(f\"[MEMORY_RESTORE] Restoring memories from {backup_file}\")\n            import subprocess\n            import sys\n\n            restore_script = Path(__file__).parent.parent / \"memory_restore.py\"\n            result = subprocess.run(\n                [\n                    sys.executable,\n                    str(restore_script),\n                    \"--backup\",\n                    backup_file,\n                    \"--collection\",\n                    name,\n                    \"--skip-collection-creation\",\n                ],\n                capture_output=True,\n                text=True,\n                cwd=Path(__file__).parent.parent.parent,\n            )\n\n            if result.returncode == 0:\n                print(f\"[MEMORY_RESTORE] Successfully restored memories using {restore_script.name}\")\n            else:\n                print(f\"[MEMORY_RESTORE_WARNING] Restore script failed (exit {result.returncode})\")\n                if result.stdout:\n                    print(f\"[MEMORY_RESTORE_STDOUT] {result.stdout}\")\n                if result.stderr:\n                    print(f\"[MEMORY_RESTORE_STDERR] {result.stderr}\")\n                if strict_restore:\n                    msg = result.stderr or result.stdout or f\"exit code {result.returncode}\"\n                    raise RuntimeError(f\"Memory restore failed for collection {name}: {msg}\")\n\n            try:\n                os.unlink(backup_file)\n                print(f\"[MEMORY_RESTORE] Cleaned up backup file {backup_file}\")\n            except Exception:\n                pass\n\n        elif backup_file:\n            print(f\"[MEMORY_RESTORE_WARNING] Backup file {backup_file} not found\")\n\n    except Exception as restore_e:\n        print(f\"[MEMORY_RESTORE_ERROR] Failed to restore memories: {restore_e}\")\n        if strict_restore:\n            raise",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_recreate_collection_230": {
+      "name": "recreate_collection",
+      "type": "function",
+      "start_line": 230,
+      "end_line": 262,
+      "content_hash": "70c02ef6fb5d4b738d217d8f6574ae243a3ef870",
+      "content": "def recreate_collection(client: QdrantClient, name: str, dim: int, vector_name: str):\n    \"\"\"Drop and recreate collection with named vectors.\"\"\"\n    try:\n        client.delete_collection(name)\n    except Exception:\n        pass\n    vectors_cfg = {\n        vector_name: models.VectorParams(size=dim, distance=models.Distance.COSINE),\n        LEX_VECTOR_NAME: models.VectorParams(\n            size=LEX_VECTOR_DIM, distance=models.Distance.COSINE\n        ),\n    }\n    try:\n        if os.environ.get(\"REFRAG_MODE\", \"\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}:\n            vectors_cfg[MINI_VECTOR_NAME] = models.VectorParams(\n                size=int(os.environ.get(\"MINI_VEC_DIM\", MINI_VEC_DIM) or MINI_VEC_DIM),\n                distance=models.Distance.COSINE,\n            )\n    except Exception:\n        pass\n    sparse_cfg = None\n    if LEX_SPARSE_MODE:\n        sparse_cfg = {\n            LEX_SPARSE_NAME: models.SparseVectorParams(\n                index=models.SparseIndexParams(full_scan_threshold=5000)\n            )\n        }\n    client.create_collection(\n        collection_name=name,\n        vectors_config=vectors_cfg,\n        sparse_vectors_config=sparse_cfg,\n        hnsw_config=models.HnswConfigDiff(m=16, ef_construct=256),\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensure_payload_indexes_265": {
+      "name": "ensure_payload_indexes",
+      "type": "function",
+      "start_line": 265,
+      "end_line": 292,
+      "content_hash": "e8837a339536e05bf6c30a2daf3c67cc634d32db",
+      "content": "def ensure_payload_indexes(client: QdrantClient, collection: str):\n    \"\"\"Create helpful payload indexes if they don't exist (idempotent).\"\"\"\n    for field in (\n        \"metadata.language\",\n        \"metadata.path_prefix\",\n        \"metadata.repo_id\",\n        \"metadata.repo_rel_path\",\n        \"metadata.repo\",\n        \"metadata.kind\",\n        \"metadata.symbol\",\n        \"metadata.symbol_path\",\n        \"metadata.imports\",\n        \"metadata.calls\",\n        \"metadata.file_hash\",\n        \"metadata.ingested_at\",\n        \"metadata.last_modified_at\",\n        \"metadata.churn_count\",\n        \"metadata.author_count\",\n        \"pid_str\",\n    ):\n        try:\n            client.create_payload_index(\n                collection_name=collection,\n                field_name=field,\n                field_schema=models.PayloadSchemaType.KEYWORD,\n            )\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensure_collection_and_indexes_once_295": {
+      "name": "ensure_collection_and_indexes_once",
+      "type": "function",
+      "start_line": 295,
+      "end_line": 336,
+      "content_hash": "044a496affa18cb42b4248c82db107f109f421bc",
+      "content": "def ensure_collection_and_indexes_once(\n    client: QdrantClient,\n    collection: str,\n    dim: int,\n    vector_name: str | None,\n) -> None:\n    \"\"\"Ensure collection and indexes exist (cached per-process).\"\"\"\n    if not collection:\n        return\n    if collection in ENSURED_COLLECTIONS:\n        try:\n            ping_seconds = float(os.environ.get(\"ENSURED_COLLECTION_PING_SECONDS\", \"0\") or 0)\n        except Exception:\n            ping_seconds = 0.0\n\n        if ping_seconds <= 0:\n            return\n\n        try:\n            now = time.time()\n            last = ENSURED_COLLECTIONS_LAST_CHECK.get(collection, 0.0)\n            if (now - last) < ping_seconds:\n                return\n            client.get_collection(collection)\n            ENSURED_COLLECTIONS_LAST_CHECK[collection] = now\n            return\n        except Exception:\n            try:\n                ENSURED_COLLECTIONS.discard(collection)\n            except Exception:\n                pass\n            try:\n                ENSURED_COLLECTIONS_LAST_CHECK.pop(collection, None)\n            except Exception:\n                pass\n    ensure_collection(client, collection, dim, vector_name)\n    ensure_payload_indexes(client, collection)\n    ENSURED_COLLECTIONS.add(collection)\n    try:\n        ENSURED_COLLECTIONS_LAST_CHECK[collection] = time.time()\n    except Exception:\n        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_indexed_file_hash_339": {
+      "name": "get_indexed_file_hash",
+      "type": "function",
+      "start_line": 339,
+      "end_line": 396,
+      "content_hash": "ee81fb423c2ba8bca35d7ed1deafebed92405a04",
+      "content": "def get_indexed_file_hash(\n    client: QdrantClient,\n    collection: str,\n    file_path: str,\n    *,\n    repo_id: str | None = None,\n    repo_rel_path: str | None = None,\n) -> str:\n    \"\"\"Return previously indexed file hash for this logical path, or empty string.\"\"\"\n    if logical_repo_reuse_enabled() and repo_id and repo_rel_path:\n        try:\n            filt = models.Filter(\n                must=[\n                    models.FieldCondition(\n                        key=\"metadata.repo_id\", match=models.MatchValue(value=repo_id)\n                    ),\n                    models.FieldCondition(\n                        key=\"metadata.repo_rel_path\",\n                        match=models.MatchValue(value=repo_rel_path),\n                    ),\n                ]\n            )\n            points, _ = client.scroll(\n                collection_name=collection,\n                scroll_filter=filt,\n                with_payload=True,\n                limit=1,\n            )\n            if points:\n                md = (points[0].payload or {}).get(\"metadata\") or {}\n                fh = md.get(\"file_hash\")\n                if fh:\n                    return str(fh)\n        except Exception:\n            pass\n\n    try:\n        filt = models.Filter(\n            must=[\n                models.FieldCondition(\n                    key=\"metadata.path\", match=models.MatchValue(value=file_path)\n                )\n            ]\n        )\n        points, _ = client.scroll(\n            collection_name=collection,\n            scroll_filter=filt,\n            with_payload=True,\n            limit=1,\n        )\n        if points:\n            md = (points[0].payload or {}).get(\"metadata\") or {}\n            fh = md.get(\"file_hash\")\n            if fh:\n                return str(fh)\n    except Exception:\n        return \"\"\n    return \"\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_delete_points_by_path_399": {
+      "name": "delete_points_by_path",
+      "type": "function",
+      "start_line": 399,
+      "end_line": 415,
+      "content_hash": "1e7164321c286b6b905184df65186a2ae8c49a61",
+      "content": "def delete_points_by_path(client: QdrantClient, collection: str, file_path: str):\n    \"\"\"Delete all points for a given file path.\"\"\"\n    try:\n        filt = models.Filter(\n            must=[\n                models.FieldCondition(\n                    key=\"metadata.path\", match=models.MatchValue(value=file_path)\n                )\n            ]\n        )\n        client.delete(\n            collection_name=collection,\n            points_selector=models.FilterSelector(filter=filt),\n            wait=True,\n        )\n    except Exception:\n        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_upsert_points_418": {
+      "name": "upsert_points",
+      "type": "function",
+      "start_line": 418,
+      "end_line": 461,
+      "content_hash": "fff76876214be9657ce89c971b5dd83975cb42ef",
+      "content": "def upsert_points(\n    client: QdrantClient, collection: str, points: List[models.PointStruct]\n):\n    \"\"\"Upsert points with retry and batching.\"\"\"\n    if not points:\n        return\n    try:\n        bsz = int(os.environ.get(\"INDEX_UPSERT_BATCH\", \"256\") or 256)\n    except Exception:\n        bsz = 256\n    try:\n        retries = int(os.environ.get(\"INDEX_UPSERT_RETRIES\", \"3\") or 3)\n    except Exception:\n        retries = 3\n    try:\n        backoff = float(os.environ.get(\"INDEX_UPSERT_BACKOFF\", \"0.5\") or 0.5)\n    except Exception:\n        backoff = 0.5\n\n    for i in range(0, len(points), max(1, bsz)):\n        batch = points[i : i + max(1, bsz)]\n        attempt = 0\n        while True:\n            try:\n                client.upsert(collection_name=collection, points=batch, wait=True)\n                break\n            except Exception:\n                attempt += 1\n                if attempt >= retries:\n                    sub_size = max(1, bsz // 4)\n                    for j in range(0, len(batch), sub_size):\n                        sub = batch[j : j + sub_size]\n                        try:\n                            client.upsert(\n                                collection_name=collection, points=sub, wait=True\n                            )\n                        except Exception:\n                            pass\n                    break\n                else:\n                    try:\n                        time.sleep(backoff * attempt)\n                    except Exception:\n                        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_hash_id_464": {
+      "name": "hash_id",
+      "type": "function",
+      "start_line": 464,
+      "end_line": 469,
+      "content_hash": "025724a66c7e64391f6d993e5534224cb339b84f",
+      "content": "def hash_id(text: str, path: str, start: int, end: int) -> int:\n    \"\"\"Generate a stable hash ID for a chunk.\"\"\"\n    h = hashlib.sha1(\n        f\"{path}:{start}-{end}\\n{text}\".encode(\"utf-8\", errors=\"ignore\")\n    ).hexdigest()\n    return int(h[:16], 16)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_embed_batch_472": {
+      "name": "embed_batch",
+      "type": "function",
+      "start_line": 472,
+      "end_line": 474,
+      "content_hash": "f14333a8d0f3548292a99e399efe4234b0c1a51a",
+      "content": "def embed_batch(model, texts: List[str]) -> List[List[float]]:\n    \"\"\"Embed a batch of texts using the embedding model.\"\"\"\n    return [vec.tolist() for vec in model.embed(texts)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

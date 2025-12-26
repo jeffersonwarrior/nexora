@@ -1,0 +1,249 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/router/router.go",
+  "file_hash": "9537288e93ee9f67484bdce0862c366f328efd52",
+  "updated_at": "2025-12-26T17:34:21.232372",
+  "symbols": {
+    "struct_ProviderHealth_25": {
+      "name": "ProviderHealth",
+      "type": "struct",
+      "start_line": 25,
+      "end_line": 36,
+      "content_hash": "ae05297ed02dfec068adf0afcfe1b6bd88e36f44",
+      "content": "type ProviderHealth struct {\n\tProviderName     string\n\tAvgLatencyMs     int64\n\tErrorRate        float64\n\tLastSuccess      time.Time\n\tLastFailure      time.Time\n\tConsecutiveFails int\n\tIsHealthy        bool\n\tmu               sync.RWMutex\n}\n\n// ProviderOption represents a provider with its cost and availability",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ProviderOption_37": {
+      "name": "ProviderOption",
+      "type": "struct",
+      "start_line": 37,
+      "end_line": 50,
+      "content_hash": "cb7188823354f3a7654e82c06b586d3688fe01b9",
+      "content": "type ProviderOption struct {\n\tProviderName  string\n\tModelID       string\n\tPlanType      string\n\tInputCost     float64\n\tOutputCost    float64\n\tEstimatedCost float64\n\tAvgLatencyMs  int64\n\tIsAvailable   bool\n\tRateLimiter   *ratelimit.RateLimiter\n\tHealth        *ProviderHealth\n}\n\n// Router selects the best provider based on strategy",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Router_51": {
+      "name": "Router",
+      "type": "struct",
+      "start_line": 51,
+      "end_line": 58,
+      "content_hash": "56c10b50756035e76694a47d54d396b629d43b6b",
+      "content": "type Router struct {\n\tstrategy      RoutingStrategy\n\thealthTracker map[string]*ProviderHealth\n\trrIndex       int // Round-robin index\n\tmu            sync.RWMutex\n}\n\n// RouteRequest contains the routing decision context",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_RouteRequest_59": {
+      "name": "RouteRequest",
+      "type": "struct",
+      "start_line": 59,
+      "end_line": 68,
+      "content_hash": "239f2ae8b4a92a7b0750a80b1b28dae57b9424ec",
+      "content": "type RouteRequest struct {\n\tCapability       string   // \"chat\", \"embedding\", \"image\", \"audio\", \"video\"\n\tEstimatedTokens  int64    // Input + output token estimate\n\tMaxCost          float64  // Budget constraint\n\tMaxLatencyMs     int64    // Latency requirement\n\tRequiredModels   []string // Specific models to consider\n\tExcludeProviders []string // Providers to avoid\n}\n\n// RouteResult contains the selected provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_RouteResult_69": {
+      "name": "RouteResult",
+      "type": "struct",
+      "start_line": 69,
+      "end_line": 76,
+      "content_hash": "07baf5f166c00235f98dde66140b0e57aa95a3ee",
+      "content": "type RouteResult struct {\n\tProvider      *ProviderOption\n\tReason        string\n\tAlternatives  []*ProviderOption\n\tEstimatedCost float64\n}\n\n// NewRouter creates a new intelligent router",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewRouter_77": {
+      "name": "NewRouter",
+      "type": "function",
+      "start_line": 77,
+      "end_line": 84,
+      "content_hash": "c69b0962b450fc43195c5cfc0762c3ad6ecfcb0a",
+      "content": "func NewRouter(strategy RoutingStrategy) *Router {\n\treturn &Router{\n\t\tstrategy:      strategy,\n\t\thealthTracker: make(map[string]*ProviderHealth),\n\t}\n}\n\n// Route selects the best provider for the request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Route_85": {
+      "name": "Route",
+      "type": "method",
+      "start_line": 85,
+      "end_line": 129,
+      "content_hash": "01a8b662ca6fc9f99eebb527133993795b58c9cc",
+      "content": "func (r *Router) Route(ctx context.Context, req RouteRequest) (*RouteResult, error) {\n\t// Get all providers that support the capability\n\tproviders, err := r.getAvailableProviders(ctx, req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to get providers: %w\", err)\n\t}\n\n\tif len(providers) == 0 {\n\t\treturn nil, fmt.Errorf(\"no providers available for capability: %s\", req.Capability)\n\t}\n\n\t// Filter by budget and latency constraints\n\tfiltered := r.filterProviders(providers, req)\n\tif len(filtered) == 0 {\n\t\treturn nil, fmt.Errorf(\"no providers meet constraints (budget: $%.4f, latency: %dms)\", req.MaxCost, req.MaxLatencyMs)\n\t}\n\n\t// Select based on strategy\n\tvar selected *ProviderOption\n\tvar reason string\n\n\tswitch r.strategy {\n\tcase StrategyCheapest:\n\t\tselected, reason = r.selectCheapest(filtered)\n\tcase StrategyFastest:\n\t\tselected, reason = r.selectFastest(filtered)\n\tcase StrategyBalanced:\n\t\tselected, reason = r.selectBalanced(filtered)\n\tcase StrategyRoundRobin:\n\t\tselected, reason = r.selectRoundRobin(filtered)\n\tcase StrategyFallback:\n\t\tselected, reason = r.selectFallback(filtered)\n\tdefault:\n\t\tselected, reason = r.selectBalanced(filtered)\n\t}\n\n\treturn &RouteResult{\n\t\tProvider:      selected,\n\t\tReason:        reason,\n\t\tAlternatives:  filtered,\n\t\tEstimatedCost: selected.EstimatedCost,\n\t}, nil\n}\n\n// getAvailableProviders fetches providers from database and checks rate limits",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getAvailableProviders_130": {
+      "name": "getAvailableProviders",
+      "type": "method",
+      "start_line": 130,
+      "end_line": 188,
+      "content_hash": "3db957cca23538c2af9f4c6072957ce5d232db2e",
+      "content": "func (r *Router) getAvailableProviders(ctx context.Context, req RouteRequest) ([]*ProviderOption, error) {\n\t// Query database for providers with pricing\n\tquery := `\n\t\tSELECT DISTINCT p.provider_name, p.model_id, p.plan_type, \n\t\t       p.input_cost, p.output_cost\n\t\tFROM provider_pricing p\n\t\tWHERE p.input_cost > 0 OR p.output_cost > 0\n\t`\n\n\trows, err := storage.GetRateLimitDB().QueryContext(ctx, query)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\n\tvar providers []*ProviderOption\n\tfor rows.Next() {\n\t\tvar opt ProviderOption\n\t\terr := rows.Scan(&opt.ProviderName, &opt.ModelID, &opt.PlanType,\n\t\t\t&opt.InputCost, &opt.OutputCost)\n\t\tif err != nil {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Calculate estimated cost (assuming 50/50 input/output split)\n\t\tinputTokens := req.EstimatedTokens / 2\n\t\toutputTokens := req.EstimatedTokens / 2\n\t\topt.EstimatedCost = (float64(inputTokens) * opt.InputCost / 1_000_000) +\n\t\t\t(float64(outputTokens) * opt.OutputCost / 1_000_000)\n\n\t\t// Check if provider is in exclude list\n\t\tif r.isExcluded(opt.ProviderName, req.ExcludeProviders) {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Get or create rate limiter\n\t\tlimiter, err := ratelimit.NewRateLimiter(opt.ProviderName, opt.PlanType)\n\t\tif err != nil {\n\t\t\t// No rate limits configured - still available\n\t\t\topt.IsAvailable = true\n\t\t} else {\n\t\t\topt.RateLimiter = limiter\n\t\t\t// Check if rate limit allows this request\n\t\t\topt.IsAvailable = r.checkRateLimitAvailability(ctx, limiter, req.EstimatedTokens)\n\t\t}\n\n\t\t// Get health status\n\t\topt.Health = r.getHealth(opt.ProviderName)\n\t\tif !opt.Health.IsHealthy {\n\t\t\topt.IsAvailable = false\n\t\t}\n\n\t\tproviders = append(providers, &opt)\n\t}\n\n\treturn providers, nil\n}\n\n// filterProviders removes providers that don't meet constraints",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_filterProviders_189": {
+      "name": "filterProviders",
+      "type": "method",
+      "start_line": 189,
+      "end_line": 217,
+      "content_hash": "80d8c8e58c254504dae6c5e1f52ca288b81f250b",
+      "content": "func (r *Router) filterProviders(providers []*ProviderOption, req RouteRequest) []*ProviderOption {\n\tvar filtered []*ProviderOption\n\tfor _, p := range providers {\n\t\t// Must be available\n\t\tif !p.IsAvailable {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Must be within budget\n\t\tif req.MaxCost > 0 && p.EstimatedCost > req.MaxCost {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Must meet latency requirement\n\t\tif req.MaxLatencyMs > 0 && p.AvgLatencyMs > req.MaxLatencyMs {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Must match required models if specified\n\t\tif len(req.RequiredModels) > 0 && !r.matchesModel(p.ModelID, req.RequiredModels) {\n\t\t\tcontinue\n\t\t}\n\n\t\tfiltered = append(filtered, p)\n\t}\n\treturn filtered\n}\n\n// selectCheapest picks the lowest cost provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_selectCheapest_218": {
+      "name": "selectCheapest",
+      "type": "method",
+      "start_line": 218,
+      "end_line": 233,
+      "content_hash": "3adfc2f575820899bde920c61e5a673c7b73198b",
+      "content": "func (r *Router) selectCheapest(providers []*ProviderOption) (*ProviderOption, string) {\n\tif len(providers) == 0 {\n\t\treturn nil, \"\"\n\t}\n\n\tcheapest := providers[0]\n\tfor _, p := range providers[1:] {\n\t\tif p.EstimatedCost < cheapest.EstimatedCost {\n\t\t\tcheapest = p\n\t\t}\n\t}\n\n\treturn cheapest, fmt.Sprintf(\"cheapest option at $%.6f\", cheapest.EstimatedCost)\n}\n\n// selectFastest picks the lowest latency provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_selectFastest_234": {
+      "name": "selectFastest",
+      "type": "method",
+      "start_line": 234,
+      "end_line": 249,
+      "content_hash": "f8c3ab15d72947327000bf7eb1d04288b9a988d9",
+      "content": "func (r *Router) selectFastest(providers []*ProviderOption) (*ProviderOption, string) {\n\tif len(providers) == 0 {\n\t\treturn nil, \"\"\n\t}\n\n\tfastest := providers[0]\n\tfor _, p := range providers[1:] {\n\t\tif p.AvgLatencyMs < fastest.AvgLatencyMs {\n\t\t\tfastest = p\n\t\t}\n\t}\n\n\treturn fastest, fmt.Sprintf(\"fastest option at %dms\", fastest.AvgLatencyMs)\n}\n\n// selectBalanced scores providers based on cost and latency",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_selectBalanced_250": {
+      "name": "selectBalanced",
+      "type": "method",
+      "start_line": 250,
+      "end_line": 255,
+      "content_hash": "edab35b445366fb53da4efa8b741de5372a85578",
+      "content": "func (r *Router) selectBalanced(providers []*ProviderOption) (*ProviderOption, string) {\n\tif len(providers) == 0 {\n\t\treturn nil, \"\"\n\t}\n\n\t// Normalize and score (lower is better)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_scored_256": {
+      "name": "scored",
+      "type": "struct",
+      "start_line": 256,
+      "end_line": 299,
+      "content_hash": "03bbe6fc2dab8a2e129531f9fd995d3ba1e0ec74",
+      "content": "\ttype scored struct {\n\t\tprovider *ProviderOption\n\t\tscore    float64\n\t}\n\n\tvar maxCost, maxLatency float64\n\tfor _, p := range providers {\n\t\tif p.EstimatedCost > maxCost {\n\t\t\tmaxCost = p.EstimatedCost\n\t\t}\n\t\tif float64(p.AvgLatencyMs) > maxLatency {\n\t\t\tmaxLatency = float64(p.AvgLatencyMs)\n\t\t}\n\t}\n\n\tif maxCost == 0 {\n\t\tmaxCost = 1\n\t}\n\tif maxLatency == 0 {\n\t\tmaxLatency = 1\n\t}\n\n\tvar scores []scored\n\tfor _, p := range providers {\n\t\t// Weighted score: 60% cost, 40% latency\n\t\tcostScore := p.EstimatedCost / maxCost\n\t\tlatencyScore := float64(p.AvgLatencyMs) / maxLatency\n\t\ttotalScore := (0.6 * costScore) + (0.4 * latencyScore)\n\t\tscores = append(scores, scored{p, totalScore})\n\t}\n\n\t// Find best score (lowest)\n\tbest := scores[0]\n\tfor _, s := range scores[1:] {\n\t\tif s.score < best.score {\n\t\t\tbest = s\n\t\t}\n\t}\n\n\treturn best.provider, fmt.Sprintf(\"balanced score %.3f (cost: $%.6f, latency: %dms)\",\n\t\tbest.score, best.provider.EstimatedCost, best.provider.AvgLatencyMs)\n}\n\n// selectRoundRobin cycles through healthy providers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_selectRoundRobin_300": {
+      "name": "selectRoundRobin",
+      "type": "method",
+      "start_line": 300,
+      "end_line": 314,
+      "content_hash": "d397297aa769854964f9a5e91d7e15d32ed84c13",
+      "content": "func (r *Router) selectRoundRobin(providers []*ProviderOption) (*ProviderOption, string) {\n\tif len(providers) == 0 {\n\t\treturn nil, \"\"\n\t}\n\n\tr.mu.Lock()\n\tdefer r.mu.Unlock()\n\n\tselected := providers[r.rrIndex%len(providers)]\n\tr.rrIndex++\n\n\treturn selected, fmt.Sprintf(\"round-robin selection #%d\", r.rrIndex)\n}\n\n// selectFallback tries primary, then fallbacks",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_selectFallback_315": {
+      "name": "selectFallback",
+      "type": "method",
+      "start_line": 315,
+      "end_line": 330,
+      "content_hash": "0a6a21247a77528ae65d6f496b57637de78c7e33",
+      "content": "func (r *Router) selectFallback(providers []*ProviderOption) (*ProviderOption, string) {\n\t// First healthy provider\n\tfor i, p := range providers {\n\t\tif p.Health.IsHealthy {\n\t\t\treason := \"primary\"\n\t\t\tif i > 0 {\n\t\t\t\treason = fmt.Sprintf(\"fallback #%d\", i)\n\t\t\t}\n\t\t\treturn p, reason\n\t\t}\n\t}\n\t// All unhealthy - return first anyway\n\treturn providers[0], \"all unhealthy, using first\"\n}\n\n// checkRateLimitAvailability checks if rate limiter would allow the request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_checkRateLimitAvailability_331": {
+      "name": "checkRateLimitAvailability",
+      "type": "method",
+      "start_line": 331,
+      "end_line": 351,
+      "content_hash": "d9557a157b97566f4ae47d4729bcf4dc6316af64",
+      "content": "func (r *Router) checkRateLimitAvailability(ctx context.Context, limiter *ratelimit.RateLimiter, tokens int64) bool {\n\tinfo := limiter.GetRateLimitInfo()\n\n\t// Check RPM\n\tif rpmInfo, ok := info[\"rpm\"]; ok {\n\t\tif available, ok := rpmInfo[\"available\"].(int64); ok && available < 1 {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// Check TPM\n\tif tpmInfo, ok := info[\"tpm\"]; ok {\n\t\tif available, ok := tpmInfo[\"available\"].(int64); ok && available < tokens {\n\t\t\treturn false\n\t\t}\n\t}\n\n\treturn true\n}\n\n// getHealth retrieves or creates health tracker for provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getHealth_352": {
+      "name": "getHealth",
+      "type": "method",
+      "start_line": 352,
+      "end_line": 381,
+      "content_hash": "358896df2967cc44337aeeadce2f0962ef39191d",
+      "content": "func (r *Router) getHealth(providerName string) *ProviderHealth {\n\tr.mu.RLock()\n\thealth, exists := r.healthTracker[providerName]\n\tr.mu.RUnlock()\n\n\tif exists {\n\t\treturn health\n\t}\n\n\tr.mu.Lock()\n\tdefer r.mu.Unlock()\n\n\t// Double-check after acquiring write lock\n\tif health, exists := r.healthTracker[providerName]; exists {\n\t\treturn health\n\t}\n\n\thealth = &ProviderHealth{\n\t\tProviderName:     providerName,\n\t\tAvgLatencyMs:     100, // Default\n\t\tErrorRate:        0.0,\n\t\tLastSuccess:      time.Now(),\n\t\tIsHealthy:        true,\n\t\tConsecutiveFails: 0,\n\t}\n\tr.healthTracker[providerName] = health\n\treturn health\n}\n\n// RecordSuccess updates health metrics after successful request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordSuccess_382": {
+      "name": "RecordSuccess",
+      "type": "method",
+      "start_line": 382,
+      "end_line": 396,
+      "content_hash": "2b634b52aab5c3413deac56dd2ca2279f0f75851",
+      "content": "func (r *Router) RecordSuccess(providerName string, latencyMs int64) {\n\thealth := r.getHealth(providerName)\n\thealth.mu.Lock()\n\tdefer health.mu.Unlock()\n\n\t// Exponential moving average for latency\n\talpha := 0.3\n\thealth.AvgLatencyMs = int64(alpha*float64(latencyMs) + (1-alpha)*float64(health.AvgLatencyMs))\n\thealth.LastSuccess = time.Now()\n\thealth.ConsecutiveFails = 0\n\thealth.IsHealthy = true\n\thealth.ErrorRate = health.ErrorRate * 0.95 // Decay error rate\n}\n\n// RecordFailure updates health metrics after failed request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordFailure_397": {
+      "name": "RecordFailure",
+      "type": "method",
+      "start_line": 397,
+      "end_line": 412,
+      "content_hash": "53a8cf3ba9f6ffbc929b204a459d05592693f305",
+      "content": "func (r *Router) RecordFailure(providerName string, err error) {\n\thealth := r.getHealth(providerName)\n\thealth.mu.Lock()\n\tdefer health.mu.Unlock()\n\n\thealth.LastFailure = time.Now()\n\thealth.ConsecutiveFails++\n\thealth.ErrorRate = health.ErrorRate*0.95 + 0.05 // Increase by 5%\n\n\t// Mark unhealthy after 3 consecutive failures\n\tif health.ConsecutiveFails >= 3 {\n\t\thealth.IsHealthy = false\n\t}\n}\n\n// GetHealthStatus returns current health of all tracked providers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetHealthStatus_413": {
+      "name": "GetHealthStatus",
+      "type": "method",
+      "start_line": 413,
+      "end_line": 424,
+      "content_hash": "3463ae0a90f4de45c320684ad85a25ca76cd6d70",
+      "content": "func (r *Router) GetHealthStatus() map[string]*ProviderHealth {\n\tr.mu.RLock()\n\tdefer r.mu.RUnlock()\n\n\tstatus := make(map[string]*ProviderHealth)\n\tfor name, health := range r.healthTracker {\n\t\tstatus[name] = health\n\t}\n\treturn status\n}\n\n// isExcluded checks if provider is in exclude list",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isExcluded_425": {
+      "name": "isExcluded",
+      "type": "method",
+      "start_line": 425,
+      "end_line": 434,
+      "content_hash": "6d9fd54529d2bb725211837234cda22a1d803e11",
+      "content": "func (r *Router) isExcluded(providerName string, excludeList []string) bool {\n\tfor _, excluded := range excludeList {\n\t\tif providerName == excluded {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// matchesModel checks if modelID matches any required models",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_matchesModel_435": {
+      "name": "matchesModel",
+      "type": "method",
+      "start_line": 435,
+      "end_line": 442,
+      "content_hash": "554f1b7ca7e3f476e01e4458027679e451139e65",
+      "content": "func (r *Router) matchesModel(modelID string, requiredModels []string) bool {\n\tfor _, required := range requiredModels {\n\t\tif modelID == required {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

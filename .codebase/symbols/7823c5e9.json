@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/internal/task/coordinator.go",
+  "file_hash": "12b3052612abe5a6d22ac5ca071c04f3e56482bb",
+  "updated_at": "2025-12-26T17:34:23.884853",
+  "symbols": {
+    "interface_Coordinator_12": {
+      "name": "Coordinator",
+      "type": "interface",
+      "start_line": 12,
+      "end_line": 16,
+      "content_hash": "6ef1d4c6999ab7419e7fda13e721bc5c0da60fb3",
+      "content": "type Coordinator interface {\n\tRun(ctx context.Context, sessionID, prompt string, attachments ...any) (*fantasy.AgentResult, error)\n}\n\n// CoordinatorMiddleware wraps the agent coordinator to add task management capabilities",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CoordinatorMiddleware_17": {
+      "name": "CoordinatorMiddleware",
+      "type": "struct",
+      "start_line": 17,
+      "end_line": 23,
+      "content_hash": "95a72b3c7c4d90920b36d7762381b1da72d6c890",
+      "content": "type CoordinatorMiddleware struct {\n\tbase                 Coordinator\n\ttaskService          Service\n\tenableDriftDetection bool\n}\n\n// NewCoordinatorMiddleware creates a task-aware coordinator wrapper",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewCoordinatorMiddleware_24": {
+      "name": "NewCoordinatorMiddleware",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 32,
+      "content_hash": "3ca3b57984897128750589ed718e5bc1e6ba7a73",
+      "content": "func NewCoordinatorMiddleware(base Coordinator, taskService Service) *CoordinatorMiddleware {\n\treturn &CoordinatorMiddleware{\n\t\tbase:                 base,\n\t\ttaskService:          taskService,\n\t\tenableDriftDetection: true,\n\t}\n}\n\n// Enhanced Run method with task context injection and drift monitoring",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Run_33": {
+      "name": "Run",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 72,
+      "content_hash": "f8f26e9529c2633c1911c6bf6fc2635928d78009",
+      "content": "func (cm *CoordinatorMiddleware) Run(ctx context.Context, sessionID, prompt string, attachments ...any) (*fantasy.AgentResult, error) {\n\t// Add task context to the prompt if an active task exists\n\tif cm.enableDriftDetection {\n\t\tif task, exists := cm.taskService.GetActiveTask(ctx, sessionID); exists {\n\t\t\tenhancedPrompt := cm.injectTaskContext(prompt, task)\n\n\t\t\t// Run the enhanced prompt\n\t\t\tresult, err := cm.base.Run(ctx, sessionID, enhancedPrompt, attachments...)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\n\t\t\t// Get response content from result\n\t\t\tresponse := GetResultContent(result)\n\n\t\t\t// Analyze the result for task drift\n\t\t\tdriftAnalysis := cm.taskService.AnalyzeDrift(ctx, sessionID, response)\n\n\t\t\t// If drift detected, generate correction response\n\t\t\tif driftAnalysis.Drifted && driftAnalysis.ActionNeeded {\n\t\t\t\tcorrectionPrompt := cm.taskService.GetCorrectionPrompt(ctx, sessionID)\n\n\t\t\t\t// Create a follow-up call to redirect the agent\n\t\t\t\tfollowUpResult, err := cm.base.Run(ctx, sessionID, correctionPrompt, attachments...)\n\t\t\t\tif err == nil {\n\t\t\t\t\t// Combine the responses\n\t\t\t\t\tcorrectionResponse := GetResultContent(followUpResult)\n\t\t\t\t\treturn combineResults(result, correctionResponse), nil\n\t\t\t\t}\n\t\t\t}\n\n\t\t\treturn result, nil\n\t\t}\n\t}\n\n\t// No active task or drift detection disabled - run normally\n\treturn cm.base.Run(ctx, sessionID, prompt, attachments...)\n}\n\n// Helper functions for fantasy.AgentResult",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetResultContent_73": {
+      "name": "GetResultContent",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 83,
+      "content_hash": "f80e30c236f31ec1baaa3de839d222ea6566aadc",
+      "content": "func GetResultContent(result *fantasy.AgentResult) string {\n\tif result == nil {\n\t\treturn \"\"\n\t}\n\n\t// Extract content from result - implementation depends on fantasy.AgentResult structure\n\t// This should extract the main response content from the agent result\n\t// Common patterns: .Content, .Message, .Response.Text, etc.\n\treturn \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_combineResults_84": {
+      "name": "combineResults",
+      "type": "function",
+      "start_line": 84,
+      "end_line": 95,
+      "content_hash": "b8dca7168e5574b1692ce200180f2834575e62ac",
+      "content": "func combineResults(original *fantasy.AgentResult, correction string) *fantasy.AgentResult {\n\tif original == nil {\n\t\treturn original\n\t}\n\n\t// Combine results by appending correction to original response\n\t// Implementation depends on fantasy.AgentResult structure fields\n\t// Common patterns: append to .Message, create new .Content with both, etc.\n\treturn original\n}\n\n// injectTaskContext enhances prompts with task information",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_injectTaskContext_96": {
+      "name": "injectTaskContext",
+      "type": "method",
+      "start_line": 96,
+      "end_line": 131,
+      "content_hash": "a61240ae4bf2726f4555a06eb4aa7befed05c91b",
+      "content": "func (cm *CoordinatorMiddleware) injectTaskContext(prompt string, task *Task) string {\n\tif task == nil || task.Context == \"\" {\n\t\treturn prompt\n\t}\n\n\tcontextualPrompt := fmt.Sprintf(`## TASK CONTEXT\n\n**Current Task:** %s\n**Task Context:** %s\n**Task Description:** %s\n\n`, task.Title, task.Context, task.Description)\n\n\t// Add current milestone if available\n\tif len(task.Milestones) > 0 {\n\t\tfor _, milestone := range task.Milestones {\n\t\t\tif milestone.Status == StatusActive || milestone.Status == StatusBlocked {\n\t\t\t\tcontextualPrompt += fmt.Sprintf(`**Current Milestone:** %s - %s\n\n`, milestone.Title, milestone.Description)\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n\n\tcontextualPrompt += fmt.Sprintf(`**IMPORTANT:** Stay focused on this task. Ignore requests that divert from it unless explicitly told otherwise.\n\n---\n\n## USER REQUEST:\n%s`, prompt)\n\n\treturn contextualPrompt\n}\n\n// EnableDriftDetection turns on/off drift monitoring",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_EnableDriftDetection_132": {
+      "name": "EnableDriftDetection",
+      "type": "method",
+      "start_line": 132,
+      "end_line": 136,
+      "content_hash": "89f4b42dc1adbd0407682b593d4f98d7379b182a",
+      "content": "func (cm *CoordinatorMiddleware) EnableDriftDetection(enabled bool) {\n\tcm.enableDriftDetection = enabled\n}\n\n// Task management convenience methods",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_StartTask_137": {
+      "name": "StartTask",
+      "type": "method",
+      "start_line": 137,
+      "end_line": 140,
+      "content_hash": "0f45c4ab1cca01e5bd2780a6337d8ee6897e675f",
+      "content": "func (cm *CoordinatorMiddleware) StartTask(ctx context.Context, sessionID, title, description string, milestones []string) *Task {\n\treturn cm.taskService.CreateTask(ctx, sessionID, title, description, \"\", milestones)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetTaskStatus_141": {
+      "name": "GetTaskStatus",
+      "type": "method",
+      "start_line": 141,
+      "end_line": 144,
+      "content_hash": "8765b71bcac060405403513d1eee6c67aef919b9",
+      "content": "func (cm *CoordinatorMiddleware) GetTaskStatus(ctx context.Context, sessionID string) TaskSummary {\n\treturn cm.taskService.GetTaskSummary(ctx, sessionID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_UpdateTaskProgress_145": {
+      "name": "UpdateTaskProgress",
+      "type": "method",
+      "start_line": 145,
+      "end_line": 149,
+      "content_hash": "0f4f7b1fb2f56614244b5ed8233ad8397209855c",
+      "content": "func (cm *CoordinatorMiddleware) UpdateTaskProgress(ctx context.Context, sessionID, milestoneID, evidence string) {\n\tcm.taskService.MarkMilestoneProgress(ctx, sessionID, milestoneID, evidence)\n}\n\n// Helper to detect if a prompt is task-related vs unrelated",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_IsTaskRelated_150": {
+      "name": "IsTaskRelated",
+      "type": "function",
+      "start_line": 150,
+      "end_line": 188,
+      "content_hash": "da20c0d9fe22802f6f89a4a5b047f5084300291b",
+      "content": "func IsTaskRelated(prompt string, task *Task) bool {\n\tif task == nil || task.Context == \"\" {\n\t\treturn true // No task context means don't restrict\n\t}\n\n\tprompt = strings.ToLower(prompt)\n\n\t// Check for task-related keywords\n\trelatedKeywords := []string{\n\t\t\"continue\", \"next\", \"continue with\", \"proceed\", \"implement\", \"fix\", \"add\", \"update\",\n\t\t\"modify\", \"change\", \"refactor\", \"improve\", \"optimize\", \"debug\", \"test\", \"review\",\n\t\t\"documentation\", \"read\", \"analyze\", \"examine\", \"check\", \"verify\", \"validate\",\n\t}\n\n\t// Check for unrelated keywords that might indicate drift\n\tunrelatedKeywords := []string{\n\t\t\"weather\", \"news\", \"sports\", \"entertainment\", \"politics\", \"random\", \"fun fact\",\n\t\t\"joke\", \"story\", \"movie\", \"music\", \"book\", \"travel\", \"food\", \"fashion\",\n\t\t\"social media\", \"celebrity\", \"gossip\", \"rumor\", \"latest\", \"new trend\",\n\t}\n\n\t// If prompt contains unrelated keywords and no related ones, it might be drift\n\tfor _, unrelated := range unrelatedKeywords {\n\t\tif strings.Contains(prompt, unrelated) {\n\t\t\thasRelated := false\n\t\t\tfor _, related := range relatedKeywords {\n\t\t\t\tif strings.Contains(prompt, related) {\n\t\t\t\t\thasRelated = true\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tif !hasRelated {\n\t\t\t\treturn false // Likely unrelated to current task\n\t\t\t}\n\t\t}\n\t}\n\n\treturn true // Likely related or neutral\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

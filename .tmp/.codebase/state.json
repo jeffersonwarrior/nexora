@@ -1,0 +1,12 @@
+{
+  "workspace_path": "/work/.tmp",
+  "created_at": "2025-12-25T02:00:41.277965",
+  "updated_at": "2025-12-25T02:00:41.277965",
+  "qdrant_collection": "codebase",
+  "indexing_status": {
+    "state": "idle"
+  },
+  "active_repo_slug": ".tmp",
+  "serving_repo_slug": ".tmp",
+  "serving_collection": "codebase"
+}

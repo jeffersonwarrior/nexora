@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/csync/slices_test.go",
+  "file_hash": "f665db669677b6a2e9812d5e5d3367fbe4516d95",
+  "updated_at": "2025-12-26T17:34:23.143853",
+  "symbols": {
+    "function_TestLazySlice_Seq_14": {
+      "name": "TestLazySlice_Seq",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 27,
+      "content_hash": "ada0d61d864cc2dfbf00a727132d4d81d606bf92",
+      "content": "func TestLazySlice_Seq(t *testing.T) {\n\tt.Parallel()\n\n\tsynctest.Test(t, func(t *testing.T) {\n\t\tt.Helper()\n\t\tdata := []string{\"a\", \"b\", \"c\"}\n\t\ts := NewLazySlice(func() []string {\n\t\t\ttime.Sleep(10 * time.Millisecond) // Small delay to ensure loading happens\n\t\t\treturn data\n\t\t})\n\t\trequire.Equal(t, data, slices.Collect(s.Seq()))\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLazySlice_SeqWaitsForLoading_28": {
+      "name": "TestLazySlice_SeqWaitsForLoading",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 47,
+      "content_hash": "a2df6c69a8d71c907383cc6654dcd15c5214ec56",
+      "content": "func TestLazySlice_SeqWaitsForLoading(t *testing.T) {\n\tt.Parallel()\n\tsynctest.Test(t, func(t *testing.T) {\n\t\tt.Helper()\n\n\t\tvar loaded atomic.Bool\n\t\tdata := []string{\"x\", \"y\", \"z\"}\n\n\t\ts := NewLazySlice(func() []string {\n\t\t\ttime.Sleep(100 * time.Millisecond)\n\t\t\tloaded.Store(true)\n\t\t\treturn data\n\t\t})\n\n\t\trequire.False(t, loaded.Load(), \"should not be loaded immediately\")\n\t\trequire.Equal(t, data, slices.Collect(s.Seq()))\n\t\trequire.True(t, loaded.Load(), \"should be loaded after Seq\")\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLazySlice_EmptySlice_48": {
+      "name": "TestLazySlice_EmptySlice",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 55,
+      "content_hash": "7e3c631d9a4c73cd81c9af0c93143b3ff81c3542",
+      "content": "func TestLazySlice_EmptySlice(t *testing.T) {\n\tt.Parallel()\n\ts := NewLazySlice(func() []string {\n\t\treturn []string{}\n\t})\n\trequire.Empty(t, slices.Collect(s.Seq()))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLazySlice_EarlyBreak_56": {
+      "name": "TestLazySlice_EarlyBreak",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 78,
+      "content_hash": "db8a523047cc296afd4a5eda7de89e9a657dccb6",
+      "content": "func TestLazySlice_EarlyBreak(t *testing.T) {\n\tt.Parallel()\n\n\tsynctest.Test(t, func(t *testing.T) {\n\t\tt.Helper()\n\t\tdata := []string{\"a\", \"b\", \"c\", \"d\", \"e\"}\n\t\ts := NewLazySlice(func() []string {\n\t\t\ttime.Sleep(10 * time.Millisecond) // Small delay to ensure loading happens\n\t\t\treturn data\n\t\t})\n\n\t\tvar result []string\n\t\tfor v := range s.Seq() {\n\t\t\tresult = append(result, v)\n\t\t\tif len(result) == 2 {\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.Equal(t, []string{\"a\", \"b\"}, result)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSlice_79": {
+      "name": "TestSlice",
+      "type": "function",
+      "start_line": 79,
+      "end_line": 271,
+      "content_hash": "7e8e616fbf392cc0cbda6d388cb097be5c7913f2",
+      "content": "func TestSlice(t *testing.T) {\n\tt.Run(\"NewSlice\", func(t *testing.T) {\n\t\ts := NewSlice[int]()\n\t\trequire.Equal(t, 0, s.Len())\n\t})\n\n\tt.Run(\"NewSliceFrom\", func(t *testing.T) {\n\t\toriginal := []int{1, 2, 3}\n\t\ts := NewSliceFrom(original)\n\t\trequire.Equal(t, 3, s.Len())\n\n\t\t// Verify it's a copy, not a reference\n\t\toriginal[0] = 999\n\t\tval, ok := s.Get(0)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, 1, val)\n\t})\n\n\tt.Run(\"Append\", func(t *testing.T) {\n\t\ts := NewSlice[string]()\n\t\ts.Append(\"hello\")\n\t\ts.Append(\"world\")\n\n\t\trequire.Equal(t, 2, s.Len())\n\t\tval, ok := s.Get(0)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, \"hello\", val)\n\n\t\tval, ok = s.Get(1)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, \"world\", val)\n\t})\n\n\tt.Run(\"Prepend\", func(t *testing.T) {\n\t\ts := NewSlice[string]()\n\t\ts.Append(\"world\")\n\t\ts.Prepend(\"hello\")\n\n\t\trequire.Equal(t, 2, s.Len())\n\t\tval, ok := s.Get(0)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, \"hello\", val)\n\n\t\tval, ok = s.Get(1)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, \"world\", val)\n\t})\n\n\tt.Run(\"Delete\", func(t *testing.T) {\n\t\ts := NewSliceFrom([]int{1, 2, 3, 4, 5})\n\n\t\t// Delete middle element\n\t\tok := s.Delete(2)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, 4, s.Len())\n\n\t\texpected := []int{1, 2, 4, 5}\n\t\tactual := slices.Collect(s.Seq())\n\t\trequire.Equal(t, expected, actual)\n\n\t\t// Delete out of bounds\n\t\tok = s.Delete(10)\n\t\trequire.False(t, ok)\n\t\trequire.Equal(t, 4, s.Len())\n\n\t\t// Delete negative index\n\t\tok = s.Delete(-1)\n\t\trequire.False(t, ok)\n\t\trequire.Equal(t, 4, s.Len())\n\t})\n\n\tt.Run(\"Get\", func(t *testing.T) {\n\t\ts := NewSliceFrom([]string{\"a\", \"b\", \"c\"})\n\n\t\tval, ok := s.Get(1)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, \"b\", val)\n\n\t\t// Out of bounds\n\t\t_, ok = s.Get(10)\n\t\trequire.False(t, ok)\n\n\t\t// Negative index\n\t\t_, ok = s.Get(-1)\n\t\trequire.False(t, ok)\n\t})\n\n\tt.Run(\"Set\", func(t *testing.T) {\n\t\ts := NewSliceFrom([]string{\"a\", \"b\", \"c\"})\n\n\t\tok := s.Set(1, \"modified\")\n\t\trequire.True(t, ok)\n\n\t\tval, ok := s.Get(1)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, \"modified\", val)\n\n\t\t// Out of bounds\n\t\tok = s.Set(10, \"invalid\")\n\t\trequire.False(t, ok)\n\n\t\t// Negative index\n\t\tok = s.Set(-1, \"invalid\")\n\t\trequire.False(t, ok)\n\t})\n\n\tt.Run(\"SetSlice\", func(t *testing.T) {\n\t\ts := NewSlice[int]()\n\t\ts.Append(1)\n\t\ts.Append(2)\n\n\t\tnewItems := []int{10, 20, 30}\n\t\ts.SetSlice(newItems)\n\n\t\trequire.Equal(t, 3, s.Len())\n\t\trequire.Equal(t, newItems, slices.Collect(s.Seq()))\n\n\t\t// Verify it's a copy\n\t\tnewItems[0] = 999\n\t\tval, ok := s.Get(0)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, 10, val)\n\t})\n\n\tt.Run(\"Slice\", func(t *testing.T) {\n\t\toriginal := []int{1, 2, 3}\n\t\ts := NewSliceFrom(original)\n\n\t\tcopied := slices.Collect(s.Seq())\n\t\trequire.Equal(t, original, copied)\n\n\t\t// Verify it's a copy\n\t\tcopied[0] = 999\n\t\tval, ok := s.Get(0)\n\t\trequire.True(t, ok)\n\t\trequire.Equal(t, 1, val)\n\t})\n\n\tt.Run(\"Seq\", func(t *testing.T) {\n\t\ts := NewSliceFrom([]int{1, 2, 3})\n\n\t\tvar result []int\n\t\tfor v := range s.Seq() {\n\t\t\tresult = append(result, v)\n\t\t}\n\n\t\trequire.Equal(t, []int{1, 2, 3}, result)\n\t})\n\n\tt.Run(\"SeqWithIndex\", func(t *testing.T) {\n\t\ts := NewSliceFrom([]string{\"a\", \"b\", \"c\"})\n\n\t\tvar indices []int\n\t\tvar values []string\n\t\tfor i, v := range s.Seq2() {\n\t\t\tindices = append(indices, i)\n\t\t\tvalues = append(values, v)\n\t\t}\n\n\t\trequire.Equal(t, []int{0, 1, 2}, indices)\n\t\trequire.Equal(t, []string{\"a\", \"b\", \"c\"}, values)\n\t})\n\n\tt.Run(\"ConcurrentAccess\", func(t *testing.T) {\n\t\ts := NewSlice[int]()\n\t\tconst numGoroutines = 100\n\t\tconst itemsPerGoroutine = 10\n\n\t\tvar wg sync.WaitGroup\n\n\t\t// Concurrent appends\n\t\tfor i := range numGoroutines {\n\t\t\twg.Add(2)\n\t\t\tgo func(start int) {\n\t\t\t\tdefer wg.Done()\n\t\t\t\tfor j := range itemsPerGoroutine {\n\t\t\t\t\ts.Append(start*itemsPerGoroutine + j)\n\t\t\t\t}\n\t\t\t}(i)\n\t\t\tgo func() {\n\t\t\t\tdefer wg.Done()\n\t\t\t\tfor range itemsPerGoroutine {\n\t\t\t\t\ts.Len() // Just read the length\n\t\t\t\t}\n\t\t\t}()\n\t\t}\n\n\t\twg.Wait()\n\n\t\t// Should have all items\n\t\trequire.Equal(t, numGoroutines*itemsPerGoroutine, s.Len())\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

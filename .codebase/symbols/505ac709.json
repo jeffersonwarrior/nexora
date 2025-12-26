@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/agent/tools/ls.go",
+  "file_hash": "88b44401a412b1cc7cd27886b7d2143b926c3043",
+  "updated_at": "2025-12-26T17:34:23.442984",
+  "symbols": {
+    "struct_LSParams_19": {
+      "name": "LSParams",
+      "type": "struct",
+      "start_line": 19,
+      "end_line": 24,
+      "content_hash": "f9b7821f57cbcfd2c01fe4a673aa9996663e1c7b",
+      "content": "type LSParams struct {\n\tPath   string   `json:\"path,omitempty\" description:\"The path to the directory to list (defaults to current working directory)\"`\n\tIgnore []string `json:\"ignore,omitempty\" description:\"List of glob patterns to ignore\"`\n\tDepth  int      `json:\"depth,omitempty\" description:\"The maximum depth to traverse\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_LSPermissionsParams_25": {
+      "name": "LSPermissionsParams",
+      "type": "struct",
+      "start_line": 25,
+      "end_line": 30,
+      "content_hash": "88518cc2d701eb6252c7bcda869a32090944393f",
+      "content": "type LSPermissionsParams struct {\n\tPath   string   `json:\"path\"`\n\tIgnore []string `json:\"ignore\"`\n\tDepth  int      `json:\"depth\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TreeNode_31": {
+      "name": "TreeNode",
+      "type": "struct",
+      "start_line": 31,
+      "end_line": 37,
+      "content_hash": "7ad8bba517ce1ecdae7697ae6db9433bf9b9d8dc",
+      "content": "type TreeNode struct {\n\tName     string      `json:\"name\"`\n\tPath     string      `json:\"path\"`\n\tType     string      `json:\"type\"` // \"file\" or \"directory\"\n\tChildren []*TreeNode `json:\"children,omitempty\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_LSResponseMetadata_38": {
+      "name": "LSResponseMetadata",
+      "type": "struct",
+      "start_line": 38,
+      "end_line": 50,
+      "content_hash": "5f2f70c3cacb788eebdf3cd2cc33f2da0fe48e22",
+      "content": "type LSResponseMetadata struct {\n\tNumberOfFiles int  `json:\"number_of_files\"`\n\tTruncated     bool `json:\"truncated\"`\n}\n\nconst (\n\tLSToolName = \"ls\"\n\tmaxLSFiles = 1000\n)\n\n//go:embed ls.md\nvar lsDescription []byte\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewLsTool_51": {
+      "name": "NewLsTool",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 110,
+      "content_hash": "a5dce2ca6d3822cef7abcdb4476a099db461aead",
+      "content": "func NewLsTool(permissions permission.Service, workingDir string, lsConfig config.ToolLs) fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\tLSToolName,\n\t\tstring(lsDescription),\n\t\tfunc(ctx context.Context, params LSParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tsearchPath, err := fsext.Expand(cmp.Or(params.Path, workingDir))\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"error expanding path: %v\", err)), nil\n\t\t\t}\n\n\t\t\tsearchPath = filepathext.SmartJoin(workingDir, searchPath)\n\n\t\t\t// Check if directory is outside working directory and request permission if needed\n\t\t\tabsWorkingDir, err := filepath.Abs(workingDir)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"error resolving working directory: %v\", err)), nil\n\t\t\t}\n\n\t\t\tabsSearchPath, err := filepath.Abs(searchPath)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"error resolving search path: %v\", err)), nil\n\t\t\t}\n\n\t\t\trelPath, err := filepath.Rel(absWorkingDir, absSearchPath)\n\t\t\tif err != nil || strings.HasPrefix(relPath, \"..\") {\n\t\t\t\t// Directory is outside working directory, request permission\n\t\t\t\tsessionID := GetSessionFromContext(ctx)\n\t\t\t\tif sessionID == \"\" {\n\t\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"session ID is required for accessing directories outside working directory\")\n\t\t\t\t}\n\n\t\t\t\tgranted := permissions.Request(\n\t\t\t\t\tpermission.CreatePermissionRequest{\n\t\t\t\t\t\tSessionID:   sessionID,\n\t\t\t\t\t\tPath:        absSearchPath,\n\t\t\t\t\t\tToolCallID:  call.ID,\n\t\t\t\t\t\tToolName:    LSToolName,\n\t\t\t\t\t\tAction:      \"list\",\n\t\t\t\t\t\tDescription: fmt.Sprintf(\"List directory outside working directory: %s\", absSearchPath),\n\t\t\t\t\t\tParams:      LSPermissionsParams(params),\n\t\t\t\t\t},\n\t\t\t\t)\n\n\t\t\t\tif !granted {\n\t\t\t\t\treturn fantasy.ToolResponse{}, permission.ErrorPermissionDenied\n\t\t\t\t}\n\t\t\t}\n\n\t\t\toutput, metadata, err := ListDirectoryTree(searchPath, params, lsConfig)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(err.Error()), err\n\t\t\t}\n\n\t\t\treturn fantasy.WithResponseMetadata(\n\t\t\t\tfantasy.NewTextResponse(output),\n\t\t\t\tmetadata,\n\t\t\t), nil\n\t\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ListDirectoryTree_111": {
+      "name": "ListDirectoryTree",
+      "type": "function",
+      "start_line": 111,
+      "end_line": 143,
+      "content_hash": "29ff6bad619aed2e386eafae3200eb5f0dee3b27",
+      "content": "func ListDirectoryTree(searchPath string, params LSParams, lsConfig config.ToolLs) (string, LSResponseMetadata, error) {\n\tif _, err := os.Stat(searchPath); os.IsNotExist(err) {\n\t\treturn \"\", LSResponseMetadata{}, fmt.Errorf(\"path does not exist: %s\", searchPath)\n\t}\n\n\tdepth, limit := lsConfig.Limits()\n\tmaxFiles := cmp.Or(limit, maxLSFiles)\n\tfiles, truncated, err := fsext.ListDirectory(\n\t\tsearchPath,\n\t\tparams.Ignore,\n\t\tcmp.Or(params.Depth, depth),\n\t\tmaxFiles,\n\t)\n\tif err != nil {\n\t\treturn \"\", LSResponseMetadata{}, fmt.Errorf(\"error listing directory: %w\", err)\n\t}\n\n\tmetadata := LSResponseMetadata{\n\t\tNumberOfFiles: len(files),\n\t\tTruncated:     truncated,\n\t}\n\ttree := createFileTree(files, searchPath)\n\n\tvar output string\n\tif truncated {\n\t\toutput = fmt.Sprintf(\"There are more than %d files in the directory. Use a more specific path or use the Glob tool to find specific files. The first %[1]d files and directories are included below.\\n\", maxFiles)\n\t}\n\tif depth > 0 {\n\t\toutput = fmt.Sprintf(\"The directory tree is shown up to a depth of %d. Use a higher depth and a specific path to see more levels.\\n\", cmp.Or(params.Depth, depth))\n\t}\n\treturn output + \"\\n\" + printTree(tree, searchPath), metadata, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createFileTree_144": {
+      "name": "createFileTree",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 207,
+      "content_hash": "24931619902291f67ec3f67a6d59716a78f3f9fa",
+      "content": "func createFileTree(sortedPaths []string, rootPath string) []*TreeNode {\n\troot := []*TreeNode{}\n\tpathMap := make(map[string]*TreeNode)\n\n\tfor _, path := range sortedPaths {\n\t\trelativePath := strings.TrimPrefix(path, rootPath)\n\t\tparts := strings.Split(relativePath, string(filepath.Separator))\n\t\tcurrentPath := \"\"\n\t\tvar parentPath string\n\n\t\tvar cleanParts []string\n\t\tfor _, part := range parts {\n\t\t\tif part != \"\" {\n\t\t\t\tcleanParts = append(cleanParts, part)\n\t\t\t}\n\t\t}\n\t\tparts = cleanParts\n\n\t\tif len(parts) == 0 {\n\t\t\tcontinue\n\t\t}\n\n\t\tfor i, part := range parts {\n\t\t\tif currentPath == \"\" {\n\t\t\t\tcurrentPath = part\n\t\t\t} else {\n\t\t\t\tcurrentPath = filepath.Join(currentPath, part)\n\t\t\t}\n\n\t\t\tif _, exists := pathMap[currentPath]; exists {\n\t\t\t\tparentPath = currentPath\n\t\t\t\tcontinue\n\t\t\t}\n\n\t\t\tisLastPart := i == len(parts)-1\n\t\t\tisDir := !isLastPart || strings.HasSuffix(relativePath, string(filepath.Separator))\n\t\t\tnodeType := \"file\"\n\t\t\tif isDir {\n\t\t\t\tnodeType = \"directory\"\n\t\t\t}\n\t\t\tnewNode := &TreeNode{\n\t\t\t\tName:     part,\n\t\t\t\tPath:     currentPath,\n\t\t\t\tType:     nodeType,\n\t\t\t\tChildren: []*TreeNode{},\n\t\t\t}\n\n\t\t\tpathMap[currentPath] = newNode\n\n\t\t\tif i > 0 && parentPath != \"\" {\n\t\t\t\tif parent, ok := pathMap[parentPath]; ok {\n\t\t\t\t\tparent.Children = append(parent.Children, newNode)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\troot = append(root, newNode)\n\t\t\t}\n\n\t\t\tparentPath = currentPath\n\t\t}\n\t}\n\n\treturn root\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_printTree_208": {
+      "name": "printTree",
+      "type": "function",
+      "start_line": 208,
+      "end_line": 224,
+      "content_hash": "a7f40f65c72e7ebbaadde2387878d89e31515d81",
+      "content": "func printTree(tree []*TreeNode, rootPath string) string {\n\tvar result strings.Builder\n\n\tresult.WriteString(\"- \")\n\tresult.WriteString(filepath.ToSlash(rootPath))\n\tif rootPath[len(rootPath)-1] != '/' {\n\t\tresult.WriteByte('/')\n\t}\n\tresult.WriteByte('\\n')\n\n\tfor _, node := range tree {\n\t\tprintNode(&result, node, 1)\n\t}\n\n\treturn result.String()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_printNode_225": {
+      "name": "printNode",
+      "type": "function",
+      "start_line": 225,
+      "end_line": 240,
+      "content_hash": "d0fdaf52131c7bedf116108ec564ea6361bee371",
+      "content": "func printNode(builder *strings.Builder, node *TreeNode, level int) {\n\tindent := strings.Repeat(\"  \", level)\n\n\tnodeName := node.Name\n\tif node.Type == \"directory\" {\n\t\tnodeName = nodeName + \"/\"\n\t}\n\n\tfmt.Fprintf(builder, \"%s- %s\\n\", indent, nodeName)\n\n\tif node.Type == \"directory\" && len(node.Children) > 0 {\n\t\tfor _, child := range node.Children {\n\t\t\tprintNode(builder, child, level+1)\n\t\t}\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

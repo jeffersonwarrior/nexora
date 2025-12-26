@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/update/update.go",
+  "file_hash": "981556bf6c163428c99a8301caa78456f9f38d12",
+  "updated_at": "2025-12-26T17:34:20.342996",
+  "symbols": {
+    "struct_Info_23": {
+      "name": "Info",
+      "type": "struct",
+      "start_line": 23,
+      "end_line": 32,
+      "content_hash": "e5f9d30428c711df1b9aad9ebd0b6fcde2f029c0",
+      "content": "type Info struct {\n\tCurrent string\n\tLatest  string\n\tURL     string\n}\n\n// Matches a version string like:\n// v0.0.0-0.20251231235959-06c807842604\nvar goInstallRegexp = regexp.MustCompile(`^v?\\d+\\.\\d+\\.\\d+-\\d+\\.\\d{14}-[0-9a-f]{12}$`)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsDevelopment_33": {
+      "name": "IsDevelopment",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 42,
+      "content_hash": "a1b1b08dd87ddf0f378f01e9bb57f832ec8a051e",
+      "content": "func (i Info) IsDevelopment() bool {\n\treturn i.Current == \"devel\" || i.Current == \"unknown\" || strings.Contains(i.Current, \"dirty\") || goInstallRegexp.MatchString(i.Current)\n}\n\n// Available returns true if there's an update available.\n//\n// If both current and latest are stable versions, returns true if versions are\n// different.\n// If current is a pre-release and latest isn't, returns true.\n// If latest is a pre-release and current isn't, returns false.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Available_43": {
+      "name": "Available",
+      "type": "method",
+      "start_line": 43,
+      "end_line": 57,
+      "content_hash": "e9a90a818251b13e6c654df4951026c597da8e61",
+      "content": "func (i Info) Available() bool {\n\tcpr := strings.Contains(i.Current, \"-\")\n\tlpr := strings.Contains(i.Latest, \"-\")\n\t// current is pre release && latest isn't a prerelease\n\tif cpr && !lpr {\n\t\treturn true\n\t}\n\t// latest is pre release && current isn't a prerelease\n\tif lpr && !cpr {\n\t\treturn false\n\t}\n\treturn i.Current != i.Latest\n}\n\n// Check checks if a new version is available.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Check_58": {
+      "name": "Check",
+      "type": "function",
+      "start_line": 58,
+      "end_line": 75,
+      "content_hash": "5a2f7c16319f1c0d360bb18ed7b5c9ac8c7a7dc0",
+      "content": "func Check(ctx context.Context, current string, client Client) (Info, error) {\n\tinfo := Info{\n\t\tCurrent: current,\n\t\tLatest:  current,\n\t}\n\n\trelease, err := client.Latest(ctx)\n\tif err != nil {\n\t\treturn info, fmt.Errorf(\"failed to fetch latest release: %w\", err)\n\t}\n\n\tinfo.Latest = strings.TrimPrefix(release.TagName, \"v\")\n\tinfo.Current = strings.TrimPrefix(info.Current, \"v\")\n\tinfo.URL = release.HTMLURL\n\treturn info, nil\n}\n\n// Release represents a GitHub release.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Release_76": {
+      "name": "Release",
+      "type": "struct",
+      "start_line": 76,
+      "end_line": 81,
+      "content_hash": "dba42063c3d270ab47c140cd8f0f50a1e5103c75",
+      "content": "type Release struct {\n\tTagName string `json:\"tag_name\"`\n\tHTMLURL string `json:\"html_url\"`\n}\n\n// Client is a client that can get the latest release.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_Client_82": {
+      "name": "Client",
+      "type": "interface",
+      "start_line": 82,
+      "end_line": 85,
+      "content_hash": "3f8fa1b2f7490b34b64de7b75a835ed9d4cdbf47",
+      "content": "type Client interface {\n\tLatest(ctx context.Context) (*Release, error)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_github_86": {
+      "name": "github",
+      "type": "struct",
+      "start_line": 86,
+      "end_line": 88,
+      "content_hash": "5192ed5f618a6ce9e8c149798eb81b3f6d0ad48e",
+      "content": "type github struct{}\n\n// Latest implements [Client].",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Latest_89": {
+      "name": "Latest",
+      "type": "method",
+      "start_line": 89,
+      "end_line": 118,
+      "content_hash": "0175f70094241293c1cf11fe46a196f20c7cccc3",
+      "content": "func (c *github) Latest(ctx context.Context) (*Release, error) {\n\tclient := &http.Client{\n\t\tTimeout: 30 * time.Second,\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", githubApiUrl, nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treq.Header.Set(\"User-Agent\", userAgent)\n\treq.Header.Set(\"Accept\", \"application/vnd.github.v3+json\")\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\tbody, _ := io.ReadAll(resp.Body)\n\t\treturn nil, fmt.Errorf(\"github api returned status %d: %s\", resp.StatusCode, string(body))\n\t}\n\n\tvar release Release\n\tif err := json.NewDecoder(resp.Body).Decode(&release); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &release, nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

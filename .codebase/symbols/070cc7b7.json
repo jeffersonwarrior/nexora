@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/rerank_events.py",
+  "file_hash": "0a89b88c7f68b6f83929875ecf9ab8a6b077bede",
+  "updated_at": "2025-12-26T17:34:22.672396",
+  "symbols": {
+    "function__get_write_lock_42": {
+      "name": "_get_write_lock",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 47,
+      "content_hash": "060475de3b092504b20bdface2e9c1469b775483",
+      "content": "def _get_write_lock(file_key: str) -> threading.Lock:\n    \"\"\"Get or create a write lock for a specific file.\"\"\"\n    with _LOCKS_LOCK:\n        if file_key not in _WRITE_LOCKS:\n            _WRITE_LOCKS[file_key] = threading.Lock()\n        return _WRITE_LOCKS[file_key]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ensure_events_dir_50": {
+      "name": "_ensure_events_dir",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 54,
+      "content_hash": "aa0a8935d7682077a663caea647206aa33cb76cd",
+      "content": "def _ensure_events_dir() -> Path:\n    \"\"\"Ensure events directory exists.\"\"\"\n    events_dir = Path(RERANK_EVENTS_DIR)\n    events_dir.mkdir(parents=True, exist_ok=True)\n    return events_dir",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_hour_suffix_57": {
+      "name": "_get_hour_suffix",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 59,
+      "content_hash": "058a53493ea31e02de2ce79f1f89952ff2f6790a",
+      "content": "def _get_hour_suffix() -> str:\n    \"\"\"Get current hour suffix for time-sharding (YYYYMMDDHH).\"\"\"\n    return datetime.now(tz=None).strftime(\"%Y%m%d%H\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_events_file_62": {
+      "name": "_get_events_file",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 67,
+      "content_hash": "a4f3be7a0bee61e5de838fa9433a56127cddc046",
+      "content": "def _get_events_file(collection: str, hour_suffix: Optional[str] = None) -> Path:\n    \"\"\"Get events file path for a collection (time-sharded).\"\"\"\n    safe_name = \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)\n    if hour_suffix is None:\n        hour_suffix = _get_hour_suffix()\n    return _ensure_events_dir() / f\"events_{safe_name}_{hour_suffix}.ndjson\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_training_event_70": {
+      "name": "log_training_event",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 155,
+      "content_hash": "b673f903978299baa9f3ab6416ff1f0a0e93ccaf",
+      "content": "def log_training_event(\n    query: str,\n    candidates: List[Dict[str, Any]],\n    initial_scores: List[float],\n    teacher_scores: Optional[List[float]],\n    collection: str,\n    metadata: Optional[Dict[str, Any]] = None,\n    force: bool = False,\n) -> bool:\n    \"\"\"\n    Log a training event for background processing.\n\n    Args:\n        query: The search query\n        candidates: List of candidate documents (will extract path, symbol, snippet)\n        initial_scores: Initial hybrid search scores\n        teacher_scores: ONNX teacher scores (if available)\n        collection: Collection name for isolation\n        metadata: Optional additional metadata\n        force: If True, bypass sampling (always log)\n\n    Returns:\n        True if event was logged successfully, False if skipped/disabled\n    \"\"\"\n    if not RERANK_EVENTS_ENABLED:\n        return False\n\n    # Sampling: only log SAMPLE_RATE fraction of events\n    if not force and random.random() > RERANK_EVENTS_SAMPLE_RATE:\n        return False\n\n    try:\n        # Helper to convert numpy types to native Python for JSON\n        def _to_native(v):\n            if hasattr(v, \"item\"):  # numpy scalar\n                return v.item()\n            return v\n\n        # Extract minimal candidate info (don't store full code)\n        candidate_info = []\n        for i, c in enumerate(candidates):\n            score = initial_scores[i] if i < len(initial_scores) else 0\n            info = {\n                \"path\": c.get(\"path\", \"\"),\n                \"symbol\": c.get(\"symbol\", \"\"),\n                \"start_line\": c.get(\"start_line\", 0),\n                \"end_line\": c.get(\"end_line\", 0),\n                \"initial_score\": _to_native(score),\n            }\n            # Include small snippet for learning (truncated)\n            snippet = c.get(\"code\") or c.get(\"snippet\") or \"\"\n            if snippet:\n                info[\"snippet\"] = snippet[:500]\n            candidate_info.append(info)\n\n        event = {\n            \"ts\": time.time(),\n            \"query\": query,\n            \"collection\": collection,\n            \"candidates\": candidate_info,\n            \"teacher_scores\": [_to_native(s) for s in teacher_scores] if teacher_scores is not None and len(teacher_scores) > 0 else None,\n            \"metadata\": metadata or {},\n        }\n\n        events_file = _get_events_file(collection)\n        file_key = str(events_file)\n\n        # Per-file lock for better concurrency across collections/hours\n        lock = _get_write_lock(file_key)\n        with lock:\n            # Atomic append with file locking (for cross-process safety)\n            with open(events_file, \"a\") as f:\n                if fcntl is not None:\n                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)\n                    try:\n                        f.write(json.dumps(event) + \"\\n\")\n                    finally:\n                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)\n                else:\n                    # Best-effort fallback (thread lock still prevents intra-process interleaving)\n                    f.write(json.dumps(event) + \"\\n\")\n\n        return True\n\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__to_native_103": {
+      "name": "_to_native",
+      "type": "function",
+      "start_line": 103,
+      "end_line": 106,
+      "content_hash": "5332a8a17fb9ed08580023c0005dd78d46b7d15a",
+      "content": "        def _to_native(v):\n            if hasattr(v, \"item\"):  # numpy scalar\n                return v.item()\n            return v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_list_event_files_158": {
+      "name": "list_event_files",
+      "type": "function",
+      "start_line": 158,
+      "end_line": 164,
+      "content_hash": "00b95c11b8b3a03dd3d85177ee10004972bd2d8c",
+      "content": "def list_event_files(collection: str) -> List[Path]:\n    \"\"\"List all event files for a collection (sorted by time, oldest first).\"\"\"\n    safe_name = \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)\n    pattern = f\"events_{safe_name}_*.ndjson\"\n    events_dir = _ensure_events_dir()\n    files = sorted(events_dir.glob(pattern))\n    return files",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_read_events_167": {
+      "name": "read_events",
+      "type": "function",
+      "start_line": 167,
+      "end_line": 206,
+      "content_hash": "ebc14970058f0212a2e7a273af075c81ad774f66",
+      "content": "def read_events(\n    collection: str,\n    since_ts: float = 0,\n    limit: int = 1000,\n) -> List[Dict[str, Any]]:\n    \"\"\"\n    Read training events for a collection (across all time-sharded files).\n\n    Args:\n        collection: Collection name\n        since_ts: Only return events after this timestamp\n        limit: Maximum events to return\n\n    Returns:\n        List of training events (oldest first)\n    \"\"\"\n    event_files = list_event_files(collection)\n    if not event_files:\n        return []\n\n    events = []\n    for events_file in event_files:\n        try:\n            with open(events_file, \"r\") as f:\n                for line in f:\n                    line = line.strip()\n                    if not line:\n                        continue\n                    try:\n                        event = json.loads(line)\n                        if event.get(\"ts\", 0) > since_ts:\n                            events.append(event)\n                            if len(events) >= limit:\n                                return events\n                    except json.JSONDecodeError:\n                        continue\n        except Exception:\n            continue\n\n    return events",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanup_old_events_209": {
+      "name": "cleanup_old_events",
+      "type": "function",
+      "start_line": 209,
+      "end_line": 234,
+      "content_hash": "637b7b550eb8874e245b530b5056c4bea1eb22e3",
+      "content": "def cleanup_old_events(collection: str, max_age_days: int) -> int:\n    \"\"\"\n    Remove event files older than max_age_days.\n\n    Args:\n        collection: Collection name\n        max_age_days: Delete files older than this\n\n    Returns:\n        Number of files deleted\n    \"\"\"\n    if max_age_days <= 0:\n        return 0\n\n    cutoff = time.time() - (max_age_days * 86400)\n    deleted = 0\n\n    for events_file in list_event_files(collection):\n        try:\n            if events_file.stat().st_mtime < cutoff:\n                events_file.unlink()\n                deleted += 1\n        except Exception:\n            continue\n\n    return deleted",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

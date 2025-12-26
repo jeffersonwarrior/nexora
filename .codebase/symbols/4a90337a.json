@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/sqlite/types.ts",
+  "file_hash": "67ee6f658db30ce9ab326c52507c0fadd82a4353",
+  "updated_at": "2025-12-26T17:34:23.904959",
+  "symbols": {
+    "function_normalizeTimestamp_149": {
+      "name": "normalizeTimestamp",
+      "type": "function",
+      "start_line": 149,
+      "end_line": 184,
+      "content_hash": "54e2f7294ab16208720551b7c063344faf2f3126",
+      "content": "export function normalizeTimestamp(timestamp: string | Date | number | undefined): { isoString: string; epoch: number } {\n  let date: Date;\n  \n  if (!timestamp) {\n    date = new Date();\n  } else if (timestamp instanceof Date) {\n    date = timestamp;\n  } else if (typeof timestamp === 'number') {\n    date = new Date(timestamp);\n  } else if (typeof timestamp === 'string') {\n    // Handle empty strings\n    if (!timestamp.trim()) {\n      date = new Date();\n    } else {\n      date = new Date(timestamp);\n      // If invalid date, try to parse it differently\n      if (isNaN(date.getTime())) {\n        // Try common formats\n        const cleaned = timestamp.replace(/\\s+/g, 'T').replace(/T+/g, 'T');\n        date = new Date(cleaned);\n        \n        // Still invalid? Use current time\n        if (isNaN(date.getTime())) {\n          date = new Date();\n        }\n      }\n    }\n  } else {\n    date = new Date();\n  }\n  \n  return {\n    isoString: date.toISOString(),\n    epoch: date.getTime()\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

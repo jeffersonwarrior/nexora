@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/scripts/lint.sh",
+  "file_hash": "35b547dde0cd0a9351038e315569cfcffce6822b",
+  "updated_at": "2025-12-26T17:34:23.159431",
+  "symbols": {
+    "function_command_exists_26": {
+      "name": "command_exists",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 26,
+      "content_hash": "1a01c8c3cbb13a2e0d6b4fb2bab30af52514e441",
+      "content": "command_exists() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_run_check_31": {
+      "name": "run_check",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 31,
+      "content_hash": "64395fe2650c96aeb57245bf7872cbcd81809baa",
+      "content": "run_check() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

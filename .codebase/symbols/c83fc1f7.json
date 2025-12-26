@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/scripts/tui-tmux-test.sh",
+  "file_hash": "a15281c986eea31328ced1b32de0c7155e30d52a",
+  "updated_at": "2025-12-26T17:34:21.433850",
+  "symbols": {
+    "function_log_17": {
+      "name": "log",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 17,
+      "content_hash": "b3b088c843288e3f2479e0cb1b9bdbb6dd0723a4",
+      "content": "log() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_warn_22": {
+      "name": "warn",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 22,
+      "content_hash": "f1eda02acf80b5b7d3c89ce6875c63e61d845531",
+      "content": "warn() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_error_27": {
+      "name": "error",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 27,
+      "content_hash": "d667f906027a9736a87468a7543d423806c1e602",
+      "content": "error() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanup_32": {
+      "name": "cleanup",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 32,
+      "content_hash": "f8d26d3c1d1d0e0aa231fc7ca7f558c6d0360b24",
+      "content": "cleanup() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_prereqs_40": {
+      "name": "check_prereqs",
+      "type": "function",
+      "start_line": 40,
+      "end_line": 40,
+      "content_hash": "37e832cdc9ebcbdba84493a302375ef6720cee48",
+      "content": "check_prereqs() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_start_nexora_57": {
+      "name": "start_nexora",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 57,
+      "content_hash": "98405e4054f7c50e6fc6c71c6fccdefee88349af",
+      "content": "start_nexora() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_send_keys_66": {
+      "name": "send_keys",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 66,
+      "content_hash": "d013d17ada68d3be73a5150ee873b72a1cdb84e8",
+      "content": "send_keys() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_send_enter_73": {
+      "name": "send_enter",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 73,
+      "content_hash": "fc40d23fcaf276c5d323c7b752130ce8a7f054cb",
+      "content": "send_enter() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_send_ctrl_78": {
+      "name": "send_ctrl",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 78,
+      "content_hash": "9e623c97a9219faee67fdc375e7faffdc3638bc6",
+      "content": "send_ctrl() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_capture_screen_84": {
+      "name": "capture_screen",
+      "type": "function",
+      "start_line": 84,
+      "end_line": 84,
+      "content_hash": "035abeb9176eab094ffb25f72067f1a4b83b8844",
+      "content": "capture_screen() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_wait_for_89": {
+      "name": "wait_for",
+      "type": "function",
+      "start_line": 89,
+      "end_line": 89,
+      "content_hash": "fd33a50ec9227c8b2298aae22a818c4c6d701645",
+      "content": "wait_for() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_slash_trigger_109": {
+      "name": "test_slash_trigger",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 109,
+      "content_hash": "0a150b33ff143f707037add824f207e0a6ba8178",
+      "content": "test_slash_trigger() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_slash_passthrough_128": {
+      "name": "test_slash_passthrough",
+      "type": "function",
+      "start_line": 128,
+      "end_line": 128,
+      "content_hash": "50d9644adb9badf8df270eac0ec6fc7327f70b3f",
+      "content": "test_slash_passthrough() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_ctrl_e_models_148": {
+      "name": "test_ctrl_e_models",
+      "type": "function",
+      "start_line": 148,
+      "end_line": 148,
+      "content_hash": "a1f2ed3bc062bfa69e3d883f6e9b153f8a22b488",
+      "content": "test_ctrl_e_models() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_ctrl_p_prompts_162": {
+      "name": "test_ctrl_p_prompts",
+      "type": "function",
+      "start_line": 162,
+      "end_line": 162,
+      "content_hash": "bb76dc1d9e6fbb1fd3515f05be044bf1076a8fe7",
+      "content": "test_ctrl_p_prompts() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_ctrl_n_session_176": {
+      "name": "test_ctrl_n_session",
+      "type": "function",
+      "start_line": 176,
+      "end_line": 176,
+      "content_hash": "d576dd91ad6687dafff93a53dc41446dd68e9adf",
+      "content": "test_ctrl_n_session() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_dialog_navigation_186": {
+      "name": "test_dialog_navigation",
+      "type": "function",
+      "start_line": 186,
+      "end_line": 186,
+      "content_hash": "70ba4a8c674324de3db26148017ad1a101ca3d09",
+      "content": "test_dialog_navigation() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_thinking_animation_203": {
+      "name": "test_thinking_animation",
+      "type": "function",
+      "start_line": 203,
+      "end_line": 203,
+      "content_hash": "2934d579986da3b08b7f898346e28b4532cc279c",
+      "content": "test_thinking_animation() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_tool_aliases_213": {
+      "name": "test_tool_aliases",
+      "type": "function",
+      "start_line": 213,
+      "end_line": 213,
+      "content_hash": "a42f182c7068ef049c5d273be42c35d9b68942a8",
+      "content": "test_tool_aliases() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_lsp_detection_221": {
+      "name": "test_lsp_detection",
+      "type": "function",
+      "start_line": 221,
+      "end_line": 221,
+      "content_hash": "b2c2426d51f64de60a352b511fe4fff86d2e6475",
+      "content": "test_lsp_detection() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_settings_panel_233": {
+      "name": "test_settings_panel",
+      "type": "function",
+      "start_line": 233,
+      "end_line": 233,
+      "content_hash": "e7293e32f367a7c4eb3ea21541c4b309e4fd1090",
+      "content": "test_settings_panel() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_delegate_completion_249": {
+      "name": "test_delegate_completion",
+      "type": "function",
+      "start_line": 249,
+      "end_line": 249,
+      "content_hash": "391841dac18f00360e19894f8377b167abcfdc7a",
+      "content": "test_delegate_completion() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_generate_report_257": {
+      "name": "generate_report",
+      "type": "function",
+      "start_line": 257,
+      "end_line": 257,
+      "content_hash": "1837cea490abc753fa42306d69fac1c25b817355",
+      "content": "generate_report() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_285": {
+      "name": "main",
+      "type": "function",
+      "start_line": 285,
+      "end_line": 285,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

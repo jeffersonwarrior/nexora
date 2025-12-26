@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/domain/ModeManager.ts",
+  "file_hash": "00850a7e0dbbca038e9c7b13e31c8731b0ee15e6",
+  "updated_at": "2025-12-26T17:34:23.450517",
+  "symbols": {
+    "class_ModeManager_15": {
+      "name": "ModeManager",
+      "type": "class",
+      "start_line": 15,
+      "end_line": 254,
+      "content_hash": "351bd65ab9cd9c275dd4aa313f137aaeeae16a92",
+      "content": "export class ModeManager {\n  private static instance: ModeManager | null = null;\n  private activeMode: ModeConfig | null = null;\n  private modesDir: string;\n\n  private constructor() {\n    // Modes are in plugin/modes/\n    // getPackageRoot() points to plugin/ in production and src/ in development\n    // We want to ensure we find the modes directory which is at the project root/plugin/modes\n    const packageRoot = getPackageRoot();\n    \n    // Check for plugin/modes relative to package root (covers both dev and prod if paths are right)\n    const possiblePaths = [\n      join(packageRoot, 'modes'),           // Production (plugin/modes)\n      join(packageRoot, '..', 'plugin', 'modes'), // Development (src/../plugin/modes)\n    ];\n\n    const foundPath = possiblePaths.find(p => existsSync(p));\n    this.modesDir = foundPath || possiblePaths[0];\n  }\n\n  /**\n   * Get singleton instance\n   */\n  static getInstance(): ModeManager {\n    if (!ModeManager.instance) {\n      ModeManager.instance = new ModeManager();\n    }\n    return ModeManager.instance;\n  }\n\n  /**\n   * Parse mode ID for inheritance pattern (parent--override)\n   */\n  private parseInheritance(modeId: string): {\n    hasParent: boolean;\n    parentId: string;\n    overrideId: string;\n  } {\n    const parts = modeId.split('--');\n\n    if (parts.length === 1) {\n      return { hasParent: false, parentId: '', overrideId: '' };\n    }\n\n    // Support only one level: code--ko, not code--ko--verbose\n    if (parts.length > 2) {\n      throw new Error(\n        `Invalid mode inheritance: ${modeId}. Only one level of inheritance supported (parent--override)`\n      );\n    }\n\n    return {\n      hasParent: true,\n      parentId: parts[0],\n      overrideId: modeId // Use the full modeId (e.g., code--es) to find the override file\n    };\n  }\n\n  /**\n   * Check if value is a plain object (not array, not null)\n   */\n  private isPlainObject(value: unknown): boolean {\n    return (\n      value !== null &&\n      typeof value === 'object' &&\n      !Array.isArray(value)\n    );\n  }\n\n  /**\n   * Deep merge two objects\n   * - Recursively merge nested objects\n   * - Replace arrays completely (no merging)\n   * - Override primitives\n   */\n  private deepMerge<T>(base: T, override: Partial<T>): T {\n    const result = { ...base } as T;\n\n    for (const key in override) {\n      const overrideValue = override[key];\n      const baseValue = base[key];\n\n      if (this.isPlainObject(overrideValue) && this.isPlainObject(baseValue)) {\n        // Recursively merge nested objects\n        result[key] = this.deepMerge(baseValue, overrideValue as any);\n      } else {\n        // Replace arrays and primitives completely\n        result[key] = overrideValue as T[Extract<keyof T, string>];\n      }\n    }\n\n    return result;\n  }\n\n  /**\n   * Load a mode file from disk without inheritance processing\n   */\n  private loadModeFile(modeId: string): ModeConfig {\n    const modePath = join(this.modesDir, `${modeId}.json`);\n\n    if (!existsSync(modePath)) {\n      throw new Error(`Mode file not found: ${modePath}`);\n    }\n\n    const jsonContent = readFileSync(modePath, 'utf-8');\n    return JSON.parse(jsonContent) as ModeConfig;\n  }\n\n  /**\n   * Load a mode profile by ID with inheritance support\n   * Caches the result for subsequent calls\n   *\n   * Supports inheritance via parent--override pattern (e.g., code--ko)\n   * - Loads parent mode recursively\n   * - Loads override file from modes directory\n   * - Deep merges override onto parent\n   */\n  loadMode(modeId: string): ModeConfig {\n    const inheritance = this.parseInheritance(modeId);\n\n    // No inheritance - load file directly (existing behavior)\n    if (!inheritance.hasParent) {\n      try {\n        const mode = this.loadModeFile(modeId);\n        this.activeMode = mode;\n        logger.debug('SYSTEM', `Loaded mode: ${mode.name} (${modeId})`, undefined, {\n          types: mode.observation_types.map(t => t.id),\n          concepts: mode.observation_concepts.map(c => c.id)\n        });\n        return mode;\n      } catch (error) {\n        logger.warn('SYSTEM', `Mode file not found: ${modeId}, falling back to 'code'`);\n        // If we're already trying to load 'code', throw to prevent infinite recursion\n        if (modeId === 'code') {\n          throw new Error('Critical: code.json mode file missing');\n        }\n        return this.loadMode('code');\n      }\n    }\n\n    // Has inheritance - load parent and merge with override\n    const { parentId, overrideId } = inheritance;\n\n    // Load parent mode recursively\n    let parentMode: ModeConfig;\n    try {\n      parentMode = this.loadMode(parentId);\n    } catch (error) {\n      logger.warn('SYSTEM', `Parent mode '${parentId}' not found for ${modeId}, falling back to 'code'`);\n      parentMode = this.loadMode('code');\n    }\n\n    // Load override file\n    let overrideConfig: Partial<ModeConfig>;\n    try {\n      overrideConfig = this.loadModeFile(overrideId);\n      logger.debug('SYSTEM', `Loaded override file: ${overrideId} for parent ${parentId}`);\n    } catch (error) {\n      logger.warn('SYSTEM', `Override file '${overrideId}' not found, using parent mode '${parentId}' only`);\n      this.activeMode = parentMode;\n      return parentMode;\n    }\n\n    // Validate override file loaded successfully\n    if (!overrideConfig) {\n      logger.warn('SYSTEM', `Invalid override file: ${overrideId}, using parent mode '${parentId}' only`);\n      this.activeMode = parentMode;\n      return parentMode;\n    }\n\n    // Deep merge override onto parent\n    const mergedMode = this.deepMerge(parentMode, overrideConfig);\n    this.activeMode = mergedMode;\n\n    logger.debug('SYSTEM', `Loaded mode with inheritance: ${mergedMode.name} (${modeId} = ${parentId} + ${overrideId})`, undefined, {\n      parent: parentId,\n      override: overrideId,\n      types: mergedMode.observation_types.map(t => t.id),\n      concepts: mergedMode.observation_concepts.map(c => c.id)\n    });\n\n    return mergedMode;\n  }\n\n  /**\n   * Get currently active mode\n   */\n  getActiveMode(): ModeConfig {\n    if (!this.activeMode) {\n      throw new Error('No mode loaded. Call loadMode() first.');\n    }\n    return this.activeMode;\n  }\n\n  /**\n   * Get all observation types from active mode\n   */\n  getObservationTypes(): ObservationType[] {\n    return this.getActiveMode().observation_types;\n  }\n\n  /**\n   * Get all observation concepts from active mode\n   */\n  getObservationConcepts(): ObservationConcept[] {\n    return this.getActiveMode().observation_concepts;\n  }\n\n  /**\n   * Get icon for a specific observation type\n   */\n  getTypeIcon(typeId: string): string {\n    const type = this.getObservationTypes().find(t => t.id === typeId);\n    return type?.emoji || '\ud83d\udcdd';\n  }\n\n  /**\n   * Get work emoji for a specific observation type\n   */\n  getWorkEmoji(typeId: string): string {\n    const type = this.getObservationTypes().find(t => t.id === typeId);\n    return type?.work_emoji || '\ud83d\udcdd';\n  }\n\n  /**\n   * Validate that a type ID exists in the active mode\n   */\n  validateType(typeId: string): boolean {\n    return this.getObservationTypes().some(t => t.id === typeId);\n  }\n\n  /**\n   * Get label for a specific observation type\n   */\n  getTypeLabel(typeId: string): string {\n    const type = this.getObservationTypes().find(t => t.id === typeId);\n    return type?.label || typeId;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_constructor_20": {
+      "name": "constructor",
+      "type": "method",
+      "start_line": 20,
+      "end_line": 34,
+      "content_hash": "fbb948bab706b91fbe0a7395ea17d68f6ccb10cd",
+      "content": "  private constructor() {\n    // Modes are in plugin/modes/\n    // getPackageRoot() points to plugin/ in production and src/ in development\n    // We want to ensure we find the modes directory which is at the project root/plugin/modes\n    const packageRoot = getPackageRoot();\n    \n    // Check for plugin/modes relative to package root (covers both dev and prod if paths are right)\n    const possiblePaths = [\n      join(packageRoot, 'modes'),           // Production (plugin/modes)\n      join(packageRoot, '..', 'plugin', 'modes'), // Development (src/../plugin/modes)\n    ];\n\n    const foundPath = possiblePaths.find(p => existsSync(p));\n    this.modesDir = foundPath || possiblePaths[0];\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getInstance_39": {
+      "name": "getInstance",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 44,
+      "content_hash": "4cc4c36b3df936cce68db098049a2a492d776a1d",
+      "content": "  static getInstance(): ModeManager {\n    if (!ModeManager.instance) {\n      ModeManager.instance = new ModeManager();\n    }\n    return ModeManager.instance;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parseInheritance_49": {
+      "name": "parseInheritance",
+      "type": "method",
+      "start_line": 49,
+      "end_line": 72,
+      "content_hash": "6642e28c89e3b07efa244a690db4cfce2b5c521f",
+      "content": "  private parseInheritance(modeId: string): {\n    hasParent: boolean;\n    parentId: string;\n    overrideId: string;\n  } {\n    const parts = modeId.split('--');\n\n    if (parts.length === 1) {\n      return { hasParent: false, parentId: '', overrideId: '' };\n    }\n\n    // Support only one level: code--ko, not code--ko--verbose\n    if (parts.length > 2) {\n      throw new Error(\n        `Invalid mode inheritance: ${modeId}. Only one level of inheritance supported (parent--override)`\n      );\n    }\n\n    return {\n      hasParent: true,\n      parentId: parts[0],\n      overrideId: modeId // Use the full modeId (e.g., code--es) to find the override file\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isPlainObject_77": {
+      "name": "isPlainObject",
+      "type": "method",
+      "start_line": 77,
+      "end_line": 83,
+      "content_hash": "3936f6dacc25238ca7193c9dbec26b4064ef1880",
+      "content": "  private isPlainObject(value: unknown): boolean {\n    return (\n      value !== null &&\n      typeof value === 'object' &&\n      !Array.isArray(value)\n    );\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_deepMerge_91": {
+      "name": "deepMerge",
+      "type": "method",
+      "start_line": 91,
+      "end_line": 108,
+      "content_hash": "6f175786bbdc4c3b4f436a3e12f3182f26427963",
+      "content": "  private deepMerge<T>(base: T, override: Partial<T>): T {\n    const result = { ...base } as T;\n\n    for (const key in override) {\n      const overrideValue = override[key];\n      const baseValue = base[key];\n\n      if (this.isPlainObject(overrideValue) && this.isPlainObject(baseValue)) {\n        // Recursively merge nested objects\n        result[key] = this.deepMerge(baseValue, overrideValue as any);\n      } else {\n        // Replace arrays and primitives completely\n        result[key] = overrideValue as T[Extract<keyof T, string>];\n      }\n    }\n\n    return result;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadModeFile_113": {
+      "name": "loadModeFile",
+      "type": "method",
+      "start_line": 113,
+      "end_line": 122,
+      "content_hash": "010224e5fb75a4e40a1600c84827cac3eb4fa56b",
+      "content": "  private loadModeFile(modeId: string): ModeConfig {\n    const modePath = join(this.modesDir, `${modeId}.json`);\n\n    if (!existsSync(modePath)) {\n      throw new Error(`Mode file not found: ${modePath}`);\n    }\n\n    const jsonContent = readFileSync(modePath, 'utf-8');\n    return JSON.parse(jsonContent) as ModeConfig;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadMode_133": {
+      "name": "loadMode",
+      "type": "method",
+      "start_line": 133,
+      "end_line": 198,
+      "content_hash": "9ab21905a22907893b14e71779305e4060eaa28d",
+      "content": "  loadMode(modeId: string): ModeConfig {\n    const inheritance = this.parseInheritance(modeId);\n\n    // No inheritance - load file directly (existing behavior)\n    if (!inheritance.hasParent) {\n      try {\n        const mode = this.loadModeFile(modeId);\n        this.activeMode = mode;\n        logger.debug('SYSTEM', `Loaded mode: ${mode.name} (${modeId})`, undefined, {\n          types: mode.observation_types.map(t => t.id),\n          concepts: mode.observation_concepts.map(c => c.id)\n        });\n        return mode;\n      } catch (error) {\n        logger.warn('SYSTEM', `Mode file not found: ${modeId}, falling back to 'code'`);\n        // If we're already trying to load 'code', throw to prevent infinite recursion\n        if (modeId === 'code') {\n          throw new Error('Critical: code.json mode file missing');\n        }\n        return this.loadMode('code');\n      }\n    }\n\n    // Has inheritance - load parent and merge with override\n    const { parentId, overrideId } = inheritance;\n\n    // Load parent mode recursively\n    let parentMode: ModeConfig;\n    try {\n      parentMode = this.loadMode(parentId);\n    } catch (error) {\n      logger.warn('SYSTEM', `Parent mode '${parentId}' not found for ${modeId}, falling back to 'code'`);\n      parentMode = this.loadMode('code');\n    }\n\n    // Load override file\n    let overrideConfig: Partial<ModeConfig>;\n    try {\n      overrideConfig = this.loadModeFile(overrideId);\n      logger.debug('SYSTEM', `Loaded override file: ${overrideId} for parent ${parentId}`);\n    } catch (error) {\n      logger.warn('SYSTEM', `Override file '${overrideId}' not found, using parent mode '${parentId}' only`);\n      this.activeMode = parentMode;\n      return parentMode;\n    }\n\n    // Validate override file loaded successfully\n    if (!overrideConfig) {\n      logger.warn('SYSTEM', `Invalid override file: ${overrideId}, using parent mode '${parentId}' only`);\n      this.activeMode = parentMode;\n      return parentMode;\n    }\n\n    // Deep merge override onto parent\n    const mergedMode = this.deepMerge(parentMode, overrideConfig);\n    this.activeMode = mergedMode;\n\n    logger.debug('SYSTEM', `Loaded mode with inheritance: ${mergedMode.name} (${modeId} = ${parentId} + ${overrideId})`, undefined, {\n      parent: parentId,\n      override: overrideId,\n      types: mergedMode.observation_types.map(t => t.id),\n      concepts: mergedMode.observation_concepts.map(c => c.id)\n    });\n\n    return mergedMode;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getActiveMode_203": {
+      "name": "getActiveMode",
+      "type": "method",
+      "start_line": 203,
+      "end_line": 208,
+      "content_hash": "6f1c7d4f0f7ec32c3b3115eddb73595f1c61c532",
+      "content": "  getActiveMode(): ModeConfig {\n    if (!this.activeMode) {\n      throw new Error('No mode loaded. Call loadMode() first.');\n    }\n    return this.activeMode;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getObservationTypes_213": {
+      "name": "getObservationTypes",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 215,
+      "content_hash": "5c8246929229b11336c99fc0b10d8dc2c22c5a77",
+      "content": "  getObservationTypes(): ObservationType[] {\n    return this.getActiveMode().observation_types;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getObservationConcepts_220": {
+      "name": "getObservationConcepts",
+      "type": "method",
+      "start_line": 220,
+      "end_line": 222,
+      "content_hash": "b3f3658107b96c001c4d01367a0a7114f88e79dc",
+      "content": "  getObservationConcepts(): ObservationConcept[] {\n    return this.getActiveMode().observation_concepts;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getTypeIcon_227": {
+      "name": "getTypeIcon",
+      "type": "method",
+      "start_line": 227,
+      "end_line": 230,
+      "content_hash": "8b39b83ca27ff711abea207994523d5dd6e33833",
+      "content": "  getTypeIcon(typeId: string): string {\n    const type = this.getObservationTypes().find(t => t.id === typeId);\n    return type?.emoji || '\ud83d\udcdd';\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getWorkEmoji_235": {
+      "name": "getWorkEmoji",
+      "type": "method",
+      "start_line": 235,
+      "end_line": 238,
+      "content_hash": "a4b406cab831cb24adac2d8dc4d64c2fee9f000a",
+      "content": "  getWorkEmoji(typeId: string): string {\n    const type = this.getObservationTypes().find(t => t.id === typeId);\n    return type?.work_emoji || '\ud83d\udcdd';\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_validateType_243": {
+      "name": "validateType",
+      "type": "method",
+      "start_line": 243,
+      "end_line": 245,
+      "content_hash": "5ba2ce441db0cf6310bc827a242ebc703be9c1d9",
+      "content": "  validateType(typeId: string): boolean {\n    return this.getObservationTypes().some(t => t.id === typeId);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getTypeLabel_250": {
+      "name": "getTypeLabel",
+      "type": "method",
+      "start_line": 250,
+      "end_line": 253,
+      "content_hash": "13a854196be8598afec724119669bf0012650301",
+      "content": "  getTypeLabel(typeId: string): string {\n    const type = this.getObservationTypes().find(t => t.id === typeId);\n    return type?.label || typeId;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

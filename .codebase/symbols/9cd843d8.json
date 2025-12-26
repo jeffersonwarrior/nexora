@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/team.go",
+  "file_hash": "5daa1dca66f9dc5ae6ea3732a1b1b3f39ba560c8",
+  "updated_at": "2025-12-26T17:34:20.521688",
+  "symbols": {
+    "struct_Team_10": {
+      "name": "Team",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 24,
+      "content_hash": "52b051315ee1d62ba50bd638225c60b94c1f308e",
+      "content": "type Team struct {\n\tname        string\n\tagents      map[string]*Agent\n\tcoordinator *Coordinator\n\tmessageBus  MessageBus\n\tmaxParallel int\n\ttimeout     time.Duration\n\tctx         context.Context\n\tcancel      context.CancelFunc\n}\n\n// TeamOption configures a team\ntype TeamOption func(*Team)\n\n// WithTeamTimeout sets the timeout for team operations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithTeamTimeout_25": {
+      "name": "WithTeamTimeout",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 31,
+      "content_hash": "9b522e419ca001750b56dbef531d32e887e95fa7",
+      "content": "func WithTeamTimeout(timeout time.Duration) TeamOption {\n\treturn func(t *Team) {\n\t\tt.timeout = timeout\n\t}\n}\n\n// WithMaxParallel sets the maximum number of parallel agents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithMaxParallel_32": {
+      "name": "WithMaxParallel",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 38,
+      "content_hash": "9f51d98472d7e67a9cb8ff21678fd7895f91b5bb",
+      "content": "func WithMaxParallel(max int) TeamOption {\n\treturn func(t *Team) {\n\t\tt.maxParallel = max\n\t}\n}\n\n// NewTeam creates a new team of agents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewTeam_39": {
+      "name": "NewTeam",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 60,
+      "content_hash": "77c74a77f63a5dba99f61ee62cb8f5adbf80f64a",
+      "content": "func NewTeam(name string, opts ...TeamOption) *Team {\n\tctx, cancel := context.WithCancel(context.Background())\n\tteam := &Team{\n\t\tname:        name,\n\t\tagents:      make(map[string]*Agent),\n\t\tmessageBus:  NewInMemoryMessageBus(),\n\t\tmaxParallel: 5,\n\t\ttimeout:     30 * time.Second,\n\t\tctx:         ctx,\n\t\tcancel:      cancel,\n\t}\n\n\tteam.coordinator = NewCoordinator(team)\n\n\tfor _, opt := range opts {\n\t\topt(team)\n\t}\n\n\treturn team\n}\n\n// AddAgent adds an agent to the team",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddAgent_61": {
+      "name": "AddAgent",
+      "type": "method",
+      "start_line": 61,
+      "end_line": 89,
+      "content_hash": "d593aa4beaf982169f1de5d898f359db47a6eed7",
+      "content": "func (t *Team) AddAgent(id string, agent *Agent) error {\n\tif _, exists := t.agents[id]; exists {\n\t\treturn fmt.Errorf(\"agent with ID %s already exists\", id)\n\t}\n\n\tt.agents[id] = agent\n\tagent.teamContext = t // Link agent to team\n\n\t// Subscribe to team messages\n\tt.messageBus.Subscribe(id, func(msg TeamMessage) error {\n\t\tif agent.memory != nil {\n\t\t\treturn agent.memory.Store(context.Background(), MemoryMessage{\n\t\t\t\tRole:      \"team\",\n\t\t\t\tContent:   fmt.Sprintf(\"[%s] %s\", msg.From, msg.Content),\n\t\t\t\tTimestamp: time.Now().UnixNano(),\n\t\t\t\tMetadata: map[string]interface{}{\n\t\t\t\t\t\"from\":    msg.From,\n\t\t\t\t\t\"to\":      msg.To,\n\t\t\t\t\t\"msgType\": msg.Type,\n\t\t\t\t},\n\t\t\t})\n\t\t}\n\t\treturn nil\n\t})\n\n\treturn nil\n}\n\n// RemoveAgent removes an agent from the team",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RemoveAgent_90": {
+      "name": "RemoveAgent",
+      "type": "method",
+      "start_line": 90,
+      "end_line": 98,
+      "content_hash": "a19647ceea901481696ed83b8b3f47539080232f",
+      "content": "func (t *Team) RemoveAgent(id string) {\n\tif agent, exists := t.agents[id]; exists {\n\t\tagent.teamContext = nil // Clear agent's team context\n\t}\n\tdelete(t.agents, id)\n\tt.messageBus.Unsubscribe(id)\n}\n\n// ExecuteTask executes a task using the team",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ExecuteTask_99": {
+      "name": "ExecuteTask",
+      "type": "method",
+      "start_line": 99,
+      "end_line": 110,
+      "content_hash": "0d588c0a7df4048da31528b538809b938fbc47af",
+      "content": "func (t *Team) ExecuteTask(ctx context.Context, task Task) (*TaskResult, error) {\n\t// Apply team timeout if set\n\tif t.timeout > 0 {\n\t\tvar cancel context.CancelFunc\n\t\tctx, cancel = context.WithTimeout(ctx, t.timeout)\n\t\tdefer cancel()\n\t}\n\n\treturn t.coordinator.ExecuteTask(ctx, task)\n}\n\n// Broadcast sends a message to all agents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Broadcast_111": {
+      "name": "Broadcast",
+      "type": "method",
+      "start_line": 111,
+      "end_line": 116,
+      "content_hash": "bc3568c586ad1d042c2ec3fc0e97a58391984b89",
+      "content": "func (t *Team) Broadcast(ctx context.Context, from, content string, msgType MessageType) error {\n\tmsg := NewTeamMessage(msgType, from, \"\", content)\n\treturn t.messageBus.Broadcast(ctx, msg)\n}\n\n// SendToAgent sends a message to a specific agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SendToAgent_117": {
+      "name": "SendToAgent",
+      "type": "method",
+      "start_line": 117,
+      "end_line": 122,
+      "content_hash": "0b56e1193e627d7d1b8cff049742e982c36e4381",
+      "content": "func (t *Team) SendToAgent(ctx context.Context, from, to, content string, msgType MessageType) error {\n\tmsg := NewTeamMessage(msgType, from, to, content)\n\treturn t.messageBus.Send(ctx, msg)\n}\n\n// GetMember returns an agent by ID",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetMember_123": {
+      "name": "GetMember",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 128,
+      "content_hash": "4d34aa86bb893fe1595393c7c7b1c2d743c1e19f",
+      "content": "func (t *Team) GetMember(id string) (*Agent, bool) {\n\tagent, exists := t.agents[id]\n\treturn agent, exists\n}\n\n// ListMembers returns all agent IDs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListMembers_129": {
+      "name": "ListMembers",
+      "type": "method",
+      "start_line": 129,
+      "end_line": 137,
+      "content_hash": "b52eca9f61250f9c32e73c38d74e6502ed4ff9b9",
+      "content": "func (t *Team) ListMembers() []string {\n\tids := make([]string, 0, len(t.agents))\n\tfor id := range t.agents {\n\t\tids = append(ids, id)\n\t}\n\treturn ids\n}\n\n// Size returns the number of agents in the team",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Size_138": {
+      "name": "Size",
+      "type": "method",
+      "start_line": 138,
+      "end_line": 142,
+      "content_hash": "480cf55fd0ed8e462a0f0df431add6f41c8047aa",
+      "content": "func (t *Team) Size() int {\n\treturn len(t.agents)\n}\n\n// Shutdown gracefully shuts down the team",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Shutdown_143": {
+      "name": "Shutdown",
+      "type": "method",
+      "start_line": 143,
+      "end_line": 149,
+      "content_hash": "2a8025175d74302ab08620b17be80bcfa5a02c25",
+      "content": "func (t *Team) Shutdown() error {\n\tt.cancel()\n\tt.messageBus.Shutdown()\n\treturn nil\n}\n\n// Task represents a task to be executed by the team",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Task_150": {
+      "name": "Task",
+      "type": "struct",
+      "start_line": 150,
+      "end_line": 172,
+      "content_hash": "0c072a41646e03474a4c7bd31f5ceb8930985258",
+      "content": "type Task struct {\n\tID          string                 `json:\"id\"`\n\tDescription string                 `json:\"description\"`\n\tPriority    int                    `json:\"priority\"`\n\tAssignedTo  string                 `json:\"assigned_to\"` // Agent ID, \"team\", or empty\n\tCreatedBy   string                 `json:\"created_by\"`\n\tData        map[string]interface{} `json:\"data\"`\n\tDeadline    time.Time              `json:\"deadline,omitempty\"`\n\tStatus      TaskStatus             `json:\"status\"`\n}\n\n// TaskStatus represents the status of a task\ntype TaskStatus string\n\nconst (\n\tTaskStatusPending   TaskStatus = \"pending\"\n\tTaskStatusActive    TaskStatus = \"active\"\n\tTaskStatusCompleted TaskStatus = \"completed\"\n\tTaskStatusFailed    TaskStatus = \"failed\"\n\tTaskStatusCancelled TaskStatus = \"cancelled\"\n)\n\n// TaskResult represents the result of a task execution",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TaskResult_173": {
+      "name": "TaskResult",
+      "type": "struct",
+      "start_line": 173,
+      "end_line": 186,
+      "content_hash": "8697193c13057513b17afe9e42d02c622a35d0b0",
+      "content": "type TaskResult struct {\n\tTaskID    string                 `json:\"task_id\"`\n\tStatus    TaskStatus             `json:\"status\"`\n\tResult    string                 `json:\"result\"`\n\tError     string                 `json:\"error,omitempty\"`\n\tAgentID   string                 `json:\"agent_id,omitempty\"`\n\tStartTime time.Time              `json:\"start_time\"`\n\tEndTime   time.Time              `json:\"end_time\"`\n\tDuration  time.Duration          `json:\"duration\"`\n\tMetadata  map[string]interface{} `json:\"metadata,omitempty\"`\n\tSubTasks  []*TaskResult          `json:\"sub_tasks,omitempty\"`\n}\n\n// NewTask creates a new task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewTask_187": {
+      "name": "NewTask",
+      "type": "function",
+      "start_line": 187,
+      "end_line": 197,
+      "content_hash": "816164b6419576926408b720d8d8852849adde51",
+      "content": "func NewTask(description string, priority int) *Task {\n\treturn &Task{\n\t\tID:          fmt.Sprintf(\"task-%d\", time.Now().UnixNano()),\n\t\tDescription: description,\n\t\tPriority:    priority,\n\t\tStatus:      TaskStatusPending,\n\t\tData:        make(map[string]interface{}),\n\t}\n}\n\n// Assign assigns the task to an agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Assign_198": {
+      "name": "Assign",
+      "type": "method",
+      "start_line": 198,
+      "end_line": 203,
+      "content_hash": "4a9c106ca30d15b592f7ac8c2fc7cd4b15700e04",
+      "content": "func (t *Task) Assign(agentID string) {\n\tt.AssignedTo = agentID\n\tt.Status = TaskStatusPending\n}\n\n// Activate marks the task as active",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Activate_204": {
+      "name": "Activate",
+      "type": "method",
+      "start_line": 204,
+      "end_line": 208,
+      "content_hash": "21418c03a097f5710f80dfc9a3ef904d36567e3f",
+      "content": "func (t *Task) Activate() {\n\tt.Status = TaskStatusActive\n}\n\n// Complete marks the task as completed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Complete_209": {
+      "name": "Complete",
+      "type": "method",
+      "start_line": 209,
+      "end_line": 213,
+      "content_hash": "962f65586d81fd2fcede8128b6682a5f5679f625",
+      "content": "func (t *Task) Complete() {\n\tt.Status = TaskStatusCompleted\n}\n\n// Fail marks the task as failed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Fail_214": {
+      "name": "Fail",
+      "type": "method",
+      "start_line": 214,
+      "end_line": 221,
+      "content_hash": "9e5c1f58c2f501edc826e7343b5db7d125c84a18",
+      "content": "func (t *Task) Fail(err error) {\n\tt.Status = TaskStatusFailed\n\tif err != nil {\n\t\tt.Data[\"error\"] = err.Error()\n\t}\n}\n\n// Cancel marks the task as cancelled",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cancel_222": {
+      "name": "Cancel",
+      "type": "method",
+      "start_line": 222,
+      "end_line": 226,
+      "content_hash": "31187b568b6c6d807da4831afbe2a6d417c6db2c",
+      "content": "func (t *Task) Cancel() {\n\tt.Status = TaskStatusCancelled\n}\n\n// IsCompleted returns true if the task is in a terminal state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsCompleted_227": {
+      "name": "IsCompleted",
+      "type": "method",
+      "start_line": 227,
+      "end_line": 233,
+      "content_hash": "bfc36a4ebe97d19d612bc779ac22efbbbc9b7f87",
+      "content": "func (t *Task) IsCompleted() bool {\n\treturn t.Status == TaskStatusCompleted ||\n\t\tt.Status == TaskStatusFailed ||\n\t\tt.Status == TaskStatusCancelled\n}\n\n// SetData sets a key-value pair in the task data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetData_234": {
+      "name": "SetData",
+      "type": "method",
+      "start_line": 234,
+      "end_line": 241,
+      "content_hash": "dbc2724bee8e761b69609968b546b648f15a99d8",
+      "content": "func (t *Task) SetData(key string, value interface{}) {\n\tif t.Data == nil {\n\t\tt.Data = make(map[string]interface{})\n\t}\n\tt.Data[key] = value\n}\n\n// GetData gets a value from the task data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetData_242": {
+      "name": "GetData",
+      "type": "method",
+      "start_line": 242,
+      "end_line": 248,
+      "content_hash": "c2214c28ec93f21c5ec2de00c817f7b69c011ef6",
+      "content": "func (t *Task) GetData(key string) (interface{}, bool) {\n\tif t.Data == nil {\n\t\treturn nil, false\n\t}\n\tvalue, exists := t.Data[key]\n\treturn value, exists\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

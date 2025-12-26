@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_ingest_symbols.py",
+  "file_hash": "26d5473cf180d37d2dc4e49f9f3aed5a6ba0b473",
+  "updated_at": "2025-12-26T17:34:23.918155",
+  "symbols": {
+    "function_test_symbols_python_basic_7": {
+      "name": "test_symbols_python_basic",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 23,
+      "content_hash": "8051655bcefd2a11e7840febff818f371504bf04",
+      "content": "def test_symbols_python_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        def foo():\n            pass\n\n        class Bar:\n            def baz(self):\n                return 1\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"python\", code)\n    kinds = {s.kind for s in syms}\n    names = {s.name for s in syms}\n    assert \"function\" in kinds\n    assert \"class\" in kinds\n    assert {\"foo\", \"Bar\"}.issubset(names)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_symbols_js_basic_26": {
+      "name": "test_symbols_js_basic",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 36,
+      "content_hash": "ba162cf891aff742bcab0923b688e9254ce0e97f",
+      "content": "def test_symbols_js_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        export class A {}\n        function f() {}\n        const g = function() {}\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"javascript\", code)\n    names = {s.name for s in syms}\n    assert {\"A\", \"f\", \"g\"}.issubset(names)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_symbols_go_basic_39": {
+      "name": "test_symbols_go_basic",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 50,
+      "content_hash": "48f0ceeaae9b372d092aeb2b3c6a4a086ea418e8",
+      "content": "def test_symbols_go_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        package p\n        type T struct{}\n        func (t *T) M() {}\n        func F() {}\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"go\", code)\n    names = {s.name for s in syms}\n    assert {\"T\", \"M\", \"F\"}.issubset(names)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_symbols_rust_basic_53": {
+      "name": "test_symbols_rust_basic",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 63,
+      "content_hash": "931e75427740baa012c10c7bdfccd5dbcb396550",
+      "content": "def test_symbols_rust_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        impl Foo { fn new() {} }\n        struct Foo {}\n        fn main() {}\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"rust\", code)\n    names = {s.name for s in syms}\n    assert {\"Foo\", \"main\"}.issubset(names)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_symbols_java_basic_66": {
+      "name": "test_symbols_java_basic",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 75,
+      "content_hash": "b02ea9d25912706328a59e521fa263bfe430576e",
+      "content": "def test_symbols_java_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        public class A {}\n        public class B {}\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"java\", code)\n    names = [s.name for s in syms if s.kind == \"class\"]\n    assert names == [\"A\", \"B\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_symbols_shell_basic_78": {
+      "name": "test_symbols_shell_basic",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 91,
+      "content_hash": "0395bdf8443410715d75cdd86dd14ecfce9c73ee",
+      "content": "def test_symbols_shell_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        foo() {\n          echo hi\n        }\n        function bar {\n          echo hi\n        }\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"shell\", code)\n    names = {s.name for s in syms}\n    assert {\"foo\", \"bar\"}.issubset(names)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_symbols_terraform_basic_94": {
+      "name": "test_symbols_terraform_basic",
+      "type": "function",
+      "start_line": 94,
+      "end_line": 106,
+      "content_hash": "a8d124b725bd87a20b819596217b259771abb57d",
+      "content": "def test_symbols_terraform_basic():\n    code = textwrap.dedent(\n        \"\"\"\n        resource \"aws_s3_bucket\" \"b\" { }\n        data \"aws_ami\" \"x\" { }\n        module \"m\" { source = \".\" }\n        variable \"v\" {}\n        output \"o\" {}\n        \"\"\"\n    )\n    syms = ing._extract_symbols(\"terraform\", code)\n    kinds = {s.kind for s in syms}\n    assert {\"resource\", \"data\", \"module\", \"variable\", \"output\"}.issubset(kinds)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

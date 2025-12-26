@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/parser/query_parse_methods.rs",
+  "file_hash": "4adcb75dabae5d610c160292c66dc5ec5aedddc4",
+  "updated_at": "2025-12-26T17:34:25.125226",
+  "symbols": {
+    "impl_HelixParser_10": {
+      "name": "HelixParser",
+      "type": "impl",
+      "start_line": 10,
+      "end_line": 169,
+      "content_hash": "660e1c1570506468c0a0493cb4268ba9629bc7ab",
+      "content": "impl HelixParser {\n    pub(super) fn parse_query_def(\n        &self,\n        pair: Pair<Rule>,\n        filepath: String,\n    ) -> Result<Query, ParserError> {\n        let original_query = pair.clone().as_str().to_string();\n        let mut pairs = pair.clone().into_inner();\n        let built_in_macro = match pairs.peek() {\n            Some(pair) if pair.as_rule() == Rule::built_in_macro => {\n                let built_in_macro = match pair.into_inner().next() {\n                    Some(pair) => match pair.as_rule() {\n                        Rule::mcp_macro => Some(BuiltInMacro::MCP),\n                        Rule::model_macro => {\n                            match pair.into_inner().next() {\n                                Some(model_name) => Some(BuiltInMacro::Model(\n                                    model_name.as_str().to_string(),\n                                )),\n                                None => return Err(ParserError::from(\"Model macro missing model name\")),\n                            }\n                        }\n                        _ => None,\n                    },\n                    _ => None,\n                };\n                pairs.next();\n                built_in_macro\n            }\n            _ => None,\n        };\n        let name = pairs.next()\n            .ok_or_else(|| ParserError::from(\"Expected query name\"))?\n            .as_str().to_string();\n        let parameters = self.parse_parameters(\n            pairs.next().ok_or_else(|| ParserError::from(\"Expected parameters block\"))?\n        )?;\n        let body = pairs.next()\n            .ok_or_else(|| ParserError::from(\"Expected query body\"))?;\n        let statements = self.parse_query_body(body)?;\n        let return_values = self.parse_return_statement(\n            pairs.next().ok_or_else(|| ParserError::from(\"Expected return statement\"))?\n        )?;\n\n        Ok(Query {\n            built_in_macro,\n            name,\n            parameters,\n            statements,\n            return_values,\n            original_query,\n            loc: pair.loc_with_filepath(filepath),\n        })\n    }\n\n    pub(super) fn parse_parameters(&self, pair: Pair<Rule>) -> Result<Vec<Parameter>, ParserError> {\n        let mut seen = HashSet::new();\n        pair.clone()\n            .into_inner()\n            .map(|p: Pair<'_, Rule>| -> Result<Parameter, ParserError> {\n                let mut inner = p.into_inner();\n                let name = {\n                    let pair = inner.next()\n                        .ok_or_else(|| ParserError::from(\"Expected parameter name\"))?;\n                    (pair.loc(), pair.as_str().to_string())\n                };\n\n                // gets optional param\n                let is_optional = inner\n                    .peek()\n                    .is_some_and(|p| p.as_rule() == Rule::optional_param);\n                if is_optional {\n                    inner.next();\n                }\n\n                // gets param type\n                let param_type_outer = inner\n                    .clone()\n                    .next()\n                    .ok_or_else(|| ParserError::from(\"Expected parameter type\"))?;\n                let param_type_pair = param_type_outer\n                    .clone()\n                    .into_inner()\n                    .next()\n                    .ok_or_else(|| ParserError::from(\"Expected parameter type definition\"))?;\n                let param_type_location = param_type_pair.loc();\n                let param_type = self.parse_field_type(\n                    // unwraps the param type to get the rule (array, object, named_type, etc)\n                    param_type_pair,\n                    Some(&self.source),\n                )?;\n\n                if seen.insert(name.1.clone()) {\n                    Ok(Parameter {\n                        name,\n                        param_type: (param_type_location, param_type),\n                        is_optional,\n                        loc: pair.loc(),\n                    })\n                } else {\n                    Err(ParserError::from(format!(\n                        r#\"Duplicate parameter name: {}\n                            Please use unique parameter names.\n\n                            Error happened at line {} column {} here: {}\n                        \"#,\n                        name.1,\n                        pair.line_col().0,\n                        pair.line_col().1,\n                        pair.as_str(),\n                    )))\n                }\n            })\n            .collect::<Result<Vec<_>, _>>()\n    }\n\n    pub(super) fn parse_query_body(&self, pair: Pair<Rule>) -> Result<Vec<Statement>, ParserError> {\n        pair.into_inner()\n            .map(|p| match p.as_rule() {\n                // path_macro_stmt removed - now using distinct function names,\n                Rule::get_stmt => Ok(Statement {\n                    loc: p.loc(),\n                    statement: StatementType::Assignment(self.parse_assignment(p)?),\n                }),\n                Rule::creation_stmt => Ok(Statement {\n                    loc: p.loc(),\n                    statement: StatementType::Expression(self.parse_expression(p)?),\n                }),\n\n                Rule::drop => {\n                    let inner = p.into_inner().next()\n                        .ok_or_else(|| ParserError::from(\"Drop statement missing expression\"))?;\n                    Ok(Statement {\n                        loc: inner.loc(),\n                        statement: StatementType::Drop(self.parse_expression(inner)?),\n                    })\n                }\n\n                Rule::for_loop => Ok(Statement {\n                    loc: p.loc(),\n                    statement: StatementType::ForLoop(self.parse_for_loop(p)?),\n                }),\n                _ => Err(ParserError::from(format!(\n                    \"Unexpected statement type in query body: {:?}\",\n                    p.as_rule()\n                ))),\n            })\n            .collect()\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use crate::helixc::parser::{write_to_temp_file, HelixParser};\n\n    // ============================================================================\n    // Basic Query Parsing Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_simple_query_170": {
+      "name": "test_parse_simple_query",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 189,
+      "content_hash": "4f62dbbac005869f8d84e056fc31d89ab8877249",
+      "content": "    fn test_parse_simple_query() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY getUser(id: ID) =>\n                user <- N<Person>(id)\n                RETURN user\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries.len(), 1);\n        assert_eq!(parsed.queries[0].name, \"getUser\");\n        assert_eq!(parsed.queries[0].parameters.len(), 1);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_multiple_parameters_190": {
+      "name": "test_parse_query_with_multiple_parameters",
+      "type": "method",
+      "start_line": 190,
+      "end_line": 209,
+      "content_hash": "2ea9567c5f1cea7c6bbdccce81348ae1a63740a6",
+      "content": "    fn test_parse_query_with_multiple_parameters() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY findPerson(name: String, age: U32) =>\n                person <- N<Person>\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].parameters.len(), 2);\n        assert_eq!(parsed.queries[0].parameters[0].name.1, \"name\");\n        assert_eq!(parsed.queries[0].parameters[1].name.1, \"age\");\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_optional_parameter_210": {
+      "name": "test_parse_query_with_optional_parameter",
+      "type": "method",
+      "start_line": 210,
+      "end_line": 227,
+      "content_hash": "d611cb75bca8d702d537318d3b0105b9d3991f79",
+      "content": "    fn test_parse_query_with_optional_parameter() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY findPerson(name?: String) =>\n                person <- N<Person>\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert!(parsed.queries[0].parameters[0].is_optional);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_array_parameter_228": {
+      "name": "test_parse_query_with_array_parameter",
+      "type": "method",
+      "start_line": 228,
+      "end_line": 252,
+      "content_hash": "5bdafec71d7df3d3a2c48c84835fc4b92c4a044c",
+      "content": "    fn test_parse_query_with_array_parameter() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY findPeople(names: [String]) =>\n                people <- N<Person>\n                RETURN people\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert!(matches!(\n            parsed.queries[0].parameters[0].param_type.1,\n            crate::helixc::parser::types::FieldType::Array(_)\n        ));\n    }\n\n    // ============================================================================\n    // Built-in Macro Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_mcp_macro_253": {
+      "name": "test_parse_query_with_mcp_macro",
+      "type": "method",
+      "start_line": 253,
+      "end_line": 274,
+      "content_hash": "62b3f86e8d5382dcb738fce8df31cfaf2688e481",
+      "content": "    fn test_parse_query_with_mcp_macro() {\n        let source = r#\"\n            N::Person { name: String }\n\n            #[mcp]\n            QUERY getUser(id: ID) =>\n                user <- N<Person>(id)\n                RETURN user\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert!(matches!(\n            parsed.queries[0].built_in_macro,\n            Some(BuiltInMacro::MCP)\n        ));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_model_macro_275": {
+      "name": "test_parse_query_with_model_macro",
+      "type": "method",
+      "start_line": 275,
+      "end_line": 300,
+      "content_hash": "bcc8d0dac846f50e704670504a0f5f019ae21378",
+      "content": "    fn test_parse_query_with_model_macro() {\n        let source = r#\"\n            N::Person { name: String }\n\n            #[model(\"gpt-4\")]\n            QUERY generateResponse(prompt: String) =>\n                response <- N<Person>\n                RETURN response\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert!(matches!(\n            parsed.queries[0].built_in_macro,\n            Some(BuiltInMacro::Model(_))\n        ));\n    }\n\n    // ============================================================================\n    // Query Body and Statements Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_multiple_statements_301": {
+      "name": "test_parse_query_with_multiple_statements",
+      "type": "method",
+      "start_line": 301,
+      "end_line": 320,
+      "content_hash": "d921c7df92461c2882ae4de47c405095784951a0",
+      "content": "    fn test_parse_query_with_multiple_statements() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person }\n\n            QUERY complexQuery(id: ID) =>\n                user <- N<Person>(id)\n                friends <- user::Out<Knows>\n                RETURN friends\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].statements.len(), 2);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_creation_statement_321": {
+      "name": "test_parse_query_with_creation_statement",
+      "type": "method",
+      "start_line": 321,
+      "end_line": 342,
+      "content_hash": "4c13699a9ee2c448cf51e477eb318ee32528d105",
+      "content": "    fn test_parse_query_with_creation_statement() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY createPerson(name: String) =>\n                person <- AddN<Person>({name: name})\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].statements.len(), 1);\n    }\n\n    // ============================================================================\n    // Return Statement Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_multiple_return_values_343": {
+      "name": "test_parse_query_with_multiple_return_values",
+      "type": "method",
+      "start_line": 343,
+      "end_line": 365,
+      "content_hash": "c54f9663133f60da2423e06b36b0eedddb56f918",
+      "content": "    fn test_parse_query_with_multiple_return_values() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY getUsers() =>\n                user1 <- N<Person>\n                user2 <- N<Person>\n                RETURN user1, user2\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].return_values.len(), 2);\n    }\n\n    // ============================================================================\n    // Error Cases\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_duplicate_parameter_names_366": {
+      "name": "test_parse_query_duplicate_parameter_names",
+      "type": "method",
+      "start_line": 366,
+      "end_line": 384,
+      "content_hash": "af48db5285ad0b0dffb084d0a9be7cd7eac607a1",
+      "content": "    fn test_parse_query_duplicate_parameter_names() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY badQuery(name: String, name: String) =>\n                person <- N<Person>\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_err());\n\n        let err = result.unwrap_err();\n        let err_string = err.to_string();\n        assert!(err_string.contains(\"Duplicate\"));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_missing_return_385": {
+      "name": "test_parse_query_missing_return",
+      "type": "method",
+      "start_line": 385,
+      "end_line": 398,
+      "content_hash": "acb829cf7ef2e2296c313a57293feebb36a3c129",
+      "content": "    fn test_parse_query_missing_return() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY badQuery(id: ID) =>\n                user <- N<Person>(id)\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_err());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_missing_parameters_399": {
+      "name": "test_parse_query_missing_parameters",
+      "type": "method",
+      "start_line": 399,
+      "end_line": 417,
+      "content_hash": "08bbdb31c712256fbcc611de6498fe6715d87b6a",
+      "content": "    fn test_parse_query_missing_parameters() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY badQuery =>\n                user <- N<Person>\n                RETURN user\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_err());\n    }\n\n    // ============================================================================\n    // Edge Cases\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_no_parameters_418": {
+      "name": "test_parse_query_no_parameters",
+      "type": "method",
+      "start_line": 418,
+      "end_line": 435,
+      "content_hash": "0d3fc9d33be41114e3ce0b8ae5b32b8f2341b163",
+      "content": "    fn test_parse_query_no_parameters() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY getAllUsers() =>\n                users <- N<Person>\n                RETURN users\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].parameters.len(), 0);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_multiple_queries_436": {
+      "name": "test_parse_multiple_queries",
+      "type": "method",
+      "start_line": 436,
+      "end_line": 457,
+      "content_hash": "17b7af7327758c25de10c3f817a090b753fcf8f1",
+      "content": "    fn test_parse_multiple_queries() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY query1() =>\n                users <- N<Person>\n                RETURN users\n\n            QUERY query2() =>\n                users <- N<Person>\n                RETURN users\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries.len(), 2);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_drop_statement_458": {
+      "name": "test_parse_query_with_drop_statement",
+      "type": "method",
+      "start_line": 458,
+      "end_line": 477,
+      "content_hash": "982bc9060c301f00d2199db3af98b53610ea5f17",
+      "content": "    fn test_parse_query_with_drop_statement() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person }\n\n            QUERY removeConnection(id: ID) =>\n                person <- N<Person>(id)\n                DROP person::Out<Knows>\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].statements.len(), 2);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_for_loop_478": {
+      "name": "test_parse_query_with_for_loop",
+      "type": "method",
+      "start_line": 478,
+      "end_line": 497,
+      "content_hash": "61884ef36ac21ea99138e85d5f2f1dc58ccf1fdd",
+      "content": "    fn test_parse_query_with_for_loop() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY processPeople(ids: [ID]) =>\n                FOR id IN ids {\n                    person <- N<Person>(id)\n                }\n                RETURN \"done\"\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].statements.len(), 1);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_mixed_optional_required_parameters_498": {
+      "name": "test_parse_query_mixed_optional_required_parameters",
+      "type": "method",
+      "start_line": 498,
+      "end_line": 518,
+      "content_hash": "6d06921fe03ea075efac84fbd31ef1588b5bb168",
+      "content": "    fn test_parse_query_mixed_optional_required_parameters() {\n        let source = r#\"\n            N::Person { name: String, age: U32, email: String }\n\n            QUERY findPerson(name: String, age?: U32, email?: String) =>\n                person <- N<Person>\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert_eq!(parsed.queries[0].parameters.len(), 3);\n        assert!(!parsed.queries[0].parameters[0].is_optional);\n        assert!(parsed.queries[0].parameters[1].is_optional);\n        assert!(parsed.queries[0].parameters[2].is_optional);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_query_with_object_parameter_519": {
+      "name": "test_parse_query_with_object_parameter",
+      "type": "method",
+      "start_line": 519,
+      "end_line": 538,
+      "content_hash": "38e5da553f17cbf7e050ce2b30e93e70a4f7a5a4",
+      "content": "    fn test_parse_query_with_object_parameter() {\n        let source = r#\"\n            N::Person { name: String, details: {age: U32, city: String} }\n\n            QUERY createPerson(details: {age: U32, city: String}) =>\n                person <- AddN<Person>({details: details})\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n\n        let parsed = result.unwrap();\n        assert!(matches!(\n            parsed.queries[0].parameters[0].param_type.1,\n            crate::helixc::parser::types::FieldType::Object(_)\n        ));\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

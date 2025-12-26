@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/storage/tool_execution.go",
+  "file_hash": "e0499f6dcdb3870901451e50eba59fade9c79abd",
+  "updated_at": "2025-12-26T17:34:20.264154",
+  "symbols": {
+    "struct_ToolExecution_12": {
+      "name": "ToolExecution",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 28,
+      "content_hash": "097defc7b4b1a802f74bc3ef3aaaced2ab3724bc",
+      "content": "type ToolExecution struct {\n\tID          string                 `json:\"id\"`\n\tTaskID      string                 `json:\"task_id\"`\n\tAgentID     string                 `json:\"agent_id\"`\n\tToolName    string                 `json:\"tool_name\"`\n\tToolType    string                 `json:\"tool_type\"`\n\tInput       string                 `json:\"input\"`\n\tOutput      string                 `json:\"output\"`\n\tError       string                 `json:\"error\"`\n\tStatus      string                 `json:\"status\"`\n\tDuration    int64                  `json:\"duration\"`\n\tMetadata    map[string]interface{} `json:\"metadata\"`\n\tStartedAt   time.Time              `json:\"started_at\"`\n\tCompletedAt *time.Time             `json:\"completed_at,omitempty\"`\n}\n\n// ToolExecutionRepository handles tool execution database operations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ToolExecutionRepository_29": {
+      "name": "ToolExecutionRepository",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 33,
+      "content_hash": "bd3569f21265b186a967be50cc2391bb2d98705c",
+      "content": "type ToolExecutionRepository struct {\n\tdb *sql.DB\n}\n\n// NewToolExecutionRepository creates a new tool execution repository",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewToolExecutionRepository_34": {
+      "name": "NewToolExecutionRepository",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 38,
+      "content_hash": "5bfb28ed3876f504102ed27fe531860ed0aab133",
+      "content": "func NewToolExecutionRepository(db *sql.DB) *ToolExecutionRepository {\n\treturn &ToolExecutionRepository{db: db}\n}\n\n// Create creates a new tool execution",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Create_39": {
+      "name": "Create",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 58,
+      "content_hash": "434c63e72cdae73e67bdaea4d50f07255f64153a",
+      "content": "func (r *ToolExecutionRepository) Create(ctx context.Context, execution *ToolExecution) error {\n\tmetadataJSON, _ := json.Marshal(execution.Metadata)\n\n\tquery := `\n\t\tINSERT INTO tool_executions (id, task_id, agent_id, tool_name, tool_type, input, output, error, status, duration, metadata, started_at, completed_at)\n\t\tVALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n\t`\n\n\t_, err := r.db.ExecContext(ctx, query,\n\t\texecution.ID, execution.TaskID, execution.AgentID, execution.ToolName, execution.ToolType,\n\t\texecution.Input, execution.Output, execution.Error, execution.Status, execution.Duration,\n\t\tmetadataJSON, execution.StartedAt, execution.CompletedAt)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create tool execution: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// Get retrieves a tool execution by ID",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_59": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 59,
+      "end_line": 88,
+      "content_hash": "54105df11523558b3068d161fcf5d649373a9df7",
+      "content": "func (r *ToolExecutionRepository) Get(ctx context.Context, id string) (*ToolExecution, error) {\n\tquery := `\n\t\tSELECT id, task_id, agent_id, tool_name, tool_type, input, output, error, status, duration, metadata, started_at, completed_at\n\t\tFROM tool_executions WHERE id = ?\n\t`\n\n\texecution := &ToolExecution{}\n\tvar metadataJSON []byte\n\n\terr := r.db.QueryRowContext(ctx, query, id).Scan(\n\t\t&execution.ID, &execution.TaskID, &execution.AgentID, &execution.ToolName, &execution.ToolType,\n\t\t&execution.Input, &execution.Output, &execution.Error, &execution.Status, &execution.Duration,\n\t\t&metadataJSON, &execution.StartedAt, &execution.CompletedAt)\n\tif err != nil {\n\t\tif err == sql.ErrNoRows {\n\t\t\treturn nil, fmt.Errorf(\"tool execution not found: %s\", id)\n\t\t}\n\t\treturn nil, fmt.Errorf(\"failed to get tool execution: %w\", err)\n\t}\n\n\tif len(metadataJSON) > 0 {\n\t\tif err := json.Unmarshal(metadataJSON, &execution.Metadata); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal metadata: %w\", err)\n\t\t}\n\t}\n\n\treturn execution, nil\n}\n\n// Update updates a tool execution",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_89": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 89,
+      "end_line": 119,
+      "content_hash": "938c2bde265aeb7dd8670af17547259430339835",
+      "content": "func (r *ToolExecutionRepository) Update(ctx context.Context, execution *ToolExecution) error {\n\tmetadataJSON, _ := json.Marshal(execution.Metadata)\n\n\tquery := `\n\t\tUPDATE tool_executions \n\t\tSET task_id = ?, agent_id = ?, tool_name = ?, tool_type = ?, input = ?, output = ?, \n\t\t    error = ?, status = ?, duration = ?, metadata = ?, started_at = ?, completed_at = ?\n\t\tWHERE id = ?\n\t`\n\n\tresult, err := r.db.ExecContext(ctx, query,\n\t\texecution.TaskID, execution.AgentID, execution.ToolName, execution.ToolType,\n\t\texecution.Input, execution.Output, execution.Error, execution.Status, execution.Duration,\n\t\tmetadataJSON, execution.StartedAt, execution.CompletedAt, execution.ID)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to update tool execution: %w\", err)\n\t}\n\n\trowsAffected, err := result.RowsAffected()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get rows affected: %w\", err)\n\t}\n\n\tif rowsAffected == 0 {\n\t\treturn fmt.Errorf(\"tool execution not found: %s\", execution.ID)\n\t}\n\n\treturn nil\n}\n\n// MarkCompleted updates execution with completion details",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MarkCompleted_120": {
+      "name": "MarkCompleted",
+      "type": "method",
+      "start_line": 120,
+      "end_line": 144,
+      "content_hash": "5cb1768f78be23a8ffc998beb640414e2f9488fe",
+      "content": "func (r *ToolExecutionRepository) MarkCompleted(ctx context.Context, id, output, status string, duration int64) error {\n\tquery := `\n\t\tUPDATE tool_executions \n\t\tSET output = ?, status = ?, duration = ?, completed_at = CURRENT_TIMESTAMP\n\t\tWHERE id = ?\n\t`\n\n\tresult, err := r.db.ExecContext(ctx, query, output, status, duration, id)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to mark tool execution completed: %w\", err)\n\t}\n\n\trowsAffected, err := result.RowsAffected()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get rows affected: %w\", err)\n\t}\n\n\tif rowsAffected == 0 {\n\t\treturn fmt.Errorf(\"tool execution not found: %s\", id)\n\t}\n\n\treturn nil\n}\n\n// MarkFailed updates execution with error details",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MarkFailed_145": {
+      "name": "MarkFailed",
+      "type": "method",
+      "start_line": 145,
+      "end_line": 169,
+      "content_hash": "d6b6959fcefc855a5a0a0694c4af5a7169cf6e91",
+      "content": "func (r *ToolExecutionRepository) MarkFailed(ctx context.Context, id, errorMsg string, duration int64) error {\n\tquery := `\n\t\tUPDATE tool_executions \n\t\tSET error = ?, status = 'failed', duration = ?, completed_at = CURRENT_TIMESTAMP\n\t\tWHERE id = ?\n\t`\n\n\tresult, err := r.db.ExecContext(ctx, query, errorMsg, duration, id)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to mark tool execution failed: %w\", err)\n\t}\n\n\trowsAffected, err := result.RowsAffected()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get rows affected: %w\", err)\n\t}\n\n\tif rowsAffected == 0 {\n\t\treturn fmt.Errorf(\"tool execution not found: %s\", id)\n\t}\n\n\treturn nil\n}\n\n// ListByTask retrieves tool executions for a specific task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListByTask_170": {
+      "name": "ListByTask",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 210,
+      "content_hash": "d66dc81870859626e44c17a91ca9d87ca1328db3",
+      "content": "func (r *ToolExecutionRepository) ListByTask(ctx context.Context, taskID string, limit, offset int) ([]*ToolExecution, error) {\n\tquery := `\n\t\tSELECT id, task_id, agent_id, tool_name, tool_type, input, output, error, status, duration, metadata, started_at, completed_at\n\t\tFROM tool_executions \n\t\tWHERE task_id = ?\n\t\tORDER BY started_at DESC\n\t\tLIMIT ? OFFSET ?\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query, taskID, limit, offset)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list tool executions by task: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar executions []*ToolExecution\n\tfor rows.Next() {\n\t\texecution := &ToolExecution{}\n\t\tvar metadataJSON []byte\n\n\t\terr := rows.Scan(\n\t\t\t&execution.ID, &execution.TaskID, &execution.AgentID, &execution.ToolName, &execution.ToolType,\n\t\t\t&execution.Input, &execution.Output, &execution.Error, &execution.Status, &execution.Duration,\n\t\t\t&metadataJSON, &execution.StartedAt, &execution.CompletedAt)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan tool execution: %w\", err)\n\t\t}\n\n\t\tif len(metadataJSON) > 0 {\n\t\t\tif err := json.Unmarshal(metadataJSON, &execution.Metadata); err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal metadata: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\texecutions = append(executions, execution)\n\t}\n\n\treturn executions, nil\n}\n\n// ListByAgent retrieves tool executions for a specific agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListByAgent_211": {
+      "name": "ListByAgent",
+      "type": "method",
+      "start_line": 211,
+      "end_line": 251,
+      "content_hash": "426c63464c71ee6d50377678b3681e01c83d0a2e",
+      "content": "func (r *ToolExecutionRepository) ListByAgent(ctx context.Context, agentID string, limit, offset int) ([]*ToolExecution, error) {\n\tquery := `\n\t\tSELECT id, task_id, agent_id, tool_name, tool_type, input, output, error, status, duration, metadata, started_at, completed_at\n\t\tFROM tool_executions \n\t\tWHERE agent_id = ?\n\t\tORDER BY started_at DESC\n\t\tLIMIT ? OFFSET ?\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query, agentID, limit, offset)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list tool executions by agent: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar executions []*ToolExecution\n\tfor rows.Next() {\n\t\texecution := &ToolExecution{}\n\t\tvar metadataJSON []byte\n\n\t\terr := rows.Scan(\n\t\t\t&execution.ID, &execution.TaskID, &execution.AgentID, &execution.ToolName, &execution.ToolType,\n\t\t\t&execution.Input, &execution.Output, &execution.Error, &execution.Status, &execution.Duration,\n\t\t\t&metadataJSON, &execution.StartedAt, &execution.CompletedAt)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan tool execution: %w\", err)\n\t\t}\n\n\t\tif len(metadataJSON) > 0 {\n\t\t\tif err := json.Unmarshal(metadataJSON, &execution.Metadata); err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal metadata: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\texecutions = append(executions, execution)\n\t}\n\n\treturn executions, nil\n}\n\n// ListByTool retrieves executions for a specific tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListByTool_252": {
+      "name": "ListByTool",
+      "type": "method",
+      "start_line": 252,
+      "end_line": 292,
+      "content_hash": "3b3fec0cd2368154a271b22d1eab80aa103d30b0",
+      "content": "func (r *ToolExecutionRepository) ListByTool(ctx context.Context, toolName string, limit, offset int) ([]*ToolExecution, error) {\n\tquery := `\n\t\tSELECT id, task_id, agent_id, tool_name, tool_type, input, output, error, status, duration, metadata, started_at, completed_at\n\t\tFROM tool_executions \n\t\tWHERE tool_name = ?\n\t\tORDER BY started_at DESC\n\t\tLIMIT ? OFFSET ?\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query, toolName, limit, offset)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list tool executions by tool: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar executions []*ToolExecution\n\tfor rows.Next() {\n\t\texecution := &ToolExecution{}\n\t\tvar metadataJSON []byte\n\n\t\terr := rows.Scan(\n\t\t\t&execution.ID, &execution.TaskID, &execution.AgentID, &execution.ToolName, &execution.ToolType,\n\t\t\t&execution.Input, &execution.Output, &execution.Error, &execution.Status, &execution.Duration,\n\t\t\t&metadataJSON, &execution.StartedAt, &execution.CompletedAt)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan tool execution: %w\", err)\n\t\t}\n\n\t\tif len(metadataJSON) > 0 {\n\t\t\tif err := json.Unmarshal(metadataJSON, &execution.Metadata); err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal metadata: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\texecutions = append(executions, execution)\n\t}\n\n\treturn executions, nil\n}\n\n// DeleteByTask deletes all tool executions for a task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DeleteByTask_293": {
+      "name": "DeleteByTask",
+      "type": "method",
+      "start_line": 293,
+      "end_line": 304,
+      "content_hash": "b5a773d7287269ea8b13cf5d3fdeb8514de3bd52",
+      "content": "func (r *ToolExecutionRepository) DeleteByTask(ctx context.Context, taskID string) error {\n\tquery := `DELETE FROM tool_executions WHERE task_id = ?`\n\n\t_, err := r.db.ExecContext(ctx, query, taskID)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to delete tool executions by task: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// GetUsageStats retrieves usage statistics for tools",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetUsageStats_305": {
+      "name": "GetUsageStats",
+      "type": "method",
+      "start_line": 305,
+      "end_line": 347,
+      "content_hash": "e150ea4f9c731e5d56207b842201e0ae5135ef7c",
+      "content": "func (r *ToolExecutionRepository) GetUsageStats(ctx context.Context, since time.Time) ([]map[string]interface{}, error) {\n\tquery := `\n\t\tSELECT \n\t\t\ttool_name,\n\t\t\tCOUNT(*) as execution_count,\n\t\t\tAVG(duration) as avg_duration,\n\t\t\tCOUNT(CASE WHEN status = 'completed' THEN 1 END) as success_count,\n\t\t\tCOUNT(CASE WHEN status = 'failed' THEN 1 END) as failure_count\n\t\tFROM tool_executions \n\t\tWHERE started_at >= ?\n\t\tGROUP BY tool_name\n\t\tORDER BY execution_count DESC\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query, since)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to get tool usage stats: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar stats []map[string]interface{}\n\tfor rows.Next() {\n\t\tvar toolName string\n\t\tvar executionCount, successCount, failureCount int\n\t\tvar avgDuration float64\n\n\t\terr := rows.Scan(&toolName, &executionCount, &avgDuration, &successCount, &failureCount)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan usage stats: %w\", err)\n\t\t}\n\n\t\tstat := map[string]interface{}{\n\t\t\t\"tool_name\":       toolName,\n\t\t\t\"execution_count\": executionCount,\n\t\t\t\"avg_duration\":    avgDuration,\n\t\t\t\"success_count\":   successCount,\n\t\t\t\"failure_count\":   failureCount,\n\t\t}\n\t\tstats = append(stats, stat)\n\t}\n\n\treturn stats, nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

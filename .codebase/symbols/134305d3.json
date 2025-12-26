@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/context-engine/tests/test_decoder_soft_mode_payload.py",
+  "file_hash": "3180104c8a1564749b9951a7462902850a4ed2ac",
+  "updated_at": "2025-12-26T17:34:21.540777",
+  "symbols": {
+    "function_test_soft_mode_posts_soft_embeddings_4": {
+      "name": "test_soft_mode_posts_soft_embeddings",
+      "type": "function",
+      "start_line": 4,
+      "end_line": 25,
+      "content_hash": "16fa8f28585f65a9565aed8f54081de8d2b3b14e",
+      "content": "def test_soft_mode_posts_soft_embeddings(monkeypatch):\n    monkeypatch.setenv(\"REFRAG_DECODER\", \"1\")\n    monkeypatch.setenv(\"REFRAG_RUNTIME\", \"llamacpp\")\n    monkeypatch.setenv(\"REFRAG_DECODER_MODE\", \"soft\")\n    monkeypatch.setenv(\"REFRAG_SOFT_SCALE\", \"1.25\")\n\n    called = {}\n\n    def fake_post(path, payload):\n        called[\"path\"] = path\n        called[\"payload\"] = payload\n        return {\"content\": \"ok\"}\n\n    c = LlamaCppRefragClient(base_url=\"http://fake\")\n    c._post = fake_post  # type: ignore\n\n    soft = [[0.1, 0.2, 0.3], [0.0, -0.1, 0.1]]\n    out = c.generate_with_soft_embeddings(\"Q:\", soft_embeddings=soft, max_tokens=64)\n    assert out == \"ok\"\n    assert called[\"path\"] == \"/soft_completion\"\n    assert called[\"payload\"][\"soft_embeddings\"] == soft\n    assert called[\"payload\"][\"scale\"] == 1.25",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_post_12": {
+      "name": "fake_post",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 15,
+      "content_hash": "8702f9aee4aa153a4dd4d5ce3ad1fbed0bf3d015",
+      "content": "    def fake_post(path, payload):\n        called[\"path\"] = path\n        called[\"payload\"] = payload\n        return {\"content\": \"ok\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

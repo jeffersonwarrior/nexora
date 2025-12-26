@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/agent/state/progress_test.go",
+  "file_hash": "9488308513fb914935f6091ba21b7a55ae1abc58",
+  "updated_at": "2025-12-26T17:34:20.439915",
+  "symbols": {
+    "function_TestHasNoProgressWithActualProgress_7": {
+      "name": "TestHasNoProgressWithActualProgress",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 48,
+      "content_hash": "6279bbe643fe36435aa20d14e7cdabe6216eba29",
+      "content": "func TestHasNoProgressWithActualProgress(t *testing.T) {\n\tpt := NewProgressTracker()\n\n\t// Simulate a realistic work scenario with actual progress\n\t// Mix of viewing, editing, and testing different files\n\tactions := []struct {\n\t\ttoolName, targetFile, command string\n\t\tsuccess                       bool\n\t}{\n\t\t{\"view\", \"main.go\", \"\", true},\n\t\t{\"view\", \"utils.go\", \"\", true},\n\t\t{\"edit\", \"main.go\", \"add function\", true},\n\t\t{\"edit\", \"utils.go\", \" refactor\", true},\n\t\t{\"bash\", \"go test ./...\", \"\", true},\n\t\t{\"view\", \"main_test.go\", \"\", true},\n\t\t{\"edit\", \"main_test.go\", \"add test\", true},\n\t\t{\"bash\", \"go test -v ./...\", \"\", true},\n\t\t{\"view\", \"README.md\", \"\", true},\n\t\t{\"edit\", \"README.md\", \"update docs\", true},\n\t\t{\"bash\", \"go build .\", \"\", true},\n\t\t{\"view\", \"config.go\", \"\", true},\n\t\t{\"edit\", \"config.go\", \"add option\", true},\n\t\t{\"bash\", \"go test -run TestConfig\", \"\", true},\n\t\t{\"view\", \"main.go\", \"\", true}, // 15 actions total\n\t}\n\n\t// Record all actions\n\tfor _, action := range actions {\n\t\tpt.RecordAction(action.toolName, action.targetFile, action.command, \"\", action.success)\n\t}\n\n\t// Record some file modifications to indicate progress\n\tpt.RecordFileModification(\"main.go\", \"hash1\")\n\tpt.RecordFileModification(\"utils.go\", \"hash2\")\n\n\t// Should NOT detect as stuck despite 15+ actions\n\tstuck, reason := pt.IsStuck()\n\tif stuck {\n\t\tt.Errorf(\"Expected not stuck, but detected: %s\", reason)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHasNoProgressWithActualStuck_49": {
+      "name": "TestHasNoProgressWithActualStuck",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 71,
+      "content_hash": "39c7cff5881656e659f18e59b6fdecf1bf0976f6",
+      "content": "func TestHasNoProgressWithActualStuck(t *testing.T) {\n\tpt := NewProgressTracker()\n\n\t// Simulate a very stuck scenario: alternating between viewing and trying to edit the same file\n\tfor i := 0; i < 15; i++ {\n\t\tif i%2 == 0 {\n\t\t\tpt.RecordAction(\"edit\", \"same.go\", \"try\", \"error\", false)\n\t\t} else {\n\t\t\tpt.RecordAction(\"view\", \"same.go\", \"\", \"\", true)\n\t\t}\n\t}\n\n\t// Should detect as stuck\n\tstuck, reason := pt.IsStuck()\n\tif !stuck {\n\t\tt.Error(\"Expected stuck detection, but no stuck condition was found\")\n\t} else if reason == \"\" {\n\t\tt.Error(\"Expected explanatory reason for stuck condition\")\n\t}\n\n\tt.Logf(\"Stuck detected: %s\", reason)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHasNoProgressWithMinimalSuccess_72": {
+      "name": "TestHasNoProgressWithMinimalSuccess",
+      "type": "function",
+      "start_line": 72,
+      "end_line": 91,
+      "content_hash": "e46d2a0a9cffc18e9bf53a9e5425885233849b7d",
+      "content": "func TestHasNoProgressWithMinimalSuccess(t *testing.T) {\n\tpt := NewProgressTracker()\n\n\t// Simulate just barely enough progress to avoid stuck detection\n\tfor i := 0; i < 12; i++ {\n\t\t// Mostly failed operations\n\t\tpt.RecordAction(\"edit\", \"file.go\", \"try\", \"error\", false)\n\t}\n\t// Add just enough meaningful successful operations on different targets\n\tpt.RecordAction(\"edit\", \"file1.go\", \"fix\", \"\", true)\n\tpt.RecordAction(\"bash\", \"go build\", \"\", \"\", true)\n\tpt.RecordAction(\"edit\", \"file2.go\", \"update\", \"\", true)\n\n\t// Should NOT be stuck due to meaningful variety\n\tstuck, reason := pt.IsStuck()\n\tif stuck {\n\t\tt.Errorf(\"Should not be stuck with variety: %s\", reason)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHasNoProgressMessageAccuracy_92": {
+      "name": "TestHasNoProgressMessageAccuracy",
+      "type": "function",
+      "start_line": 92,
+      "end_line": 114,
+      "content_hash": "95e2a140443d1108621d2e67b56ed75ab5e9cec9",
+      "content": "func TestHasNoProgressMessageAccuracy(t *testing.T) {\n\tpt := NewProgressTracker()\n\n\t// Add exactly 15 actions with very little meaningful progress\n\tfor i := 0; i < 8; i++ {\n\t\tpt.RecordAction(\"view\", \"same.go\", \"\", \"\", true) // Same target, just viewing\n\t}\n\tfor i := 0; i < 7; i++ {\n\t\tpt.RecordAction(\"view\", \"another.go\", \"\", \"\", true) // Another target, just viewing\n\t}\n\n\t// Should detect stuck and mention \"15 actions\" accurately\n\tstuck, reason := pt.IsStuck()\n\tif !stuck {\n\t\tt.Error(\"Expected stuck detection\")\n\t} else {\n\t\t// Reason should mention \"15 actions\" to be accurate\n\t\tif len(reason) < 10 {\n\t\t\tt.Errorf(\"Reason too short: %s\", reason)\n\t\t}\n\t\tt.Logf(\"Stuck reason: %s\", reason)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

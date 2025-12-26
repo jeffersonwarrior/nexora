@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/term/term.go",
+  "file_hash": "35a955f6188dd76c3f10688c20af1124cb8d5d44",
+  "updated_at": "2025-12-26T17:34:23.377043",
+  "symbols": {
+    "function_SupportsProgressBar_10": {
+      "name": "SupportsProgressBar",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 15,
+      "content_hash": "49d66c30eaa29e3e07bfd4f3a8f196aec850b097",
+      "content": "func SupportsProgressBar() bool {\n\ttermProg := os.Getenv(\"TERM_PROGRAM\")\n\t_, isWindowsTerminal := os.LookupEnv(\"WT_SESSION\")\n\n\treturn isWindowsTerminal || strings.Contains(strings.ToLower(termProg), \"ghostty\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

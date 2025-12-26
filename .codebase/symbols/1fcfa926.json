@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/fsext/fileutil.go",
+  "file_hash": "c63bb51ba4629b88adbb24cee39264c109e75127",
+  "updated_at": "2025-12-26T17:34:20.517746",
+  "symbols": {
+    "struct_FileInfo_18": {
+      "name": "FileInfo",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 22,
+      "content_hash": "e5879bd91b1bdcba05e1ef6f45c522e394203db7",
+      "content": "type FileInfo struct {\n\tPath    string\n\tModTime time.Time\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_SkipHidden_23": {
+      "name": "SkipHidden",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 62,
+      "content_hash": "8e13a7b3ffc3c876bdb385defee85e8676d7be08",
+      "content": "func SkipHidden(path string) bool {\n\t// Check for hidden files (starting with a dot)\n\tbase := filepath.Base(path)\n\tif base != \".\" && strings.HasPrefix(base, \".\") {\n\t\treturn true\n\t}\n\n\tcommonIgnoredDirs := map[string]bool{\n\t\t\".nexora\":          true,\n\t\t\"node_modules\":     true,\n\t\t\"vendor\":           true,\n\t\t\"dist\":             true,\n\t\t\"build\":            true,\n\t\t\"target\":           true,\n\t\t\".git\":             true,\n\t\t\".idea\":            true,\n\t\t\".vscode\":          true,\n\t\t\"__pycache__\":      true,\n\t\t\"bin\":              true,\n\t\t\"obj\":              true,\n\t\t\"out\":              true,\n\t\t\"coverage\":         true,\n\t\t\"logs\":             true,\n\t\t\"generated\":        true,\n\t\t\"bower_components\": true,\n\t\t\"jspm_packages\":    true,\n\t}\n\n\tparts := strings.SplitSeq(path, string(os.PathSeparator))\n\tfor part := range parts {\n\t\tif commonIgnoredDirs[part] {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// FastGlobWalker provides gitignore-aware file walking with fastwalk\n// It uses hierarchical ignore checking like git does, checking .gitignore/.nexoraignore\n// files in each directory from the root to the target path.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_FastGlobWalker_63": {
+      "name": "FastGlobWalker",
+      "type": "struct",
+      "start_line": 63,
+      "end_line": 66,
+      "content_hash": "675be5819f3122087c4f788b1077ed380db49c76",
+      "content": "type FastGlobWalker struct {\n\tdirectoryLister *directoryLister\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewFastGlobWalker_67": {
+      "name": "NewFastGlobWalker",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 74,
+      "content_hash": "d6ce0a122b01a920f7751fa09a98e212f9f1f52d",
+      "content": "func NewFastGlobWalker(searchPath string) *FastGlobWalker {\n\treturn &FastGlobWalker{\n\t\tdirectoryLister: NewDirectoryLister(searchPath),\n\t}\n}\n\n// ShouldSkip checks if a path should be skipped based on hierarchical gitignore,\n// nexoraignore, and hidden file rules",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShouldSkip_75": {
+      "name": "ShouldSkip",
+      "type": "method",
+      "start_line": 75,
+      "end_line": 78,
+      "content_hash": "6dca96f3dd45441158d8b72da1012130601eac6e",
+      "content": "func (w *FastGlobWalker) ShouldSkip(path string) bool {\n\treturn w.directoryLister.shouldIgnore(path, nil)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GlobWithDoubleStar_79": {
+      "name": "GlobWithDoubleStar",
+      "type": "function",
+      "start_line": 79,
+      "end_line": 148,
+      "content_hash": "c5aeb15ed6a93df43b0880eb532ae0997ff66b8d",
+      "content": "func GlobWithDoubleStar(pattern, searchPath string, limit int) ([]string, bool, error) {\n\t// Normalize pattern to forward slashes on Windows so their config can use\n\t// backslashes\n\tpattern = filepath.ToSlash(pattern)\n\n\twalker := NewFastGlobWalker(searchPath)\n\tfound := csync.NewSlice[FileInfo]()\n\tconf := fastwalk.Config{\n\t\tFollow:  true,\n\t\tToSlash: fastwalk.DefaultToSlash(),\n\t\tSort:    fastwalk.SortFilesFirst,\n\t}\n\terr := fastwalk.Walk(&conf, searchPath, func(path string, d os.DirEntry, err error) error {\n\t\tif err != nil {\n\t\t\treturn nil // Skip files we can't access\n\t\t}\n\n\t\tif d.IsDir() {\n\t\t\tif walker.ShouldSkip(path) {\n\t\t\t\treturn filepath.SkipDir\n\t\t\t}\n\t\t}\n\n\t\tif walker.ShouldSkip(path) {\n\t\t\treturn nil\n\t\t}\n\n\t\trelPath, err := filepath.Rel(searchPath, path)\n\t\tif err != nil {\n\t\t\trelPath = path\n\t\t}\n\n\t\t// Normalize separators to forward slashes\n\t\trelPath = filepath.ToSlash(relPath)\n\n\t\t// Check if path matches the pattern\n\t\tmatched, err := doublestar.Match(pattern, relPath)\n\t\tif err != nil || !matched {\n\t\t\treturn nil\n\t\t}\n\n\t\tinfo, err := d.Info()\n\t\tif err != nil {\n\t\t\treturn nil\n\t\t}\n\n\t\tfound.Append(FileInfo{Path: path, ModTime: info.ModTime()})\n\t\tif limit > 0 && found.Len() >= limit*2 { // NOTE: why x2?\n\t\t\treturn filepath.SkipAll\n\t\t}\n\t\treturn nil\n\t})\n\tif err != nil && !errors.Is(err, filepath.SkipAll) {\n\t\treturn nil, false, fmt.Errorf(\"fastwalk error: %w\", err)\n\t}\n\n\tmatches := slices.SortedFunc(found.Seq(), func(a, b FileInfo) int {\n\t\treturn b.ModTime.Compare(a.ModTime)\n\t})\n\tmatches, truncated := truncate(matches, limit)\n\n\tresults := make([]string, len(matches))\n\tfor i, m := range matches {\n\t\tresults[i] = m.Path\n\t}\n\treturn results, truncated || errors.Is(err, filepath.SkipAll), nil\n}\n\n// ShouldExcludeFile checks if a file should be excluded from processing\n// based on common patterns and ignore rules",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ShouldExcludeFile_149": {
+      "name": "ShouldExcludeFile",
+      "type": "function",
+      "start_line": 149,
+      "end_line": 153,
+      "content_hash": "7baa5a278b4c09985138f06cef97864421fb5173",
+      "content": "func ShouldExcludeFile(rootPath, filePath string) bool {\n\treturn NewDirectoryLister(rootPath).\n\t\tshouldIgnore(filePath, nil)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_PrettyPath_154": {
+      "name": "PrettyPath",
+      "type": "function",
+      "start_line": 154,
+      "end_line": 157,
+      "content_hash": "af9b619de94986e6529ce404f69b2fc441c5f365",
+      "content": "func PrettyPath(path string) string {\n\treturn home.Short(path)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DirTrim_158": {
+      "name": "DirTrim",
+      "type": "function",
+      "start_line": 158,
+      "end_line": 183,
+      "content_hash": "86a036527b9149347bc11fde82ca762f90ecc2b3",
+      "content": "func DirTrim(pwd string, lim int) string {\n\tvar (\n\t\tout string\n\t\tsep = string(filepath.Separator)\n\t)\n\tdirs := strings.Split(pwd, sep)\n\tif lim > len(dirs)-1 || lim <= 0 {\n\t\treturn pwd\n\t}\n\tfor i := len(dirs) - 1; i > 0; i-- {\n\t\tout = sep + out\n\t\tif i == len(dirs)-1 {\n\t\t\tout = dirs[i]\n\t\t} else if i >= len(dirs)-lim {\n\t\t\tout = string(dirs[i][0]) + out\n\t\t} else {\n\t\t\tout = \"...\" + out\n\t\t\tbreak\n\t\t}\n\t}\n\tout = filepath.Join(\"~\", out)\n\treturn out\n}\n\n// PathOrPrefix returns the prefix if the path starts with it, or falls back to\n// the path otherwise.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_PathOrPrefix_184": {
+      "name": "PathOrPrefix",
+      "type": "function",
+      "start_line": 184,
+      "end_line": 192,
+      "content_hash": "5a7dac0aac07454fcc1d9214367f3ba9db188893",
+      "content": "func PathOrPrefix(path, prefix string) string {\n\tif HasPrefix(path, prefix) {\n\t\treturn prefix\n\t}\n\treturn path\n}\n\n// HasPrefix checks if the given path starts with the specified prefix.\n// Uses filepath.Rel to determine if path is within prefix.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_HasPrefix_193": {
+      "name": "HasPrefix",
+      "type": "function",
+      "start_line": 193,
+      "end_line": 202,
+      "content_hash": "9cf54ebfc43c1277e1982c8bc593d3019633cc6f",
+      "content": "func HasPrefix(path, prefix string) bool {\n\trel, err := filepath.Rel(prefix, path)\n\tif err != nil {\n\t\treturn false\n\t}\n\t// If path is within prefix, Rel will not return a path starting with \"..\"\n\treturn !strings.HasPrefix(rel, \"..\")\n}\n\n// ToUnixLineEndings converts Windows line endings (CRLF) to Unix line endings (LF).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ToUnixLineEndings_203": {
+      "name": "ToUnixLineEndings",
+      "type": "function",
+      "start_line": 203,
+      "end_line": 210,
+      "content_hash": "8b6a9b06a3eb5057e2801c57af82a4aea6118692",
+      "content": "func ToUnixLineEndings(content string) (string, bool) {\n\tif strings.Contains(content, \"\\r\\n\") {\n\t\treturn strings.ReplaceAll(content, \"\\r\\n\", \"\\n\"), true\n\t}\n\treturn content, false\n}\n\n// ToWindowsLineEndings converts Unix line endings (LF) to Windows line endings (CRLF).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ToWindowsLineEndings_211": {
+      "name": "ToWindowsLineEndings",
+      "type": "function",
+      "start_line": 211,
+      "end_line": 223,
+      "content_hash": "d6b240375a82c709cb67004853f0db02ea9ac165",
+      "content": "func ToWindowsLineEndings(content string) (string, bool) {\n\tif !strings.Contains(content, \"\\r\\n\") {\n\t\treturn strings.ReplaceAll(content, \"\\n\", \"\\r\\n\"), true\n\t}\n\treturn content, false\n}\n\nfunc truncate[T any](input []T, limit int) ([]T, bool) {\n\tif limit > 0 && len(input) > limit {\n\t\treturn input[:limit], true\n\t}\n\treturn input, false\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

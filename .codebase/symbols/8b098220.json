@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/agent/prompt/cache.go",
+  "file_hash": "57984e64406078eaadbaa6746e736d48488c6eb7",
+  "updated_at": "2025-12-26T17:34:21.022025",
+  "symbols": {
+    "struct_EnvironmentCache_12": {
+      "name": "EnvironmentCache",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 19,
+      "content_hash": "acfba398f423134afa381846c1efbeb5dd7cfe6f",
+      "content": "type EnvironmentCache struct {\n\tmu         sync.RWMutex\n\tdata       EnvironmentData\n\tlastUpdate time.Time\n\tttl        time.Duration\n}\n\n// EnvironmentData holds all cached environment information",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EnvironmentData_20": {
+      "name": "EnvironmentData",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 37,
+      "content_hash": "2a96af5f8029bbb9e061fa3d403c0e4b7d1897a6",
+      "content": "type EnvironmentData struct {\n\tCurrentUser    string\n\tLocalIP        string\n\tPythonVersion  string\n\tNodeVersion    string\n\tGoVersion      string\n\tGitUserName    string\n\tGitUserEmail   string\n\tMemoryInfo     string\n\tDiskInfo       string\n\tArchitecture   string\n\tContainerType  string\n\tTerminalInfo   string\n\tNetworkStatus  string\n\tActiveServices string\n}\n\n// NewEnvironmentCache creates a new environment cache with the specified TTL",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewEnvironmentCache_38": {
+      "name": "NewEnvironmentCache",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 44,
+      "content_hash": "dc8b2facbf28a01a4f92989611dad70b2e166b6f",
+      "content": "func NewEnvironmentCache(ttl time.Duration) *EnvironmentCache {\n\treturn &EnvironmentCache{\n\t\tttl: ttl,\n\t}\n}\n\n// Get retrieves cached environment data or refreshes if expired",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_45": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 56,
+      "content_hash": "9c890e626e0cf26bdae5a981fff613bb4f6d47e7",
+      "content": "func (c *EnvironmentCache) Get(ctx context.Context, workingDir string, fullEnv bool) (EnvironmentData, error) {\n\tc.mu.RLock()\n\tif time.Since(c.lastUpdate) < c.ttl {\n\t\tdefer c.mu.RUnlock()\n\t\treturn c.data, nil\n\t}\n\tc.mu.RUnlock()\n\n\treturn c.refresh(ctx, workingDir, fullEnv)\n}\n\n// refresh updates the cache with fresh environment data using parallel execution",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_refresh_57": {
+      "name": "refresh",
+      "type": "method",
+      "start_line": 57,
+      "end_line": 150,
+      "content_hash": "c85b986d45d98081b87139b927c9c045c1a8e50d",
+      "content": "func (c *EnvironmentCache) refresh(ctx context.Context, workingDir string, fullEnv bool) (EnvironmentData, error) {\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\n\t// Double-check after acquiring write lock (avoid thundering herd)\n\tif time.Since(c.lastUpdate) < c.ttl {\n\t\treturn c.data, nil\n\t}\n\n\teg, egCtx := errgroup.WithContext(ctx)\n\tdata := EnvironmentData{}\n\n\t// Parallel execution of all environment checks\n\teg.Go(func() error {\n\t\tdata.CurrentUser = getCurrentUser()\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.LocalIP = getLocalIP(egCtx)\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.PythonVersion = getRuntimeVersion(egCtx, \"python3 --version\")\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.NodeVersion = getRuntimeVersion(egCtx, \"node --version\")\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.GoVersion = getRuntimeVersion(egCtx, \"go version\")\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\t// Git config is already cached in gitConfigCache, but include in parallel fetch\n\t\tgitConfigCache.Do(func() {\n\t\t\tgitConfigCache.userName = getGitConfig(egCtx, \"user.name\")\n\t\t\tgitConfigCache.userEmail = getGitConfig(egCtx, \"user.email\")\n\t\t})\n\t\tdata.GitUserName = gitConfigCache.userName\n\t\tdata.GitUserEmail = gitConfigCache.userEmail\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.MemoryInfo = getMemoryInfo(egCtx)\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.DiskInfo = getDiskInfo(egCtx, workingDir)\n\t\treturn nil\n\t})\n\n\teg.Go(func() error {\n\t\tdata.Architecture = getArchitecture()\n\t\tdata.ContainerType = detectContainer(egCtx)\n\t\tdata.TerminalInfo = getTerminalInfo(egCtx)\n\t\treturn nil\n\t})\n\n\t// Only fetch expensive operations if full env requested\n\tif fullEnv {\n\t\teg.Go(func() error {\n\t\t\tdata.NetworkStatus = getNetworkStatus(egCtx)\n\t\t\treturn nil\n\t\t})\n\n\t\teg.Go(func() error {\n\t\t\tdata.ActiveServices = detectActiveServices(egCtx)\n\t\t\treturn nil\n\t\t})\n\t} else {\n\t\t// Use defaults for non-full env mode\n\t\tdata.NetworkStatus = \"online\"\n\t\tdata.ActiveServices = \"\"\n\t}\n\n\tif err := eg.Wait(); err != nil {\n\t\treturn EnvironmentData{}, err\n\t}\n\n\tc.data = data\n\tc.lastUpdate = time.Now()\n\n\treturn data, nil\n}\n\n// Invalidate clears the cache, forcing a refresh on next Get()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Invalidate_151": {
+      "name": "Invalidate",
+      "type": "method",
+      "start_line": 151,
+      "end_line": 155,
+      "content_hash": "82a12073752044c70477707c26a8fdca7456a32c",
+      "content": "func (c *EnvironmentCache) Invalidate() {\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\tc.lastUpdate = time.Time{}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

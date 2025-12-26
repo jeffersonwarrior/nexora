@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/scripts/install.js",
+  "file_hash": "2764f8d800335f1d402c47953fd035645b2203e5",
+  "updated_at": "2025-12-26T17:34:21.864184",
+  "symbols": {
+    "function_download_75": {
+      "name": "download",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 91,
+      "content_hash": "b587c5048e6ea16cc72360652f787f1b3e763c8b",
+      "content": "function download(url, dest, callback) {\n  const file = fs.createWriteStream(dest);\n  https.get(url, (response) => {\n    if (response.statusCode !== 200) {\n      callback(new Error(`Failed to download: ${response.statusCode}`));\n      return;\n    }\n    response.pipe(file);\n    file.on('finish', () => {\n      file.close(callback);\n    });\n  }).on('error', (err) => {\n    fs.unlink(dest, () => {\n      callback(err);\n    });\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

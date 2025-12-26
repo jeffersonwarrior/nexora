@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/context-engine/ctx-mcp-bridge/src/authConfig.js",
+  "file_hash": "e2159a67b9fae4d8bbd4dda735425c41c20d6226",
+  "updated_at": "2025-12-26T17:34:24.244194",
+  "symbols": {
+    "function_getConfigPath_8": {
+      "name": "getConfigPath",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 12,
+      "content_hash": "a730c2e47a514a605c628137c302cf9ece02bddf",
+      "content": "function getConfigPath() {\n  const home = os.homedir() || process.cwd();\n  const dir = path.join(home, CONFIG_DIR_NAME);\n  return path.join(dir, CONFIG_BASENAME);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_readConfig_14": {
+      "name": "readConfig",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 25,
+      "content_hash": "4277273c913ae154acb230f27f884b9c4f1bebb9",
+      "content": "function readConfig() {\n  try {\n    const cfgPath = getConfigPath();\n    const raw = fs.readFileSync(cfgPath, \"utf8\");\n    const parsed = JSON.parse(raw);\n    if (parsed && typeof parsed === \"object\") {\n      return parsed;\n    }\n  } catch (err) {\n  }\n  return {};\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_writeConfig_27": {
+      "name": "writeConfig",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 37,
+      "content_hash": "f1d23c82205a96f15ad70b05fb3e4869f8a4af79",
+      "content": "function writeConfig(data) {\n  try {\n    const cfgPath = getConfigPath();\n    const dir = path.dirname(cfgPath);\n    if (!fs.existsSync(dir)) {\n      fs.mkdirSync(dir, { recursive: true });\n    }\n    fs.writeFileSync(cfgPath, JSON.stringify(data, null, 2), \"utf8\");\n  } catch (err) {\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadAuthEntry_39": {
+      "name": "loadAuthEntry",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 50,
+      "content_hash": "b57a896a9a84be196cfcbfcd759c0c7d63b1cd2d",
+      "content": "export function loadAuthEntry(backendUrl) {\n  if (!backendUrl) {\n    return null;\n  }\n  const all = readConfig();\n  const key = String(backendUrl);\n  const entry = all[key];\n  if (!entry || typeof entry !== \"object\") {\n    return null;\n  }\n  return entry;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_saveAuthEntry_52": {
+      "name": "saveAuthEntry",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 60,
+      "content_hash": "5a2a47fc8c6e73a81f90cf954d6bc1dc9a623eb0",
+      "content": "export function saveAuthEntry(backendUrl, entry) {\n  if (!backendUrl || !entry || typeof entry !== \"object\") {\n    return;\n  }\n  const all = readConfig();\n  const key = String(backendUrl);\n  all[key] = entry;\n  writeConfig(all);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_deleteAuthEntry_62": {
+      "name": "deleteAuthEntry",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 72,
+      "content_hash": "6be549c5b7c7d28a1e3ce1339f4111095c36edcc",
+      "content": "export function deleteAuthEntry(backendUrl) {\n  if (!backendUrl) {\n    return;\n  }\n  const all = readConfig();\n  const key = String(backendUrl);\n  if (Object.prototype.hasOwnProperty.call(all, key)) {\n    delete all[key];\n    writeConfig(all);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadAnyAuthEntry_74": {
+      "name": "loadAnyAuthEntry",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 84,
+      "content_hash": "2b128dbc6f4a168649d5852ff7fcd1eb0cde937f",
+      "content": "export function loadAnyAuthEntry() {\n  const all = readConfig();\n  const keys = Object.keys(all);\n  for (const key of keys) {\n    const entry = all[key];\n    if (entry && typeof entry === \"object\") {\n      return { backendUrl: key, entry };\n    }\n  }\n  return null;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

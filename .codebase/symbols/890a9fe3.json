@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/context-engine/tests/test_ingest_lex_hash.py",
+  "file_hash": "b60aefbc212060b239f65c6d5e7ef7a28bb38ab8",
+  "updated_at": "2025-12-26T17:34:24.038708",
+  "symbols": {
+    "function_test_lex_hash_vector_norm_non_empty_8": {
+      "name": "test_lex_hash_vector_norm_non_empty",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 12,
+      "content_hash": "cbcf2d7980020da7478f826acfcdc3603e5f7c42",
+      "content": "def test_lex_hash_vector_norm_non_empty():\n    vec = ing._lex_hash_vector(\"foo bar baz foo\")\n    # Non-empty input should be L2-normalized to ~1.0\n    norm = math.sqrt(sum(v * v for v in vec))\n    assert 0.98 <= norm <= 1.02",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_lex_hash_vector_deterministic_15": {
+      "name": "test_lex_hash_vector_deterministic",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 18,
+      "content_hash": "934ff7ec8b1b36941329d8d90af2684cff90d526",
+      "content": "def test_lex_hash_vector_deterministic():\n    v1 = ing._lex_hash_vector(\"symbols_and_identifiers\")\n    v2 = ing._lex_hash_vector(\"symbols_and_identifiers\")\n    assert v1 == v2",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_lex_hash_vector_dim_21": {
+      "name": "test_lex_hash_vector_dim",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 24,
+      "content_hash": "0c69591695ac41fd50de541ed6f0618c45a2b547",
+      "content": "def test_lex_hash_vector_dim():\n    dim = int(getattr(ing, \"LEX_VECTOR_DIM\", 4096))\n    vec = ing._lex_hash_vector(\"x\")\n    assert len(vec) == dim",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

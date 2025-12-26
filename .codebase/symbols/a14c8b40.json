@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/anthropic.go",
+  "file_hash": "db2a007d80d47e9cd3de4d1f0a9b6c993dacac6d",
+  "updated_at": "2025-12-26T17:34:20.405599",
+  "symbols": {
+    "function_AnthropicProvider_11": {
+      "name": "AnthropicProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 93,
+      "content_hash": "0f10f4f28413552bfb1cf217fd85ba164dcaefa8",
+      "content": "func AnthropicProvider(providers []catwalk.Provider) catwalk.Provider {\n\t// Check if anthropic already exists\n\tfor _, provider := range providers {\n\t\tif provider.ID == \"anthropic\" {\n\t\t\treturn catwalk.Provider{}\n\t\t}\n\t}\n\n\tanthropicProvider := catwalk.Provider{\n\t\tName:                \"Anthropic\",\n\t\tID:                  \"anthropic\",\n\t\tAPIKey:              \"$ANTHROPIC_API_KEY\",\n\t\tAPIEndpoint:         cmp.Or(os.Getenv(\"ANTHROPIC_API_ENDPOINT\"), \"https://api.anthropic.com/v1\"),\n\t\tType:                \"anthropic\",\n\t\tDefaultLargeModelID: \"claude-opus-4-5-20251101\",\n\t\tDefaultSmallModelID: \"claude-haiku-4-5-20241022\",\n\t\tModels: []catwalk.Model{\n\t\t\t// Opus 4.5 - Flagship\n\t\t\t{\n\t\t\t\tID:               \"claude-opus-4-5-20251101\",\n\t\t\t\tName:             \"Claude Opus 4.5\",\n\t\t\t\tCostPer1MIn:      5.0,\n\t\t\t\tCostPer1MOut:     25.0,\n\t\t\t\tContextWindow:    200000,\n\t\t\t\tDefaultMaxTokens: 16000,\n\t\t\t\tCanReason:        true,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Sonnet 4.5 - Balanced\n\t\t\t{\n\t\t\t\tID:               \"claude-sonnet-4-5-20250929\",\n\t\t\t\tName:             \"Claude Sonnet 4.5\",\n\t\t\t\tCostPer1MIn:      3.0,\n\t\t\t\tCostPer1MOut:     15.0,\n\t\t\t\tContextWindow:    200000,\n\t\t\t\tDefaultMaxTokens: 16000,\n\t\t\t\tCanReason:        true,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Haiku 4.5 - Fast/Budget\n\t\t\t{\n\t\t\t\tID:               \"claude-haiku-4-5-20241022\",\n\t\t\t\tName:             \"Claude Haiku 4.5\",\n\t\t\t\tCostPer1MIn:      1.0,\n\t\t\t\tCostPer1MOut:     5.0,\n\t\t\t\tContextWindow:    200000,\n\t\t\t\tDefaultMaxTokens: 8000,\n\t\t\t\tCanReason:        false,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Legacy Opus 4\n\t\t\t{\n\t\t\t\tID:               \"claude-opus-4-20250514\",\n\t\t\t\tName:             \"Claude Opus 4\",\n\t\t\t\tCostPer1MIn:      15.0,\n\t\t\t\tCostPer1MOut:     75.0,\n\t\t\t\tContextWindow:    200000,\n\t\t\t\tDefaultMaxTokens: 4096,\n\t\t\t\tCanReason:        true,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Legacy Sonnet 3.5\n\t\t\t{\n\t\t\t\tID:               \"claude-sonnet-3-5-20241022\",\n\t\t\t\tName:             \"Claude Sonnet 3.5\",\n\t\t\t\tCostPer1MIn:      3.0,\n\t\t\t\tCostPer1MOut:     15.0,\n\t\t\t\tContextWindow:    200000,\n\t\t\t\tDefaultMaxTokens: 4096,\n\t\t\t\tCanReason:        false,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t},\n\t\tDefaultHeaders: map[string]string{},\n\t}\n\n\treturn anthropicProvider\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

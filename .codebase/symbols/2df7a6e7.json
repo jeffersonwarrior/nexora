@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/shared/timeline-formatting.ts",
+  "file_hash": "afb8ba988182ed595588272612633f8508ca61f8",
+  "updated_at": "2025-12-26T17:34:21.536821",
+  "symbols": {
+    "function_parseJsonArray_13": {
+      "name": "parseJsonArray",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 21,
+      "content_hash": "54ddb5973f8be5085a62c409fefb1510d68d1fbb",
+      "content": "export function parseJsonArray(json: string | null): string[] {\n  if (!json) return [];\n  try {\n    const parsed = JSON.parse(json);\n    return Array.isArray(parsed) ? parsed : [];\n  } catch (err) {\n    return [];\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDateTime_27": {
+      "name": "formatDateTime",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 36,
+      "content_hash": "e9f78eefbef23aba7d4ce3d16a0388be60f5e811",
+      "content": "export function formatDateTime(dateInput: string | number): string {\n  const date = new Date(dateInput);\n  return date.toLocaleString('en-US', {\n    month: 'short',\n    day: 'numeric',\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatTime_42": {
+      "name": "formatTime",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 49,
+      "content_hash": "6f6464efd0d30af1a7cf2fca13c4404308e8a3b7",
+      "content": "export function formatTime(dateInput: string | number): string {\n  const date = new Date(dateInput);\n  return date.toLocaleString('en-US', {\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDate_55": {
+      "name": "formatDate",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 62,
+      "content_hash": "77b54ef47d57a9ca439f59b1348c9b4583f77593",
+      "content": "export function formatDate(dateInput: string | number): string {\n  const date = new Date(dateInput);\n  return date.toLocaleString('en-US', {\n    month: 'short',\n    day: 'numeric',\n    year: 'numeric'\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_toRelativePath_67": {
+      "name": "toRelativePath",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 72,
+      "content_hash": "f570661f90f2144169133f5d4d40ea91b384ac5c",
+      "content": "export function toRelativePath(filePath: string, cwd: string): string {\n  if (path.isAbsolute(filePath)) {\n    return path.relative(cwd, filePath);\n  }\n  return filePath;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractFirstFile_77": {
+      "name": "extractFirstFile",
+      "type": "function",
+      "start_line": 77,
+      "end_line": 80,
+      "content_hash": "117efbdc79c5d95f27e3b2b9a692dd44d762b8e4",
+      "content": "export function extractFirstFile(filesModified: string | null, cwd: string): string {\n  const files = parseJsonArray(filesModified);\n  return files.length > 0 ? toRelativePath(files[0], cwd) : 'General';\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_estimateTokens_85": {
+      "name": "estimateTokens",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 88,
+      "content_hash": "d36936c0e044c0b459a002428bdc4158fffeecbf",
+      "content": "export function estimateTokens(text: string | null): number {\n  if (!text) return 0;\n  return Math.ceil(text.length / 4);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_groupByDate_100": {
+      "name": "groupByDate",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 123,
+      "content_hash": "167d704d1277a9f2b03bf1a2467914c61ff83792",
+      "content": "export function groupByDate<T>(\n  items: T[],\n  getDate: (item: T) => string\n): Map<string, T[]> {\n  // Group by day\n  const itemsByDay = new Map<string, T[]>();\n  for (const item of items) {\n    const itemDate = getDate(item);\n    const day = formatDate(itemDate);\n    if (!itemsByDay.has(day)) {\n      itemsByDay.set(day, []);\n    }\n    itemsByDay.get(day)!.push(item);\n  }\n\n  // Sort days chronologically\n  const sortedEntries = Array.from(itemsByDay.entries()).sort((a, b) => {\n    const aDate = new Date(a[0]).getTime();\n    const bDate = new Date(b[0]).getTime();\n    return aDate - bDate;\n  });\n\n  return new Map(sortedEntries);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

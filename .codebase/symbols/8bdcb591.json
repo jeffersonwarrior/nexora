@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/push.rs",
+  "file_hash": "af62b825ada7aa91e07e09a82487ac5cf52ab1d2",
+  "updated_at": "2025-12-26T17:34:20.077319",
+  "symbols": {
+    "function_parse_queries_for_metrics_239": {
+      "name": "parse_queries_for_metrics",
+      "type": "function",
+      "start_line": 239,
+      "end_line": 288,
+      "content_hash": "49cc9769cfd52cb6cb2eae56f6d5155c8875ca92",
+      "content": "fn parse_queries_for_metrics(project: &ProjectContext) -> Result<MetricsData> {\n    use helix_db::helixc::parser::{\n        HelixParser,\n        types::{Content, HxFile, Source},\n    };\n    use std::fs;\n\n    // Collect .hx files in project root\n    let dir_entries: Vec<_> = std::fs::read_dir(&project.root)?\n        .filter_map(|entry| entry.ok())\n        .filter(|entry| {\n            entry.path().is_file() && entry.path().extension().map(|s| s == \"hx\").unwrap_or(false)\n        })\n        .collect();\n\n    // Generate content from the files (similar to build.rs)\n    let hx_files: Vec<HxFile> = dir_entries\n        .iter()\n        .map(|file| {\n            let name = file.path().to_string_lossy().into_owned();\n            let content = fs::read_to_string(file.path())\n                .map_err(|e| eyre::eyre!(\"Failed to read file {}: {}\", name, e))?;\n            Ok(HxFile { name, content })\n        })\n        .collect::<Result<Vec<_>>>()?;\n\n    let content_str = hx_files\n        .iter()\n        .map(|file| file.content.clone())\n        .collect::<Vec<String>>()\n        .join(\"\\n\");\n\n    let content = Content {\n        content: content_str,\n        files: hx_files,\n        source: Source::default(),\n    };\n\n    // Parse the content\n    let source =\n        HelixParser::parse_source(&content).map_err(|e| eyre::eyre!(\"Parse error: {}\", e))?;\n\n    // Extract query names\n    let all_queries: Vec<String> = source.queries.iter().map(|q| q.name.clone()).collect();\n\n    Ok(MetricsData {\n        queries_string: all_queries.join(\"\\n\"),\n        num_of_queries: all_queries.len() as u32,\n    })\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

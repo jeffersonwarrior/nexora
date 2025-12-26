@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/term/term_test.go",
+  "file_hash": "3b3152b0506847d8c7ee1eea3842bac6afea40d0",
+  "updated_at": "2025-12-26T17:34:22.250076",
+  "symbols": {
+    "function_TestSupportsProgressBar_8": {
+      "name": "TestSupportsProgressBar",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 138,
+      "content_hash": "314d04baf81e8124fb3ab639a576a6e0527143b0",
+      "content": "func TestSupportsProgressBar(t *testing.T) {\n\ttests := []struct {\n\t\tname            string\n\t\ttermProgram     string\n\t\twtSession       string\n\t\tsetWtSession    bool\n\t\texpectedSupport bool\n\t}{\n\t\t{\n\t\t\tname:            \"Windows Terminal with WT_SESSION\",\n\t\t\ttermProgram:     \"\",\n\t\t\twtSession:       \"some-value\",\n\t\t\tsetWtSession:    true,\n\t\t\texpectedSupport: true,\n\t\t},\n\t\t{\n\t\t\tname:            \"Windows Terminal with empty WT_SESSION\",\n\t\t\ttermProgram:     \"\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    true,\n\t\t\texpectedSupport: true,\n\t\t},\n\t\t{\n\t\t\tname:            \"Ghostty terminal (lowercase)\",\n\t\t\ttermProgram:     \"ghostty\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: true,\n\t\t},\n\t\t{\n\t\t\tname:            \"Ghostty terminal (uppercase)\",\n\t\t\ttermProgram:     \"GHOSTTY\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: true,\n\t\t},\n\t\t{\n\t\t\tname:            \"Ghostty terminal (mixed case)\",\n\t\t\ttermProgram:     \"GhOsTtY\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: true,\n\t\t},\n\t\t{\n\t\t\tname:            \"Ghostty in program name\",\n\t\t\ttermProgram:     \"my-ghostty-fork\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: true,\n\t\t},\n\t\t{\n\t\t\tname:            \"Regular terminal (no support)\",\n\t\t\ttermProgram:     \"xterm\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: false,\n\t\t},\n\t\t{\n\t\t\tname:            \"iTerm2 (no support)\",\n\t\t\ttermProgram:     \"iTerm.app\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: false,\n\t\t},\n\t\t{\n\t\t\tname:            \"VS Code terminal (no support)\",\n\t\t\ttermProgram:     \"vscode\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: false,\n\t\t},\n\t\t{\n\t\t\tname:            \"Empty TERM_PROGRAM (no support)\",\n\t\t\ttermProgram:     \"\",\n\t\t\twtSession:       \"\",\n\t\t\tsetWtSession:    false,\n\t\t\texpectedSupport: false,\n\t\t},\n\t\t{\n\t\t\tname:            \"Both Ghostty and WT_SESSION (should support)\",\n\t\t\ttermProgram:     \"ghostty\",\n\t\t\twtSession:       \"session-123\",\n\t\t\tsetWtSession:    true,\n\t\t\texpectedSupport: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\t// Save original env vars\n\t\t\torigTermProgram := os.Getenv(\"TERM_PROGRAM\")\n\t\t\torigWtSession, origWtSessionSet := os.LookupEnv(\"WT_SESSION\")\n\n\t\t\t// Restore after test\n\t\t\tdefer func() {\n\t\t\t\tif origTermProgram != \"\" {\n\t\t\t\t\tos.Setenv(\"TERM_PROGRAM\", origTermProgram)\n\t\t\t\t} else {\n\t\t\t\t\tos.Unsetenv(\"TERM_PROGRAM\")\n\t\t\t\t}\n\n\t\t\t\tif origWtSessionSet {\n\t\t\t\t\tos.Setenv(\"WT_SESSION\", origWtSession)\n\t\t\t\t} else {\n\t\t\t\t\tos.Unsetenv(\"WT_SESSION\")\n\t\t\t\t}\n\t\t\t}()\n\n\t\t\t// Set test environment\n\t\t\tif tt.termProgram != \"\" {\n\t\t\t\tos.Setenv(\"TERM_PROGRAM\", tt.termProgram)\n\t\t\t} else {\n\t\t\t\tos.Unsetenv(\"TERM_PROGRAM\")\n\t\t\t}\n\n\t\t\tif tt.setWtSession {\n\t\t\t\tos.Setenv(\"WT_SESSION\", tt.wtSession)\n\t\t\t} else {\n\t\t\t\tos.Unsetenv(\"WT_SESSION\")\n\t\t\t}\n\n\t\t\t// Test the function\n\t\t\tresult := SupportsProgressBar()\n\t\t\tif result != tt.expectedSupport {\n\t\t\t\tt.Errorf(\"SupportsProgressBar() = %v, want %v\", result, tt.expectedSupport)\n\t\t\t}\n\t\t})\n\t}\n}\n\n// TestSupportsProgressBarRealEnvironment tests with the actual environment",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSupportsProgressBarRealEnvironment_139": {
+      "name": "TestSupportsProgressBarRealEnvironment",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 155,
+      "content_hash": "6571ac093dece767dbba037ddf958d68428ed06a",
+      "content": "func TestSupportsProgressBarRealEnvironment(t *testing.T) {\n\t// This test just ensures the function doesn't panic\n\tresult := SupportsProgressBar()\n\n\ttermProgram := os.Getenv(\"TERM_PROGRAM\")\n\t_, wtSession := os.LookupEnv(\"WT_SESSION\")\n\n\tt.Logf(\"Real environment: TERM_PROGRAM=%q, WT_SESSION=%v, supports=%v\",\n\t\ttermProgram, wtSession, result)\n\n\t// Just ensure it returns a boolean (which it always will)\n\tif result != true && result != false {\n\t\tt.Error(\"SupportsProgressBar() must return a boolean\")\n\t}\n}\n\n// TestSupportsProgressBarEdgeCases tests edge cases",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSupportsProgressBarEdgeCases_156": {
+      "name": "TestSupportsProgressBarEdgeCases",
+      "type": "function",
+      "start_line": 156,
+      "end_line": 190,
+      "content_hash": "326608f47c7dc7c0748dd800c71504a6def6142e",
+      "content": "func TestSupportsProgressBarEdgeCases(t *testing.T) {\n\tt.Run(\"TERM_PROGRAM with whitespace\", func(t *testing.T) {\n\t\torigTermProgram := os.Getenv(\"TERM_PROGRAM\")\n\t\tdefer func() {\n\t\t\tif origTermProgram != \"\" {\n\t\t\t\tos.Setenv(\"TERM_PROGRAM\", origTermProgram)\n\t\t\t} else {\n\t\t\t\tos.Unsetenv(\"TERM_PROGRAM\")\n\t\t\t}\n\t\t}()\n\n\t\tos.Setenv(\"TERM_PROGRAM\", \"  ghostty  \")\n\t\tresult := SupportsProgressBar()\n\t\tif !result {\n\t\t\tt.Error(\"Expected support for TERM_PROGRAM with whitespace and 'ghostty'\")\n\t\t}\n\t})\n\n\tt.Run(\"TERM_PROGRAM with ghost (partial match)\", func(t *testing.T) {\n\t\torigTermProgram := os.Getenv(\"TERM_PROGRAM\")\n\t\tdefer func() {\n\t\t\tif origTermProgram != \"\" {\n\t\t\t\tos.Setenv(\"TERM_PROGRAM\", origTermProgram)\n\t\t\t} else {\n\t\t\t\tos.Unsetenv(\"TERM_PROGRAM\")\n\t\t\t}\n\t\t}()\n\n\t\tos.Setenv(\"TERM_PROGRAM\", \"ghost\")\n\t\tresult := SupportsProgressBar()\n\t\tif result {\n\t\t\tt.Error(\"Should not support 'ghost' without 'ty'\")\n\t\t}\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

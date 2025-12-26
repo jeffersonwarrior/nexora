@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/deploy/kubernetes/cleanup.sh",
+  "file_hash": "b0e9627c4e94671821423efb9a4feff572b0f4a2",
+  "updated_at": "2025-12-26T17:34:19.717737",
+  "symbols": {
+    "function_log_info_20": {
+      "name": "log_info",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 20,
+      "content_hash": "a91415c6f1c45396f7cb73d6960b026a8b0e4b22",
+      "content": "log_info() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_success_24": {
+      "name": "log_success",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 24,
+      "content_hash": "653f8b34a1b865506f885ffc5371f597ad0e65ad",
+      "content": "log_success() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_warning_28": {
+      "name": "log_warning",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 28,
+      "content_hash": "d60a2f5d9d10baec6b9d4fdaae64685473b5f9be",
+      "content": "log_warning() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_error_32": {
+      "name": "log_error",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 32,
+      "content_hash": "1e38ccbd2de2f3a10a4dc47dda61b7ff8a54a495",
+      "content": "log_error() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_kubectl_37": {
+      "name": "check_kubectl",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 37,
+      "content_hash": "a958e2b1dfe02ae915f0127b4f74192f92a80532",
+      "content": "check_kubectl() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_namespace_52": {
+      "name": "check_namespace",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 52,
+      "content_hash": "49ca31eeff1292e770489ca9fd37c190de3d9b0e",
+      "content": "check_namespace() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_show_deletion_plan_61": {
+      "name": "show_deletion_plan",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 61,
+      "content_hash": "dd599df7d85a69965e17863504389a0e36d56d45",
+      "content": "show_deletion_plan() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_confirm_cleanup_96": {
+      "name": "confirm_cleanup",
+      "type": "function",
+      "start_line": 96,
+      "end_line": 96,
+      "content_hash": "414754952fea2ded9acb9d5f859ba8a76cf61fe1",
+      "content": "confirm_cleanup() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_delete_namespace_109": {
+      "name": "delete_namespace",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 109,
+      "content_hash": "1a8257c4848e199ca1379c2293d936cd8420768a",
+      "content": "delete_namespace() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_wait_for_deletion_116": {
+      "name": "wait_for_deletion",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 116,
+      "content_hash": "276a10045811d1b62acdab70e9f1bb69104ee2cf",
+      "content": "wait_for_deletion() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_force_delete_139": {
+      "name": "force_delete",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 139,
+      "content_hash": "83e23f2e9f6abf6bf14db03c1ce4c74d68f9da3d",
+      "content": "force_delete() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_verify_cleanup_152": {
+      "name": "verify_cleanup",
+      "type": "function",
+      "start_line": 152,
+      "end_line": 152,
+      "content_hash": "858ffa05288b9526f3f7f8ef47a2400dae87c4a1",
+      "content": "verify_cleanup() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_164": {
+      "name": "main",
+      "type": "function",
+      "start_line": 164,
+      "end_line": 164,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_show_help_198": {
+      "name": "show_help",
+      "type": "function",
+      "start_line": 198,
+      "end_line": 198,
+      "content_hash": "aaaec5a23269a038245fc518a0c137f4257cdf56",
+      "content": "show_help() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

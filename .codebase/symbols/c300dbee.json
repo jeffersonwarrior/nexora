@@ -1,0 +1,282 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/tools.go",
+  "file_hash": "ea8241a461623236b8e2f2a02b2ee25163a724c7",
+  "updated_at": "2025-12-26T17:34:22.246652",
+  "symbols": {
+    "struct_ToolRegistry_11": {
+      "name": "ToolRegistry",
+      "type": "struct",
+      "start_line": 11,
+      "end_line": 16,
+      "content_hash": "c437aa7775225a97e2aa3f1f77ee243e99920e54",
+      "content": "type ToolRegistry struct {\n\tmu    sync.RWMutex\n\ttools map[string]Tool\n}\n\n// NewToolRegistry creates a new empty tool registry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewToolRegistry_17": {
+      "name": "NewToolRegistry",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 23,
+      "content_hash": "f076c9ebb073838f615b4315acc8c044651d65b6",
+      "content": "func NewToolRegistry() *ToolRegistry {\n\treturn &ToolRegistry{\n\t\ttools: make(map[string]Tool),\n\t}\n}\n\n// Register adds a tool to the registry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Register_24": {
+      "name": "Register",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 41,
+      "content_hash": "b274986ab04fbfce14fed6c11772881b2707e0bf",
+      "content": "func (tr *ToolRegistry) Register(tool Tool) error {\n\ttr.mu.Lock()\n\tdefer tr.mu.Unlock()\n\n\tname := tool.Name()\n\tif name == \"\" {\n\t\treturn fmt.Errorf(\"tool has empty name\")\n\t}\n\n\tif _, exists := tr.tools[name]; exists {\n\t\treturn fmt.Errorf(\"tool '%s' already registered\", name)\n\t}\n\n\ttr.tools[name] = tool\n\treturn nil\n}\n\n// Get retrieves a tool by name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_42": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 53,
+      "content_hash": "da02ccf963e254b41b62da349687953d71c523e7",
+      "content": "func (tr *ToolRegistry) Get(name string) (Tool, error) {\n\ttr.mu.RLock()\n\tdefer tr.mu.RUnlock()\n\n\ttool, exists := tr.tools[name]\n\tif !exists {\n\t\treturn nil, fmt.Errorf(\"tool '%s' not found\", name)\n\t}\n\treturn tool, nil\n}\n\n// List returns all registered tool names",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_List_54": {
+      "name": "List",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 65,
+      "content_hash": "f431b9ba4fe3dcee89720a77623678f9ec7557c7",
+      "content": "func (tr *ToolRegistry) List() []string {\n\ttr.mu.RLock()\n\tdefer tr.mu.RUnlock()\n\n\tnames := make([]string, 0, len(tr.tools))\n\tfor name := range tr.tools {\n\t\tnames = append(names, name)\n\t}\n\treturn names\n}\n\n// ToolExecutor handles the execution of tools with error handling and logging",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ToolExecutor_66": {
+      "name": "ToolExecutor",
+      "type": "struct",
+      "start_line": 66,
+      "end_line": 71,
+      "content_hash": "9e8a0bc055f33f1a81d8ef52d5f4d505e3d214dc",
+      "content": "type ToolExecutor struct {\n\tregistry *ToolRegistry\n\tlogger   ToolLogger\n}\n\n// ToolLogger logs tool execution for debugging and monitoring",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ToolLogger_72": {
+      "name": "ToolLogger",
+      "type": "interface",
+      "start_line": 72,
+      "end_line": 76,
+      "content_hash": "0167d77c5d0c334755724190215b587f5fb73b8c",
+      "content": "type ToolLogger interface {\n\tLogExecution(ctx context.Context, toolName string, input, output map[string]interface{}, err error, duration int64)\n}\n\n// DefaultToolLogger provides a simple no-op logger",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DefaultToolLogger_77": {
+      "name": "DefaultToolLogger",
+      "type": "struct",
+      "start_line": 77,
+      "end_line": 78,
+      "content_hash": "fb590d4eba85ae6e62c6d5c4ab1fb7c1792d52ac",
+      "content": "type DefaultToolLogger struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_LogExecution_79": {
+      "name": "LogExecution",
+      "type": "method",
+      "start_line": 79,
+      "end_line": 83,
+      "content_hash": "194a576b0182839b7663822239526282a02636ab",
+      "content": "func (d *DefaultToolLogger) LogExecution(ctx context.Context, toolName string, input, output map[string]interface{}, err error, duration int64) {\n\t// No-op by default\n}\n\n// NewToolExecutor creates a new tool executor",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewToolExecutor_84": {
+      "name": "NewToolExecutor",
+      "type": "function",
+      "start_line": 84,
+      "end_line": 91,
+      "content_hash": "0b2167002f3df5637257d68f8c4e3f15d9b783f9",
+      "content": "func NewToolExecutor(registry *ToolRegistry) *ToolExecutor {\n\treturn &ToolExecutor{\n\t\tregistry: registry,\n\t\tlogger:   &DefaultToolLogger{},\n\t}\n}\n\n// WithLogger sets the logger for the tool executor",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithLogger_92": {
+      "name": "WithLogger",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 97,
+      "content_hash": "0093003e9c464761b3826c62adfcdae51d1df755",
+      "content": "func (te *ToolExecutor) WithLogger(logger ToolLogger) *ToolExecutor {\n\tte.logger = logger\n\treturn te\n}\n\n// Execute runs a tool with the given input",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Execute_98": {
+      "name": "Execute",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 135,
+      "content_hash": "39236a150e7eb6a3270d8cd54add592f294742e5",
+      "content": "func (te *ToolExecutor) Execute(ctx context.Context, toolName string, input map[string]interface{}) (map[string]interface{}, error) {\n\ttool, err := te.registry.Get(toolName)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"tool executor: %w\", err)\n\t}\n\n\t// Validate input if tool provides validation\n\tif validator, ok := tool.(ToolInputValidator); ok {\n\t\tif err := validator.ValidateInput(input); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"input validation failed for tool '%s': %w\", toolName, err)\n\t\t}\n\t}\n\n\t// Execute the tool\n\tstartTime := time.Now()\n\toutput, err := tool.Execute(ctx, input)\n\tduration := time.Since(startTime)\n\n\t// Log the execution\n\tte.logger.LogExecution(ctx, toolName, input, output, err, duration.Nanoseconds())\n\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"tool execution failed for '%s': %w\", toolName, err)\n\t}\n\n\t// Validate output if tool provides validation\n\tif validator, ok := tool.(ToolOutputValidator); ok {\n\t\tif err := validator.ValidateOutput(output); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"output validation failed for tool '%s': %w\", toolName, err)\n\t\t}\n\t}\n\n\treturn output, nil\n}\n\n// --- Tool interfaces for extended functionality ---\n\n// ToolInputValidator can be implemented by tools that need input validation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ToolInputValidator_136": {
+      "name": "ToolInputValidator",
+      "type": "interface",
+      "start_line": 136,
+      "end_line": 140,
+      "content_hash": "895eaed7db955fab50cc690dd26336ac6a5d1ea8",
+      "content": "type ToolInputValidator interface {\n\tValidateInput(input map[string]interface{}) error\n}\n\n// ToolOutputValidator can be implemented by tools that need output validation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ToolOutputValidator_141": {
+      "name": "ToolOutputValidator",
+      "type": "interface",
+      "start_line": 141,
+      "end_line": 145,
+      "content_hash": "9d4806a3382ed7e93a21fa57318cd27647cfc260",
+      "content": "type ToolOutputValidator interface {\n\tValidateOutput(output map[string]interface{}) error\n}\n\n// ToolWithSchema can be implemented by tools that provide JSON schemas",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ToolWithSchema_146": {
+      "name": "ToolWithSchema",
+      "type": "interface",
+      "start_line": 146,
+      "end_line": 151,
+      "content_hash": "7cd53e6cb2f6157b0f86aa777e6985c3bbc1053d",
+      "content": "type ToolWithSchema interface {\n\tInputSchema() map[string]interface{}\n\tOutputSchema() map[string]interface{}\n}\n\n// ToolWithCategories can be implemented by tools that declare categories",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ToolWithCategories_152": {
+      "name": "ToolWithCategories",
+      "type": "interface",
+      "start_line": 152,
+      "end_line": 158,
+      "content_hash": "d2f7a29921f126026e48b3a6703ad8f45528aac5",
+      "content": "type ToolWithCategories interface {\n\tCategories() []string\n}\n\n// --- Built-in utility tools ---\n\n// EchoTool echoes back its input for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EchoTool_159": {
+      "name": "EchoTool",
+      "type": "struct",
+      "start_line": 159,
+      "end_line": 160,
+      "content_hash": "aaac6cb77cdd08df7256c302e091676bac436ab3",
+      "content": "type EchoTool struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Name_161": {
+      "name": "Name",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 164,
+      "content_hash": "d56b3b8b11670633551cf82b8cea04a5c995339f",
+      "content": "func (e *EchoTool) Name() string {\n\treturn \"echo\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Description_165": {
+      "name": "Description",
+      "type": "method",
+      "start_line": 165,
+      "end_line": 168,
+      "content_hash": "d559740f543aac21619e4d15f12b2329e9069a08",
+      "content": "func (e *EchoTool) Description() string {\n\treturn \"Echoes back the input for testing purposes\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Execute_169": {
+      "name": "Execute",
+      "type": "method",
+      "start_line": 169,
+      "end_line": 175,
+      "content_hash": "3c20adb053fac9e2eb3c339063c8da78c03b4f43",
+      "content": "func (e *EchoTool) Execute(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\treturn map[string]interface{}{\n\t\t\"echoed\": input,\n\t}, nil\n}\n\n// CalculatorTool performs basic arithmetic",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CalculatorTool_176": {
+      "name": "CalculatorTool",
+      "type": "struct",
+      "start_line": 176,
+      "end_line": 177,
+      "content_hash": "359de37ab57c094c22fca699f99ba35a594b5e1d",
+      "content": "type CalculatorTool struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Name_178": {
+      "name": "Name",
+      "type": "method",
+      "start_line": 178,
+      "end_line": 181,
+      "content_hash": "859a7c06979eee6da367952159c00996237fda4a",
+      "content": "func (c *CalculatorTool) Name() string {\n\treturn \"calculator\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Description_182": {
+      "name": "Description",
+      "type": "method",
+      "start_line": 182,
+      "end_line": 185,
+      "content_hash": "6e1544763ceaa0d524285a5b8059ed943574feea",
+      "content": "func (c *CalculatorTool) Description() string {\n\treturn \"Performs basic arithmetic operations: +, -, *, /\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Execute_186": {
+      "name": "Execute",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 227,
+      "content_hash": "8d6ed72012aeeaf86f2b61db996127d4929e0f09",
+      "content": "func (c *CalculatorTool) Execute(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t// Extract operation and operands\n\top, ok := input[\"operation\"].(string)\n\tif !ok {\n\t\treturn nil, &ToolError{Message: \"missing 'operation' parameter\"}\n\t}\n\n\ta, ok := input[\"a\"].(float64)\n\tif !ok {\n\t\treturn nil, &ToolError{Message: \"missing or invalid 'a' parameter\"}\n\t}\n\n\tb, ok := input[\"b\"].(float64)\n\tif !ok {\n\t\treturn nil, &ToolError{Message: \"missing or invalid 'b' parameter\"}\n\t}\n\n\tvar result float64\n\tswitch op {\n\tcase \"+\":\n\t\tresult = a + b\n\tcase \"-\":\n\t\tresult = a - b\n\tcase \"*\":\n\t\tresult = a * b\n\tcase \"/\":\n\t\tif b == 0 {\n\t\t\treturn nil, &ToolError{Message: \"division by zero\"}\n\t\t}\n\t\tresult = a / b\n\tdefault:\n\t\treturn nil, &ToolError{Message: fmt.Sprintf(\"unsupported operation: %s\", op)}\n\t}\n\n\treturn map[string]interface{}{\n\t\t\"result\": result,\n\t}, nil\n}\n\n// --- Helper functions ---\n\n// RegisterCommonTools registers common built-in tools with a registry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RegisterCommonTools_228": {
+      "name": "RegisterCommonTools",
+      "type": "function",
+      "start_line": 228,
+      "end_line": 233,
+      "content_hash": "92587e7ef2825d232822961961a822a7b3d35854",
+      "content": "func RegisterCommonTools(registry *ToolRegistry) error {\n\tif err := registry.Register(&EchoTool{}); err != nil {\n\t\treturn err\n\t}\n\treturn registry.Register(&CalculatorTool{})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

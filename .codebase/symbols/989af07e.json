@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/hooks/useTheme.ts",
+  "file_hash": "f26cbd39f3700a21cfbec6a2609abdef68da398a",
+  "updated_at": "2025-12-26T17:34:21.266234",
+  "symbols": {
+    "function_getSystemTheme_8": {
+      "name": "getSystemTheme",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 11,
+      "content_hash": "d977ea457561a28e8bbe1afe15c2d95f485fdec5",
+      "content": "function getSystemTheme(): ResolvedTheme {\n  if (typeof window === 'undefined') return 'dark';\n  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getStoredPreference_13": {
+      "name": "getStoredPreference",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 23,
+      "content_hash": "4a41d52c0bccf21ff2cff788f0051194b2674b24",
+      "content": "function getStoredPreference(): ThemePreference {\n  try {\n    const stored = localStorage.getItem(STORAGE_KEY);\n    if (stored === 'system' || stored === 'light' || stored === 'dark') {\n      return stored;\n    }\n  } catch (e) {\n    console.warn('Failed to read theme preference from localStorage:', e);\n  }\n  return 'system';\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveTheme_25": {
+      "name": "resolveTheme",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 30,
+      "content_hash": "09e2191aa88cbedcaaf9daf6e9d444afbbaae8d5",
+      "content": "function resolveTheme(preference: ThemePreference): ResolvedTheme {\n  if (preference === 'system') {\n    return getSystemTheme();\n  }\n  return preference;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_useTheme_32": {
+      "name": "useTheme",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 76,
+      "content_hash": "0bca22d76b6c6b73a8ff31ca91ccc1b1495e7f51",
+      "content": "export function useTheme() {\n  const [preference, setPreference] = useState<ThemePreference>(getStoredPreference);\n  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() =>\n    resolveTheme(getStoredPreference())\n  );\n\n  // Update resolved theme when preference changes\n  useEffect(() => {\n    const newResolvedTheme = resolveTheme(preference);\n    setResolvedTheme(newResolvedTheme);\n    document.documentElement.setAttribute('data-theme', newResolvedTheme);\n  }, [preference]);\n\n  // Listen for system theme changes when preference is 'system'\n  useEffect(() => {\n    if (preference !== 'system') return;\n\n    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');\n    const handleChange = (e: MediaQueryListEvent) => {\n      const newTheme = e.matches ? 'dark' : 'light';\n      setResolvedTheme(newTheme);\n      document.documentElement.setAttribute('data-theme', newTheme);\n    };\n\n    mediaQuery.addEventListener('change', handleChange);\n    return () => mediaQuery.removeEventListener('change', handleChange);\n  }, [preference]);\n\n  const setThemePreference = (newPreference: ThemePreference) => {\n    try {\n      localStorage.setItem(STORAGE_KEY, newPreference);\n      setPreference(newPreference);\n    } catch (e) {\n      console.warn('Failed to save theme preference to localStorage:', e);\n      // Still update the theme even if localStorage fails\n      setPreference(newPreference);\n    }\n  };\n\n  return {\n    preference,\n    resolvedTheme,\n    setThemePreference\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_handleChange_50": {
+      "name": "handleChange",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 54,
+      "content_hash": "aedc771942064299e81654bc4652ab6c06493e94",
+      "content": "    const handleChange = (e: MediaQueryListEvent) => {\n      const newTheme = e.matches ? 'dark' : 'light';\n      setResolvedTheme(newTheme);\n      document.documentElement.setAttribute('data-theme', newTheme);\n    };",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setThemePreference_60": {
+      "name": "setThemePreference",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 69,
+      "content_hash": "e0bd84ed3bfc6e8862f379e1ec97319684d6df57",
+      "content": "  const setThemePreference = (newPreference: ThemePreference) => {\n    try {\n      localStorage.setItem(STORAGE_KEY, newPreference);\n      setPreference(newPreference);\n    } catch (e) {\n      console.warn('Failed to save theme preference to localStorage:', e);\n      // Still update the theme even if localStorage fails\n      setPreference(newPreference);\n    }\n  };",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

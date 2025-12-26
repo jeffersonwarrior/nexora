@@ -174,6 +174,13 @@ func TestRecoverySystemIntegration(t *testing.T) {
 
 // Test recovery system under load
 func TestRecoverySystemLoad(t *testing.T) {
+	// Create temp files needed for recovery tests
+	tmpFile := "/tmp/test_recovery_load.txt"
+	defer os.Remove(tmpFile)
+	if err := os.WriteFile(tmpFile, []byte("test content"), 0644); err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+
 	ctx := context.Background()
 	registry := NewRecoveryRegistry()
 
@@ -192,9 +199,9 @@ func TestRecoverySystemLoad(t *testing.T) {
 			var err error
 			switch id % 6 {
 			case 0:
-				err = NewFileOutdatedError(errors.New("test"), "/tmp/test.txt")
+				err = NewFileOutdatedError(errors.New("test"), tmpFile)
 			case 1:
-				err = NewEditFailedError(errors.New("test"), "/tmp/test", "old", "new")
+				err = NewEditFailedError(errors.New("test"), tmpFile, "old", "new")
 			case 2:
 				err = NewLoopDetectedError("test", 100)
 			case 3:
@@ -283,6 +290,13 @@ func TestRegistryDiagnostics(t *testing.T) {
 
 // Error propagation test
 func TestErrorPropagation(t *testing.T) {
+	// Create temp file for testing
+	tmpFile := "/tmp/test_error_propagation.txt"
+	defer os.Remove(tmpFile)
+	if err := os.WriteFile(tmpFile, []byte("test content"), 0644); err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+
 	registry := NewRecoveryRegistry()
 	ctx := context.Background()
 	execCtx := &state.AgentExecutionContext{
@@ -293,7 +307,7 @@ func TestErrorPropagation(t *testing.T) {
 
 	// Original error should be wrapped, not lost
 	originalErr := errors.New("something went wrong")
-	wrappedErr := NewFileOutdatedError(originalErr, "/tmp/test.txt")
+	wrappedErr := NewFileOutdatedError(originalErr, tmpFile)
 
 	recoveryErr := registry.AttemptRecovery(ctx, wrappedErr, execCtx)
 

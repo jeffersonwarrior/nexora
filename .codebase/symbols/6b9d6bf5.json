@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/qdrant_client_manager.py",
+  "file_hash": "040df1fac2555cb4cfc813d485f816c2df08b1c2",
+  "updated_at": "2025-12-26T17:34:22.100302",
+  "symbols": {
+    "class_QdrantConnectionPool_16": {
+      "name": "QdrantConnectionPool",
+      "type": "class",
+      "start_line": 16,
+      "end_line": 112,
+      "content_hash": "25a6143e90a1d2db87e18f0d5bbd358f65b02a8c",
+      "content": "class QdrantConnectionPool:\n    \"\"\"Thread-safe connection pool for QdrantClient instances.\"\"\"\n    \n    def __init__(self, max_size: int = 10, max_lifetime: float = 300.0):\n        self.max_size = max_size\n        self.max_lifetime = max_lifetime  # seconds\n        self._pool: List[Dict] = []\n        self._pool_lock = threading.Lock()\n        self._created_count = 0\n        self._hits = 0\n        self._misses = 0\n    \n    def get_client(self, url: str, api_key: Optional[str] = None) -> QdrantClient:\n        \"\"\"Get a client from pool or create a new one.\"\"\"\n        with self._pool_lock:\n            # Clean up expired connections\n            self._cleanup_expired()\n            \n            # Try to find a matching client in pool\n            for i, conn in enumerate(self._pool):\n                if (conn['url'] == url and \n                    conn['api_key'] == api_key and \n                    conn['in_use'] == False):\n                    conn['in_use'] = True\n                    conn['last_used'] = time.time()\n                    self._hits += 1\n                    return conn['client']\n            \n            # No suitable client found, create a new one\n            if self._created_count < self.max_size:\n                client = QdrantClient(url=url, api_key=api_key)\n                pool_entry = {\n                    'client': client,\n                    'url': url,\n                    'api_key': api_key,\n                    'created_at': time.time(),\n                    'last_used': time.time(),\n                    'in_use': True\n                }\n                self._pool.append(pool_entry)\n                self._created_count += 1\n                self._misses += 1\n                return client\n            else:\n                # Pool is full, create a temporary client (not pooled)\n                self._misses += 1\n                return QdrantClient(url=url, api_key=api_key)\n    \n    def return_client(self, client: QdrantClient):\n        \"\"\"Return a client to the pool.\"\"\"\n        with self._pool_lock:\n            for conn in self._pool:\n                if conn['client'] is client:\n                    conn['in_use'] = False\n                    conn['last_used'] = time.time()\n                    break\n    \n    def _cleanup_expired(self):\n        \"\"\"Remove expired connections from the pool.\"\"\"\n        current_time = time.time()\n        expired_indices = []\n        \n        for i, conn in enumerate(self._pool):\n            if (not conn['in_use'] and \n                current_time - conn['created_at'] > self.max_lifetime):\n                expired_indices.append(i)\n        \n        # Remove expired connections (in reverse order to maintain indices)\n        for i in reversed(expired_indices):\n            try:\n                self._pool[i]['client'].close()\n            except Exception:\n                pass\n            del self._pool[i]\n            self._created_count -= 1\n    \n    def close_all(self):\n        \"\"\"Close all connections in the pool.\"\"\"\n        with self._pool_lock:\n            for conn in self._pool:\n                try:\n                    conn['client'].close()\n                except Exception:\n                    pass\n            self._pool.clear()\n            self._created_count = 0\n    \n    def get_stats(self) -> Dict[str, int]:\n        \"\"\"Get pool statistics.\"\"\"\n        with self._pool_lock:\n            return {\n                'pool_size': len(self._pool),\n                'created_count': self._created_count,\n                'hits': self._hits,\n                'misses': self._misses,\n                'in_use': sum(1 for conn in self._pool if conn['in_use'])\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___19": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 19,
+      "end_line": 26,
+      "content_hash": "dd46bff3807753c5e4b1a7f1e2fa61d68313d03d",
+      "content": "    def __init__(self, max_size: int = 10, max_lifetime: float = 300.0):\n        self.max_size = max_size\n        self.max_lifetime = max_lifetime  # seconds\n        self._pool: List[Dict] = []\n        self._pool_lock = threading.Lock()\n        self._created_count = 0\n        self._hits = 0\n        self._misses = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_client_28": {
+      "name": "get_client",
+      "type": "method",
+      "start_line": 28,
+      "end_line": 62,
+      "content_hash": "4c16082df35114c32d7a174e412177c20d5985bf",
+      "content": "    def get_client(self, url: str, api_key: Optional[str] = None) -> QdrantClient:\n        \"\"\"Get a client from pool or create a new one.\"\"\"\n        with self._pool_lock:\n            # Clean up expired connections\n            self._cleanup_expired()\n            \n            # Try to find a matching client in pool\n            for i, conn in enumerate(self._pool):\n                if (conn['url'] == url and \n                    conn['api_key'] == api_key and \n                    conn['in_use'] == False):\n                    conn['in_use'] = True\n                    conn['last_used'] = time.time()\n                    self._hits += 1\n                    return conn['client']\n            \n            # No suitable client found, create a new one\n            if self._created_count < self.max_size:\n                client = QdrantClient(url=url, api_key=api_key)\n                pool_entry = {\n                    'client': client,\n                    'url': url,\n                    'api_key': api_key,\n                    'created_at': time.time(),\n                    'last_used': time.time(),\n                    'in_use': True\n                }\n                self._pool.append(pool_entry)\n                self._created_count += 1\n                self._misses += 1\n                return client\n            else:\n                # Pool is full, create a temporary client (not pooled)\n                self._misses += 1\n                return QdrantClient(url=url, api_key=api_key)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_return_client_64": {
+      "name": "return_client",
+      "type": "method",
+      "start_line": 64,
+      "end_line": 71,
+      "content_hash": "00840a3449948ccc35eea9d64763a95d7958fcc6",
+      "content": "    def return_client(self, client: QdrantClient):\n        \"\"\"Return a client to the pool.\"\"\"\n        with self._pool_lock:\n            for conn in self._pool:\n                if conn['client'] is client:\n                    conn['in_use'] = False\n                    conn['last_used'] = time.time()\n                    break",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__cleanup_expired_73": {
+      "name": "_cleanup_expired",
+      "type": "method",
+      "start_line": 73,
+      "end_line": 90,
+      "content_hash": "7e310fa9aa4870ae3f52292ff5b2f200f54643e6",
+      "content": "    def _cleanup_expired(self):\n        \"\"\"Remove expired connections from the pool.\"\"\"\n        current_time = time.time()\n        expired_indices = []\n        \n        for i, conn in enumerate(self._pool):\n            if (not conn['in_use'] and \n                current_time - conn['created_at'] > self.max_lifetime):\n                expired_indices.append(i)\n        \n        # Remove expired connections (in reverse order to maintain indices)\n        for i in reversed(expired_indices):\n            try:\n                self._pool[i]['client'].close()\n            except Exception:\n                pass\n            del self._pool[i]\n            self._created_count -= 1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_close_all_92": {
+      "name": "close_all",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 101,
+      "content_hash": "d09e4ece5b4ce9ae1369eff28ded058119f4003c",
+      "content": "    def close_all(self):\n        \"\"\"Close all connections in the pool.\"\"\"\n        with self._pool_lock:\n            for conn in self._pool:\n                try:\n                    conn['client'].close()\n                except Exception:\n                    pass\n            self._pool.clear()\n            self._created_count = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_stats_103": {
+      "name": "get_stats",
+      "type": "method",
+      "start_line": 103,
+      "end_line": 112,
+      "content_hash": "78211bdfcf5382dfefa59fdf953f0abcffc36072",
+      "content": "    def get_stats(self) -> Dict[str, int]:\n        \"\"\"Get pool statistics.\"\"\"\n        with self._pool_lock:\n            return {\n                'pool_size': len(self._pool),\n                'created_count': self._created_count,\n                'hits': self._hits,\n                'misses': self._misses,\n                'in_use': sum(1 for conn in self._pool if conn['in_use'])\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_connection_pool_124": {
+      "name": "_get_connection_pool",
+      "type": "function",
+      "start_line": 124,
+      "end_line": 134,
+      "content_hash": "cc7f386bdd76bb778b49cf9a365a00076884d849",
+      "content": "def _get_connection_pool() -> QdrantConnectionPool:\n    \"\"\"Get or create the global connection pool.\"\"\"\n    global _connection_pool\n    \n    with _pool_lock:\n        if _connection_pool is None:\n            max_size = int(os.environ.get(\"QDRANT_POOL_MAX_SIZE\", \"10\"))\n            max_lifetime = float(os.environ.get(\"QDRANT_POOL_MAX_LIFETIME\", \"300\"))\n            _connection_pool = QdrantConnectionPool(max_size, max_lifetime)\n        \n        return _connection_pool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_qdrant_client_137": {
+      "name": "get_qdrant_client",
+      "type": "function",
+      "start_line": 137,
+      "end_line": 175,
+      "content_hash": "fdfd57769f46966920e20350b6b3690ced1e36d4",
+      "content": "def get_qdrant_client(\n    url: Optional[str] = None,\n    api_key: Optional[str] = None,\n    force_new: bool = False,\n    use_pool: bool = True\n) -> QdrantClient:\n    \"\"\"\n    Get or create a Qdrant client with connection pooling support.\n    \n    Args:\n        url: Qdrant URL (defaults to QDRANT_URL env var)\n        api_key: API key (defaults to QDRANT_API_KEY env var)\n        force_new: Create a new client instead of reusing singleton\n        use_pool: Use connection pooling (defaults to True)\n    \n    Returns:\n        QdrantClient instance\n    \n    Note: When use_pool=True, clients are automatically managed in a thread-safe pool.\n    For write-heavy operations, consider using force_new=True.\n    \"\"\"\n    url = url or os.environ.get(\"QDRANT_URL\", \"http://qdrant:6333\")\n    api_key = api_key or os.environ.get(\"QDRANT_API_KEY\")\n    \n    # Use connection pooling if enabled and not forcing new client\n    if use_pool and not force_new:\n        pool = _get_connection_pool()\n        return pool.get_client(url, api_key)\n    \n    # Fallback to singleton pattern for backward compatibility\n    if force_new:\n        return QdrantClient(url=url, api_key=api_key if api_key else None)\n    \n    global _client\n    \n    with _client_lock:\n        if _client is None:\n            _client = QdrantClient(url=url, api_key=api_key if api_key else None)\n        return _client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_return_qdrant_client_178": {
+      "name": "return_qdrant_client",
+      "type": "function",
+      "start_line": 178,
+      "end_line": 190,
+      "content_hash": "640347437544127a4e11505c97cd70f50f6f4964",
+      "content": "def return_qdrant_client(client: QdrantClient):\n    \"\"\"\n    Return a client to the connection pool.\n    Should be called when done with a pooled client.\n    \n    Args:\n        client: The QdrantClient instance to return to the pool\n    \"\"\"\n    if client is None:\n        return\n    \n    pool = _get_connection_pool()\n    pool.return_client(client)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_pooled_qdrant_client_194": {
+      "name": "pooled_qdrant_client",
+      "type": "function",
+      "start_line": 194,
+      "end_line": 217,
+      "content_hash": "7a40c151103c82c4951735f5e6ba8bb84c5a2bbd",
+      "content": "def pooled_qdrant_client(\n    url: Optional[str] = None,\n    api_key: Optional[str] = None,\n    force_new: bool = False\n):\n    \"\"\"\n    Context manager for getting and returning a pooled Qdrant client.\n    \n    Usage:\n        with pooled_qdrant_client(url=\"http://localhost:6333\") as client:\n            # Use client for operations\n            client.search(...)\n        # Client is automatically returned to pool\n    \n    Args:\n        url: Qdrant URL (defaults to QDRANT_URL env var)\n        api_key: API key (defaults to QDRANT_API_KEY env var)\n        force_new: Create a new client instead of using pool\n    \"\"\"\n    client = get_qdrant_client(url=url, api_key=api_key, force_new=force_new, use_pool=True)\n    try:\n        yield client\n    finally:\n        return_qdrant_client(client)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_close_qdrant_client_220": {
+      "name": "close_qdrant_client",
+      "type": "function",
+      "start_line": 220,
+      "end_line": 239,
+      "content_hash": "5519dd57410a646e4d426a6f73546961ad218492",
+      "content": "def close_qdrant_client():\n    \"\"\"\n    Close singleton Qdrant client and connection pool.\n    Should be called at application shutdown or when switching configurations.\n    \"\"\"\n    global _client\n    \n    # Close singleton client\n    with _client_lock:\n        if _client is not None:\n            try:\n                _client.close()\n            except Exception:\n                pass\n            _client = None\n    \n    # Close connection pool\n    with _pool_lock:\n        if _connection_pool is not None:\n            _connection_pool.close_all()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_reset_qdrant_client_242": {
+      "name": "reset_qdrant_client",
+      "type": "function",
+      "start_line": 242,
+      "end_line": 248,
+      "content_hash": "598ec26285224bec25b0c723dc3b2714d02bb510",
+      "content": "def reset_qdrant_client(url: Optional[str] = None, api_key: Optional[str] = None):\n    \"\"\"\n    Reset singleton client with new configuration.\n    Useful when switching between different Qdrant instances.\n    \"\"\"\n    close_qdrant_client()\n    return get_qdrant_client(url=url, api_key=api_key)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_qdrant_pool_stats_251": {
+      "name": "get_qdrant_pool_stats",
+      "type": "function",
+      "start_line": 251,
+      "end_line": 259,
+      "content_hash": "8ae65119f9f9e1fd7e07873627f4a981f8f48508",
+      "content": "def get_qdrant_pool_stats() -> Dict[str, int]:\n    \"\"\"\n    Get connection pool statistics.\n    \n    Returns:\n        Dictionary with pool statistics including size, hits, misses, etc.\n    \"\"\"\n    pool = _get_connection_pool()\n    return pool.get_stats()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/tui/styles/charmtone.go",
+  "file_hash": "8ce9554929e97c1a65e91c493749d64e7373214f",
+  "updated_at": "2025-12-26T17:34:21.166470",
+  "symbols": {
+    "function_NewCharmtoneTheme_8": {
+      "name": "NewCharmtoneTheme",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 83,
+      "content_hash": "4843295fdf1f395b0c8f26a577cc84a2f56d3a1e",
+      "content": "func NewCharmtoneTheme() *Theme {\n\tt := &Theme{\n\t\tName:   \"charmtone\",\n\t\tIsDark: true,\n\n\t\tPrimary:   charmtone.Charple,\n\t\tSecondary: charmtone.Dolly,\n\t\tTertiary:  charmtone.Bok,\n\t\tAccent:    charmtone.Zest,\n\n\t\t// Backgrounds - changed to black\n\t\tBgBase:        lipgloss.Color(\"#000000\"),\n\t\tBgBaseLighter: lipgloss.Color(\"#111111\"),\n\t\tBgSubtle:      lipgloss.Color(\"#222222\"),\n\t\tBgOverlay:     lipgloss.Color(\"#333333\"),\n\n\t\t// Foregrounds\n\t\tFgBase:      charmtone.Ash,\n\t\tFgMuted:     charmtone.Squid,\n\t\tFgHalfMuted: charmtone.Smoke,\n\t\tFgSubtle:    charmtone.Oyster,\n\t\tFgSelected:  charmtone.Salt,\n\n\t\t// Borders\n\t\tBorder:      charmtone.Charcoal,\n\t\tBorderFocus: charmtone.Charple,\n\n\t\t// Status\n\t\tSuccess: charmtone.Guac,\n\t\tError:   charmtone.Sriracha,\n\t\tWarning: charmtone.Zest,\n\t\tInfo:    charmtone.Malibu,\n\n\t\t// Colors\n\t\tWhite: charmtone.Butter,\n\n\t\tBlueLight: charmtone.Sardine,\n\t\tBlueDark:  charmtone.Damson,\n\t\tBlue:      charmtone.Malibu,\n\n\t\tYellow: charmtone.Mustard,\n\t\tCitron: charmtone.Citron,\n\n\t\tGreen:      charmtone.Julep,\n\t\tGreenDark:  charmtone.Guac,\n\t\tGreenLight: charmtone.Bok,\n\n\t\tRed:      charmtone.Coral,\n\t\tRedDark:  charmtone.Sriracha,\n\t\tRedLight: charmtone.Salmon,\n\t\tCherry:   charmtone.Cherry,\n\t}\n\n\t// Text selection.\n\tt.TextSelection = lipgloss.NewStyle().Foreground(charmtone.Salt).Background(charmtone.Charple)\n\n\t// LSP and MCP status.\n\tt.ItemOfflineIcon = lipgloss.NewStyle().Foreground(charmtone.Squid).SetString(\"\u25cf\")\n\tt.ItemBusyIcon = t.ItemOfflineIcon.Foreground(charmtone.Citron)\n\tt.ItemErrorIcon = t.ItemOfflineIcon.Foreground(charmtone.Coral)\n\tt.ItemOnlineIcon = t.ItemOfflineIcon.Foreground(charmtone.Guac)\n\n\t// Editor: Yolo Mode.\n\tt.YoloIconFocused = lipgloss.NewStyle().Foreground(charmtone.Oyster).Background(charmtone.Citron).Bold(true).SetString(\" ! \")\n\tt.YoloIconBlurred = t.YoloIconFocused.Foreground(charmtone.Pepper).Background(charmtone.Squid)\n\tt.YoloDotsFocused = lipgloss.NewStyle().Foreground(charmtone.Zest).SetString(\":::\")\n\tt.YoloDotsBlurred = t.YoloDotsFocused.Foreground(charmtone.Squid)\n\n\t// oAuth Chooser.\n\tt.AuthBorderSelected = lipgloss.NewStyle().BorderForeground(charmtone.Guac)\n\tt.AuthTextSelected = lipgloss.NewStyle().Foreground(charmtone.Julep)\n\tt.AuthBorderUnselected = lipgloss.NewStyle().BorderForeground(charmtone.Iron)\n\tt.AuthTextUnselected = lipgloss.NewStyle().Foreground(charmtone.Squid)\n\n\treturn t\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

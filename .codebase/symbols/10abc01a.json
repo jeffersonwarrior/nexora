@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_hybrid_cache_bm25.py",
+  "file_hash": "c408045af3a3bd5936485c4ff8ec5848973b656b",
+  "updated_at": "2025-12-26T17:34:21.609457",
+  "symbols": {
+    "class__Pt_9": {
+      "name": "_Pt",
+      "type": "class",
+      "start_line": 9,
+      "end_line": 20,
+      "content_hash": "2cd2e12b7ccadd662cfb271cd664dda0192bd4b0",
+      "content": "class _Pt:\n    def __init__(self, pid, path, code=\"\"):\n        self.id = pid\n        self.payload = {\n            \"metadata\": {\n                \"path\": path,\n                \"path_prefix\": \"/\" + \"/\".join(path.split(\"/\")[:-1]).strip(\"/\") or \"/\",\n                \"start_line\": 1,\n                \"end_line\": 2,\n                \"code\": code,\n            }\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___10": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 10,
+      "end_line": 20,
+      "content_hash": "50859957e1d229346dd7f81917d148c78cf1dfd7",
+      "content": "    def __init__(self, pid, path, code=\"\"):\n        self.id = pid\n        self.payload = {\n            \"metadata\": {\n                \"path\": path,\n                \"path_prefix\": \"/\" + \"/\".join(path.split(\"/\")[:-1]).strip(\"/\") or \"/\",\n                \"start_line\": 1,\n                \"end_line\": 2,\n                \"code\": code,\n            }\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__QP_23": {
+      "name": "_QP",
+      "type": "class",
+      "start_line": 23,
+      "end_line": 25,
+      "content_hash": "ef9c614735ab57921cb3f41389956e6ef74be590",
+      "content": "class _QP:\n    def __init__(self, points):\n        self.points = points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___24": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 25,
+      "content_hash": "9a6a49b3de50e1344e6f2281b0f97d71aa6b85c2",
+      "content": "    def __init__(self, points):\n        self.points = points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__CountingQdrant_28": {
+      "name": "_CountingQdrant",
+      "type": "class",
+      "start_line": 28,
+      "end_line": 40,
+      "content_hash": "3f923415e317069f7252091bac265f74ef48420d",
+      "content": "class _CountingQdrant:\n    def __init__(self, points):\n        self._points = points\n        self.calls = 0\n\n    def query_points(self, **kwargs):\n        self.calls += 1\n        return _QP(self._points)\n\n    def search(self, **kwargs):\n        # Some paths may still call legacy .search(), count it as well\n        self.calls += 1\n        return self._points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___29": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 31,
+      "content_hash": "95435c43b3cd0e13802dfc392f9fe55251986aca",
+      "content": "    def __init__(self, points):\n        self._points = points\n        self.calls = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_query_points_33": {
+      "name": "query_points",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 35,
+      "content_hash": "0431342bc86fe02a10a952a39d8e9692dc575920",
+      "content": "    def query_points(self, **kwargs):\n        self.calls += 1\n        return _QP(self._points)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_search_37": {
+      "name": "search",
+      "type": "method",
+      "start_line": 37,
+      "end_line": 40,
+      "content_hash": "c8643f82ec39ca81e35bce53e8a7c6de234a6264",
+      "content": "    def search(self, **kwargs):\n        # Some paths may still call legacy .search(), count it as well\n        self.calls += 1\n        return self._points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__FakeEmbed_43": {
+      "name": "_FakeEmbed",
+      "type": "class",
+      "start_line": 43,
+      "end_line": 53,
+      "content_hash": "dd3fc4c976fcd5772e86ea1d6e374b15c1ccfc52",
+      "content": "class _FakeEmbed:\n    class _Vec:\n        def __init__(self):\n            self._v = [0.01] * 8\n\n        def tolist(self):\n            return self._v\n\n    def embed(self, texts):\n        for _ in texts:\n            yield _FakeEmbed._Vec()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__Vec_44": {
+      "name": "_Vec",
+      "type": "class",
+      "start_line": 44,
+      "end_line": 49,
+      "content_hash": "ce2dafce23b826e82390bfd9170570b8d381ea17",
+      "content": "    class _Vec:\n        def __init__(self):\n            self._v = [0.01] * 8\n\n        def tolist(self):\n            return self._v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___45": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 46,
+      "content_hash": "35dc3f72ee5fe4f5ad89c920fa78164821c9d1a3",
+      "content": "        def __init__(self):\n            self._v = [0.01] * 8",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tolist_48": {
+      "name": "tolist",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 49,
+      "content_hash": "47bd73574e3227f54d772588ec5fe7dfd361c9db",
+      "content": "        def tolist(self):\n            return self._v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_embed_51": {
+      "name": "embed",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 53,
+      "content_hash": "86e97b5e25b3ba0b340f1f9b1e847e78962e3309",
+      "content": "    def embed(self, texts):\n        for _ in texts:\n            yield _FakeEmbed._Vec()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_results_cache_hit_is_deterministic_and_avoids_second_backend_call_57": {
+      "name": "test_results_cache_hit_is_deterministic_and_avoids_second_backend_call",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 95,
+      "content_hash": "688301e13fd9a1f86d51f7f92d898f3bb8ea79eb",
+      "content": "def test_results_cache_hit_is_deterministic_and_avoids_second_backend_call(monkeypatch):\n    # Ensure cache is enabled and small\n    monkeypatch.setenv(\"HYBRID_RESULTS_CACHE_ENABLED\", \"1\")\n    monkeypatch.setenv(\"HYBRID_RESULTS_CACHE\", \"8\")\n\n    # Reset cache\n    if hasattr(hyb, \"_RESULTS_CACHE\") and isinstance(hyb._RESULTS_CACHE, OrderedDict):\n        hyb._RESULTS_CACHE.clear()\n\n    pts = [\n        _Pt(\"1\", \"src/foo.py\", code=\"def foo():\\n    return 1\\n\"),\n        _Pt(\"2\", \"src/bar.py\", code=\"def bar():\\n    return 2\\n\"),\n    ]\n    backend = _CountingQdrant(pts)\n\n    # Monkeypatch backends and model\n    monkeypatch.setattr(hyb, \"QdrantClient\", lambda *a, **k: backend)\n    monkeypatch.setattr(hyb, \"TextEmbedding\", lambda *a, **k: _FakeEmbed())\n    monkeypatch.setattr(hyb, \"_get_embedding_model\", lambda *a, **k: _FakeEmbed())\n    monkeypatch.setenv(\"EMBEDDING_MODEL\", \"unit-test\")\n    monkeypatch.setenv(\"QDRANT_URL\", \"http://localhost:6333\")\n\n    args = dict(\n        queries=[\"foo\"],\n        limit=5,\n        per_path=2,\n        path_glob=[\"src/*.py\"],\n        expand=False,\n        model=_FakeEmbed(),\n    )\n\n    items1 = hyb.run_hybrid_search(**args)\n    assert items1, \"expected items on first run\"\n    calls_after_first = backend.calls\n\n    # Second identical call should hit cache and not increase backend calls\n    items2 = hyb.run_hybrid_search(**args)\n    assert items2 == items1, \"cache miss altered results; expected deterministic hit\"\n    assert backend.calls == calls_after_first, \"second run should use cache and avoid backend\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_lexical_bm25_boost_is_gentle_and_matches_multiplier_99": {
+      "name": "test_lexical_bm25_boost_is_gentle_and_matches_multiplier",
+      "type": "function",
+      "start_line": 99,
+      "end_line": 132,
+      "content_hash": "84ad1eb94c29a6340a1f3ed20a4e2c2d1ad3f0b5",
+      "content": "def test_lexical_bm25_boost_is_gentle_and_matches_multiplier():\n    # Build minimal metadata where tokens appear only in code (no path/symbol boosts)\n    md = {\n        \"path\": \"src/sample.py\",\n        \"symbol\": \"\",\n        \"symbol_path\": \"\",\n        \"code\": \"foo bar baz\\n# foo and bar appear once each\\n\",\n    }\n\n    base = hyb.lexical_score([\"foo bar\"], md)\n    # Sanity: both tokens should match in code -> base > 0\n    assert base > 0.0\n\n    # Token weights: make 'foo' heavier (>1), 'bar' lighter (<1)\n    token_weights = {\"foo\": 3.0, \"bar\": 0.5}\n    bm25_w = 0.2  # gentle factor\n\n    weighted = hyb.lexical_score([\"foo bar\"], md, token_weights=token_weights, bm25_weight=bm25_w)\n\n    # Expected per-token multiplier: 1 + bm25_w * (w - 1)\n    m_foo = 1.0 + bm25_w * (token_weights[\"foo\"] - 1.0)  # 1.4\n    m_bar = 1.0 + bm25_w * (token_weights[\"bar\"] - 1.0)  # 0.9\n\n    # Because both tokens appear once in code and no other boosts are active,\n    # base ~= 1 + 1 = 2, weighted ~= 1*m_foo + 1*m_bar\n    # Check the weighted score follows the multiplier logic within a small tolerance.\n    expected_weighted = (1.0 * m_foo) + (1.0 * m_bar)\n\n    # Allow a small tolerance in case lexical_score adds tiny extras in some environments\n    assert pytest.approx(weighted, rel=1e-6, abs=1e-6) == expected_weighted\n\n    # Gentle behavior: overall change should be modest (within 50%)\n    ratio = weighted / base\n    assert 0.5 <= ratio <= 1.5, f\"BM25 weighting should be gentle, got ratio={ratio:.3f}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/team_test.go",
+  "file_hash": "408204809f402957568e20f5f07c50b4dc3abeb9",
+  "updated_at": "2025-12-26T17:34:20.676882",
+  "symbols": {
+    "function_TestTeam_NewTeam_12": {
+      "name": "TestTeam_NewTeam",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 21,
+      "content_hash": "d3eb64578a14ee867681a899c8eff95e4d37c70f",
+      "content": "func TestTeam_NewTeam(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tassert.NotNil(t, team)\n\tassert.Equal(t, \"test-team\", team.name)\n\tassert.Empty(t, team.agents)\n\tassert.NotNil(t, team.messageBus)\n\tassert.NotNil(t, team.coordinator)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_NewTeamWithOptions_22": {
+      "name": "TestTeam_NewTeamWithOptions",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 31,
+      "content_hash": "1ce7168dabdd26835b3b370d5cb1fb00a20ef62c",
+      "content": "func TestTeam_NewTeamWithOptions(t *testing.T) {\n\tteam := NewTeam(\"test-team\",\n\t\tWithTeamTimeout(5*time.Second),\n\t\tWithMaxParallel(10),\n\t)\n\n\tassert.Equal(t, 5*time.Second, team.timeout)\n\tassert.Equal(t, 10, team.maxParallel)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_AddAgent_32": {
+      "name": "TestTeam_AddAgent",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 48,
+      "content_hash": "5022ae9f58a572855c4743cd96bfb7a6fdcb5d49",
+      "content": "func TestTeam_AddAgent(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\t// Create a test agent with memory\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\terr := team.AddAgent(\"agent1\", agent)\n\trequire.NoError(t, err)\n\n\tassert.Equal(t, 1, team.Size())\n\tassert.Contains(t, team.ListMembers(), \"agent1\")\n\n\t// Verify agent is linked to team\n\tassert.Equal(t, team, agent.GetTeamContext())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_AddDuplicateAgent_49": {
+      "name": "TestTeam_AddDuplicateAgent",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 68,
+      "content_hash": "f30d6776ef1881109a12180b154433c992fa7ed9",
+      "content": "func TestTeam_AddDuplicateAgent(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory := &MockMemory{}\n\tagent1 := NewAgent(WithMemory(memory))\n\tagent2 := NewAgent(WithMemory(memory))\n\n\t// Add first agent\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\n\t// Try to add duplicate\n\terr = team.AddAgent(\"agent1\", agent2)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"already exists\")\n\n\t// Should still only have one agent\n\tassert.Equal(t, 1, team.Size())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_RemoveAgent_69": {
+      "name": "TestTeam_RemoveAgent",
+      "type": "function",
+      "start_line": 69,
+      "end_line": 87,
+      "content_hash": "08696e51a45992e7df31d3fcd54e05035ee9d3f3",
+      "content": "func TestTeam_RemoveAgent(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\t// Add agent\n\terr := team.AddAgent(\"agent1\", agent)\n\trequire.NoError(t, err)\n\tassert.Equal(t, 1, team.Size())\n\n\t// Remove agent\n\tteam.RemoveAgent(\"agent1\")\n\tassert.Equal(t, 0, team.Size())\n\n\t// Verify agent team context is cleared\n\tassert.Nil(t, agent.GetTeamContext())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_GetMember_88": {
+      "name": "TestTeam_GetMember",
+      "type": "function",
+      "start_line": 88,
+      "end_line": 107,
+      "content_hash": "548932fec05766f2b799e364cca6616553f984a6",
+      "content": "func TestTeam_GetMember(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\t// Add agent\n\terr := team.AddAgent(\"agent1\", agent)\n\trequire.NoError(t, err)\n\n\t// Get existing agent\n\tretrievedAgent, exists := team.GetMember(\"agent1\")\n\tassert.True(t, exists)\n\tassert.Equal(t, agent, retrievedAgent)\n\n\t// Get non-existing agent\n\t_, exists = team.GetMember(\"nonexistent\")\n\tassert.False(t, exists)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_ListMembers_108": {
+      "name": "TestTeam_ListMembers",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 130,
+      "content_hash": "f70da159b61729dd76ad5cc980baa67c76317c6d",
+      "content": "func TestTeam_ListMembers(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory := &MockMemory{}\n\n\t// Initially empty\n\tassert.Empty(t, team.ListMembers())\n\n\t// Add some agents\n\tagent1 := NewAgent(WithMemory(memory))\n\tagent2 := NewAgent(WithMemory(memory))\n\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"agent2\", agent2)\n\trequire.NoError(t, err)\n\n\tmembers := team.ListMembers()\n\tassert.Len(t, members, 2)\n\tassert.Contains(t, members, \"agent1\")\n\tassert.Contains(t, members, \"agent2\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_Broadcast_131": {
+      "name": "TestTeam_Broadcast",
+      "type": "function",
+      "start_line": 131,
+      "end_line": 159,
+      "content_hash": "7c3665a6a5381eb088c3b97920e21c1520432d70",
+      "content": "func TestTeam_Broadcast(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory1 := &MockMemory{}\n\tmemory2 := &MockMemory{}\n\n\tagent1 := NewAgent(WithMemory(memory1))\n\tagent2 := NewAgent(WithMemory(memory2))\n\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"agent2\", agent2)\n\trequire.NoError(t, err)\n\n\t// Broadcast message\n\tctx := context.Background()\n\terr = team.Broadcast(ctx, \"agent1\", \"Hello team!\", MessageTypeText)\n\trequire.NoError(t, err)\n\n\t// Give some time for async message delivery\n\ttime.Sleep(10 * time.Millisecond)\n\n\t// Verify other agent received the message\n\tmsgs, err := memory2.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\tassert.Len(t, msgs, 1)\n\tassert.Contains(t, msgs[0].Content, \"[agent1] Hello team!\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_SendToAgent_160": {
+      "name": "TestTeam_SendToAgent",
+      "type": "function",
+      "start_line": 160,
+      "end_line": 193,
+      "content_hash": "20e54288638dc8d5946a189ad8385552d77cdfbf",
+      "content": "func TestTeam_SendToAgent(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory1 := &MockMemory{}\n\tmemory2 := &MockMemory{}\n\n\tagent1 := NewAgent(WithMemory(memory1))\n\tagent2 := NewAgent(WithMemory(memory2))\n\n\terr := team.AddAgent(\"agent1\", agent1)\n\trequire.NoError(t, err)\n\terr = team.AddAgent(\"agent2\", agent2)\n\trequire.NoError(t, err)\n\n\t// Send direct message\n\tctx := context.Background()\n\terr = team.SendToAgent(ctx, \"agent1\", \"agent2\", \"Hello agent2!\", MessageTypeText)\n\trequire.NoError(t, err)\n\n\t// Give some time for async message delivery\n\ttime.Sleep(10 * time.Millisecond)\n\n\t// Verify target agent received the message\n\tmsgs, err := memory2.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\tassert.Len(t, msgs, 1)\n\tassert.Contains(t, msgs[0].Content, \"[agent1] Hello agent2!\")\n\n\t// Verify sender didn't receive their own message\n\tsenderMsgs, err := memory1.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\tassert.Len(t, senderMsgs, 0)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_SendToNonExistentAgent_194": {
+      "name": "TestTeam_SendToNonExistentAgent",
+      "type": "function",
+      "start_line": 194,
+      "end_line": 209,
+      "content_hash": "bc56ecd981c523ab6f7ce6372a0c8d76440d7f82",
+      "content": "func TestTeam_SendToNonExistentAgent(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\terr := team.AddAgent(\"agent1\", agent)\n\trequire.NoError(t, err)\n\n\t// Try to send to non-existent agent\n\tctx := context.Background()\n\terr = team.SendToAgent(ctx, \"agent1\", \"nonexistent\", \"Hello!\", MessageTypeText)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"not found\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeam_Shutdown_210": {
+      "name": "TestTeam_Shutdown",
+      "type": "function",
+      "start_line": 210,
+      "end_line": 228,
+      "content_hash": "3d2cfab86e3a9119f34840cface330d5c5decaa3",
+      "content": "func TestTeam_Shutdown(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\terr := team.AddAgent(\"agent1\", agent)\n\trequire.NoError(t, err)\n\n\t// Shutdown team\n\terr = team.Shutdown()\n\trequire.NoError(t, err)\n\n\t// Verify message bus is shut down by trying to send a message\n\tctx := context.Background()\n\terr = team.Broadcast(ctx, \"agent1\", \"Test message\", MessageTypeText)\n\tassert.Error(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewTask_229": {
+      "name": "TestNewTask",
+      "type": "function",
+      "start_line": 229,
+      "end_line": 240,
+      "content_hash": "47ebc68689203c78c5bdc8d16c9d4c295f8748bc",
+      "content": "func TestNewTask(t *testing.T) {\n\ttask := NewTask(\"Test task\", 5)\n\n\tassert.NotEmpty(t, task.ID)\n\tassert.Contains(t, task.ID, \"task-\")\n\tassert.Equal(t, \"Test task\", task.Description)\n\tassert.Equal(t, 5, task.Priority)\n\tassert.Equal(t, TaskStatusPending, task.Status)\n\tassert.NotNil(t, task.Data)\n\tassert.Empty(t, task.Data)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_Assign_241": {
+      "name": "TestTask_Assign",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 248,
+      "content_hash": "2830e008fadb209017ce44b47ad4a5b3e1bf4731",
+      "content": "func TestTask_Assign(t *testing.T) {\n\ttask := NewTask(\"Test task\", 0)\n\n\ttask.Assign(\"agent1\")\n\tassert.Equal(t, \"agent1\", task.AssignedTo)\n\tassert.Equal(t, TaskStatusPending, task.Status)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_Activate_249": {
+      "name": "TestTask_Activate",
+      "type": "function",
+      "start_line": 249,
+      "end_line": 255,
+      "content_hash": "7d0dd318724a775b0e289e62838a28732ee054cf",
+      "content": "func TestTask_Activate(t *testing.T) {\n\ttask := NewTask(\"Test task\", 0)\n\n\ttask.Activate()\n\tassert.Equal(t, TaskStatusActive, task.Status)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_Complete_256": {
+      "name": "TestTask_Complete",
+      "type": "function",
+      "start_line": 256,
+      "end_line": 262,
+      "content_hash": "75d4f0eafd63e3af59cdd50d4672bf7fbf9cadc8",
+      "content": "func TestTask_Complete(t *testing.T) {\n\ttask := NewTask(\"Test task\", 0)\n\n\ttask.Complete()\n\tassert.Equal(t, TaskStatusCompleted, task.Status)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_Fail_263": {
+      "name": "TestTask_Fail",
+      "type": "function",
+      "start_line": 263,
+      "end_line": 270,
+      "content_hash": "a99af051f3894fc2ac03b8c95122edd12852aa97",
+      "content": "func TestTask_Fail(t *testing.T) {\n\ttask := NewTask(\"Test task\", 0)\n\n\ttask.Fail(assert.AnError)\n\tassert.Equal(t, TaskStatusFailed, task.Status)\n\tassert.Equal(t, assert.AnError.Error(), task.Data[\"error\"])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_Cancel_271": {
+      "name": "TestTask_Cancel",
+      "type": "function",
+      "start_line": 271,
+      "end_line": 277,
+      "content_hash": "abe39ba3c2ceaf895ea5fdb2ef9653fa82ff0ee7",
+      "content": "func TestTask_Cancel(t *testing.T) {\n\ttask := NewTask(\"Test task\", 0)\n\n\ttask.Cancel()\n\tassert.Equal(t, TaskStatusCancelled, task.Status)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_IsCompleted_278": {
+      "name": "TestTask_IsCompleted",
+      "type": "function",
+      "start_line": 278,
+      "end_line": 294,
+      "content_hash": "0bd92b1b3fb53a7eb28912eb5d8a362df39171a9",
+      "content": "func TestTask_IsCompleted(t *testing.T) {\n\tpendingTask := NewTask(\"Pending task\", 0)\n\tassert.False(t, pendingTask.IsCompleted())\n\n\tcompletedTask := NewTask(\"Completed task\", 0)\n\tcompletedTask.Complete()\n\tassert.True(t, completedTask.IsCompleted())\n\n\tfailedTask := NewTask(\"Failed task\", 0)\n\tfailedTask.Fail(assert.AnError)\n\tassert.True(t, failedTask.IsCompleted())\n\n\tcancelledTask := NewTask(\"Cancelled task\", 0)\n\tcancelledTask.Cancel()\n\tassert.True(t, cancelledTask.IsCompleted())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_SetData_GetData_295": {
+      "name": "TestTask_SetData_GetData",
+      "type": "function",
+      "start_line": 295,
+      "end_line": 314,
+      "content_hash": "58733855c1dc48d811c5c24a3889b85a0c4b3f8e",
+      "content": "func TestTask_SetData_GetData(t *testing.T) {\n\ttask := NewTask(\"Test task\", 0)\n\n\t// Test setting data\n\ttask.SetData(\"key1\", \"value1\")\n\ttask.SetData(\"key2\", 42)\n\n\t// Test getting data\n\tvalue1, exists := task.GetData(\"key1\")\n\tassert.True(t, exists)\n\tassert.Equal(t, \"value1\", value1)\n\n\tvalue2, exists := task.GetData(\"key2\")\n\tassert.True(t, exists)\n\tassert.Equal(t, 42, value2)\n\n\t// Test getting non-existent key\n\t_, exists = task.GetData(\"nonexistent\")\n\tassert.False(t, exists)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

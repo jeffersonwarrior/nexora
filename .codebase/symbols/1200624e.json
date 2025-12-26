@@ -1,0 +1,183 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/dialogs.go",
+  "file_hash": "5603ce3bc971f0e8ae67b98f8ce5a8883de39a7f",
+  "updated_at": "2025-12-26T17:34:20.906742",
+  "symbols": {
+    "interface_DialogModel_14": {
+      "name": "DialogModel",
+      "type": "interface",
+      "start_line": 14,
+      "end_line": 20,
+      "content_hash": "0c20c5d5c9cb2ae7f20ee6e75b0c5cabcf146cde",
+      "content": "type DialogModel interface {\n\tutil.Model\n\tPosition() (int, int)\n\tID() DialogID\n}\n\n// CloseCallback allows dialogs to perform cleanup when closed.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_CloseCallback_21": {
+      "name": "CloseCallback",
+      "type": "interface",
+      "start_line": 21,
+      "end_line": 25,
+      "content_hash": "d18c1ec9ed2e16e6ba3ce5fbfd9db2be1e28710a",
+      "content": "type CloseCallback interface {\n\tClose() tea.Cmd\n}\n\n// OpenDialogMsg is sent to open a new dialog with specified dimensions.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_OpenDialogMsg_26": {
+      "name": "OpenDialogMsg",
+      "type": "struct",
+      "start_line": 26,
+      "end_line": 30,
+      "content_hash": "51fec780c6d5ed0e8039e54f5c9cf9010aacc279",
+      "content": "type OpenDialogMsg struct {\n\tModel DialogModel\n}\n\n// CloseDialogMsg is sent to close the topmost dialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CloseDialogMsg_31": {
+      "name": "CloseDialogMsg",
+      "type": "struct",
+      "start_line": 31,
+      "end_line": 33,
+      "content_hash": "35f9404e3d1cfd4603b1467726a17fa45bc9299e",
+      "content": "type CloseDialogMsg struct{}\n\n// DialogCmp manages a stack of dialogs with keyboard navigation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_DialogCmp_34": {
+      "name": "DialogCmp",
+      "type": "interface",
+      "start_line": 34,
+      "end_line": 43,
+      "content_hash": "9d86fa1557b3b5cf78ddcd7ccce9bccd4091330c",
+      "content": "type DialogCmp interface {\n\tutil.Model\n\n\tDialogs() []DialogModel\n\tHasDialogs() bool\n\tGetLayers() []*lipgloss.Layer\n\tActiveModel() util.Model\n\tActiveDialogID() DialogID\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_dialogCmp_44": {
+      "name": "dialogCmp",
+      "type": "struct",
+      "start_line": 44,
+      "end_line": 51,
+      "content_hash": "7b7a90f0842de6a3f5084961e2ed193ab5e546c3",
+      "content": "type dialogCmp struct {\n\twidth, height int\n\tdialogs       []DialogModel\n\tidMap         map[DialogID]int\n\tkeyMap        KeyMap\n}\n\n// NewDialogCmp creates a new dialog manager.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewDialogCmp_52": {
+      "name": "NewDialogCmp",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 59,
+      "content_hash": "72328f1beacb38e928fa0bdd6b20a44320eabcea",
+      "content": "func NewDialogCmp() DialogCmp {\n\treturn dialogCmp{\n\t\tdialogs: []DialogModel{},\n\t\tkeyMap:  DefaultKeyMap(),\n\t\tidMap:   make(map[DialogID]int),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_60": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 64,
+      "content_hash": "5e79e1d0c329a5d73c6df86227f2600bbb513925",
+      "content": "func (d dialogCmp) Init() tea.Cmd {\n\treturn nil\n}\n\n// Update handles dialog lifecycle and forwards messages to the active dialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_65": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 100,
+      "content_hash": "f33188092b49c16abdf91ca391e2604268a064d1",
+      "content": "func (d dialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase tea.WindowSizeMsg:\n\t\tvar cmds []tea.Cmd\n\t\td.width = msg.Width\n\t\td.height = msg.Height\n\t\tfor i := range d.dialogs {\n\t\t\tu, cmd := d.dialogs[i].Update(msg)\n\t\t\td.dialogs[i] = u.(DialogModel)\n\t\t\tcmds = append(cmds, cmd)\n\t\t}\n\t\treturn d, tea.Batch(cmds...)\n\tcase OpenDialogMsg:\n\t\treturn d.handleOpen(msg)\n\tcase CloseDialogMsg:\n\t\tif len(d.dialogs) == 0 {\n\t\t\treturn d, nil\n\t\t}\n\t\tinx := len(d.dialogs) - 1\n\t\tdialog := d.dialogs[inx]\n\t\tdelete(d.idMap, dialog.ID())\n\t\td.dialogs = d.dialogs[:len(d.dialogs)-1]\n\t\tif closeable, ok := dialog.(CloseCallback); ok {\n\t\t\treturn d, closeable.Close()\n\t\t}\n\t\treturn d, nil\n\t}\n\tif d.HasDialogs() {\n\t\tlastIndex := len(d.dialogs) - 1\n\t\tu, cmd := d.dialogs[lastIndex].Update(msg)\n\t\td.dialogs[lastIndex] = u.(DialogModel)\n\t\treturn d, cmd\n\t}\n\treturn d, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_101": {
+      "name": "View",
+      "type": "method",
+      "start_line": 101,
+      "end_line": 104,
+      "content_hash": "8ad3fe67624ad341af357172df63bf7616a66a73",
+      "content": "func (d dialogCmp) View() string {\n\treturn \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_handleOpen_105": {
+      "name": "handleOpen",
+      "type": "method",
+      "start_line": 105,
+      "end_line": 134,
+      "content_hash": "fc2f512f0c16d58dc5a84e8d842e40f6130d7aba",
+      "content": "func (d dialogCmp) handleOpen(msg OpenDialogMsg) (util.Model, tea.Cmd) {\n\tif d.HasDialogs() {\n\t\tdialog := d.dialogs[len(d.dialogs)-1]\n\t\tif dialog.ID() == msg.Model.ID() {\n\t\t\treturn d, nil // Do not open a dialog if it's already the topmost one\n\t\t}\n\t\tif dialog.ID() == \"quit\" {\n\t\t\treturn d, nil // Do not open dialogs on top of quit\n\t\t}\n\t}\n\t// if the dialog is already in the stack make it the last item\n\tif _, ok := d.idMap[msg.Model.ID()]; ok {\n\t\texisting := d.dialogs[d.idMap[msg.Model.ID()]]\n\t\t// Reuse the model so we keep the state\n\t\tmsg.Model = existing\n\t\td.dialogs = slices.Delete(d.dialogs, d.idMap[msg.Model.ID()], d.idMap[msg.Model.ID()]+1)\n\t}\n\td.idMap[msg.Model.ID()] = len(d.dialogs)\n\td.dialogs = append(d.dialogs, msg.Model)\n\tvar cmds []tea.Cmd\n\tcmd := msg.Model.Init()\n\tcmds = append(cmds, cmd)\n\t_, cmd = msg.Model.Update(tea.WindowSizeMsg{\n\t\tWidth:  d.width,\n\t\tHeight: d.height,\n\t})\n\tcmds = append(cmds, cmd)\n\treturn d, tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Dialogs_135": {
+      "name": "Dialogs",
+      "type": "method",
+      "start_line": 135,
+      "end_line": 138,
+      "content_hash": "ad74f96e787803d985ac6ff7853ded9eb7a54404",
+      "content": "func (d dialogCmp) Dialogs() []DialogModel {\n\treturn d.dialogs\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ActiveModel_139": {
+      "name": "ActiveModel",
+      "type": "method",
+      "start_line": 139,
+      "end_line": 145,
+      "content_hash": "1fa025ec0f34d64a830cc42462368de751c0b4ee",
+      "content": "func (d dialogCmp) ActiveModel() util.Model {\n\tif len(d.dialogs) == 0 {\n\t\treturn nil\n\t}\n\treturn d.dialogs[len(d.dialogs)-1]\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ActiveDialogID_146": {
+      "name": "ActiveDialogID",
+      "type": "method",
+      "start_line": 146,
+      "end_line": 152,
+      "content_hash": "0a01bc6ea3fdae53151c33f1095bd95206955b80",
+      "content": "func (d dialogCmp) ActiveDialogID() DialogID {\n\tif len(d.dialogs) == 0 {\n\t\treturn \"\"\n\t}\n\treturn d.dialogs[len(d.dialogs)-1].ID()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetLayers_153": {
+      "name": "GetLayers",
+      "type": "method",
+      "start_line": 153,
+      "end_line": 162,
+      "content_hash": "47a241fc6c939d7028690039bbdda5dada536c55",
+      "content": "func (d dialogCmp) GetLayers() []*lipgloss.Layer {\n\tlayers := []*lipgloss.Layer{}\n\tfor _, dialog := range d.Dialogs() {\n\t\tdialogView := dialog.View()\n\t\trow, col := dialog.Position()\n\t\tlayers = append(layers, lipgloss.NewLayer(dialogView).X(col).Y(row))\n\t}\n\treturn layers\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_HasDialogs_163": {
+      "name": "HasDialogs",
+      "type": "method",
+      "start_line": 163,
+      "end_line": 165,
+      "content_hash": "f700290a0aeb6a29a4c360f7308a77262d25af67",
+      "content": "func (d dialogCmp) HasDialogs() bool {\n\treturn len(d.dialogs) > 0\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

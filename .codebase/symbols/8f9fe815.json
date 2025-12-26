@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/agent/state/states.go",
+  "file_hash": "5a40fc44a075c171ff4308773cc167548c0bc00a",
+  "updated_at": "2025-12-26T17:34:23.379176",
+  "symbols": {
+    "method_String_48": {
+      "name": "String",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 75,
+      "content_hash": "d6171616c9cc24e4af7217e037c7bc2e88a9af2e",
+      "content": "func (s AgentState) String() string {\n\tswitch s {\n\tcase StateIdle:\n\t\treturn \"Idle\"\n\tcase StateProcessingPrompt:\n\t\treturn \"ProcessingPrompt\"\n\tcase StateStreamingResponse:\n\t\treturn \"StreamingResponse\"\n\tcase StateExecutingTool:\n\t\treturn \"ExecutingTool\"\n\tcase StateAwaitingPermission:\n\t\treturn \"AwaitingPermission\"\n\tcase StateErrorRecovery:\n\t\treturn \"ErrorRecovery\"\n\tcase StatePhaseTransition:\n\t\treturn \"PhaseTransition\"\n\tcase StateProgressCheck:\n\t\treturn \"ProgressCheck\"\n\tcase StateResourcePaused:\n\t\treturn \"ResourcePaused\"\n\tcase StateHalted:\n\t\treturn \"Halted\"\n\tdefault:\n\t\treturn fmt.Sprintf(\"Unknown(%d)\", s)\n\t}\n}\n\n// IsTerminal returns true if this state is terminal (execution should stop).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsTerminal_76": {
+      "name": "IsTerminal",
+      "type": "method",
+      "start_line": 76,
+      "end_line": 80,
+      "content_hash": "c019d58230372c08b834a5fd646afcd7dc3e3db9",
+      "content": "func (s AgentState) IsTerminal() bool {\n\treturn s == StateHalted\n}\n\n// CanTransitionTo returns true if transitioning from this state to target is valid.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CanTransitionTo_81": {
+      "name": "CanTransitionTo",
+      "type": "method",
+      "start_line": 81,
+      "end_line": 153,
+      "content_hash": "d24de192c4bd793a1d243e31bcd594a9e8ab2d77",
+      "content": "func (s AgentState) CanTransitionTo(target AgentState) bool {\n\ttransitions, ok := validTransitions[s]\n\tif !ok {\n\t\treturn false\n\t}\n\n\tfor _, valid := range transitions {\n\t\tif valid == target {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// validTransitions defines the allowed state transitions.\nvar validTransitions = map[AgentState][]AgentState{\n\tStateIdle: {\n\t\tStateProcessingPrompt,\n\t\tStatePhaseTransition,\n\t\tStateHalted,\n\t},\n\tStateProcessingPrompt: {\n\t\tStateStreamingResponse,\n\t\tStateErrorRecovery,\n\t\tStateHalted,\n\t\tStateProcessingPrompt, // Allow re-prompting for better recovery\n\t},\n\tStateStreamingResponse: {\n\t\tStateExecutingTool,\n\t\tStateAwaitingPermission,\n\t\tStateProgressCheck,\n\t\tStateIdle,\n\t\tStateErrorRecovery,\n\t\tStateHalted,\n\t},\n\tStateExecutingTool: {\n\t\tStateStreamingResponse,\n\t\tStateProgressCheck,\n\t\tStateErrorRecovery,\n\t\tStateHalted,\n\t},\n\tStateAwaitingPermission: {\n\t\tStateStreamingResponse,\n\t\tStateExecutingTool,\n\t\tStateIdle,\n\t\tStateHalted,\n\t},\n\tStateErrorRecovery: {\n\t\tStateStreamingResponse,\n\t\tStateExecutingTool,\n\t\tStateProgressCheck,\n\t\tStateIdle,\n\t\tStateHalted,\n\t},\n\tStatePhaseTransition: {\n\t\tStateProcessingPrompt,\n\t\tStateProgressCheck,\n\t\tStatePhaseTransition,\n\t\tStateIdle,\n\t\tStateHalted,\n\t},\n\tStateProgressCheck: {\n\t\tStateStreamingResponse,\n\t\tStateExecutingTool,\n\t\tStatePhaseTransition,\n\t\tStateErrorRecovery,\n\t\tStateIdle,\n\t\tStateHalted,\n\t},\n\tStateHalted: {}, // Terminal state\n}\n\n// TransitionError represents an invalid state transition.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TransitionError_154": {
+      "name": "TransitionError",
+      "type": "struct",
+      "start_line": 154,
+      "end_line": 160,
+      "content_hash": "a2426c85f4060c83cccf071a10cbd0b3294643b9",
+      "content": "type TransitionError struct {\n\tFrom    AgentState\n\tTo      AgentState\n\tReason  string\n\tContext map[string]interface{}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Error_161": {
+      "name": "Error",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 165,
+      "content_hash": "4880e2a39dd24fda58bd6bc8d4476b5098eca6fc",
+      "content": "func (e *TransitionError) Error() string {\n\treturn fmt.Sprintf(\"invalid transition from %s to %s: %s\", e.From, e.To, e.Reason)\n}\n\n// StateMetrics tracks metrics for a particular state.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_StateMetrics_166": {
+      "name": "StateMetrics",
+      "type": "struct",
+      "start_line": 166,
+      "end_line": 174,
+      "content_hash": "4672a9376016ad2237f75a957334850c3369d2c5",
+      "content": "type StateMetrics struct {\n\tState        AgentState\n\tEnterTime    time.Time\n\tExitTime     time.Time\n\tDuration     time.Duration\n\tTransitionTo AgentState\n\tErrorCount   int\n\tLastError    error\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

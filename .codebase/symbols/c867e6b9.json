@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/rerank_real_benchmark.py",
+  "file_hash": "f53490a41cc98d4e0dfcece463098cad197fdd0c",
+  "updated_at": "2025-12-26T17:34:23.576914",
+  "symbols": {
+    "class_RealBenchmarkResult_48": {
+      "name": "RealBenchmarkResult",
+      "type": "class",
+      "start_line": 48,
+      "end_line": 58,
+      "content_hash": "65f0db8737dee835a673673c8265448bdbe51583",
+      "content": "class RealBenchmarkResult:\n    \"\"\"Result from benchmarking a single query.\"\"\"\n    query: str\n    reranker: str\n    latency_ms: float\n    num_results: int\n    top_5_paths: List[str]\n    top_5_scores: List[float]\n    # Ranking comparison metrics\n    kendall_tau: float = 0.0  # Correlation with reference ranking\n    top_3_overlap: float = 0.0  # Overlap of top-3 with reference",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_real_candidates_61": {
+      "name": "get_real_candidates",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 97,
+      "content_hash": "12bba2d693e2946987220bc87005d2f15427e592",
+      "content": "def get_real_candidates(query: str, limit: int = 30) -> List[Dict[str, Any]]:\n    \"\"\"Get real candidates from hybrid search (production pipeline).\"\"\"\n    try:\n        from scripts.hybrid_search import run_hybrid_search\n        from scripts.embedder import get_embedding_model\n\n        model_name = os.environ.get(\"EMBEDDING_MODEL\", \"Alibaba-NLP/gte-base-en-v1.5\")\n        model = get_embedding_model(model_name)\n\n        # Run real hybrid search (dense + lexical fusion)\n        results = run_hybrid_search(\n            queries=[query],\n            limit=limit,\n            per_path=3,\n            model=model,\n        )\n\n        # Convert to candidate format\n        candidates = []\n        for r in results:\n            candidates.append({\n                \"path\": r.get(\"path\", \"\"),\n                \"symbol\": r.get(\"symbol\", \"\"),\n                \"code\": r.get(\"code\", r.get(\"snippet\", \"\")),\n                \"score\": float(r.get(\"score\", 0)),\n                \"start_line\": r.get(\"start_line\", 0),\n                \"end_line\": r.get(\"end_line\", 0),\n                \"components\": r.get(\"components\", {}),\n            })\n\n        return candidates\n\n    except Exception as e:\n        print(f\"Error getting candidates: {e}\")\n        import traceback\n        traceback.print_exc()\n        return []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_benchmark_baseline_100": {
+      "name": "benchmark_baseline",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 116,
+      "content_hash": "4c95a827e321167651ecee4109b000f4e73fc501",
+      "content": "def benchmark_baseline(query: str, candidates: List[Dict[str, Any]]) -> RealBenchmarkResult:\n    \"\"\"Benchmark baseline (no reranking, just use hybrid scores).\"\"\"\n    start = time.perf_counter()\n\n    # Just sort by existing score\n    sorted_cands = sorted(candidates, key=lambda x: x.get(\"score\", 0), reverse=True)\n\n    latency = (time.perf_counter() - start) * 1000\n\n    return RealBenchmarkResult(\n        query=query,\n        reranker=\"baseline\",\n        latency_ms=latency,\n        num_results=len(sorted_cands),\n        top_5_paths=[c.get(\"path\", \"\") for c in sorted_cands[:5]],\n        top_5_scores=[float(c.get(\"score\", 0)) for c in sorted_cands[:5]],\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_benchmark_recursive_119": {
+      "name": "benchmark_recursive",
+      "type": "function",
+      "start_line": 119,
+      "end_line": 140,
+      "content_hash": "91ff77dc9c935fc4c231138cb2198bd21cf2326e",
+      "content": "def benchmark_recursive(query: str, candidates: List[Dict[str, Any]], n_iters: int = 3) -> RealBenchmarkResult:\n    \"\"\"Benchmark recursive reranker.\"\"\"\n    try:\n        from scripts.rerank_recursive import RecursiveReranker\n    except ImportError:\n        from rerank_recursive import RecursiveReranker\n\n    reranker = RecursiveReranker(n_iterations=n_iters, dim=256)\n    initial_scores = [c.get(\"score\", 0) for c in candidates]\n\n    start = time.perf_counter()\n    reranked = reranker.rerank(query, candidates, initial_scores)\n    latency = (time.perf_counter() - start) * 1000\n\n    return RealBenchmarkResult(\n        query=query,\n        reranker=f\"recursive_{n_iters}\",\n        latency_ms=latency,\n        num_results=len(reranked),\n        top_5_paths=[c.get(\"path\", \"\") for c in reranked[:5]],\n        top_5_scores=[float(c.get(\"score\", 0)) for c in reranked[:5]],\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_benchmark_onnx_143": {
+      "name": "benchmark_onnx",
+      "type": "function",
+      "start_line": 143,
+      "end_line": 176,
+      "content_hash": "5f08c1b20875697fe04e45ae179f94bdf42e7b6f",
+      "content": "def benchmark_onnx(query: str, candidates: List[Dict[str, Any]]) -> Optional[RealBenchmarkResult]:\n    \"\"\"Benchmark ONNX cross-encoder reranker on pre-fetched candidates.\"\"\"\n    try:\n        try:\n            from scripts.rerank_local import rerank_local\n        except ImportError:\n            from rerank_local import rerank_local\n\n        # Prepare pairs for ONNX reranker\n        pairs = []\n        for c in candidates:\n            doc = c.get(\"code\", \"\") or c.get(\"snippet\", \"\")\n            pairs.append((query, doc))\n\n        start = time.perf_counter()\n        scores = rerank_local(pairs)\n        latency = (time.perf_counter() - start) * 1000\n\n        # Combine scores with candidates and sort\n        scored = list(zip(scores, candidates))\n        scored.sort(key=lambda x: x[0], reverse=True)\n        reranked = [{\"score\": s, **c} for s, c in scored]\n\n        return RealBenchmarkResult(\n            query=query,\n            reranker=\"onnx\",\n            latency_ms=latency,\n            num_results=len(reranked),\n            top_5_paths=[c.get(\"path\", \"\") for c in reranked[:5]],\n            top_5_scores=[float(c.get(\"score\", 0)) for c in reranked[:5]],\n        )\n    except Exception as e:\n        print(f\"ONNX reranker error: {e}\")\n        return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_benchmark_session_aware_179": {
+      "name": "benchmark_session_aware",
+      "type": "function",
+      "start_line": 179,
+      "end_line": 200,
+      "content_hash": "8a93dcf9df2505e6435de05dca0c0ee28b6ab5f3",
+      "content": "def benchmark_session_aware(query: str, candidates: List[Dict[str, Any]], session_id: str) -> RealBenchmarkResult:\n    \"\"\"Benchmark session-aware recursive reranker.\"\"\"\n    try:\n        from scripts.rerank_recursive import SessionAwareReranker\n    except ImportError:\n        from rerank_recursive import SessionAwareReranker\n\n    reranker = SessionAwareReranker(n_iterations=3, dim=256)\n    initial_scores = [c.get(\"score\", 0) for c in candidates]\n\n    start = time.perf_counter()\n    reranked = reranker.rerank(query, candidates, session_id=session_id, initial_scores=initial_scores)\n    latency = (time.perf_counter() - start) * 1000\n\n    return RealBenchmarkResult(\n        query=query,\n        reranker=\"session_aware\",\n        latency_ms=latency,\n        num_results=len(reranked),\n        top_5_paths=[c.get(\"path\", \"\") for c in reranked[:5]],\n        top_5_scores=[float(c.get(\"score\", 0)) for c in reranked[:5]],\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_learning_reranker_207": {
+      "name": "get_learning_reranker",
+      "type": "function",
+      "start_line": 207,
+      "end_line": 216,
+      "content_hash": "effa72b15842cd54a293fe0764a09d30b3d10d81",
+      "content": "def get_learning_reranker():\n    \"\"\"Get or create the learning-enabled reranker.\"\"\"\n    global _LEARNING_RERANKER\n    if _LEARNING_RERANKER is None:\n        try:\n            from scripts.rerank_recursive import RecursiveReranker\n        except ImportError:\n            from rerank_recursive import RecursiveReranker\n        _LEARNING_RERANKER = RecursiveReranker(n_iterations=3, dim=256)\n    return _LEARNING_RERANKER",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_benchmark_with_learning_219": {
+      "name": "benchmark_with_learning",
+      "type": "function",
+      "start_line": 219,
+      "end_line": 269,
+      "content_hash": "fbce2ed450f3198206985565608a0c9b85c4fdd3",
+      "content": "def benchmark_with_learning(\n    query: str,\n    candidates: List[Dict[str, Any]],\n    teacher_scores: Optional[List[float]] = None,\n) -> RealBenchmarkResult:\n    \"\"\"\n    Benchmark recursive reranker WITH online learning from ONNX teacher.\n\n    This learns from the ONNX scores to improve over time.\n    \"\"\"\n    reranker = get_learning_reranker()\n    initial_scores = [c.get(\"score\", 0) for c in candidates]\n\n    # Encode query and docs for learning\n    doc_texts = []\n    for c in candidates:\n        parts = []\n        if c.get(\"symbol\"):\n            parts.append(str(c[\"symbol\"]))\n        if c.get(\"path\"):\n            parts.append(str(c[\"path\"]))\n        code = c.get(\"code\") or c.get(\"snippet\") or \"\"\n        if code:\n            parts.append(str(code)[:500])\n        doc_texts.append(\" \".join(parts) if parts else \"empty\")\n\n    # Get embeddings (cached after first call)\n    query_emb = reranker._encode([query])[0]\n    doc_embs = reranker._encode(doc_texts)\n    query_emb = reranker._project_to_dim(query_emb.reshape(1, -1))[0]\n    doc_embs = reranker._project_to_dim(doc_embs)\n\n    # Learn from ONNX teacher if available\n    if teacher_scores is not None and len(teacher_scores) == len(candidates):\n        teacher_arr = np.array(teacher_scores, dtype=np.float32)\n        z = query_emb.copy()  # Initial latent\n        reranker.scorer.learn_from_teacher(query_emb, doc_embs, z, teacher_arr)\n\n    # Now do inference\n    start = time.perf_counter()\n    reranked = reranker.rerank(query, candidates, initial_scores)\n    latency = (time.perf_counter() - start) * 1000\n\n    return RealBenchmarkResult(\n        query=query,\n        reranker=\"learning\",\n        latency_ms=latency,\n        num_results=len(reranked),\n        top_5_paths=[c.get(\"path\", \"\") for c in reranked[:5]],\n        top_5_scores=[float(c.get(\"score\", 0)) for c in reranked[:5]],\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_compute_ranking_correlation_272": {
+      "name": "compute_ranking_correlation",
+      "type": "function",
+      "start_line": 272,
+      "end_line": 304,
+      "content_hash": "8ee42bb41973abec927a19ddca847403b36cec4f",
+      "content": "def compute_ranking_correlation(ranking1: List[str], ranking2: List[str]) -> float:\n    \"\"\"Compute ranking correlation (simplified Kendall's tau).\"\"\"\n    if not ranking1 or not ranking2:\n        return 0.0\n\n    # Create position maps\n    pos1 = {p: i for i, p in enumerate(ranking1)}\n    pos2 = {p: i for i, p in enumerate(ranking2)}\n\n    common = set(ranking1) & set(ranking2)\n    if len(common) < 2:\n        return 0.0\n\n    concordant = 0\n    discordant = 0\n\n    common_list = list(common)\n    for i in range(len(common_list)):\n        for j in range(i + 1, len(common_list)):\n            a, b = common_list[i], common_list[j]\n            # Compare relative ordering\n            order1 = pos1[a] < pos1[b]\n            order2 = pos2[a] < pos2[b]\n            if order1 == order2:\n                concordant += 1\n            else:\n                discordant += 1\n\n    total = concordant + discordant\n    if total == 0:\n        return 0.0\n\n    return (concordant - discordant) / total",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_run_real_benchmark_307": {
+      "name": "run_real_benchmark",
+      "type": "function",
+      "start_line": 307,
+      "end_line": 500,
+      "content_hash": "8da89f0710ecb98cafdfd6970414bb68240ecacc",
+      "content": "def run_real_benchmark():\n    \"\"\"Run the full benchmark on real data.\"\"\"\n    print(\"=\" * 80)\n    print(\"PRODUCTION BENCHMARK: Recursive Reranker on Real Codebase\")\n    print(\"=\" * 80)\n\n    # Check Qdrant connection\n    try:\n        from qdrant_client import QdrantClient\n        url = os.environ.get(\"QDRANT_URL\", \"http://localhost:6333\")\n        client = QdrantClient(url=url)\n        coll = os.environ.get(\"COLLECTION_NAME\", \"codebase\")\n        info = client.get_collection(coll)\n        print(f\"\\nQdrant collection: {coll}\")\n        print(f\"Points indexed: {info.points_count}\")\n    except Exception as e:\n        print(f\"Qdrant connection error: {e}\")\n        print(\"Make sure Qdrant is running and indexed\")\n        return\n\n    results_by_reranker = {\n        \"baseline\": [],\n        \"recursive_3\": [],\n        \"session_aware\": [],\n        \"learning\": [],\n        \"onnx\": [],\n    }\n\n    print(f\"\\nRunning {len(REAL_QUERIES)} queries...\")\n    print(\"-\" * 80)\n\n    session_id = \"benchmark_session\"\n\n    for i, query in enumerate(REAL_QUERIES):\n        print(f\"\\n[{i+1}/{len(REAL_QUERIES)}] Query: {query[:50]}...\")\n\n        # Get real candidates\n        candidates = get_real_candidates(query, limit=25)\n        if not candidates:\n            print(\"  No candidates found, skipping\")\n            continue\n\n        print(f\"  Candidates: {len(candidates)}\")\n\n        # Benchmark each reranker\n        baseline = benchmark_baseline(query, candidates)\n        results_by_reranker[\"baseline\"].append(baseline)\n        print(f\"  Baseline: {baseline.latency_ms:.2f}ms\")\n\n        # Get ONNX scores first (teacher signal)\n        onnx_result = benchmark_onnx(query, candidates)\n        teacher_scores = None\n        if onnx_result:\n            results_by_reranker[\"onnx\"].append(onnx_result)\n            print(f\"  ONNX: {onnx_result.latency_ms:.2f}ms\")\n            teacher_scores = onnx_result.top_5_scores  # Use full scores\n            # Get full ONNX scores for learning\n            try:\n                from scripts.rerank_local import rerank_local\n            except ImportError:\n                from rerank_local import rerank_local\n            pairs = [(query, c.get(\"code\", \"\") or c.get(\"snippet\", \"\")) for c in candidates]\n            teacher_scores = rerank_local(pairs)\n\n        # Learning-enabled reranker (learns from ONNX before inference)\n        learning_result = benchmark_with_learning(query, candidates, teacher_scores)\n        results_by_reranker[\"learning\"].append(learning_result)\n        print(f\"  Learning: {learning_result.latency_ms:.2f}ms\")\n\n        recursive = benchmark_recursive(query, candidates, n_iters=3)\n        results_by_reranker[\"recursive_3\"].append(recursive)\n        print(f\"  Recursive(3): {recursive.latency_ms:.2f}ms\")\n\n        session = benchmark_session_aware(query, candidates, session_id)\n        results_by_reranker[\"session_aware\"].append(session)\n        print(f\"  Session-aware: {session.latency_ms:.2f}ms\")\n\n        # Compare rankings with ONNX (ground truth)\n        if onnx_result:\n            learning_result.kendall_tau = compute_ranking_correlation(\n                onnx_result.top_5_paths, learning_result.top_5_paths\n            )\n            recursive.kendall_tau = compute_ranking_correlation(\n                onnx_result.top_5_paths, recursive.top_5_paths\n            )\n            session.kendall_tau = compute_ranking_correlation(\n                onnx_result.top_5_paths, session.top_5_paths\n            )\n        else:\n            # Fall back to baseline comparison\n            learning_result.kendall_tau = compute_ranking_correlation(\n                baseline.top_5_paths, learning_result.top_5_paths\n            )\n            recursive.kendall_tau = compute_ranking_correlation(\n                baseline.top_5_paths, recursive.top_5_paths\n            )\n            session.kendall_tau = compute_ranking_correlation(\n                baseline.top_5_paths, session.top_5_paths\n            )\n\n    # Print summary\n    print(\"\\n\" + \"=\" * 80)\n    print(\"BENCHMARK RESULTS SUMMARY\")\n    print(\"=\" * 80)\n\n    print(f\"\\n{'Reranker':<15} {'Queries':<8} {'Latency (ms)':<20} {'Rank Change':<15}\")\n    print(\"-\" * 60)\n\n    for name, results in results_by_reranker.items():\n        if not results:\n            continue\n\n        n = len(results)\n        latencies = [r.latency_ms for r in results]\n        mean_lat = np.mean(latencies)\n        std_lat = np.std(latencies)\n\n        taus = [r.kendall_tau for r in results if r.kendall_tau != 0]\n        mean_tau = np.mean(taus) if taus else 0.0\n\n        lat_str = f\"{mean_lat:.2f} \u00b1 {std_lat:.2f}\"\n        tau_str = f\"{mean_tau:.3f}\" if mean_tau else \"N/A\"\n\n        print(f\"{name:<15} {n:<8} {lat_str:<20} {tau_str:<15}\")\n\n    print(\"-\" * 60)\n\n    # Show example ranking differences\n    print(\"\\n\" + \"=\" * 80)\n    print(\"RANKING COMPARISON (First Query)\")\n    print(\"=\" * 80)\n\n    if results_by_reranker[\"baseline\"]:\n        print(f\"\\nQuery: {results_by_reranker['baseline'][0].query}\")\n\n        print(\"\\nBaseline Top-5:\")\n        for i, (path, score) in enumerate(zip(\n            results_by_reranker[\"baseline\"][0].top_5_paths,\n            results_by_reranker[\"baseline\"][0].top_5_scores\n        )):\n            print(f\"  {i+1}. {path[-50:]} (score: {score:.3f})\")\n\n        if results_by_reranker[\"recursive_3\"]:\n            print(\"\\nRecursive(3) Top-5:\")\n            for i, (path, score) in enumerate(zip(\n                results_by_reranker[\"recursive_3\"][0].top_5_paths,\n                results_by_reranker[\"recursive_3\"][0].top_5_scores\n            )):\n                print(f\"  {i+1}. {path[-50:]} (score: {score:.3f})\")\n\n        if results_by_reranker[\"learning\"]:\n            print(\"\\nLearning Top-5 (after training on ONNX):\")\n            for i, (path, score) in enumerate(zip(\n                results_by_reranker[\"learning\"][0].top_5_paths,\n                results_by_reranker[\"learning\"][0].top_5_scores\n            )):\n                print(f\"  {i+1}. {path[-50:]} (score: {score:.3f})\")\n\n        if results_by_reranker[\"onnx\"]:\n            print(\"\\nONNX Top-5 (teacher/ground truth):\")\n            for i, (path, score) in enumerate(zip(\n                results_by_reranker[\"onnx\"][0].top_5_paths,\n                results_by_reranker[\"onnx\"][0].top_5_scores\n            )):\n                print(f\"  {i+1}. {path[-50:]} (score: {score:.3f})\")\n\n    # Show learning progress\n    if results_by_reranker[\"learning\"]:\n        print(\"\\n\" + \"=\" * 80)\n        print(\"LEARNING PROGRESS (correlation with ONNX over time)\")\n        print(\"=\" * 80)\n\n        taus = [r.kendall_tau for r in results_by_reranker[\"learning\"]]\n        for i, tau in enumerate(taus[:10]):  # First 10\n            bar = \"\u2588\" * int(tau * 20) if tau > 0 else \"\"\n            print(f\"  Query {i+1}: {tau:.3f} {bar}\")\n\n        if len(taus) > 10:\n            print(f\"  ... ({len(taus) - 10} more queries)\")\n\n        # Check if learning improved over time\n        if len(taus) >= 5:\n            early_avg = np.mean(taus[:len(taus)//2])\n            late_avg = np.mean(taus[len(taus)//2:])\n            improvement = late_avg - early_avg\n            print(f\"\\n  Early avg: {early_avg:.3f}, Late avg: {late_avg:.3f}\")\n            if improvement > 0:\n                print(f\"  Improvement: +{improvement:.3f} (learning is working!)\")\n            else:\n                print(f\"  Change: {improvement:.3f}\")\n\n    print(\"\\n\" + \"=\" * 80)\n    print(\"BENCHMARK COMPLETE\")\n    print(\"=\" * 80)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

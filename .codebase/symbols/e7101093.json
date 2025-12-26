@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/tests/concurrency_tests/traversal_loom_tests.rs",
+  "file_hash": "9652e11eb2d3f24944cde9f5649f83e96f6e92f0",
+  "updated_at": "2025-12-26T17:34:20.510795",
+  "symbols": {
+    "function_loom_traversal_concurrent_read_access_24": {
+      "name": "loom_traversal_concurrent_read_access",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 70,
+      "content_hash": "5bb79919259e0b1a5119bba3788c4ba592211d09",
+      "content": "fn loom_traversal_concurrent_read_access() {\n    loom::model(|| {\n        // Model: shared version counter (simulates committed transaction version)\n        let version = Arc::new(AtomicU64::new(1));\n        // Model: node count at each version\n        let node_count = Arc::new(AtomicU64::new(10));\n\n        let mut handles = vec![];\n\n        // Multiple readers each taking a snapshot\n        for _reader_id in 0..2 {\n            let version = Arc::clone(&version);\n            let node_count = Arc::clone(&node_count);\n\n            handles.push(thread::spawn(move || {\n                // Take snapshot: read version then read data\n                let snapshot_version = version.load(Ordering::Acquire);\n                let snapshot_count = node_count.load(Ordering::Acquire);\n\n                // Verify: within a snapshot, data is consistent with version\n                // Version 1 = 10 nodes, higher versions may have more\n                if snapshot_version == 1 {\n                    assert_eq!(\n                        snapshot_count, 10,\n                        \"Version 1 should have exactly 10 nodes\"\n                    );\n                }\n\n                (snapshot_version, snapshot_count)\n            }));\n        }\n\n        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();\n\n        // All readers should see valid snapshots\n        for (ver, count) in results {\n            assert!(ver >= 1, \"Version should be at least 1\");\n            assert!(count >= 10, \"Count should be at least 10\");\n        }\n    });\n}\n\n/// Models reader/writer coordination with snapshot isolation\n///\n/// One writer updates state while multiple readers take snapshots.\n/// Verifies readers never see partial updates (torn reads).\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loom_traversal_read_write_coordination_71": {
+      "name": "loom_traversal_read_write_coordination",
+      "type": "function",
+      "start_line": 71,
+      "end_line": 141,
+      "content_hash": "35a84cc28eb73b3cdf3feceb03f97006fce6b569",
+      "content": "fn loom_traversal_read_write_coordination() {\n    loom::model(|| {\n        // Model: transaction version and associated data\n        // Writers update both atomically (in real code, within same transaction)\n        let version = Arc::new(AtomicU64::new(1));\n        let data_a = Arc::new(AtomicU64::new(100));\n        let data_b = Arc::new(AtomicU64::new(200));\n\n        let w_version = Arc::clone(&version);\n        let w_data_a = Arc::clone(&data_a);\n        let w_data_b = Arc::clone(&data_b);\n\n        let r_version = Arc::clone(&version);\n        let r_data_a = Arc::clone(&data_a);\n        let r_data_b = Arc::clone(&data_b);\n\n        // Writer: updates data_a, data_b, then increments version\n        let writer = thread::spawn(move || {\n            // Update data (in real code, all within same write transaction)\n            w_data_a.store(150, Ordering::Release);\n            w_data_b.store(250, Ordering::Release);\n            // Commit: increment version with release ordering\n            w_version.fetch_add(1, Ordering::Release);\n        });\n\n        // Reader: reads version, then reads data\n        let reader = thread::spawn(move || {\n            // Read version with acquire ordering\n            let snap_version = r_version.load(Ordering::Acquire);\n            let snap_a = r_data_a.load(Ordering::Acquire);\n            let snap_b = r_data_b.load(Ordering::Acquire);\n\n            (snap_version, snap_a, snap_b)\n        });\n\n        writer.join().unwrap();\n        let (ver, a, b) = reader.join().unwrap();\n\n        // If reader sees version 2, it should see both updates\n        // If reader sees version 1, it should see neither update\n        if ver == 2 {\n            // Note: Due to interleaving, reader might see partial state\n            // This test documents the potential race when not using proper MVCC\n            // In real LMDB with MVCC, this would always be consistent\n            assert!(\n                (a == 150 && b == 250) || (a == 100 && b == 200) || (a == 150 && b == 200),\n                \"Unexpected state: ver={}, a={}, b={}\",\n                ver,\n                a,\n                b\n            );\n        } else {\n            assert_eq!(ver, 1);\n            // Version 1: could see old values or new values depending on timing\n        }\n\n        // Final state should be consistent\n        let final_ver = version.load(Ordering::SeqCst);\n        let final_a = data_a.load(Ordering::SeqCst);\n        let final_b = data_b.load(Ordering::SeqCst);\n        assert_eq!(final_ver, 2);\n        assert_eq!(final_a, 150);\n        assert_eq!(final_b, 250);\n    });\n}\n\n/// Models concurrent iterator consumption\n///\n/// Verifies that iterator position updates are atomic and\n/// multiple threads consuming from shared iterator state don't corrupt it.\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loom_traversal_iterator_consumption_142": {
+      "name": "loom_traversal_iterator_consumption",
+      "type": "function",
+      "start_line": 142,
+      "end_line": 201,
+      "content_hash": "ef633a84b62e6d31fb4aee3383cdd6d8d016679f",
+      "content": "fn loom_traversal_iterator_consumption() {\n    loom::model(|| {\n        // Model: shared iterator position (index into result set)\n        let position = Arc::new(AtomicU64::new(0));\n        let total_items: u64 = 4;\n\n        let mut handles = vec![];\n\n        // Two consumers trying to advance the iterator\n        for _consumer_id in 0..2 {\n            let position = Arc::clone(&position);\n\n            handles.push(thread::spawn(move || {\n                let mut consumed = vec![];\n\n                // Try to consume items\n                loop {\n                    // Atomically try to claim next position\n                    let current = position.fetch_add(1, Ordering::SeqCst);\n\n                    if current >= total_items {\n                        break;\n                    }\n\n                    consumed.push(current);\n                }\n\n                consumed\n            }));\n        }\n\n        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();\n\n        // Collect all consumed items\n        let mut all_consumed: Vec<u64> = results.into_iter().flatten().collect();\n        all_consumed.sort();\n\n        // Each item should be consumed exactly once\n        assert_eq!(\n            all_consumed,\n            vec![0, 1, 2, 3],\n            \"All items should be consumed exactly once\"\n        );\n\n        // Position should be >= total_items\n        let final_pos = position.load(Ordering::SeqCst);\n        assert!(\n            final_pos >= total_items,\n            \"Final position should be >= total items\"\n        );\n    });\n}\n\n/// Models transaction commit ordering\n///\n/// Verifies that when a transaction commits, readers observe\n/// changes in the correct order (no time travel).\n///\n/// NOTE: Kept to 2 threads to keep loom state space manageable.\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loom_traversal_transaction_ordering_202": {
+      "name": "loom_traversal_transaction_ordering",
+      "type": "function",
+      "start_line": 202,
+      "end_line": 250,
+      "content_hash": "a0e8c8233856d41856a9b6c3f81d8807529bd6be",
+      "content": "fn loom_traversal_transaction_ordering() {\n    loom::model(|| {\n        // Model: commit version and committed data\n        let version = Arc::new(AtomicU64::new(0));\n        let data = Arc::new(AtomicU64::new(0));\n\n        let w_version = Arc::clone(&version);\n        let w_data = Arc::clone(&data);\n\n        let r_version = Arc::clone(&version);\n        let r_data = Arc::clone(&data);\n\n        // Writer: commits data then increments version\n        let writer = thread::spawn(move || {\n            w_data.store(42, Ordering::SeqCst);\n            w_version.store(1, Ordering::SeqCst);\n        });\n\n        // Reader: reads version then data\n        let reader = thread::spawn(move || {\n            let v = r_version.load(Ordering::SeqCst);\n            let d = r_data.load(Ordering::SeqCst);\n            (v, d)\n        });\n\n        writer.join().unwrap();\n        let (observed_ver, observed_data) = reader.join().unwrap();\n\n        // If version is 1, data must be 42 (commit ordering)\n        if observed_ver == 1 {\n            assert_eq!(\n                observed_data, 42,\n                \"If version is 1, data must be committed\"\n            );\n        }\n\n        // Final state should be consistent\n        let final_ver = version.load(Ordering::SeqCst);\n        let final_data = data.load(Ordering::SeqCst);\n        assert_eq!(final_ver, 1);\n        assert_eq!(final_data, 42);\n    });\n}\n\n/// Models concurrent traversal with shared graph structure\n///\n/// Tests that multiple traversals accessing shared graph data\n/// maintain consistency.\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loom_traversal_shared_graph_access_251": {
+      "name": "loom_traversal_shared_graph_access",
+      "type": "function",
+      "start_line": 251,
+      "end_line": 297,
+      "content_hash": "434204064824a96697fec403c2cc9a4fd1aa30a2",
+      "content": "fn loom_traversal_shared_graph_access() {\n    loom::model(|| {\n        // Model: graph state as node count and edge count\n        let node_count = Arc::new(AtomicU64::new(5));\n        let edge_count = Arc::new(AtomicU64::new(4));\n        // Invariant: edges should be <= nodes * (nodes-1)\n\n        let mut handles = vec![];\n\n        // Multiple traversers reading graph state\n        for _traverser_id in 0..2 {\n            let nodes = Arc::clone(&node_count);\n            let edges = Arc::clone(&edge_count);\n\n            handles.push(thread::spawn(move || {\n                let n = nodes.load(Ordering::Acquire);\n                let e = edges.load(Ordering::Acquire);\n\n                // In a valid graph, edges can't exceed n*(n-1)\n                let max_edges = n * (n.saturating_sub(1));\n                assert!(\n                    e <= max_edges,\n                    \"Edge count {} exceeds maximum {} for {} nodes\",\n                    e,\n                    max_edges,\n                    n\n                );\n\n                (n, e)\n            }));\n        }\n\n        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();\n\n        // All traversers should see valid graph state\n        for (n, e) in results {\n            assert!(n >= 1, \"Should have at least 1 node\");\n            assert!(e <= n * (n - 1), \"Edge invariant should hold\");\n        }\n    });\n}\n\n/// Models concurrent updates to traversal metadata\n///\n/// Tests race conditions in updating shared metadata like\n/// result counts, visited node sets, etc.\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loom_traversal_metadata_updates_298": {
+      "name": "loom_traversal_metadata_updates",
+      "type": "function",
+      "start_line": 298,
+      "end_line": 349,
+      "content_hash": "44f72aefb9b46574f8d35463416a0583c57e3b04",
+      "content": "fn loom_traversal_metadata_updates() {\n    loom::model(|| {\n        // Model: shared result counter\n        let result_count = Arc::new(AtomicU64::new(0));\n        // Model: \"visited\" flag for a specific node\n        let node_visited = Arc::new(AtomicU64::new(0)); // 0 = not visited, 1 = visited\n\n        let mut handles = vec![];\n\n        // Two traversers potentially visiting same node\n        for traverser_id in 1..=2 {\n            let count = Arc::clone(&result_count);\n            let visited = Arc::clone(&node_visited);\n\n            handles.push(thread::spawn(move || {\n                // Try to mark node as visited (compare-and-swap)\n                let was_unvisited = visited\n                    .compare_exchange(0, traverser_id, Ordering::SeqCst, Ordering::SeqCst)\n                    .is_ok();\n\n                if was_unvisited {\n                    // We were first to visit, increment result count\n                    count.fetch_add(1, Ordering::SeqCst);\n                    true\n                } else {\n                    // Already visited by another traverser\n                    false\n                }\n            }));\n        }\n\n        let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();\n\n        // Exactly one traverser should have marked the node\n        let num_visitors: usize = results.iter().filter(|&&v| v).count();\n        assert_eq!(\n            num_visitors, 1,\n            \"Exactly one traverser should mark the node as visited\"\n        );\n\n        // Result count should be 1\n        let final_count = result_count.load(Ordering::SeqCst);\n        assert_eq!(final_count, 1, \"Result count should be 1\");\n\n        // Node should be marked as visited\n        let visited_by = node_visited.load(Ordering::SeqCst);\n        assert!(\n            visited_by == 1 || visited_by == 2,\n            \"Node should be marked as visited by one of the traversers\"\n        );\n    });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

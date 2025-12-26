@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/tui/components/files/files.go",
+  "file_hash": "48d002198121f7baa6bc63c3effc7abe46756d1f",
+  "updated_at": "2025-12-26T17:34:20.443259",
+  "symbols": {
+    "struct_FileHistory_21": {
+      "name": "FileHistory",
+      "type": "struct",
+      "start_line": 21,
+      "end_line": 26,
+      "content_hash": "60b3124d56392285bd55c8becdc0627fee76a8bf",
+      "content": "type FileHistory struct {\n\tInitialVersion history.File\n\tLatestVersion  history.File\n}\n\n// SessionFile represents a file with its history information.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_SessionFile_27": {
+      "name": "SessionFile",
+      "type": "struct",
+      "start_line": 27,
+      "end_line": 34,
+      "content_hash": "36f2eda7e22d114616f8bb8b80978ab3819e4841",
+      "content": "type SessionFile struct {\n\tHistory   FileHistory\n\tFilePath  string\n\tAdditions int\n\tDeletions int\n}\n\n// RenderOptions contains options for rendering file lists.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_RenderOptions_35": {
+      "name": "RenderOptions",
+      "type": "struct",
+      "start_line": 35,
+      "end_line": 42,
+      "content_hash": "8dce4545c842d81f7e985391a874e7ff8174ecb1",
+      "content": "type RenderOptions struct {\n\tMaxWidth    int\n\tMaxItems    int\n\tShowSection bool\n\tSectionName string\n}\n\n// RenderFileList renders a list of file status items with the given options.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RenderFileList_43": {
+      "name": "RenderFileList",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 116,
+      "content_hash": "e5cb73ca36fbbed8dd680d04a61cb1e16c0bd25f",
+      "content": "func RenderFileList(fileSlice []SessionFile, opts RenderOptions) []string {\n\tt := styles.CurrentTheme()\n\tfileList := []string{}\n\n\tif opts.ShowSection {\n\t\tsectionName := opts.SectionName\n\t\tif sectionName == \"\" {\n\t\t\tsectionName = \"Modified Files\"\n\t\t}\n\t\tsection := t.S().Subtle.Render(sectionName)\n\t\tfileList = append(fileList, section, \"\")\n\t}\n\n\tif len(fileSlice) == 0 {\n\t\tfileList = append(fileList, t.S().Base.Foreground(t.Border).Render(\"None\"))\n\t\treturn fileList\n\t}\n\n\t// Sort files by the latest version's created time\n\tsort.Slice(fileSlice, func(i, j int) bool {\n\t\tif fileSlice[i].History.LatestVersion.CreatedAt == fileSlice[j].History.LatestVersion.CreatedAt {\n\t\t\treturn strings.Compare(fileSlice[i].FilePath, fileSlice[j].FilePath) < 0\n\t\t}\n\t\treturn fileSlice[i].History.LatestVersion.CreatedAt > fileSlice[j].History.LatestVersion.CreatedAt\n\t})\n\n\t// Determine how many items to show\n\tmaxItems := len(fileSlice)\n\tif opts.MaxItems > 0 {\n\t\tmaxItems = min(opts.MaxItems, len(fileSlice))\n\t}\n\n\tfilesShown := 0\n\tfor _, file := range fileSlice {\n\t\tif file.Additions == 0 && file.Deletions == 0 {\n\t\t\tcontinue // skip files with no changes\n\t\t}\n\t\tif filesShown >= maxItems {\n\t\t\tbreak\n\t\t}\n\n\t\tvar statusParts []string\n\t\tif file.Additions > 0 {\n\t\t\tstatusParts = append(statusParts, t.S().Base.Foreground(t.Success).Render(fmt.Sprintf(\"+%d\", file.Additions)))\n\t\t}\n\t\tif file.Deletions > 0 {\n\t\t\tstatusParts = append(statusParts, t.S().Base.Foreground(t.Error).Render(fmt.Sprintf(\"-%d\", file.Deletions)))\n\t\t}\n\n\t\textraContent := strings.Join(statusParts, \" \")\n\t\tcwd := config.Get().WorkingDir() + string(os.PathSeparator)\n\t\tfilePath := file.FilePath\n\t\tif rel, err := filepath.Rel(cwd, filePath); err == nil {\n\t\t\tfilePath = rel\n\t\t}\n\t\tfilePath = fsext.DirTrim(fsext.PrettyPath(filePath), 2)\n\t\tfilePath = ansi.Truncate(filePath, opts.MaxWidth-lipgloss.Width(extraContent)-2, \"\u2026\")\n\n\t\tfileList = append(fileList,\n\t\t\tcore.Status(\n\t\t\t\tcore.StatusOpts{\n\t\t\t\t\tTitle:        filePath,\n\t\t\t\t\tExtraContent: extraContent,\n\t\t\t\t},\n\t\t\t\topts.MaxWidth,\n\t\t\t),\n\t\t)\n\t\tfilesShown++\n\t}\n\n\treturn fileList\n}\n\n// RenderFileBlock renders a complete file block with optional truncation indicator.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RenderFileBlock_117": {
+      "name": "RenderFileBlock",
+      "type": "function",
+      "start_line": 117,
+      "end_line": 146,
+      "content_hash": "80c56c859f5d484ab44403f4b115596c82bc026a",
+      "content": "func RenderFileBlock(fileSlice []SessionFile, opts RenderOptions, showTruncationIndicator bool) string {\n\tt := styles.CurrentTheme()\n\tfileList := RenderFileList(fileSlice, opts)\n\n\t// Add truncation indicator if needed\n\tif showTruncationIndicator && opts.MaxItems > 0 {\n\t\ttotalFilesWithChanges := 0\n\t\tfor _, file := range fileSlice {\n\t\t\tif file.Additions > 0 || file.Deletions > 0 {\n\t\t\t\ttotalFilesWithChanges++\n\t\t\t}\n\t\t}\n\t\tif totalFilesWithChanges > opts.MaxItems {\n\t\t\tremaining := totalFilesWithChanges - opts.MaxItems\n\t\t\tif remaining == 1 {\n\t\t\t\tfileList = append(fileList, t.S().Base.Foreground(t.FgMuted).Render(\"\u2026\"))\n\t\t\t} else {\n\t\t\t\tfileList = append(fileList,\n\t\t\t\t\tt.S().Base.Foreground(t.FgSubtle).Render(fmt.Sprintf(\"\u2026and %d more\", remaining)),\n\t\t\t\t)\n\t\t\t}\n\t\t}\n\t}\n\n\tcontent := lipgloss.JoinVertical(lipgloss.Left, fileList...)\n\tif opts.MaxWidth > 0 {\n\t\treturn lipgloss.NewStyle().Width(opts.MaxWidth).Render(content)\n\t}\n\treturn content\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

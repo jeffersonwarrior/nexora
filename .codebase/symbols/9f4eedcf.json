@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/config/recent_models_test.go",
+  "file_hash": "b96b0ecaef0ae6fee5c576d9056e4837ec94c1ae",
+  "updated_at": "2025-12-26T17:34:24.951339",
+  "symbols": {
+    "function_readConfigJSON_14": {
+      "name": "readConfigJSON",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 25,
+      "content_hash": "a75c54c50b9d142b889305660907c5a46ed5a420",
+      "content": "func readConfigJSON(t *testing.T, path string) map[string]any {\n\tt.Helper()\n\tbaseDir := filepath.Dir(path)\n\tfileName := filepath.Base(path)\n\tb, err := fs.ReadFile(os.DirFS(baseDir), fileName)\n\trequire.NoError(t, err)\n\tvar out map[string]any\n\trequire.NoError(t, json.Unmarshal(b, &out))\n\treturn out\n}\n\n// readRecentModels reads the recent_models section from the config file.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_readRecentModels_26": {
+      "name": "readRecentModels",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 33,
+      "content_hash": "0bd6ef12c372318695edaab07330f32d33351313",
+      "content": "func readRecentModels(t *testing.T, path string) map[string]any {\n\tt.Helper()\n\tout := readConfigJSON(t, path)\n\trm, ok := out[\"recent_models\"].(map[string]any)\n\trequire.True(t, ok)\n\treturn rm\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordRecentModel_AddsAndPersists_34": {
+      "name": "TestRecordRecentModel_AddsAndPersists",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 60,
+      "content_hash": "b18e7c8a01ddf99d0f2e0bbdd66b5a09187389a2",
+      "content": "func TestRecordRecentModel_AddsAndPersists(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\terr := cfg.recordRecentModel(SelectedModelTypeLarge, SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"})\n\trequire.NoError(t, err)\n\n\t// in-memory state\n\trequire.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 1)\n\trequire.Equal(t, \"openai\", cfg.RecentModels[SelectedModelTypeLarge][0].Provider)\n\trequire.Equal(t, \"gpt-4o\", cfg.RecentModels[SelectedModelTypeLarge][0].Model)\n\n\t// persisted state\n\trm := readRecentModels(t, cfg.dataConfigDir)\n\tlarge, ok := rm[string(SelectedModelTypeLarge)].([]any)\n\trequire.True(t, ok)\n\trequire.Len(t, large, 1)\n\titem, ok := large[0].(map[string]any)\n\trequire.True(t, ok)\n\trequire.Equal(t, \"openai\", item[\"provider\"])\n\trequire.Equal(t, \"gpt-4o\", item[\"model\"])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordRecentModel_DedupeAndMoveToFront_61": {
+      "name": "TestRecordRecentModel_DedupeAndMoveToFront",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 80,
+      "content_hash": "e95b1e9ffe589709268e161045c6cbd79604bd2f",
+      "content": "func TestRecordRecentModel_DedupeAndMoveToFront(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\t// Add two entries\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"}))\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, SelectedModel{Provider: \"anthropic\", Model: \"claude\"}))\n\t// Re-add first; should move to front and not duplicate\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"}))\n\n\tgot := cfg.RecentModels[SelectedModelTypeLarge]\n\trequire.Len(t, got, 2)\n\trequire.Equal(t, SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"}, got[0])\n\trequire.Equal(t, SelectedModel{Provider: \"anthropic\", Model: \"claude\"}, got[1])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordRecentModel_TrimsToMax_81": {
+      "name": "TestRecordRecentModel_TrimsToMax",
+      "type": "function",
+      "start_line": 81,
+      "end_line": 125,
+      "content_hash": "000230c8ef7e2a4d3b2d1da42663b13b53171c0a",
+      "content": "func TestRecordRecentModel_TrimsToMax(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\t// Insert 6 unique models; max is 5\n\tentries := []SelectedModel{\n\t\t{Provider: \"p1\", Model: \"m1\"},\n\t\t{Provider: \"p2\", Model: \"m2\"},\n\t\t{Provider: \"p3\", Model: \"m3\"},\n\t\t{Provider: \"p4\", Model: \"m4\"},\n\t\t{Provider: \"p5\", Model: \"m5\"},\n\t\t{Provider: \"p6\", Model: \"m6\"},\n\t}\n\tfor _, e := range entries {\n\t\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, e))\n\t}\n\n\t// in-memory state\n\tgot := cfg.RecentModels[SelectedModelTypeLarge]\n\trequire.Len(t, got, 5)\n\t// Newest first, capped at 5: p6..p2\n\trequire.Equal(t, SelectedModel{Provider: \"p6\", Model: \"m6\"}, got[0])\n\trequire.Equal(t, SelectedModel{Provider: \"p5\", Model: \"m5\"}, got[1])\n\trequire.Equal(t, SelectedModel{Provider: \"p4\", Model: \"m4\"}, got[2])\n\trequire.Equal(t, SelectedModel{Provider: \"p3\", Model: \"m3\"}, got[3])\n\trequire.Equal(t, SelectedModel{Provider: \"p2\", Model: \"m2\"}, got[4])\n\n\t// persisted state: verify trimmed to 5 and newest-first order\n\trm := readRecentModels(t, cfg.dataConfigDir)\n\tlarge, ok := rm[string(SelectedModelTypeLarge)].([]any)\n\trequire.True(t, ok)\n\trequire.Len(t, large, 5)\n\t// Build provider:model IDs and verify order\n\tvar ids []string\n\tfor _, v := range large {\n\t\tm := v.(map[string]any)\n\t\tids = append(ids, m[\"provider\"].(string)+\":\"+m[\"model\"].(string))\n\t}\n\trequire.Equal(t, []string{\"p6:m6\", \"p5:m5\", \"p4:m4\", \"p3:m3\", \"p2:m2\"}, ids)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordRecentModel_SkipsEmptyValues_126": {
+      "name": "TestRecordRecentModel_SkipsEmptyValues",
+      "type": "function",
+      "start_line": 126,
+      "end_line": 150,
+      "content_hash": "38abd8d1b5e2f3bd3cdd00b0a16b9c6c9a51bbc5",
+      "content": "func TestRecordRecentModel_SkipsEmptyValues(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\t// Missing provider\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, SelectedModel{Provider: \"\", Model: \"m\"}))\n\t// Missing model\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, SelectedModel{Provider: \"p\", Model: \"\"}))\n\n\t_, ok := cfg.RecentModels[SelectedModelTypeLarge]\n\t// Map may be initialized, but should have no entries\n\tif ok {\n\t\trequire.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 0)\n\t}\n\t// No file should be written (stat via fs.FS)\n\tbaseDir := filepath.Dir(cfg.dataConfigDir)\n\tfileName := filepath.Base(cfg.dataConfigDir)\n\t_, err := fs.Stat(os.DirFS(baseDir), fileName)\n\trequire.True(t, os.IsNotExist(err))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordRecentModel_NoPersistOnNoop_151": {
+      "name": "TestRecordRecentModel_NoPersistOnNoop",
+      "type": "function",
+      "start_line": 151,
+      "end_line": 184,
+      "content_hash": "de9c7a1efcc7492af1727bfba30ea05036c1a4ca",
+      "content": "func TestRecordRecentModel_NoPersistOnNoop(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\tentry := SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"}\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, entry))\n\n\tbaseDir := filepath.Dir(cfg.dataConfigDir)\n\tfileName := filepath.Base(cfg.dataConfigDir)\n\tbefore, err := fs.ReadFile(os.DirFS(baseDir), fileName)\n\trequire.NoError(t, err)\n\n\t// Get file ModTime to verify no write occurs\n\tstBefore, err := fs.Stat(os.DirFS(baseDir), fileName)\n\trequire.NoError(t, err)\n\tbeforeMod := stBefore.ModTime()\n\n\t// Re-record same entry should be a no-op (no write)\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, entry))\n\n\tafter, err := fs.ReadFile(os.DirFS(baseDir), fileName)\n\trequire.NoError(t, err)\n\trequire.Equal(t, string(before), string(after))\n\n\t// Verify ModTime unchanged to ensure truly no write occurred\n\tstAfter, err := fs.Stat(os.DirFS(baseDir), fileName)\n\trequire.NoError(t, err)\n\trequire.True(t, stAfter.ModTime().Equal(beforeMod), \"file ModTime should not change on noop\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestUpdatePreferredModel_UpdatesRecents_185": {
+      "name": "TestUpdatePreferredModel_UpdatesRecents",
+      "type": "function",
+      "start_line": 185,
+      "end_line": 206,
+      "content_hash": "29ef3f2d1efa0372a73f7e2c99fbf9bd3013674e",
+      "content": "func TestUpdatePreferredModel_UpdatesRecents(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\tsel := SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"}\n\trequire.NoError(t, cfg.UpdatePreferredModel(SelectedModelTypeSmall, sel))\n\n\t// in-memory\n\trequire.Equal(t, sel, cfg.Models[SelectedModelTypeSmall])\n\trequire.Len(t, cfg.RecentModels[SelectedModelTypeSmall], 1)\n\n\t// persisted (read via fs.FS)\n\trm := readRecentModels(t, cfg.dataConfigDir)\n\tsmall, ok := rm[string(SelectedModelTypeSmall)].([]any)\n\trequire.True(t, ok)\n\trequire.Len(t, small, 1)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordRecentModel_TypeIsolation_207": {
+      "name": "TestRecordRecentModel_TypeIsolation",
+      "type": "function",
+      "start_line": 207,
+      "end_line": 253,
+      "content_hash": "dbc1830f39058a1664ec8137d657bea66890e4a8",
+      "content": "func TestRecordRecentModel_TypeIsolation(t *testing.T) {\n\tt.Parallel()\n\n\tdir := t.TempDir()\n\tcfg := &Config{}\n\tcfg.setDefaults(dir, \"\")\n\tcfg.dataConfigDir = filepath.Join(dir, \"config.json\")\n\n\t// Add models to both large and small types\n\tlargeModel := SelectedModel{Provider: \"openai\", Model: \"gpt-4o\"}\n\tsmallModel := SelectedModel{Provider: \"anthropic\", Model: \"claude\"}\n\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, largeModel))\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeSmall, smallModel))\n\n\t// in-memory: verify types maintain separate histories\n\trequire.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 1)\n\trequire.Len(t, cfg.RecentModels[SelectedModelTypeSmall], 1)\n\trequire.Equal(t, largeModel, cfg.RecentModels[SelectedModelTypeLarge][0])\n\trequire.Equal(t, smallModel, cfg.RecentModels[SelectedModelTypeSmall][0])\n\n\t// Add another to large, verify small unchanged\n\tanotherLarge := SelectedModel{Provider: \"google\", Model: \"gemini\"}\n\trequire.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, anotherLarge))\n\n\trequire.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 2)\n\trequire.Len(t, cfg.RecentModels[SelectedModelTypeSmall], 1)\n\trequire.Equal(t, smallModel, cfg.RecentModels[SelectedModelTypeSmall][0])\n\n\t// persisted state: verify both types exist with correct lengths and contents\n\trm := readRecentModels(t, cfg.dataConfigDir)\n\n\tlarge, ok := rm[string(SelectedModelTypeLarge)].([]any)\n\trequire.True(t, ok)\n\trequire.Len(t, large, 2)\n\t// Verify newest first for large type\n\trequire.Equal(t, \"google\", large[0].(map[string]any)[\"provider\"])\n\trequire.Equal(t, \"gemini\", large[0].(map[string]any)[\"model\"])\n\trequire.Equal(t, \"openai\", large[1].(map[string]any)[\"provider\"])\n\trequire.Equal(t, \"gpt-4o\", large[1].(map[string]any)[\"model\"])\n\n\tsmall, ok := rm[string(SelectedModelTypeSmall)].([]any)\n\trequire.True(t, ok)\n\trequire.Len(t, small, 1)\n\trequire.Equal(t, \"anthropic\", small[0].(map[string]any)[\"provider\"])\n\trequire.Equal(t, \"claude\", small[0].(map[string]any)[\"model\"])\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

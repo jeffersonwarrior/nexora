@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/kimi_test.go",
+  "file_hash": "5b19b2765e63e104b5598672bb36015cf14204b7",
+  "updated_at": "2025-12-26T17:34:20.163636",
+  "symbols": {
+    "function_TestKimiProvider_11": {
+      "name": "TestKimiProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 104,
+      "content_hash": "e0163a7c825383261bef29d6cb52f5357c680130",
+      "content": "func TestKimiProvider(t *testing.T) {\n\tt.Run(\"creates provider with correct basic info\", func(t *testing.T) {\n\t\tprovider := KimiProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.Equal(t, \"kimi\", string(provider.ID))\n\t\tassert.Equal(t, \"Kimi\", provider.Name)\n\t\tassert.Equal(t, \"openai-compat\", string(provider.Type))\n\t\tassert.Equal(t, \"$KIMI_API_KEY\", provider.APIKey)\n\t\tassert.Equal(t, \"https://api.kimi.com/coding/\", provider.APIEndpoint)\n\t})\n\n\tt.Run(\"creates provider with Kimi K2 models\", func(t *testing.T) {\n\t\tprovider := KimiProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\trequire.Len(t, provider.Models, 4)\n\t\tassert.Equal(t, \"kimi-k2\", provider.DefaultLargeModelID)\n\t\tassert.Equal(t, \"kimi-k2-turbo\", provider.DefaultSmallModelID)\n\t})\n\n\tt.Run(\"does not create if already exists\", func(t *testing.T) {\n\t\texistingProvider := catwalk.Provider{ID: \"kimi\"}\n\t\tprovider := KimiProvider([]catwalk.Provider{existingProvider})\n\n\t\tassert.Equal(t, \"\", string(provider.ID))\n\t})\n\n\tt.Run(\"has kimi-k2 flagship model\", func(t *testing.T) {\n\t\tprovider := KimiProvider([]catwalk.Provider{})\n\n\t\tvar k2Model *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"kimi-k2\" {\n\t\t\t\tk2Model = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, k2Model)\n\t\tassert.Equal(t, \"Kimi K2\", k2Model.Name)\n\t\tassert.Equal(t, 0.15, k2Model.CostPer1MIn)\n\t\tassert.Equal(t, 2.5, k2Model.CostPer1MOut)\n\t\tassert.Equal(t, int64(1000000), k2Model.ContextWindow)\n\t})\n\n\tt.Run(\"has kimi-k2-thinking with reasoning\", func(t *testing.T) {\n\t\tprovider := KimiProvider([]catwalk.Provider{})\n\n\t\tvar thinkingModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"kimi-k2-thinking\" {\n\t\t\t\tthinkingModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, thinkingModel)\n\t\tassert.True(t, thinkingModel.CanReason)\n\t\tassert.Equal(t, 0.6, thinkingModel.CostPer1MIn)\n\t})\n\n\tt.Run(\"has kimi-k2-turbo budget model\", func(t *testing.T) {\n\t\tprovider := KimiProvider([]catwalk.Provider{})\n\n\t\tvar turboModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"kimi-k2-turbo\" {\n\t\t\t\tturboModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, turboModel)\n\t\tassert.Equal(t, 0.05, turboModel.CostPer1MIn)\n\t\tassert.False(t, turboModel.SupportsImages)\n\t})\n\n\tt.Run(\"has kimi-k2-vision with image support\", func(t *testing.T) {\n\t\tprovider := KimiProvider([]catwalk.Provider{})\n\n\t\tvar visionModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"kimi-k2-vision\" {\n\t\t\t\tvisionModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, visionModel)\n\t\tassert.True(t, visionModel.SupportsImages)\n\t\tassert.Equal(t, int64(500000), visionModel.ContextWindow)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

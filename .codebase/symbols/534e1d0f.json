@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/impact_analysis_test.go",
+  "file_hash": "878cfbede8e5e9faa31627f51d7e8580f1737608",
+  "updated_at": "2025-12-26T17:34:22.166519",
+  "symbols": {
+    "function_TestNewImpactAnalysisTool_10": {
+      "name": "TestNewImpactAnalysisTool",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 15,
+      "content_hash": "bfb8cb515b4717f2ab329e7092a6319b33d3dd63",
+      "content": "func TestNewImpactAnalysisTool(t *testing.T) {\n\t// Test with nil query engine and nil graph - tool should still be created\n\ttool := NewImpactAnalysisTool(nil, nil)\n\trequire.NotNil(t, tool)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestImpactAnalysisParams_16": {
+      "name": "TestImpactAnalysisParams",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 28,
+      "content_hash": "6fc87f4812519e46a32a0ef44e6b06cbaab12ba6",
+      "content": "func TestImpactAnalysisParams(t *testing.T) {\n\t// Test parameter validation\n\tparams := ImpactAnalysisParams{\n\t\tSymbolID: \"valid_symbol_id\",\n\t\tMaxDepth: 3,\n\t}\n\n\t// Valid params should not issue errors\n\trequire.NotEmpty(t, params.SymbolID)\n\trequire.Greater(t, params.MaxDepth, 0)\n\trequire.Equal(t, int(3), params.MaxDepth)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestImpactAnalysisParamsValidation_29": {
+      "name": "TestImpactAnalysisParamsValidation",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 46,
+      "content_hash": "adabe1227e902bd80fdb8609e01f21dfe2d2e767",
+      "content": "func TestImpactAnalysisParamsValidation(t *testing.T) {\n\t// Test empty SymbolID\n\tparams := ImpactAnalysisParams{\n\t\tSymbolID: \"\",\n\t\tMaxDepth: 3,\n\t}\n\n\t// Empty symbol ID should be invalid\n\trequire.Empty(t, params.SymbolID)\n\n\tparams.SymbolID = \"test_symbol_id\"\n\trequire.NotEmpty(t, params.SymbolID)\n\n\t// Test negative MaxDepth - should be handled by validation\n\tparams.MaxDepth = -1\n\trequire.True(t, params.MaxDepth < 0)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestImpactAnalysisWithNilGraph_47": {
+      "name": "TestImpactAnalysisWithNilGraph",
+      "type": "function",
+      "start_line": 47,
+      "end_line": 61,
+      "content_hash": "81ff7cbaa2c2919f4eccdf43757e9ea3edcb0380",
+      "content": "func TestImpactAnalysisWithNilGraph(t *testing.T) {\n\t// Create mock embedding engine\n\tvar embeddingEngine *indexer.EmbeddingEngine\n\n\t// Create a mock indexer\n\tidx := &indexer.Indexer{}\n\n\t// Create query engine with mock components\n\tqueryEngine := indexer.NewQueryEngine(idx, embeddingEngine)\n\n\t// Tool with nil graph should still be created\n\ttool := NewImpactAnalysisTool(queryEngine, nil)\n\trequire.NotNil(t, tool)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestImpactAnalysisWithValidComponents_62": {
+      "name": "TestImpactAnalysisWithValidComponents",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 82,
+      "content_hash": "8c8222e30f339225d4993be873b3a6240b09dd99",
+      "content": "func TestImpactAnalysisWithValidComponents(t *testing.T) {\n\t// Create mock embedding engine\n\tvar embeddingEngine *indexer.EmbeddingEngine\n\n\t// Create a mock indexer\n\tidx := &indexer.Indexer{}\n\n\t// Create query engine with mock components\n\tqueryEngine := indexer.NewQueryEngine(idx, embeddingEngine)\n\n\t// Create a mock graph (simplified)\n\tgraph := &indexer.Graph{\n\t\tNodes:     make(map[string]*indexer.GraphNode),\n\t\tEdges:     make(map[string][]*indexer.GraphEdge),\n\t\tCallGraph: make(map[string][]string),\n\t}\n\n\t// Tool should be created successfully with valid components\n\ttool := NewImpactAnalysisTool(queryEngine, graph)\n\trequire.NotNil(t, tool)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_router/scratchpad.py",
+  "file_hash": "d966f7231507d1781e0dc86fb66e6e77cb8b5b27",
+  "updated_at": "2025-12-26T17:34:20.420295",
+  "symbols": {
+    "function_scratchpad_path_14": {
+      "name": "scratchpad_path",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 21,
+      "content_hash": "bdee0a56d310b7ed660189412487a44c7d7264f6",
+      "content": "def scratchpad_path() -> str:\n    \"\"\"Get scratchpad file path.\"\"\"\n    base = os.path.join(os.getcwd(), \".codebase\")\n    try:\n        os.makedirs(base, exist_ok=True)\n    except Exception:\n        pass\n    return os.path.join(base, \"router_scratchpad.json\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_load_scratchpad_24": {
+      "name": "load_scratchpad",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 69,
+      "content_hash": "82a1f1985d018439c43905b64dbc881f2e87a516",
+      "content": "def load_scratchpad() -> Dict[str, Any]:\n    \"\"\"Load scratchpad with TTL handling.\"\"\"\n    import sys\n    p = scratchpad_path()\n    try:\n        with open(p, \"r\", encoding=\"utf-8\") as f:\n            j = json.load(f)\n            if isinstance(j, dict):\n                try:\n                    ts = float(j.get(\"timestamp\") or 0.0)\n                except Exception:\n                    ts = 0.0\n                ttl = scratchpad_ttl_sec()\n                if ts and ttl >= 0 and (time.time() - ts) > ttl:\n                    stale_keys = (\n                        \"last_plan\",\n                        \"last_filters\",\n                        \"mem_snippets\",\n                        \"last_answer\",\n                        \"last_citations\",\n                        \"last_paths\",\n                        \"last_metrics\",\n                    )\n                    removed = False\n                    for stale_key in stale_keys:\n                        if stale_key in j:\n                            j.pop(stale_key, None)\n                            removed = True\n                    if removed:\n                        j[\"timestamp\"] = 0.0\n                        try:\n                            print(\n                                json.dumps({\n                                    \"router\": {\n                                        \"scratchpad\": \"stale_cleared\",\n                                        \"age_sec\": round(time.time() - ts, 2),\n                                    }\n                                }),\n                                file=sys.stderr,\n                            )\n                        except Exception:\n                            pass\n                return j\n    except Exception:\n        pass\n    return {}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_save_scratchpad_72": {
+      "name": "save_scratchpad",
+      "type": "function",
+      "start_line": 72,
+      "end_line": 90,
+      "content_hash": "a7fb807363ef8b49be67ab8a0b2101e1adf53aaf",
+      "content": "def save_scratchpad(d: Dict[str, Any]) -> None:\n    \"\"\"Save scratchpad atomically.\"\"\"\n    p = scratchpad_path()\n    tmp = p + \".tmp\"\n    try:\n        with open(tmp, \"w\", encoding=\"utf-8\") as f:\n            json.dump(d, f)\n            try:\n                f.flush()\n                os.fsync(f.fileno())\n            except Exception:\n                pass\n        os.replace(tmp, p)\n    except Exception:\n        try:\n            if os.path.exists(tmp):\n                os.unlink(tmp)\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_looks_like_repeat_93": {
+      "name": "looks_like_repeat",
+      "type": "function",
+      "start_line": 93,
+      "end_line": 99,
+      "content_hash": "7902d63d04cbb5a31bd47b08181f4914fffdb69f",
+      "content": "def looks_like_repeat(q: str) -> bool:\n    \"\"\"Check if query looks like a repeat request.\"\"\"\n    s = q.strip().lower()\n    pats = [\n        \"repeat\", \"again\", \"same thing\", \"do that again\", \"rerun\", \"run it again\", \"same as before\",\n    ]\n    return any(p in s for p in pats)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_looks_like_same_filters_102": {
+      "name": "looks_like_same_filters",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 105,
+      "content_hash": "e6233512cfdf69674ce60b5adab27f5c33e844e3",
+      "content": "def looks_like_same_filters(q: str) -> bool:\n    \"\"\"Check if query asks to reuse filters.\"\"\"\n    s = q.strip().lower()\n    return any(p in s for p in [\"same filters\", \"reuse filters\", \"previous filters\"])",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_looks_like_expand_108": {
+      "name": "looks_like_expand",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 115,
+      "content_hash": "55439ccfdf29f51f0cf4269129af1ccc6e494c08",
+      "content": "def looks_like_expand(q: str) -> bool:\n    \"\"\"Check if query asks for expansion.\"\"\"\n    s = q.strip().lower()\n    pats = [\n        \"expand on\", \"expand that\", \"expand the summary\", \"elaborate\",\n        \"more detail\", \"more details\", \"go deeper\", \"add details\",\n    ]\n    return any(p in s for p in pats)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

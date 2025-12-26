@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/util/aggregate.rs",
+  "file_hash": "1ee499df8996c4332ba3234dc848fa59bf3012f4",
+  "updated_at": "2025-12-26T17:34:24.532654",
+  "symbols": {
+    "trait_AggregateAdapter_11": {
+      "name": "AggregateAdapter",
+      "type": "trait",
+      "start_line": 11,
+      "end_line": 11,
+      "content_hash": "53f81861348be837e06248008df091284cc4fa2e",
+      "content": "pub trait AggregateAdapter<'arena>: Iterator {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_aggregate_by_12": {
+      "name": "aggregate_by",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 21,
+      "content_hash": "210bcb80bc93bcb906d3fa600d039de44d01a24c",
+      "content": "    fn aggregate_by(\n        self,\n        properties: &[String],\n        should_count: bool,\n    ) -> Result<Aggregate<'arena>, GraphError>;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    AggregateAdapter<'arena> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_aggregate_by_22": {
+      "name": "aggregate_by",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 63,
+      "content_hash": "718b30910ff4609349ed3459cacd90e0cc9b28c9",
+      "content": "    fn aggregate_by(\n        self,\n        properties: &[String],\n        should_count: bool,\n    ) -> Result<Aggregate<'arena>, GraphError> {\n        let mut groups: HashMap<String, AggregateItem> = HashMap::new();\n\n        let properties_len = properties.len();\n\n        for item in self.inner {\n            let item = item?;\n\n            // TODO HANDLE COUNT\n            // Pre-allocate with exact capacity - size is known from properties.len()\n            let mut kvs = Vec::with_capacity(properties_len);\n            let mut key_parts = Vec::with_capacity(properties_len);\n\n            for property in properties {\n                match item.get_property(property) {\n                    Some(val) => {\n                        key_parts.push(val.inner_stringify());\n                        kvs.push((property.to_string(), val.clone()));\n                    }\n                    None => {\n                        key_parts.push(\"null\".to_string());\n                    }\n                }\n            }\n            let key = key_parts.join(\"_\");\n\n            let group = groups.entry(key).or_default();\n            group.values.insert(item);\n            group.count += 1;\n        }\n\n        if should_count {\n            Ok(Aggregate::Count(groups))\n        } else {\n            Ok(Aggregate::Group(groups))\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

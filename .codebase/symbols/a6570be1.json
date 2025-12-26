@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_upload_service_path_traversal.py",
+  "file_hash": "6245ffa65d1fb013c12f54568c378ce10270c340",
+  "updated_at": "2025-12-26T17:34:21.036141",
+  "symbols": {
+    "function__write_bundle_9": {
+      "name": "_write_bundle",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 18,
+      "content_hash": "618b973726f2e0aa2a0655e275461b43c2fc14cf",
+      "content": "def _write_bundle(tmp_path: Path, operations: list[dict]) -> Path:\n    bundle_path = tmp_path / \"bundle.tar.gz\"\n    payload = json.dumps({\"operations\": operations}).encode(\"utf-8\")\n\n    with tarfile.open(bundle_path, \"w:gz\") as tar:\n        info = tarfile.TarInfo(name=\"metadata/operations.json\")\n        info.size = len(payload)\n        tar.addfile(info, io.BytesIO(payload))\n\n    return bundle_path",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__write_bundle_with_moved_file_21": {
+      "name": "_write_bundle_with_moved_file",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 35,
+      "content_hash": "363f0b53f6c6466084c0ccfc3e1c3c51692d3270",
+      "content": "def _write_bundle_with_moved_file(tmp_path: Path, dest_path: str, content: bytes) -> Path:\n    bundle_path = tmp_path / \"bundle.tar.gz\"\n    operations = [{\"operation\": \"moved\", \"path\": dest_path, \"source_path\": \"missing_src.txt\"}]\n    payload = json.dumps({\"operations\": operations}).encode(\"utf-8\")\n\n    with tarfile.open(bundle_path, \"w:gz\") as tar:\n        info = tarfile.TarInfo(name=\"metadata/operations.json\")\n        info.size = len(payload)\n        tar.addfile(info, io.BytesIO(payload))\n\n        file_info = tarfile.TarInfo(name=f\"files/moved/{dest_path}\")\n        file_info.size = len(content)\n        tar.addfile(file_info, io.BytesIO(content))\n\n    return bundle_path",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__write_bundle_with_created_file_38": {
+      "name": "_write_bundle_with_created_file",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 52,
+      "content_hash": "9ed6462fa7b0ca4f5d8800ec03d18bcc383c028f",
+      "content": "def _write_bundle_with_created_file(tmp_path: Path, rel_path: str, content: bytes) -> Path:\n    bundle_path = tmp_path / \"bundle.tar.gz\"\n    operations = [{\"operation\": \"created\", \"path\": rel_path}]\n    payload = json.dumps({\"operations\": operations}).encode(\"utf-8\")\n\n    with tarfile.open(bundle_path, \"w:gz\") as tar:\n        info = tarfile.TarInfo(name=\"metadata/operations.json\")\n        info.size = len(payload)\n        tar.addfile(info, io.BytesIO(payload))\n\n        file_info = tarfile.TarInfo(name=f\"files/created/{rel_path}\")\n        file_info.size = len(content)\n        tar.addfile(file_info, io.BytesIO(content))\n\n    return bundle_path",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_process_delta_bundle_rejects_traversal_created_55": {
+      "name": "test_process_delta_bundle_rejects_traversal_created",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 72,
+      "content_hash": "e5cdbd5288104aaccc07dd68c126d0343f2791fd",
+      "content": "def test_process_delta_bundle_rejects_traversal_created(tmp_path, monkeypatch):\n    import scripts.upload_delta_bundle as us\n\n    work_dir = tmp_path / \"work\"\n    work_dir.mkdir(parents=True, exist_ok=True)\n    monkeypatch.setattr(us, \"WORK_DIR\", str(work_dir))\n\n    bundle = _write_bundle(\n        tmp_path,\n        [{\"operation\": \"created\", \"path\": \"../../evil.txt\"}],\n    )\n\n    with pytest.raises(ValueError, match=\"escapes workspace\"):\n        us.process_delta_bundle(\n            workspace_path=\"/home/user/repo\",\n            bundle_path=bundle,\n            manifest={\"bundle_id\": \"b1\"},\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_process_delta_bundle_moved_falls_back_to_tar_payload_when_source_missing_75": {
+      "name": "test_process_delta_bundle_moved_falls_back_to_tar_payload_when_source_missing",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 92,
+      "content_hash": "7624a14ffdd68321c311b046e83239fa636cabf4",
+      "content": "def test_process_delta_bundle_moved_falls_back_to_tar_payload_when_source_missing(tmp_path, monkeypatch):\n    import scripts.upload_delta_bundle as us\n\n    work_dir = tmp_path / \"work\"\n    work_dir.mkdir(parents=True, exist_ok=True)\n    monkeypatch.setattr(us, \"WORK_DIR\", str(work_dir))\n\n    slug = \"repo-0123456789abcdef\"\n    bundle = _write_bundle_with_moved_file(tmp_path, \"dst.txt\", b\"moved-payload\")\n\n    counts = us.process_delta_bundle(\n        workspace_path=f\"/work/{slug}\",\n        bundle_path=bundle,\n        manifest={\"bundle_id\": \"b-moved\"},\n    )\n\n    assert counts.get(\"moved\") == 1\n    assert (work_dir / slug / \"dst.txt\").read_bytes() == b\"moved-payload\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_process_delta_bundle_slugged_workspace_creates_marker_95": {
+      "name": "test_process_delta_bundle_slugged_workspace_creates_marker",
+      "type": "function",
+      "start_line": 95,
+      "end_line": 114,
+      "content_hash": "0a5f31b30e17e9204300efe379db160096b8a463",
+      "content": "def test_process_delta_bundle_slugged_workspace_creates_marker(tmp_path, monkeypatch):\n    import scripts.upload_delta_bundle as us\n\n    work_dir = tmp_path / \"work\"\n    work_dir.mkdir(parents=True, exist_ok=True)\n    monkeypatch.setattr(us, \"WORK_DIR\", str(work_dir))\n\n    slug = \"repo-0123456789abcdef\"\n    bundle = _write_bundle_with_created_file(tmp_path, \"a.txt\", b\"hello\")\n\n    counts = us.process_delta_bundle(\n        workspace_path=f\"/work/{slug}\",\n        bundle_path=bundle,\n        manifest={\"bundle_id\": \"b1\"},\n    )\n\n    assert counts.get(\"created\") == 1\n    assert (work_dir / slug / \"a.txt\").exists()\n    assert not (work_dir / slug / slug / \"a.txt\").exists()\n    assert (work_dir / \".codebase\" / \"repos\" / slug / \".ctxce_managed_upload\").exists()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_process_delta_bundle_mirrors_to_old_slug_when_staging_active_117": {
+      "name": "test_process_delta_bundle_mirrors_to_old_slug_when_staging_active",
+      "type": "function",
+      "start_line": 117,
+      "end_line": 153,
+      "content_hash": "90a2f8d4d000db2ed413a440d15fd5ea32d41f0a",
+      "content": "def test_process_delta_bundle_mirrors_to_old_slug_when_staging_active(tmp_path, monkeypatch):\n    import scripts.upload_delta_bundle as us\n\n    work_dir = tmp_path / \"work\"\n    work_dir.mkdir(parents=True, exist_ok=True)\n    monkeypatch.setattr(us, \"WORK_DIR\", str(work_dir))\n\n    canonical_slug = \"repo1-0123456789abcdef\"\n    old_slug = f\"{canonical_slug}_old\"\n\n    monkeypatch.setenv(\"CTXCE_STAGING_ENABLED\", \"1\")\n    monkeypatch.setattr(us, \"is_staging_enabled\", lambda: True)\n    monkeypatch.setattr(us, \"_extract_repo_name_from_path\", lambda path: canonical_slug)\n    monkeypatch.setattr(\n        us,\n        \"get_collection_state_snapshot\",\n        lambda workspace_path=None, repo_name=None: {\n            \"serving_repo_slug\": old_slug,\n            \"active_repo_slug\": canonical_slug,\n        },\n    )\n\n    bundle = _write_bundle_with_created_file(tmp_path, \"src/file.txt\", b\"payload\")\n\n    counts = us.process_delta_bundle(\n        workspace_path=\"/work/random\",\n        bundle_path=bundle,\n        manifest={\"bundle_id\": \"b-dual\"},\n    )\n\n    assert counts.get(\"created\") == 1\n\n    for slug in (canonical_slug, old_slug):\n        target = work_dir / slug / \"src\" / \"file.txt\"\n        assert target.exists(), f\"expected write for {slug}\"\n        marker = work_dir / \".codebase\" / \"repos\" / slug / \".ctxce_managed_upload\"\n        assert marker.exists(), f\"expected marker for {slug}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_process_delta_bundle_rejects_absolute_paths_156": {
+      "name": "test_process_delta_bundle_rejects_absolute_paths",
+      "type": "function",
+      "start_line": 156,
+      "end_line": 173,
+      "content_hash": "252c3a1abeefc89bab21fd2ff8e1fe1db77c1020",
+      "content": "def test_process_delta_bundle_rejects_absolute_paths(tmp_path, monkeypatch):\n    import scripts.upload_delta_bundle as us\n\n    work_dir = tmp_path / \"work\"\n    work_dir.mkdir(parents=True, exist_ok=True)\n    monkeypatch.setattr(us, \"WORK_DIR\", str(work_dir))\n\n    bundle = _write_bundle(\n        tmp_path,\n        [{\"operation\": \"created\", \"path\": \"/etc/passwd\"}],\n    )\n\n    with pytest.raises(ValueError, match=\"Absolute paths\"):\n        us.process_delta_bundle(\n            workspace_path=\"/home/user/repo\",\n            bundle_path=bundle,\n            manifest={\"bundle_id\": \"b1\"},\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_process_delta_bundle_rejects_traversal_moved_source_176": {
+      "name": "test_process_delta_bundle_rejects_traversal_moved_source",
+      "type": "function",
+      "start_line": 176,
+      "end_line": 199,
+      "content_hash": "830fd825356ee780f84fab350d23a814f2492aae",
+      "content": "def test_process_delta_bundle_rejects_traversal_moved_source(tmp_path, monkeypatch):\n    import scripts.upload_delta_bundle as us\n\n    work_dir = tmp_path / \"work\"\n    work_dir.mkdir(parents=True, exist_ok=True)\n    monkeypatch.setattr(us, \"WORK_DIR\", str(work_dir))\n\n    bundle = _write_bundle(\n        tmp_path,\n        [\n            {\n                \"operation\": \"moved\",\n                \"path\": \"dst.txt\",\n                \"source_path\": \"../../escape.txt\",\n            }\n        ],\n    )\n\n    with pytest.raises(ValueError, match=\"escapes workspace\"):\n        us.process_delta_bundle(\n            workspace_path=\"/home/user/repo\",\n            bundle_path=bundle,\n            manifest={\"bundle_id\": \"b1\"},\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

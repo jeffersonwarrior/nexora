@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/agent/tools/file_test.go",
+  "file_hash": "d26c9e8b2c73aa3279285315ca40a8649ba66d66",
+  "updated_at": "2025-12-26T17:34:23.962169",
+  "symbols": {
+    "function_TestRecordFileRead_8": {
+      "name": "TestRecordFileRead",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 25,
+      "content_hash": "299c1dbc24dcab8e80fb9245c409e2196d7df525",
+      "content": "func TestRecordFileRead(t *testing.T) {\n\ttestPath := \"/tmp/test-file-read.txt\"\n\n\t// Record a file read\n\trecordFileRead(testPath)\n\n\t// Verify we can get the read time\n\treadTime := getLastReadTime(testPath)\n\tif readTime.IsZero() {\n\t\tt.Error(\"Expected non-zero read time after recording\")\n\t}\n\n\t// Verify the time is recent (within last second)\n\tif time.Since(readTime) > time.Second {\n\t\tt.Error(\"Expected read time to be recent\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetLastReadTime_NonExistent_26": {
+      "name": "TestGetLastReadTime_NonExistent",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 35,
+      "content_hash": "7cf4524e4fa957732ac3687965f3e210285f9855",
+      "content": "func TestGetLastReadTime_NonExistent(t *testing.T) {\n\ttestPath := \"/tmp/non-existent-file-for-test.txt\"\n\n\t// Get read time for file that was never read\n\treadTime := getLastReadTime(testPath)\n\tif !readTime.IsZero() {\n\t\tt.Error(\"Expected zero time for non-existent file record\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecordFileWrite_36": {
+      "name": "TestRecordFileWrite",
+      "type": "function",
+      "start_line": 36,
+      "end_line": 49,
+      "content_hash": "3b2651b6f73a9e061a1f2ef3ce1c61a9edf4538b",
+      "content": "func TestRecordFileWrite(t *testing.T) {\n\ttestPath := \"/tmp/test-file-write.txt\"\n\n\t// Record a file write\n\trecordFileWrite(testPath)\n\n\t// Record is now internal, but we can verify through read/write sequence\n\trecordFileRead(testPath)\n\treadTime := getLastReadTime(testPath)\n\tif readTime.IsZero() {\n\t\tt.Error(\"Expected non-zero read time\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFileRecordConcurrency_50": {
+      "name": "TestFileRecordConcurrency",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 75,
+      "content_hash": "955f6e86711fa2c0d6266b9f0de2c9abdf60983c",
+      "content": "func TestFileRecordConcurrency(t *testing.T) {\n\ttestPath := \"/tmp/test-concurrent-access.txt\"\n\n\t// Run concurrent reads and writes\n\tdone := make(chan bool)\n\n\tfor i := 0; i < 10; i++ {\n\t\tgo func() {\n\t\t\trecordFileRead(testPath)\n\t\t\trecordFileWrite(testPath)\n\t\t\t_ = getLastReadTime(testPath)\n\t\t\tdone <- true\n\t\t}()\n\t}\n\n\t// Wait for all goroutines\n\tfor i := 0; i < 10; i++ {\n\t\t<-done\n\t}\n\n\t// Verify we can still read the time (mutex works)\n\treadTime := getLastReadTime(testPath)\n\tif readTime.IsZero() {\n\t\tt.Error(\"Expected non-zero read time after concurrent access\")\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

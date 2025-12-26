@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/utils/formatNumber.ts",
+  "file_hash": "0087be633d63ee7897ca5b9550bdf57733f9d309",
+  "updated_at": "2025-12-26T17:34:23.826144",
+  "symbols": {
+    "function_formatStarCount_9": {
+      "name": "formatStarCount",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 23,
+      "content_hash": "7b6d6f09af1e4bfc4f893988301c5bc84e2fa839",
+      "content": "export function formatStarCount(count: number): string {\n  if (count < 1000) {\n    return count.toString();\n  }\n\n  if (count < 1000000) {\n    // Format as k (thousands)\n    const thousands = count / 1000;\n    return `${thousands.toFixed(1)}k`;\n  }\n\n  // Format as M (millions)\n  const millions = count / 1000000;\n  return `${millions.toFixed(1)}M`;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

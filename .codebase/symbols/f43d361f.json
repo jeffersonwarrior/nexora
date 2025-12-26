@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/components/Feed.tsx",
+  "file_hash": "2d2ca582c1b3a74e4ad8027c3e73d123cb298b55",
+  "updated_at": "2025-12-26T17:34:20.495475",
+  "symbols": {
+    "function_Feed_18": {
+      "name": "Feed",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 99,
+      "content_hash": "07a8c773e9ae93a7e7dfbf4dc9b0eac9cce5e5e9",
+      "content": "export function Feed({ observations, summaries, prompts, onLoadMore, isLoading, hasMore }: FeedProps) {\n  const loadMoreRef = useRef<HTMLDivElement>(null);\n  const feedRef = useRef<HTMLDivElement>(null);\n  const onLoadMoreRef = useRef(onLoadMore);\n\n  // Keep the callback ref up to date\n  useEffect(() => {\n    onLoadMoreRef.current = onLoadMore;\n  }, [onLoadMore]);\n\n  // Set up intersection observer for infinite scroll\n  useEffect(() => {\n    const element = loadMoreRef.current;\n    if (!element) return;\n\n    const observer = new IntersectionObserver(\n      (entries) => {\n        const first = entries[0];\n        if (first.isIntersecting && hasMore && !isLoading) {\n          onLoadMoreRef.current?.();\n        }\n      },\n      { threshold: UI.LOAD_MORE_THRESHOLD }\n    );\n\n    observer.observe(element);\n\n    return () => {\n      if (element) {\n        observer.unobserve(element);\n      }\n      observer.disconnect();\n    };\n  }, [hasMore, isLoading]);\n\n  const items = useMemo<FeedItem[]>(() => {\n    const combined = [\n      ...observations.map(o => ({ ...o, itemType: 'observation' as const })),\n      ...summaries.map(s => ({ ...s, itemType: 'summary' as const })),\n      ...prompts.map(p => ({ ...p, itemType: 'prompt' as const }))\n    ];\n\n    return combined.sort((a, b) => b.created_at_epoch - a.created_at_epoch);\n  }, [observations, summaries, prompts]);\n\n  return (\n    <div className=\"feed\" ref={feedRef}>\n      <ScrollToTop targetRef={feedRef} />\n      <div className=\"feed-content\">\n        {items.map(item => {\n          const key = `${item.itemType}-${item.id}`;\n          if (item.itemType === 'observation') {\n            return <ObservationCard key={key} observation={item} />;\n          } else if (item.itemType === 'summary') {\n            return <SummaryCard key={key} summary={item} />;\n          } else {\n            return <PromptCard key={key} prompt={item} />;\n          }\n        })}\n        {items.length === 0 && !isLoading && (\n          <div style={{ textAlign: 'center', padding: '40px', color: '#8b949e' }}>\n            No items to display\n          </div>\n        )}\n        {isLoading && (\n          <div style={{ textAlign: 'center', padding: '20px', color: '#8b949e' }}>\n            <div className=\"spinner\" style={{ display: 'inline-block', marginRight: '10px' }}></div>\n            Loading more...\n          </div>\n        )}\n        {hasMore && !isLoading && items.length > 0 && (\n          <div ref={loadMoreRef} style={{ height: '20px', margin: '10px 0' }} />\n        )}\n        {!hasMore && items.length > 0 && (\n          <div style={{ textAlign: 'center', padding: '20px', color: '#8b949e', fontSize: '14px' }}>\n            No more items to load\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

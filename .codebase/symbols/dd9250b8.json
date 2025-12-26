@@ -1,0 +1,249 @@
+{
+  "file_path": "/work/context-engine/tests/test_embedder.py",
+  "file_hash": "5b8fed144cf96366d92322bce099017fc13bb0c3",
+  "updated_at": "2025-12-26T17:34:22.333402",
+  "symbols": {
+    "function_embedder_module_21": {
+      "name": "embedder_module",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 31,
+      "content_hash": "d47bb30191fc1405aff0f55534f3928dd4c4b920",
+      "content": "def embedder_module(monkeypatch):\n    \"\"\"Import embedder with clean environment.\"\"\"\n    import importlib\n    \n    # Clear relevant env vars for isolated testing\n    monkeypatch.delenv(\"EMBEDDING_MODEL\", raising=False)\n    monkeypatch.delenv(\"QWEN3_EMBEDDING_ENABLED\", raising=False)\n    monkeypatch.delenv(\"QWEN3_QUERY_INSTRUCTION\", raising=False)\n    \n    embedder = importlib.import_module(\"scripts.embedder\")\n    return importlib.reload(embedder)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestGetModelDimension_37": {
+      "name": "TestGetModelDimension",
+      "type": "class",
+      "start_line": 37,
+      "end_line": 89,
+      "content_hash": "c4fe165be44dbd4c1de44ac41244ea82420154b5",
+      "content": "class TestGetModelDimension:\n    \"\"\"Tests for get_model_dimension function.\"\"\"\n\n    def test_default_bge_base_768(self, embedder_module):\n        \"\"\"BGE-base models return 768 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"BAAI/bge-base-en-v1.5\")\n        assert dim == 768\n\n    def test_bge_small_384(self, embedder_module):\n        \"\"\"BGE-small models return 384 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"BAAI/bge-small-en-v1.5\")\n        assert dim == 384\n\n    def test_bge_large_1024(self, embedder_module):\n        \"\"\"BGE-large models return 1024 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"BAAI/bge-large-en-v1.5\")\n        assert dim == 1024\n\n    def test_minilm_384(self, embedder_module):\n        \"\"\"MiniLM models return 384 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"sentence-transformers/all-MiniLM-L6-v2\")\n        assert dim == 384\n\n    def test_e5_small_384(self, embedder_module):\n        \"\"\"E5-small models return 384 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"intfloat/e5-small\")\n        assert dim == 384\n\n    def test_e5_base_768(self, embedder_module):\n        \"\"\"E5-base models return 768 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"intfloat/e5-base\")\n        assert dim == 768\n\n    def test_e5_large_1024(self, embedder_module):\n        \"\"\"E5-large models return 1024 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"intfloat/e5-large\")\n        assert dim == 1024\n\n    def test_qwen3_1024(self, embedder_module):\n        \"\"\"Qwen3 models return 1024 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"electroglyph/Qwen3-Embedding-0.6B-onnx-uint8\")\n        assert dim == 1024\n\n    def test_unknown_model_defaults_768(self, embedder_module):\n        \"\"\"Unknown models default to 768 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"some-unknown/model-name\")\n        assert dim == 768\n\n    def test_none_uses_default(self, embedder_module, monkeypatch):\n        \"\"\"None model_name uses EMBEDDING_MODEL env or DEFAULT_MODEL.\"\"\"\n        # No env var set, should use DEFAULT_MODEL (bge-base = 768)\n        dim = embedder_module.get_model_dimension(None)\n        assert dim == 768",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_default_bge_base_768_40": {
+      "name": "test_default_bge_base_768",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 43,
+      "content_hash": "5dbcd47184c0138061e8e91880ee8908de0457a3",
+      "content": "    def test_default_bge_base_768(self, embedder_module):\n        \"\"\"BGE-base models return 768 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"BAAI/bge-base-en-v1.5\")\n        assert dim == 768",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_bge_small_384_45": {
+      "name": "test_bge_small_384",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 48,
+      "content_hash": "8bf4f75b3b54be864e1e94f97f8219a749e99127",
+      "content": "    def test_bge_small_384(self, embedder_module):\n        \"\"\"BGE-small models return 384 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"BAAI/bge-small-en-v1.5\")\n        assert dim == 384",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_bge_large_1024_50": {
+      "name": "test_bge_large_1024",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 53,
+      "content_hash": "c3e97ebab1734aa248abad69bf60826db9b18fc9",
+      "content": "    def test_bge_large_1024(self, embedder_module):\n        \"\"\"BGE-large models return 1024 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"BAAI/bge-large-en-v1.5\")\n        assert dim == 1024",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_minilm_384_55": {
+      "name": "test_minilm_384",
+      "type": "method",
+      "start_line": 55,
+      "end_line": 58,
+      "content_hash": "75e561f1caa9fbaed464decb97d78cc120d68636",
+      "content": "    def test_minilm_384(self, embedder_module):\n        \"\"\"MiniLM models return 384 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"sentence-transformers/all-MiniLM-L6-v2\")\n        assert dim == 384",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_e5_small_384_60": {
+      "name": "test_e5_small_384",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 63,
+      "content_hash": "5b17908fdc36d2f349b01474c12db4c1b3df7e06",
+      "content": "    def test_e5_small_384(self, embedder_module):\n        \"\"\"E5-small models return 384 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"intfloat/e5-small\")\n        assert dim == 384",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_e5_base_768_65": {
+      "name": "test_e5_base_768",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 68,
+      "content_hash": "c24564174e0017a4a42cd4b214950dd69255da99",
+      "content": "    def test_e5_base_768(self, embedder_module):\n        \"\"\"E5-base models return 768 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"intfloat/e5-base\")\n        assert dim == 768",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_e5_large_1024_70": {
+      "name": "test_e5_large_1024",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 73,
+      "content_hash": "80ad8cd4e8f2d131d9ef3d8126fbd0b8c5d2a22b",
+      "content": "    def test_e5_large_1024(self, embedder_module):\n        \"\"\"E5-large models return 1024 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"intfloat/e5-large\")\n        assert dim == 1024",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_qwen3_1024_75": {
+      "name": "test_qwen3_1024",
+      "type": "method",
+      "start_line": 75,
+      "end_line": 78,
+      "content_hash": "b15bdf0e78032ef3d3bd6e53f293755748810b7c",
+      "content": "    def test_qwen3_1024(self, embedder_module):\n        \"\"\"Qwen3 models return 1024 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"electroglyph/Qwen3-Embedding-0.6B-onnx-uint8\")\n        assert dim == 1024",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_unknown_model_defaults_768_80": {
+      "name": "test_unknown_model_defaults_768",
+      "type": "method",
+      "start_line": 80,
+      "end_line": 83,
+      "content_hash": "26f27d1463dfff955c9b48919e8503dfc60b55c3",
+      "content": "    def test_unknown_model_defaults_768(self, embedder_module):\n        \"\"\"Unknown models default to 768 dimensions.\"\"\"\n        dim = embedder_module.get_model_dimension(\"some-unknown/model-name\")\n        assert dim == 768",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_none_uses_default_85": {
+      "name": "test_none_uses_default",
+      "type": "method",
+      "start_line": 85,
+      "end_line": 89,
+      "content_hash": "79f05791ca41076fde27cb1241b57ea05d926a7f",
+      "content": "    def test_none_uses_default(self, embedder_module, monkeypatch):\n        \"\"\"None model_name uses EMBEDDING_MODEL env or DEFAULT_MODEL.\"\"\"\n        # No env var set, should use DEFAULT_MODEL (bge-base = 768)\n        dim = embedder_module.get_model_dimension(None)\n        assert dim == 768",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestIsQwen3Model_95": {
+      "name": "TestIsQwen3Model",
+      "type": "class",
+      "start_line": 95,
+      "end_line": 107,
+      "content_hash": "b6e0baa56ec27c12f9151bea2b45246d75b2099c",
+      "content": "class TestIsQwen3Model:\n    \"\"\"Tests for is_qwen3_model function.\"\"\"\n\n    def test_detects_qwen3_in_name(self, embedder_module):\n        \"\"\"Detects Qwen3 in model name (case-insensitive).\"\"\"\n        assert embedder_module.is_qwen3_model(\"electroglyph/Qwen3-Embedding-0.6B\") is True\n        assert embedder_module.is_qwen3_model(\"some/QWEN3-model\") is True\n        assert embedder_module.is_qwen3_model(\"qwen3-test\") is True\n\n    def test_non_qwen3_models(self, embedder_module):\n        \"\"\"Non-Qwen3 models return False.\"\"\"\n        assert embedder_module.is_qwen3_model(\"BAAI/bge-base-en-v1.5\") is False\n        assert embedder_module.is_qwen3_model(\"sentence-transformers/all-MiniLM\") is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_detects_qwen3_in_name_98": {
+      "name": "test_detects_qwen3_in_name",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 102,
+      "content_hash": "c736b44ba1ccb720b5afbe019de7290192bcf4c1",
+      "content": "    def test_detects_qwen3_in_name(self, embedder_module):\n        \"\"\"Detects Qwen3 in model name (case-insensitive).\"\"\"\n        assert embedder_module.is_qwen3_model(\"electroglyph/Qwen3-Embedding-0.6B\") is True\n        assert embedder_module.is_qwen3_model(\"some/QWEN3-model\") is True\n        assert embedder_module.is_qwen3_model(\"qwen3-test\") is True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_non_qwen3_models_104": {
+      "name": "test_non_qwen3_models",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 107,
+      "content_hash": "823b9d95019af45cd67baa6b8b3cb718216608f1",
+      "content": "    def test_non_qwen3_models(self, embedder_module):\n        \"\"\"Non-Qwen3 models return False.\"\"\"\n        assert embedder_module.is_qwen3_model(\"BAAI/bge-base-en-v1.5\") is False\n        assert embedder_module.is_qwen3_model(\"sentence-transformers/all-MiniLM\") is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestPrefixQuery_113": {
+      "name": "TestPrefixQuery",
+      "type": "class",
+      "start_line": 113,
+      "end_line": 126,
+      "content_hash": "e41948df3543c1a951b4da655ee600c78a45a7b5",
+      "content": "class TestPrefixQuery:\n    \"\"\"Tests for prefix_query and prefix_queries functions.\"\"\"\n\n    def test_non_qwen3_returns_original(self, embedder_module):\n        \"\"\"Non-Qwen3 models don't prefix queries.\"\"\"\n        query = \"find function foo\"\n        result = embedder_module.prefix_query(query, \"BAAI/bge-base-en-v1.5\")\n        assert result == query\n\n    def test_prefix_queries_list(self, embedder_module):\n        \"\"\"prefix_queries handles list of queries for non-Qwen3.\"\"\"\n        queries = [\"query1\", \"query2\", \"query3\"]\n        result = embedder_module.prefix_queries(queries, \"BAAI/bge-base-en-v1.5\")\n        assert result == queries",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_non_qwen3_returns_original_116": {
+      "name": "test_non_qwen3_returns_original",
+      "type": "method",
+      "start_line": 116,
+      "end_line": 120,
+      "content_hash": "b881942a5da38854c32b37fd313cc55dabe340b5",
+      "content": "    def test_non_qwen3_returns_original(self, embedder_module):\n        \"\"\"Non-Qwen3 models don't prefix queries.\"\"\"\n        query = \"find function foo\"\n        result = embedder_module.prefix_query(query, \"BAAI/bge-base-en-v1.5\")\n        assert result == query",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_prefix_queries_list_122": {
+      "name": "test_prefix_queries_list",
+      "type": "method",
+      "start_line": 122,
+      "end_line": 126,
+      "content_hash": "5ec7fc48d062452f90325a17f4a28a7aee060ee9",
+      "content": "    def test_prefix_queries_list(self, embedder_module):\n        \"\"\"prefix_queries handles list of queries for non-Qwen3.\"\"\"\n        queries = [\"query1\", \"query2\", \"query3\"]\n        result = embedder_module.prefix_queries(queries, \"BAAI/bge-base-en-v1.5\")\n        assert result == queries",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestConstants_132": {
+      "name": "TestConstants",
+      "type": "class",
+      "start_line": 132,
+      "end_line": 147,
+      "content_hash": "7fa459c15a5be8e7c8341220744e829a1ed63a6e",
+      "content": "class TestConstants:\n    \"\"\"Tests for module constants.\"\"\"\n\n    def test_default_model_defined(self, embedder_module):\n        \"\"\"DEFAULT_MODEL constant is defined.\"\"\"\n        assert hasattr(embedder_module, \"DEFAULT_MODEL\")\n        assert embedder_module.DEFAULT_MODEL == \"BAAI/bge-base-en-v1.5\"\n\n    def test_qwen3_model_defined(self, embedder_module):\n        \"\"\"QWEN3_MODEL constant is defined.\"\"\"\n        assert hasattr(embedder_module, \"QWEN3_MODEL\")\n        assert \"qwen3\" in embedder_module.QWEN3_MODEL.lower()\n\n    def test_qwen3_dim_is_1024(self, embedder_module):\n        \"\"\"QWEN3_DIM is 1024.\"\"\"\n        assert embedder_module.QWEN3_DIM == 1024",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_default_model_defined_135": {
+      "name": "test_default_model_defined",
+      "type": "method",
+      "start_line": 135,
+      "end_line": 138,
+      "content_hash": "aee9430fdcfd63bf96a21f6873cc66920104b418",
+      "content": "    def test_default_model_defined(self, embedder_module):\n        \"\"\"DEFAULT_MODEL constant is defined.\"\"\"\n        assert hasattr(embedder_module, \"DEFAULT_MODEL\")\n        assert embedder_module.DEFAULT_MODEL == \"BAAI/bge-base-en-v1.5\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_qwen3_model_defined_140": {
+      "name": "test_qwen3_model_defined",
+      "type": "method",
+      "start_line": 140,
+      "end_line": 143,
+      "content_hash": "e49f9de09938bd4f15e2b59ef75d86fbad15d755",
+      "content": "    def test_qwen3_model_defined(self, embedder_module):\n        \"\"\"QWEN3_MODEL constant is defined.\"\"\"\n        assert hasattr(embedder_module, \"QWEN3_MODEL\")\n        assert \"qwen3\" in embedder_module.QWEN3_MODEL.lower()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_qwen3_dim_is_1024_145": {
+      "name": "test_qwen3_dim_is_1024",
+      "type": "method",
+      "start_line": 145,
+      "end_line": 147,
+      "content_hash": "603c0be706c9c91f304517f096772bd8c53a7d9a",
+      "content": "    def test_qwen3_dim_is_1024(self, embedder_module):\n        \"\"\"QWEN3_DIM is 1024.\"\"\"\n        assert embedder_module.QWEN3_DIM == 1024",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

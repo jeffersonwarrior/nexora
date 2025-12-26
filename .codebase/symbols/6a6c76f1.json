@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/log/http.go",
+  "file_hash": "6cba9fa14739d9e580f704b9c3b63a63b38747d0",
+  "updated_at": "2025-12-26T17:34:20.496102",
+  "symbols": {
+    "function_NewHTTPClient_14": {
+      "name": "NewHTTPClient",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 22,
+      "content_hash": "a2b71bb7e7b323f97e90e73138e48261aad0bb8e",
+      "content": "func NewHTTPClient() *http.Client {\n\treturn &http.Client{\n\t\tTransport: &HTTPRoundTripLogger{\n\t\t\tTransport: http.DefaultTransport,\n\t\t},\n\t}\n}\n\n// HTTPRoundTripLogger is an http.RoundTripper that logs requests and responses.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_HTTPRoundTripLogger_23": {
+      "name": "HTTPRoundTripLogger",
+      "type": "struct",
+      "start_line": 23,
+      "end_line": 27,
+      "content_hash": "7c665bccfe6d7534d0a4ed12e84833a8e26a4f67",
+      "content": "type HTTPRoundTripLogger struct {\n\tTransport http.RoundTripper\n}\n\n// RoundTrip implements http.RoundTripper interface with logging.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RoundTrip_28": {
+      "name": "RoundTrip",
+      "type": "method",
+      "start_line": 28,
+      "end_line": 80,
+      "content_hash": "1ed16fa8cf9e37cb85268d6f9ce1f3088f6c1a94",
+      "content": "func (h *HTTPRoundTripLogger) RoundTrip(req *http.Request) (*http.Response, error) {\n\tvar err error\n\tvar save io.ReadCloser\n\tsave, req.Body, err = drainBody(req.Body)\n\tif err != nil {\n\t\tslog.Error(\n\t\t\t\"HTTP request failed\",\n\t\t\t\"method\", req.Method,\n\t\t\t\"url\", req.URL,\n\t\t\t\"error\", err,\n\t\t)\n\t\treturn nil, err\n\t}\n\n\tif slog.Default().Enabled(req.Context(), slog.LevelDebug) {\n\t\tslog.Debug(\n\t\t\t\"HTTP Request\",\n\t\t\t\"method\", req.Method,\n\t\t\t\"url\", req.URL,\n\t\t\t\"body\", bodyToString(save),\n\t\t)\n\t}\n\n\tstart := time.Now()\n\tresp, err := h.Transport.RoundTrip(req)\n\tduration := time.Since(start)\n\tif err != nil {\n\t\tslog.Error(\n\t\t\t\"HTTP request failed\",\n\t\t\t\"method\", req.Method,\n\t\t\t\"url\", req.URL,\n\t\t\t\"duration_ms\", duration.Milliseconds(),\n\t\t\t\"error\", err,\n\t\t)\n\t\treturn resp, err\n\t}\n\n\tsave, resp.Body, err = drainBody(resp.Body)\n\tif slog.Default().Enabled(req.Context(), slog.LevelDebug) {\n\t\tslog.Debug(\n\t\t\t\"HTTP Response\",\n\t\t\t\"status_code\", resp.StatusCode,\n\t\t\t\"status\", resp.Status,\n\t\t\t\"headers\", formatHeaders(resp.Header),\n\t\t\t\"body\", bodyToString(save),\n\t\t\t\"content_length\", resp.ContentLength,\n\t\t\t\"duration_ms\", duration.Milliseconds(),\n\t\t\t\"error\", err,\n\t\t)\n\t}\n\treturn resp, err\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_bodyToString_81": {
+      "name": "bodyToString",
+      "type": "function",
+      "start_line": 81,
+      "end_line": 98,
+      "content_hash": "df7c6300ac0d8ebe72171a03bb22b78c7c2465a4",
+      "content": "func bodyToString(body io.ReadCloser) string {\n\tif body == nil {\n\t\treturn \"\"\n\t}\n\tsrc, err := io.ReadAll(body)\n\tif err != nil {\n\t\tslog.Error(\"Failed to read body\", \"error\", err)\n\t\treturn \"\"\n\t}\n\tvar b bytes.Buffer\n\tif json.Indent(&b, bytes.TrimSpace(src), \"\", \"  \") != nil {\n\t\t// not json probably\n\t\treturn string(src)\n\t}\n\treturn b.String()\n}\n\n// formatHeaders formats HTTP headers for logging, filtering out sensitive information.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatHeaders_99": {
+      "name": "formatHeaders",
+      "type": "function",
+      "start_line": 99,
+      "end_line": 115,
+      "content_hash": "d0ad3878ca79b296deb3e337e620f7e95c4103bc",
+      "content": "func formatHeaders(headers http.Header) map[string][]string {\n\tfiltered := make(map[string][]string)\n\tfor key, values := range headers {\n\t\tlowerKey := strings.ToLower(key)\n\t\t// Filter out sensitive headers\n\t\tif strings.Contains(lowerKey, \"authorization\") ||\n\t\t\tstrings.Contains(lowerKey, \"api-key\") ||\n\t\t\tstrings.Contains(lowerKey, \"token\") ||\n\t\t\tstrings.Contains(lowerKey, \"secret\") {\n\t\t\tfiltered[key] = []string{\"[REDACTED]\"}\n\t\t} else {\n\t\t\tfiltered[key] = values\n\t\t}\n\t}\n\treturn filtered\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_drainBody_116": {
+      "name": "drainBody",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 128,
+      "content_hash": "b6dba0caa8c35a51cedf1b92843db91272b1966a",
+      "content": "func drainBody(b io.ReadCloser) (r1, r2 io.ReadCloser, err error) {\n\tif b == nil || b == http.NoBody {\n\t\treturn http.NoBody, http.NoBody, nil\n\t}\n\tvar buf bytes.Buffer\n\tif _, err = buf.ReadFrom(b); err != nil {\n\t\treturn nil, b, err\n\t}\n\tif err = b.Close(); err != nil {\n\t\treturn nil, b, err\n\t}\n\treturn io.NopCloser(&buf), io.NopCloser(bytes.NewReader(buf.Bytes())), nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

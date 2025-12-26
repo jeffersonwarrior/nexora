@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_concurrency_service.py",
+  "file_hash": "75addc014002487e0216423802b36f2c77e0a998",
+  "updated_at": "2025-12-26T17:34:21.871245",
+  "symbols": {
+    "function_test_repo_search_concurrent_10": {
+      "name": "test_repo_search_concurrent",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 30,
+      "content_hash": "98d30e3356501838f37856b547cfaaa4474c5368",
+      "content": "async def test_repo_search_concurrent(monkeypatch):\n    # In-process, fast stubbed hybrid search and model\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"1\")\n    monkeypatch.setattr(srv, \"_get_embedding_model\", lambda *a, **k: object())\n\n    import scripts.hybrid_search as hy\n\n    def fast_stub(*a, **k):\n        # Return tiny deterministic list\n        return [\n            {\"score\": 0.5, \"path\": \"/x/a.py\", \"start_line\": 1, \"end_line\": 3},\n            {\"score\": 0.4, \"path\": \"/x/b.py\", \"start_line\": 5, \"end_line\": 9},\n        ]\n\n    monkeypatch.setattr(hy, \"run_hybrid_search\", fast_stub)\n\n    async def one():\n        return await srv.repo_search(queries=[\"def\"], limit=2, compact=True)\n\n    # Ensure no event-loop blocking under moderate concurrency\n    await asyncio.wait_for(asyncio.gather(*[one() for _ in range(25)]), timeout=30)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fast_stub_17": {
+      "name": "fast_stub",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 22,
+      "content_hash": "dda56caf3df8e9b0cb29582e2df9d11474ed89e5",
+      "content": "    def fast_stub(*a, **k):\n        # Return tiny deterministic list\n        return [\n            {\"score\": 0.5, \"path\": \"/x/a.py\", \"start_line\": 1, \"end_line\": 3},\n            {\"score\": 0.4, \"path\": \"/x/b.py\", \"start_line\": 5, \"end_line\": 9},\n        ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_one_26": {
+      "name": "one",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 27,
+      "content_hash": "510a0a564fc73b9ae4b79a7efda4dffcd1fd01bf",
+      "content": "    async def one():\n        return await srv.repo_search(queries=[\"def\"], limit=2, compact=True)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

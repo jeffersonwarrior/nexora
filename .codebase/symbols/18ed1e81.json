@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/tui/highlight/highlight.go",
+  "file_hash": "afb8c965ac82b3c2f5512f49e25996a1cd318a82",
+  "updated_at": "2025-12-26T17:34:23.875442",
+  "symbols": {
+    "function_SyntaxHighlight_14": {
+      "name": "SyntaxHighlight",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 54,
+      "content_hash": "e5fbc3e2ae7ed1d5b466cc83862c7e8b0635b363",
+      "content": "func SyntaxHighlight(source, fileName string, bg color.Color) (string, error) {\n\t// Determine the language lexer to use\n\tl := lexers.Match(fileName)\n\tif l == nil {\n\t\tl = lexers.Analyse(source)\n\t}\n\tif l == nil {\n\t\tl = lexers.Fallback\n\t}\n\tl = chroma.Coalesce(l)\n\n\t// Get the formatter\n\tf := formatters.Get(\"terminal16m\")\n\tif f == nil {\n\t\tf = formatters.Fallback\n\t}\n\n\tstyle := chroma.MustNewStyle(\"nexora\", styles.GetChromaTheme())\n\n\t// Modify the style to use the provided background\n\ts, err := style.Builder().Transform(\n\t\tfunc(t chroma.StyleEntry) chroma.StyleEntry {\n\t\t\tr, g, b, _ := bg.RGBA()\n\t\t\tt.Background = chroma.NewColour(uint8(r>>8), uint8(g>>8), uint8(b>>8))\n\t\t\treturn t\n\t\t},\n\t).Build()\n\tif err != nil {\n\t\ts = chromaStyles.Fallback\n\t}\n\n\t// Tokenize and format\n\tit, err := l.Tokenise(nil, source)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tvar buf bytes.Buffer\n\terr = f.Format(&buf, s, it)\n\treturn buf.String(), err\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

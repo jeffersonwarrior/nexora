@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/internal/history/file.go",
+  "file_hash": "47e00ec975808c0acc56d7806eb361eaea9e8dcd",
+  "updated_at": "2025-12-26T17:34:21.051123",
+  "symbols": {
+    "struct_File_18": {
+      "name": "File",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 27,
+      "content_hash": "e16ca032d2406c75389d71f2b3505d62d64b6079",
+      "content": "type File struct {\n\tID        string\n\tSessionID string\n\tPath      string\n\tContent   string\n\tVersion   int64\n\tCreatedAt int64\n\tUpdatedAt int64\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_Service_28": {
+      "name": "Service",
+      "type": "interface",
+      "start_line": 28,
+      "end_line": 39,
+      "content_hash": "ca0b208f7089dd8fc0d18eabce7ceef9c26140c9",
+      "content": "type Service interface {\n\tpubsub.Suscriber[File]\n\tCreate(ctx context.Context, sessionID, path, content string) (File, error)\n\tCreateVersion(ctx context.Context, sessionID, path, content string) (File, error)\n\tGet(ctx context.Context, id string) (File, error)\n\tGetByPathAndSession(ctx context.Context, path, sessionID string) (File, error)\n\tListBySession(ctx context.Context, sessionID string) ([]File, error)\n\tListLatestSessionFiles(ctx context.Context, sessionID string) ([]File, error)\n\tDelete(ctx context.Context, id string) error\n\tDeleteSessionFiles(ctx context.Context, sessionID string) error\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_service_40": {
+      "name": "service",
+      "type": "struct",
+      "start_line": 40,
+      "end_line": 45,
+      "content_hash": "dca91983dd8cddcc4d0a219dbbe3ce4f84e4c087",
+      "content": "type service struct {\n\t*pubsub.Broker[File]\n\tdb *sql.DB\n\tq  *db.Queries\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewService_46": {
+      "name": "NewService",
+      "type": "function",
+      "start_line": 46,
+      "end_line": 53,
+      "content_hash": "680dccc8a74fc485a5732331176ce2aab3f4e882",
+      "content": "func NewService(q *db.Queries, db *sql.DB) Service {\n\treturn &service{\n\t\tBroker: pubsub.NewBroker[File](),\n\t\tq:      q,\n\t\tdb:     db,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Create_54": {
+      "name": "Create",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 57,
+      "content_hash": "8cf13287a21cb4e23c9587c1c102f32aef96da67",
+      "content": "func (s *service) Create(ctx context.Context, sessionID, path, content string) (File, error) {\n\treturn s.createWithVersion(ctx, sessionID, path, content, InitialVersion)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateVersion_58": {
+      "name": "CreateVersion",
+      "type": "method",
+      "start_line": 58,
+      "end_line": 76,
+      "content_hash": "39a8397a04e93282dc9c2781260296531e4eac4d",
+      "content": "func (s *service) CreateVersion(ctx context.Context, sessionID, path, content string) (File, error) {\n\t// Get the latest version for this path\n\tfiles, err := s.q.ListFilesByPath(ctx, path)\n\tif err != nil {\n\t\treturn File{}, err\n\t}\n\n\tif len(files) == 0 {\n\t\t// No previous versions, create initial\n\t\treturn s.Create(ctx, sessionID, path, content)\n\t}\n\n\t// Get the latest version\n\tlatestFile := files[0] // Files are ordered by version DESC, created_at DESC\n\tnextVersion := latestFile.Version + 1\n\n\treturn s.createWithVersion(ctx, sessionID, path, content, nextVersion)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_createWithVersion_77": {
+      "name": "createWithVersion",
+      "type": "method",
+      "start_line": 77,
+      "end_line": 129,
+      "content_hash": "e905b13c783c94b23bfd5db3f57fd216d8ef5069",
+      "content": "func (s *service) createWithVersion(ctx context.Context, sessionID, path, content string, version int64) (File, error) {\n\t// Maximum number of retries for transaction conflicts\n\tconst maxRetries = 3\n\tvar file File\n\tvar err error\n\n\t// Retry loop for transaction conflicts\n\tfor attempt := range maxRetries {\n\t\t// Start a transaction\n\t\ttx, txErr := s.db.BeginTx(ctx, nil)\n\t\tif txErr != nil {\n\t\t\treturn File{}, fmt.Errorf(\"failed to begin transaction: %w\", txErr)\n\t\t}\n\n\t\t// Create a new queries instance with the transaction\n\t\tqtx := s.q.WithTx(tx)\n\n\t\t// Try to create the file within the transaction\n\t\tdbFile, txErr := qtx.CreateFile(ctx, db.CreateFileParams{\n\t\t\tID:        uuid.New().String(),\n\t\t\tSessionID: sessionID,\n\t\t\tPath:      path,\n\t\t\tContent:   content,\n\t\t\tVersion:   version,\n\t\t})\n\t\tif txErr != nil {\n\t\t\t// Rollback the transaction\n\t\t\ttx.Rollback()\n\n\t\t\t// Check if this is a uniqueness constraint violation\n\t\t\tif strings.Contains(txErr.Error(), \"UNIQUE constraint failed\") {\n\t\t\t\tif attempt < maxRetries-1 {\n\t\t\t\t\t// If we have retries left, increment version and try again\n\t\t\t\t\tversion++\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t}\n\t\t\treturn File{}, txErr\n\t\t}\n\n\t\t// Commit the transaction\n\t\tif txErr = tx.Commit(); txErr != nil {\n\t\t\treturn File{}, fmt.Errorf(\"failed to commit transaction: %w\", txErr)\n\t\t}\n\n\t\tfile = s.fromDBItem(dbFile)\n\t\ts.Publish(pubsub.CreatedEvent, file)\n\t\treturn file, nil\n\t}\n\n\treturn file, err\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_130": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 130,
+      "end_line": 137,
+      "content_hash": "77c04e984e7ae8b6ff2cb63ca186bfc2446df1fa",
+      "content": "func (s *service) Get(ctx context.Context, id string) (File, error) {\n\tdbFile, err := s.q.GetFile(ctx, id)\n\tif err != nil {\n\t\treturn File{}, err\n\t}\n\treturn s.fromDBItem(dbFile), nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetByPathAndSession_138": {
+      "name": "GetByPathAndSession",
+      "type": "method",
+      "start_line": 138,
+      "end_line": 148,
+      "content_hash": "d0055fe371ad4eccdd95af36d3bfe5713a00a89d",
+      "content": "func (s *service) GetByPathAndSession(ctx context.Context, path, sessionID string) (File, error) {\n\tdbFile, err := s.q.GetFileByPathAndSession(ctx, db.GetFileByPathAndSessionParams{\n\t\tPath:      path,\n\t\tSessionID: sessionID,\n\t})\n\tif err != nil {\n\t\treturn File{}, err\n\t}\n\treturn s.fromDBItem(dbFile), nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListBySession_149": {
+      "name": "ListBySession",
+      "type": "method",
+      "start_line": 149,
+      "end_line": 160,
+      "content_hash": "d7114b8367d2ccfe940f55db8877586de533d17e",
+      "content": "func (s *service) ListBySession(ctx context.Context, sessionID string) ([]File, error) {\n\tdbFiles, err := s.q.ListFilesBySession(ctx, sessionID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tfiles := make([]File, len(dbFiles))\n\tfor i, dbFile := range dbFiles {\n\t\tfiles[i] = s.fromDBItem(dbFile)\n\t}\n\treturn files, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListLatestSessionFiles_161": {
+      "name": "ListLatestSessionFiles",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 172,
+      "content_hash": "0c0efc53793a41865b733720fb2d759cc8d17346",
+      "content": "func (s *service) ListLatestSessionFiles(ctx context.Context, sessionID string) ([]File, error) {\n\tdbFiles, err := s.q.ListLatestSessionFiles(ctx, sessionID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tfiles := make([]File, len(dbFiles))\n\tfor i, dbFile := range dbFiles {\n\t\tfiles[i] = s.fromDBItem(dbFile)\n\t}\n\treturn files, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Delete_173": {
+      "name": "Delete",
+      "type": "method",
+      "start_line": 173,
+      "end_line": 185,
+      "content_hash": "988be2d98b32831d9684bf3e608fdf91e2b6a371",
+      "content": "func (s *service) Delete(ctx context.Context, id string) error {\n\tfile, err := s.Get(ctx, id)\n\tif err != nil {\n\t\treturn err\n\t}\n\terr = s.q.DeleteFile(ctx, id)\n\tif err != nil {\n\t\treturn err\n\t}\n\ts.Publish(pubsub.DeletedEvent, file)\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DeleteSessionFiles_186": {
+      "name": "DeleteSessionFiles",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 199,
+      "content_hash": "70fb04af6d1f7846879b1eb99a0342f63924a80d",
+      "content": "func (s *service) DeleteSessionFiles(ctx context.Context, sessionID string) error {\n\tfiles, err := s.ListBySession(ctx, sessionID)\n\tif err != nil {\n\t\treturn err\n\t}\n\tfor _, file := range files {\n\t\terr = s.Delete(ctx, file.ID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fromDBItem_200": {
+      "name": "fromDBItem",
+      "type": "method",
+      "start_line": 200,
+      "end_line": 210,
+      "content_hash": "7b62ff01d53914f0db44cb1d517298ee0b1bc095",
+      "content": "func (s *service) fromDBItem(item db.File) File {\n\treturn File{\n\t\tID:        item.ID,\n\t\tSessionID: item.SessionID,\n\t\tPath:      item.Path,\n\t\tContent:   item.Content,\n\t\tVersion:   item.Version,\n\t\tCreatedAt: item.CreatedAt,\n\t\tUpdatedAt: item.UpdatedAt,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

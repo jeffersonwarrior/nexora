@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/utils/project-name.ts",
+  "file_hash": "af46a27e9d72d316eb9a34b026bbaba392d869f9",
+  "updated_at": "2025-12-26T17:34:20.872728",
+  "symbols": {
+    "function_getProjectName_11": {
+      "name": "getProjectName",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 39,
+      "content_hash": "5b78595b8a905505ff502abb90aaaf7fd8912dd1",
+      "content": "export function getProjectName(cwd: string | null | undefined): string {\n  if (!cwd || cwd.trim() === '') {\n    logger.warn('PROJECT_NAME', 'Empty cwd provided, using fallback', { cwd });\n    return 'unknown-project';\n  }\n\n  // Extract basename (handles trailing slashes automatically)\n  const basename = path.basename(cwd);\n\n  // Edge case: Drive roots on Windows (C:\\, J:\\) or Unix root (/)\n  // path.basename('C:\\') returns '' (empty string)\n  if (basename === '') {\n    // Extract drive letter on Windows, or use 'root' on Unix\n    const isWindows = process.platform === 'win32';\n    if (isWindows) {\n      const driveMatch = cwd.match(/^([A-Z]):\\\\/i);\n      if (driveMatch) {\n        const driveLetter = driveMatch[1].toUpperCase();\n        const projectName = `drive-${driveLetter}`;\n        logger.info('PROJECT_NAME', 'Drive root detected', { cwd, projectName });\n        return projectName;\n      }\n    }\n    logger.warn('PROJECT_NAME', 'Root directory detected, using fallback', { cwd });\n    return 'unknown-project';\n  }\n\n  return basename;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

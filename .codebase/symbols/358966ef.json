@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/check.rs",
+  "file_hash": "781780f3fa0fc6165d122b904409d1df6c7d98fc",
+  "updated_at": "2025-12-26T17:34:21.057141",
+  "symbols": {
+    "struct_CargoCheckOutput_18": {
+      "name": "CargoCheckOutput",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 135,
+      "content_hash": "28b834d0f0b3e822bb48e3508ec55ee6fd3514c9",
+      "content": "struct CargoCheckOutput {\n    success: bool,\n    #[allow(dead_code)] // May be useful for debugging\n    full_output: String,\n    errors_only: String,\n}\n\npub async fn run(instance: Option<String>, metrics_sender: &MetricsSender) -> Result<()> {\n    // Load project context\n    let project = ProjectContext::find_and_load(None)?;\n\n    match instance {\n        Some(instance_name) => check_instance(&project, &instance_name, metrics_sender).await,\n        None => check_all_instances(&project, metrics_sender).await,\n    }\n}\n\nasync fn check_instance(\n    project: &ProjectContext,\n    instance_name: &str,\n    metrics_sender: &MetricsSender,\n) -> Result<()> {\n    let start_time = Instant::now();\n\n    print_status(\"CHECK\", &format!(\"Checking instance '{instance_name}'\"));\n\n    // Validate instance exists in config\n    let _instance_config = project.config.get_instance(instance_name)?;\n\n    // Step 1: Validate syntax first (quick check)\n    print_status(\"SYNTAX\", \"Validating query syntax...\");\n    validate_project_syntax(project)?;\n    print_success(\"Syntax validation passed\");\n\n    // Step 2: Ensure helix repo is cached (reuse from build.rs)\n    build::ensure_helix_repo_cached().await?;\n\n    // Step 3: Prepare instance workspace (reuse from build.rs)\n    build::prepare_instance_workspace(project, instance_name).await?;\n\n    // Step 4: Compile project - generate queries.rs (reuse from build.rs)\n    let metrics_data = build::compile_project(project, instance_name).await?;\n\n    // Step 5: Copy generated files to helix-repo-copy for cargo check\n    let instance_workspace = project.instance_workspace(instance_name);\n    let generated_src = instance_workspace.join(\"helix-container/src\");\n    let cargo_check_src = instance_workspace.join(\"helix-repo-copy/helix-container/src\");\n\n    // Copy queries.rs and config.hx.json\n    fs::copy(\n        generated_src.join(\"queries.rs\"),\n        cargo_check_src.join(\"queries.rs\"),\n    )?;\n    fs::copy(\n        generated_src.join(\"config.hx.json\"),\n        cargo_check_src.join(\"config.hx.json\"),\n    )?;\n\n    // Step 6: Run cargo check\n    print_status(\"CARGO\", \"Running cargo check on generated code...\");\n    let helix_container_dir = instance_workspace.join(\"helix-repo-copy/helix-container\");\n    let cargo_output = run_cargo_check(&helix_container_dir)?;\n\n    let compile_time = start_time.elapsed().as_secs() as u32;\n\n    if !cargo_output.success {\n        // Send failure telemetry\n        metrics_sender.send_compile_event(\n            instance_name.to_string(),\n            metrics_data.queries_string,\n            metrics_data.num_of_queries,\n            compile_time,\n            false,\n            Some(cargo_output.errors_only.clone()),\n        );\n\n        // Read generated Rust for issue\n        let generated_rust = fs::read_to_string(cargo_check_src.join(\"queries.rs\"))\n            .unwrap_or_else(|_| String::from(\"[Could not read generated code]\"));\n\n        // Handle failure - print errors and offer GitHub issue\n        handle_cargo_check_failure(&cargo_output, &generated_rust, project)?;\n\n        return Err(eyre::eyre!(\"Cargo check failed on generated Rust code\"));\n    }\n\n    print_success(\"Cargo check passed\");\n    print_success(&format!(\n        \"Instance '{}' check completed successfully\",\n        instance_name\n    ));\n    Ok(())\n}\n\nasync fn check_all_instances(\n    project: &ProjectContext,\n    metrics_sender: &MetricsSender,\n) -> Result<()> {\n    print_status(\"CHECK\", \"Checking all instances\");\n\n    let instances: Vec<String> = project.config.list_instances().into_iter().map(String::from).collect();\n\n    if instances.is_empty() {\n        return Err(eyre::eyre!(\n            \"No instances found in helix.toml. Add at least one instance to check.\"\n        ));\n    }\n\n    // Check each instance\n    for instance_name in &instances {\n        check_instance(project, instance_name, metrics_sender).await?;\n    }\n\n    print_success(\"All instances checked successfully\");\n    Ok(())\n}\n\n/// Validate project syntax by parsing queries and schema (similar to build.rs but without generating files)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validate_project_syntax_136": {
+      "name": "validate_project_syntax",
+      "type": "function",
+      "start_line": 136,
+      "end_line": 158,
+      "content_hash": "6ef161b6a5afcafc312f09947859e256fc142336",
+      "content": "fn validate_project_syntax(project: &ProjectContext) -> Result<()> {\n    // Collect all .hx files for validation\n    let hx_files = collect_hx_files(&project.root, &project.config.project.queries)?;\n\n    // Generate content and validate using helix-db parsing logic\n    let content = generate_content(&hx_files)?;\n    let source = parse_content(&content)?;\n\n    // Check if schema is empty before analyzing\n    if source.schema.is_empty() {\n        let error = crate::errors::CliError::new(\"no schema definitions found in project\")\n            .with_context(\"searched all .hx files in the queries directory but found no N:: (node) or E:: (edge) definitions\")\n            .with_hint(\"add at least one schema definition like 'N::User { name: String }' to your .hx files\");\n        return Err(eyre::eyre!(\"{}\", error.render()));\n    }\n\n    // Run static analysis to catch validation errors\n    analyze_source(source, &content.files)?;\n\n    Ok(())\n}\n\n/// Run cargo check on the generated code.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_run_cargo_check_159": {
+      "name": "run_cargo_check",
+      "type": "function",
+      "start_line": 159,
+      "end_line": 181,
+      "content_hash": "51817730f6c10af3f6f021bde859d0f96be3a3a1",
+      "content": "fn run_cargo_check(helix_container_dir: &Path) -> Result<CargoCheckOutput> {\n    let output = Command::new(\"cargo\")\n        .arg(\"check\")\n        .arg(\"--color=never\") // Disable color codes for cleaner output\n        .current_dir(helix_container_dir)\n        .output()\n        .map_err(|e| eyre::eyre!(\"Failed to run cargo check: {}\", e))?;\n\n    let stdout = String::from_utf8_lossy(&output.stdout).to_string();\n    let stderr = String::from_utf8_lossy(&output.stderr).to_string();\n    // stderr contains the actual errors, stdout has JSON if using message-format\n    let full_output = format!(\"{}\\n{}\", stderr, stdout);\n\n    let errors_only = filter_errors_only(&full_output);\n\n    Ok(CargoCheckOutput {\n        success: output.status.success(),\n        full_output,\n        errors_only,\n    })\n}\n\n/// Handle cargo check failure - print errors and offer GitHub issue creation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_handle_cargo_check_failure_182": {
+      "name": "handle_cargo_check_failure",
+      "type": "function",
+      "start_line": 182,
+      "end_line": 219,
+      "content_hash": "476c09b217cd90edf37b419868b512e41dd31cd1",
+      "content": "fn handle_cargo_check_failure(\n    cargo_output: &CargoCheckOutput,\n    generated_rust: &str,\n    project: &ProjectContext,\n) -> Result<()> {\n    print_error(\"Cargo check failed on generated Rust code\");\n    println!();\n    println!(\"This may indicate a bug in the Helix code generator.\");\n    println!();\n\n    // Offer to create GitHub issue\n    print_warning(\"You can report this issue to help improve Helix.\");\n    println!();\n\n    let should_create = print_confirm(\"Would you like to create a GitHub issue with diagnostic information?\")?;\n\n    if !should_create {\n        return Ok(());\n    }\n\n    // Collect .hx content\n    let hx_content = collect_hx_contents(&project.root, &project.config.project.queries)\n        .unwrap_or_else(|_| String::from(\"[Could not read .hx files]\"));\n\n    // Build and open GitHub issue\n    let issue = GitHubIssueBuilder::new(cargo_output.errors_only.clone())\n        .with_hx_content(hx_content)\n        .with_generated_rust(generated_rust.to_string());\n\n    print_status(\"BROWSER\", \"Opening GitHub issue page...\");\n    println!(\"Please review the content before submitting.\");\n\n    issue.open_in_browser()?;\n\n    print_success(\"GitHub issue page opened in your browser\");\n\n    Ok(())\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

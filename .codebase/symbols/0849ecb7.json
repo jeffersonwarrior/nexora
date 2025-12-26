@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/context-engine/ctx-mcp-bridge/src/authCli.js",
+  "file_hash": "0820378b7a2c1f1b3739fa4271e6d1d5a0bd84f7",
+  "updated_at": "2025-12-26T17:34:22.840134",
+  "symbols": {
+    "function_parseAuthArgs_4": {
+      "name": "parseAuthArgs",
+      "type": "function",
+      "start_line": 4,
+      "end_line": 45,
+      "content_hash": "768b1094af491f1356b80c36e511a577d8c0d551",
+      "content": "function parseAuthArgs(args) {\n  let backendUrl = process.env.CTXCE_AUTH_BACKEND_URL || \"\";\n  let token = process.env.CTXCE_AUTH_TOKEN || \"\";\n  let username = process.env.CTXCE_AUTH_USERNAME || \"\";\n  let password = process.env.CTXCE_AUTH_PASSWORD || \"\";\n  let outputJson = false;\n  for (let i = 0; i < args.length; i += 1) {\n    const a = args[i];\n    if ((a === \"--backend-url\" || a === \"--auth-url\") && i + 1 < args.length) {\n      backendUrl = args[i + 1];\n      i += 1;\n      continue;\n    }\n    if ((a === \"--token\" || a === \"--api-key\") && i + 1 < args.length) {\n      token = args[i + 1];\n      i += 1;\n      continue;\n    }\n    if (a === \"--username\" || a === \"--user\") {\n      const hasNext = i + 1 < args.length;\n      const next = hasNext ? String(args[i + 1]) : \"\";\n      if (hasNext && !next.startsWith(\"-\")) {\n        username = args[i + 1];\n        i += 1;\n      } else {\n        console.error(\"[ctxce] Missing value for --username/--user; expected a username.\");\n        process.exit(1);\n      }\n      continue;\n    }\n    if ((a === \"--password\" || a === \"--pass\") && i + 1 < args.length) {\n      password = args[i + 1];\n      i += 1;\n      continue;\n    }\n    if (a === \"--json\" || a === \"-j\") {\n      outputJson = true;\n      continue;\n    }\n  }\n  return { backendUrl, token, username, password, outputJson };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBackendUrl_47": {
+      "name": "getBackendUrl",
+      "type": "function",
+      "start_line": 47,
+      "end_line": 49,
+      "content_hash": "a78567ed29757351e69164ae9976f9d6d467ca0a",
+      "content": "function getBackendUrl(backendUrl) {\n  return (backendUrl || process.env.CTXCE_AUTH_BACKEND_URL || \"\").trim();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getDefaultUploadBackend_51": {
+      "name": "getDefaultUploadBackend",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 54,
+      "content_hash": "6fda2b5c7467af5668198a3333d6b846bec0fcf6",
+      "content": "function getDefaultUploadBackend() {\n  // Default to upload service when nothing else is configured\n  return (process.env.CTXCE_UPLOAD_ENDPOINT || process.env.UPLOAD_ENDPOINT || \"http://localhost:8004\").trim();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_requireBackendUrl_56": {
+      "name": "requireBackendUrl",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 63,
+      "content_hash": "bb80f188c9537ad08b47eb540b7d92296294873b",
+      "content": "function requireBackendUrl(backendUrl) {\n  const url = getBackendUrl(backendUrl);\n  if (!url) {\n    console.error(\"[ctxce] Auth backend URL not configured. Set CTXCE_AUTH_BACKEND_URL or use --backend-url.\");\n    process.exit(1);\n  }\n  return url;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_outputJsonStatus_65": {
+      "name": "outputJsonStatus",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 78,
+      "content_hash": "16944c779402e5524744499a394e6cec6f3b4c6f",
+      "content": "function outputJsonStatus(url, state, entry, rawExpires) {\n  const expiresAt = typeof rawExpires === \"number\"\n    ? rawExpires\n    : entry && typeof entry.expiresAt === \"number\"\n      ? entry.expiresAt\n      : null;\n  console.log(JSON.stringify({\n    backendUrl: url,\n    state,\n    sessionId: entry && entry.sessionId ? entry.sessionId : null,\n    userId: entry && entry.userId ? entry.userId : null,\n    expiresAt,\n  }));\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_doLogin_80": {
+      "name": "doLogin",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 154,
+      "content_hash": "6f475c6db87ba216a4e6d7d9cda11ad4e7a1e27d",
+      "content": "async function doLogin(args) {\n  const { backendUrl, token, username, password } = parseAuthArgs(args);\n  let url = getBackendUrl(backendUrl);\n  if (!url) {\n    // Fallback: use any stored auth entry when no backend is provided\n    const any = loadAnyAuthEntry();\n    if (any && any.backendUrl) {\n      url = any.backendUrl;\n      console.error(\"[ctxce] Using stored backend for login:\", url);\n    }\n  }\n  if (!url) {\n    // Final fallback: default upload endpoint (extension's upload endpoint or localhost:8004)\n    url = getDefaultUploadBackend();\n    if (url) {\n      console.error(\"[ctxce] Using default upload backend for login:\", url);\n    }\n  }\n  if (!url) {\n    console.error(\"[ctxce] Auth backend URL not configured. Set CTXCE_AUTH_BACKEND_URL or use --backend-url.\");\n    process.exit(1);\n  }\n  const trimmedUser = (username || \"\").trim();\n  const usePassword = trimmedUser && (password || \"\").length > 0;\n\n  let body;\n  let target;\n  if (usePassword) {\n    body = {\n      username: trimmedUser,\n      password,\n      workspace: process.cwd(),\n    };\n    target = url.replace(/\\/+$/, \"\") + \"/auth/login/password\";\n  } else {\n    body = {\n      client: \"ctxce\",\n      workspace: process.cwd(),\n    };\n    if (token) {\n      body.token = token;\n    }\n    target = url.replace(/\\/+$/, \"\") + \"/auth/login\";\n  }\n  let resp;\n  try {\n    resp = await fetch(target, {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/json\" },\n      body: JSON.stringify(body),\n    });\n  } catch (err) {\n    console.error(\"[ctxce] Auth login request failed:\", String(err));\n    process.exit(1);\n  }\n  if (!resp || !resp.ok) {\n    console.error(\"[ctxce] Auth login failed with status\", resp ? resp.status : \"<no-response>\");\n    process.exit(1);\n  }\n  let data;\n  try {\n    data = await resp.json();\n  } catch (err) {\n    data = {};\n  }\n  const sessionId = data.session_id || data.sessionId || null;\n  const userId = data.user_id || data.userId || null;\n  const expiresAt = data.expires_at || data.expiresAt || null;\n  if (!sessionId) {\n    console.error(\"[ctxce] Auth login response missing session id.\");\n    process.exit(1);\n  }\n  saveAuthEntry(url, { sessionId, userId, expiresAt });\n  console.error(\"[ctxce] Auth login successful for\", url);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_doStatus_156": {
+      "name": "doStatus",
+      "type": "function",
+      "start_line": 156,
+      "end_line": 235,
+      "content_hash": "d07d74ad1515977086cea2e7600ce8e63404516b",
+      "content": "async function doStatus(args) {\n  const { backendUrl, outputJson } = parseAuthArgs(args);\n  let url = getBackendUrl(backendUrl);\n  let usedFallback = false;\n  if (!url) {\n    // Fallback: use any stored auth entry when no backend is provided\n    const any = loadAnyAuthEntry();\n    if (any && any.backendUrl) {\n      url = any.backendUrl;\n      usedFallback = true;\n    }\n  }\n  if (!url) {\n    // Final fallback: default upload endpoint\n    url = getDefaultUploadBackend();\n    if (url) {\n      usedFallback = true;\n      console.error(\"[ctxce] Using default upload backend for status:\", url);\n    }\n  }\n  if (!url) {\n    if (outputJson) {\n      outputJsonStatus(\"\", \"missing_backend\", null, null);\n      process.exit(1);\n    }\n    console.error(\"[ctxce] Auth backend URL not configured and no stored sessions found. Set CTXCE_AUTH_BACKEND_URL or use --backend-url.\");\n    process.exit(1);\n  }\n  let entry;\n  try {\n    entry = loadAuthEntry(url);\n  } catch (err) {\n    entry = null;\n  }\n  const nowSecs = Math.floor(Date.now() / 1000);\n  const rawExpires = entry && typeof entry.expiresAt === \"number\" ? entry.expiresAt : null;\n  const hasSession = !!(entry && typeof entry.sessionId === \"string\" && entry.sessionId);\n  const expired = !!(rawExpires && rawExpires > 0 && rawExpires < nowSecs);\n\n  if (!entry || !hasSession) {\n    if (outputJson) {\n      outputJsonStatus(url, \"missing\", null, rawExpires);\n      process.exit(1);\n    }\n    if (usedFallback) {\n      console.error(\"[ctxce] Not logged in for stored backend\", url);\n    } else {\n      console.error(\"[ctxce] Not logged in for\", url);\n    }\n    process.exit(1);\n  }\n\n  if (expired) {\n    if (outputJson) {\n      outputJsonStatus(url, \"expired\", entry, rawExpires);\n      process.exit(2);\n    }\n    if (usedFallback) {\n      console.error(\"[ctxce] Stored auth session appears expired for stored backend\", url);\n    } else {\n      console.error(\"[ctxce] Stored auth session appears expired for\", url);\n    }\n    if (rawExpires) {\n      console.error(\"[ctxce] Session expired at\", rawExpires);\n    }\n    process.exit(2);\n  }\n\n  if (outputJson) {\n    outputJsonStatus(url, \"ok\", entry, rawExpires);\n    return;\n  }\n  if (usedFallback) {\n    console.error(\"[ctxce] Using stored backend for status:\", url);\n  }\n  console.error(\"[ctxce] Logged in to\", url, \"as\", entry.userId || \"<unknown>\");\n  if (rawExpires) {\n    console.error(\"[ctxce] Session expires at\", rawExpires);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_doLogout_237": {
+      "name": "doLogout",
+      "type": "function",
+      "start_line": 237,
+      "end_line": 266,
+      "content_hash": "db8b36c83b5adb572dc70a7c5d4801a7cb4efa2e",
+      "content": "async function doLogout(args) {\n  const { backendUrl } = parseAuthArgs(args);\n  let url = getBackendUrl(backendUrl);\n  if (!url) {\n    // Fallback: use any stored auth entry when no backend is provided\n    const any = loadAnyAuthEntry();\n    if (any && any.backendUrl) {\n      url = any.backendUrl;\n      console.error(\"[ctxce] Using stored backend for logout:\", url);\n    }\n  }\n  if (!url) {\n    // Final fallback: default upload endpoint\n    url = getDefaultUploadBackend();\n    if (url) {\n      console.error(\"[ctxce] Using default upload backend for logout:\", url);\n    }\n  }\n  if (!url) {\n    console.error(\"[ctxce] Auth backend URL not configured and no stored sessions found. Set CTXCE_AUTH_BACKEND_URL or use --backend-url.\");\n    process.exit(1);\n  }\n  const entry = loadAuthEntry(url);\n  if (!entry) {\n    console.error(\"[ctxce] No stored auth session for\", url);\n    return;\n  }\n  deleteAuthEntry(url);\n  console.error(\"[ctxce] Logged out from\", url);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runAuthCommand_268": {
+      "name": "runAuthCommand",
+      "type": "function",
+      "start_line": 268,
+      "end_line": 284,
+      "content_hash": "cd2e590a7037f78af95d4d163083c607da5a5e94",
+      "content": "export async function runAuthCommand(subcommand, args) {\n  const sub = (subcommand || \"\").toLowerCase();\n  if (sub === \"login\") {\n    await doLogin(args || []);\n    return;\n  }\n  if (sub === \"status\") {\n    await doStatus(args || []);\n    return;\n  }\n  if (sub === \"logout\") {\n    await doLogout(args || []);\n    return;\n  }\n  console.error(\"Usage: ctxce auth <login|status|logout> [--backend-url <url>] [--token <token>]\");\n  process.exit(1);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_router/__init__.py",
+  "file_hash": "1b4b2983877349424887bb081d10cbca8b7a500c",
+  "updated_at": "2025-12-26T17:34:25.140598",
+  "symbols": {
+    "function__get_batch_client_108": {
+      "name": "_get_batch_client",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 112,
+      "content_hash": "92e223ca8adce4d5a5dcd6ebb3823cf168f90fa2",
+      "content": "def _get_batch_client():\n    global _BATCH_CLIENT\n    if _BATCH_CLIENT is None:\n        _BATCH_CLIENT = get_batch_client()\n    return _BATCH_CLIENT",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/format/native_spinner.go",
+  "file_hash": "f935a65a166bdefa4186f35937c11cec654a3f1c",
+  "updated_at": "2025-12-26T17:34:24.430622",
+  "symbols": {
+    "struct_NativeSpinner_15": {
+      "name": "NativeSpinner",
+      "type": "struct",
+      "start_line": 15,
+      "end_line": 23,
+      "content_hash": "399988a011dc0502d0782b9401e43f77d42db62c",
+      "content": "type NativeSpinner struct {\n\tdone   chan struct{}\n\tctx    context.Context\n\tcancel context.CancelFunc\n\tanim   *NativeAnim\n\toutput io.Writer\n}\n\n// NativeAnim provides an animated spinner without Charm dependencies.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_NativeAnim_24": {
+      "name": "NativeAnim",
+      "type": "struct",
+      "start_line": 24,
+      "end_line": 36,
+      "content_hash": "d6eb7e291c5e034bf825ab20bc401897ad52d692",
+      "content": "type NativeAnim struct {\n\twidth          int\n\tstep           atomic.Int64\n\tellipsisStep   atomic.Int64\n\tlabel          string\n\trunes          []string\n\tellipsisFrames []string\n\tstartTime      time.Time\n\tinitialized    atomic.Bool\n\tsettings       NativeSettings\n}\n\n// NativeSettings defines settings for the native animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_NativeSettings_37": {
+      "name": "NativeSettings",
+      "type": "struct",
+      "start_line": 37,
+      "end_line": 54,
+      "content_hash": "791b5580d7c6cde2973b28554730df9c679ef0b6",
+      "content": "type NativeSettings struct {\n\tSize       int\n\tLabel      string\n\tLabelColor string\n\tColorStart string\n\tColorEnd   string\n}\n\n// Default native settings.\nvar (\n\tdefaultRunes        = []string{\"\u280b\", \"\u2819\", \"\u2839\", \"\u2838\", \"\u283c\", \"\u2834\", \"\u2826\", \"\u2827\", \"\u2807\", \"\u280f\"}\n\tdefaultEllipsis     = []string{\".\", \"..\", \"...\", \"\"}\n\tdefaultLabelColor   = \"\\033[36m\" // Cyan\n\tdefaultSpinnerColor = \"\\033[35m\" // Magenta\n\tresetColor          = \"\\033[0m\"\n)\n\n// NewNativeSpinner creates a new spinner with the given message using native implementation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewNativeSpinner_55": {
+      "name": "NewNativeSpinner",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 67,
+      "content_hash": "2aff935ccb2fd8467acd90d4f9d8c36f7f154568",
+      "content": "func NewNativeSpinner(ctx context.Context, cancel context.CancelFunc, settings NativeSettings) *NativeSpinner {\n\tanim := NewNativeAnim(settings)\n\n\treturn &NativeSpinner{\n\t\tdone:   make(chan struct{}, 1),\n\t\tctx:    ctx,\n\t\tcancel: cancel,\n\t\tanim:   anim,\n\t\toutput: os.Stderr,\n\t}\n}\n\n// NewNativeAnim creates a new native Anim instance with the specified settings.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewNativeAnim_68": {
+      "name": "NewNativeAnim",
+      "type": "function",
+      "start_line": 68,
+      "end_line": 91,
+      "content_hash": "44885701e2624cd5173e8234b1e9179f4c6584f1",
+      "content": "func NewNativeAnim(settings NativeSettings) *NativeAnim {\n\tif settings.Size < 1 {\n\t\tsettings.Size = 10\n\t}\n\tif settings.LabelColor == \"\" {\n\t\tsettings.LabelColor = defaultLabelColor\n\t}\n\tif settings.ColorStart == \"\" {\n\t\tsettings.ColorStart = defaultSpinnerColor\n\t}\n\n\tanim := &NativeAnim{\n\t\twidth:          settings.Size,\n\t\tlabel:          settings.Label,\n\t\trunes:          defaultRunes,\n\t\tellipsisFrames: defaultEllipsis,\n\t\tstartTime:      time.Now(),\n\t\tsettings:       settings,\n\t}\n\n\treturn anim\n}\n\n// Start begins the spinner animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Start_92": {
+      "name": "Start",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 109,
+      "content_hash": "e2ca8ded713cab7a1bffc3f4ee0679a9ad545654",
+      "content": "func (s *NativeSpinner) Start() {\n\tgo func() {\n\t\tdefer close(s.done)\n\t\tticker := time.NewTicker(100 * time.Millisecond)\n\t\tdefer ticker.Stop()\n\n\t\tfor {\n\t\t\tselect {\n\t\t\tcase <-s.ctx.Done():\n\t\t\t\treturn\n\t\t\tcase <-ticker.C:\n\t\t\t\ts.render()\n\t\t\t}\n\t\t}\n\t}()\n}\n\n// Stop ends the spinner animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Stop_110": {
+      "name": "Stop",
+      "type": "method",
+      "start_line": 110,
+      "end_line": 117,
+      "content_hash": "e8329c6b04596ebe2f0af00a4b50798a44c44688",
+      "content": "func (s *NativeSpinner) Stop() {\n\ts.cancel()\n\t<-s.done\n\t// Clear the line\n\tfmt.Fprintf(s.output, \"\\r\\033[K\")\n}\n\n// SetLabel updates the label text.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetLabel_118": {
+      "name": "SetLabel",
+      "type": "method",
+      "start_line": 118,
+      "end_line": 122,
+      "content_hash": "8e41a0720ab5d5690ac4a9b6165d1ee9e7ff7bd6",
+      "content": "func (s *NativeSpinner) SetLabel(label string) {\n\ts.anim.SetLabel(label)\n}\n\n// render writes the current animation frame to the output.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_render_123": {
+      "name": "render",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 128,
+      "content_hash": "ba6d2c4b007f826137c87a78146e9fa30d109312",
+      "content": "func (s *NativeSpinner) render() {\n\tframe := s.anim.View()\n\tfmt.Fprintf(s.output, \"\\r%s\", frame)\n}\n\n// SetLabel updates the label text.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetLabel_129": {
+      "name": "SetLabel",
+      "type": "method",
+      "start_line": 129,
+      "end_line": 133,
+      "content_hash": "e6894a54e154a766295e34ff997cd6c3ef9c9d62",
+      "content": "func (a *NativeAnim) SetLabel(newLabel string) {\n\ta.label = newLabel\n}\n\n// View renders the current state of the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_134": {
+      "name": "View",
+      "type": "method",
+      "start_line": 134,
+      "end_line": 164,
+      "content_hash": "e57bab594b927847a36db99848f80af9966893fe",
+      "content": "func (a *NativeAnim) View() string {\n\tstep := int(a.step.Load())\n\tellipsisStep := int(a.ellipsisStep.Load())\n\n\tvar builder strings.Builder\n\n\t// Add spinner character\n\tspinnerChar := a.runes[step%len(a.runes)]\n\tbuilder.WriteString(a.settings.ColorStart)\n\tbuilder.WriteString(spinnerChar)\n\tbuilder.WriteString(resetColor)\n\tbuilder.WriteString(\" \")\n\n\t// Add label\n\tif a.label != \"\" {\n\t\tbuilder.WriteString(a.settings.LabelColor)\n\t\tbuilder.WriteString(a.label)\n\t\tbuilder.WriteString(resetColor)\n\n\t\t// Add ellipsis animation after initialization\n\t\tif time.Since(a.startTime) >= time.Second {\n\t\t\tif ellipsisStep/4 < len(a.ellipsisFrames) {\n\t\t\t\tbuilder.WriteString(a.ellipsisFrames[ellipsisStep/4])\n\t\t\t}\n\t\t}\n\t}\n\n\treturn builder.String()\n}\n\n// Step advances the animation one step.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Step_165": {
+      "name": "Step",
+      "type": "method",
+      "start_line": 165,
+      "end_line": 183,
+      "content_hash": "1a25d20d31d723853426a9d2a811bf423fc38222",
+      "content": "func (a *NativeAnim) Step() {\n\tcurrent := a.step.Add(1)\n\tif time.Since(a.startTime) >= time.Second {\n\t\ta.ellipsisStep.Add(1)\n\t}\n\n\t// Ensure step stays within bounds\n\tif int(current) >= len(a.runes) {\n\t\ta.step.Store(0)\n\t}\n\n\t// Ensure ellipsis step stays within bounds\n\tellipsisStep := int(a.ellipsisStep.Load())\n\tif ellipsisStep >= len(a.ellipsisFrames)*4 {\n\t\ta.ellipsisStep.Store(0)\n\t}\n}\n\n// Width returns the total width of the animation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Width_184": {
+      "name": "Width",
+      "type": "method",
+      "start_line": 184,
+      "end_line": 190,
+      "content_hash": "220d0d8ace70500f6bec7355107a3ba7b9322985",
+      "content": "func (a *NativeAnim) Width() int {\n\twidth := len(a.runes[0]) + 1 // spinner + space\n\tif a.label != \"\" {\n\t\twidth += len(a.label) + len(a.ellipsisFrames[0])\n\t}\n\treturn width\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

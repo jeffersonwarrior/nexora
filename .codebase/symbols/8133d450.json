@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/local.go",
+  "file_hash": "c25e5f7b0d9bbbce7aaedb2851011d091ab2d0b4",
+  "updated_at": "2025-12-26T17:34:25.129467",
+  "symbols": {
+    "struct_cursorPosition_22": {
+      "name": "cursorPosition",
+      "type": "struct",
+      "start_line": 22,
+      "end_line": 32,
+      "content_hash": "2fdc6e2a99419879691dbdab6ca96db5da303a3e",
+      "content": "type cursorPosition struct {\n\tx int\n\ty int\n}\n\nconst (\n\tLocalModelsStepIP = iota\n\tLocalModelsStepKey\n\tLocalModelsStepModels\n)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_LocalModelsDialog_33": {
+      "name": "LocalModelsDialog",
+      "type": "struct",
+      "start_line": 33,
+      "end_line": 47,
+      "content_hash": "b9126e3ed32c3733aff8964af2a976218969625a",
+      "content": "type LocalModelsDialog struct {\n\twidth         int\n\theight        int\n\tstep          int\n\tendpointInput textinput.Model\n\tapiKey        string\n\tserverType    string\n\tmodels        []providers.LocalModel\n\tselectedModel int\n\tdetecting     bool\n\terror         string\n\tspinner       spinner.Model\n}\n\n// NewLocalModelsDialog creates a new local models dialog",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewLocalModelsDialog_48": {
+      "name": "NewLocalModelsDialog",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 68,
+      "content_hash": "70211a2d2c6c728d2a2f88409db4b8645c9327da",
+      "content": "func NewLocalModelsDialog() *LocalModelsDialog {\n\ts := spinner.New()\n\ts.Spinner = spinner.Dot\n\n\tt := styles.CurrentTheme()\n\tti := textinput.New()\n\tti.Placeholder = \"Type or paste endpoint URL...\"\n\tti.Prompt = \"\"\n\tti.SetVirtualCursor(false)\n\tti.SetStyles(t.S().TextInput)\n\tti.Focus()\n\n\treturn &LocalModelsDialog{\n\t\tstep:          LocalModelsStepIP,\n\t\tendpointInput: ti,\n\t\tmodels:        make([]providers.LocalModel, 0),\n\t\tspinner:       s,\n\t}\n}\n\n// ID returns the dialog ID",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ID_69": {
+      "name": "ID",
+      "type": "method",
+      "start_line": 69,
+      "end_line": 73,
+      "content_hash": "ff6de46deda0b30f1eb2d524c710ed14b8ab54c8",
+      "content": "func (m *LocalModelsDialog) ID() dialogs.DialogID {\n\treturn \"local-models\"\n}\n\n// Init initializes the dialog",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_74": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 74,
+      "end_line": 78,
+      "content_hash": "ce8893fe95d5a6380be6284f6cfc5388b0bfb412",
+      "content": "func (m *LocalModelsDialog) Init() tea.Cmd {\n\treturn m.spinner.Tick\n}\n\n// Update handles messages",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_79": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 79,
+      "end_line": 122,
+      "content_hash": "becbfcbf349b59cdea5abad3dd62c362150d21da",
+      "content": "func (m *LocalModelsDialog) Update(msg tea.Msg) (tea.Model, tea.Cmd) {\n\t// Handle spinner\n\tif m.detecting {\n\t\tvar cmd tea.Cmd\n\t\tm.spinner, cmd = m.spinner.Update(msg)\n\t\tif cmd != nil {\n\t\t\treturn m, cmd\n\t\t}\n\t}\n\n\tvar cmd tea.Cmd\n\n\t// Handle text input for endpoint\n\tif m.step == LocalModelsStepIP {\n\t\tm.endpointInput, cmd = m.endpointInput.Update(msg)\n\t}\n\n\tswitch msg := msg.(type) {\n\tcase tea.KeyMsg:\n\t\tswitch msg.String() {\n\t\tcase \"escape\":\n\t\t\treturn m, nil // Close dialog\n\t\tcase \"enter\":\n\t\t\treturn m.handleEnter()\n\t\t}\n\tcase LocalModelsDetectComplete:\n\t\tm.detecting = false\n\t\tm.error = \"\"\n\t\tm.models = msg.Models\n\n\t\t// Move to next step\n\t\tif len(msg.Models) > 0 {\n\t\t\tm.step = LocalModelsStepModels\n\t\t} else {\n\t\t\tm.error = \"No models found at this endpoint\"\n\t\t}\n\tcase LocalModelsDetectErrorMsg:\n\t\tm.detecting = false\n\t\tm.error = msg.Error\n\t}\n\n\treturn m, cmd\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_handleEnter_123": {
+      "name": "handleEnter",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 149,
+      "content_hash": "caed6afcaabb7378031215595040211bd6463a63",
+      "content": "func (m *LocalModelsDialog) handleEnter() (tea.Model, tea.Cmd) {\n\tswitch m.step {\n\tcase LocalModelsStepIP:\n\t\tendpoint := m.endpointInput.Value()\n\t\tif len(endpoint) > 0 {\n\t\t\tm.detecting = true\n\t\t\tm.error = \"\"\n\t\t\treturn m, m.detectModels()\n\t\t}\n\tcase LocalModelsStepKey:\n\t\tm.step = LocalModelsStepModels\n\tcase LocalModelsStepModels:\n\t\tif len(m.models) > 0 && m.selectedModel < len(m.models) {\n\t\t\t// Return selected model\n\t\t\treturn m, func() tea.Msg {\n\t\t\t\treturn LocalModelsDetectComplete{\n\t\t\t\t\tEndpoint:   m.endpointInput.Value(),\n\t\t\t\t\tAPIKey:     m.apiKey,\n\t\t\t\t\tServerType: m.serverType,\n\t\t\t\t\tModels:     m.models,\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn m, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_handleBackspace_150": {
+      "name": "handleBackspace",
+      "type": "method",
+      "start_line": 150,
+      "end_line": 163,
+      "content_hash": "a20066e0dd5a90e67eedb35ca685311838109192",
+      "content": "func (m *LocalModelsDialog) handleBackspace() (tea.Model, tea.Cmd) {\n\tswitch m.step {\n\tcase LocalModelsStepIP:\n\t\t// Handled by textinput.Update()\n\tcase LocalModelsStepKey:\n\t\tif len(m.apiKey) > 0 {\n\t\t\tm.apiKey = m.apiKey[:len(m.apiKey)-1]\n\t\t}\n\t}\n\treturn m, nil\n}\n\n// cleanEndpoint strips path components and normalizes the endpoint URL\n// Returns cleaned endpoint and extracted API key",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanEndpoint_164": {
+      "name": "cleanEndpoint",
+      "type": "function",
+      "start_line": 164,
+      "end_line": 213,
+      "content_hash": "3c617fa7e1ebfea377a174f6bc42a8f32b396282",
+      "content": "func cleanEndpoint(endpoint string) (string, string) {\n\tendpoint = strings.TrimSpace(endpoint)\n\tapiKey := \"\"\n\n\t// Extract API key from query params (support both ?key= and ?api_key=)\n\tif strings.Contains(endpoint, \"?\") {\n\t\tu, err := url.Parse(endpoint)\n\t\tif err == nil {\n\t\t\t// Try api_key first, then key\n\t\t\tif apiKeyVal := u.Query().Get(\"api_key\"); apiKeyVal != \"\" {\n\t\t\t\tapiKey = apiKeyVal\n\t\t\t} else if keyVal := u.Query().Get(\"key\"); keyVal != \"\" {\n\t\t\t\tapiKey = keyVal\n\t\t\t}\n\t\t\t// Remove query params from endpoint if we found a key\n\t\t\tif apiKey != \"\" {\n\t\t\t\tendpoint = u.Scheme + \"://\" + u.Host + u.Path\n\t\t\t}\n\t\t}\n\t}\n\n\t// Add https:// if not present (prefer https for external URLs)\n\tif !strings.HasPrefix(endpoint, \"http://\") && !strings.HasPrefix(endpoint, \"https://\") {\n\t\t// Check if it's a localhost/127.0.0.1 address\n\t\tif strings.HasPrefix(endpoint, \"localhost\") || strings.HasPrefix(endpoint, \"127.0.0.1\") || strings.HasPrefix(endpoint, \"192.168.\") {\n\t\t\tendpoint = \"http://\" + endpoint\n\t\t} else {\n\t\t\tendpoint = \"https://\" + endpoint\n\t\t}\n\t}\n\n\t// Parse URL to strip unwanted path components\n\tparsedURL, err := url.Parse(endpoint)\n\tif err != nil {\n\t\t// If parsing fails, return as-is\n\t\treturn endpoint, apiKey\n\t}\n\n\t// Strip common API path suffixes like /v1/chat/completions, /api, etc.\n\t// Keep only scheme, host, and port\n\tcleanedURL := &url.URL{\n\t\tScheme: parsedURL.Scheme,\n\t\tHost:   parsedURL.Host,\n\t}\n\n\treturn cleanedURL.String(), apiKey\n}\n\n// detectModels starts the model detection process\n// detectModels starts the model detection process",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_detectModels_214": {
+      "name": "detectModels",
+      "type": "method",
+      "start_line": 214,
+      "end_line": 241,
+      "content_hash": "9948d42067597cbaf6c4bd9de83d0a961ce51d43",
+      "content": "func (m *LocalModelsDialog) detectModels() tea.Cmd {\n\treturn func() tea.Msg {\n\t\t// Clean and normalize endpoint, extract API key\n\t\tendpoint, extractedKey := cleanEndpoint(m.endpointInput.Value())\n\n\t\t// Use extracted key if we don't have one already\n\t\tapiKey := m.apiKey\n\t\tif apiKey == \"\" && extractedKey != \"\" {\n\t\t\tapiKey = extractedKey\n\t\t}\n\n\t\tdetector := providers.NewLocalDetector(endpoint)\n\t\tprovider, err := detector.Detect(\"\", apiKey)\n\t\tif err != nil {\n\t\t\treturn LocalModelsDetectErrorMsg{Error: fmt.Sprintf(\"Detection failed: %v\\n\\nMake sure a local model server (Ollama, LM-Studio, vLLM) is running at %s\", err, endpoint)}\n\t\t}\n\n\t\t// Use models from provider\n\t\treturn LocalModelsDetectComplete{\n\t\t\tEndpoint:   endpoint,\n\t\t\tAPIKey:     apiKey,\n\t\t\tServerType: provider.Type,\n\t\t\tModels:     provider.Models,\n\t\t}\n\t}\n}\n\n// Cursor returns the cursor position for focus management",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_242": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 242,
+      "end_line": 246,
+      "content_hash": "8ddb6b8198634226e8d14d72df36bb4242c6256a",
+      "content": "func (m *LocalModelsDialog) Cursor() *tea.Cursor {\n\treturn tea.NewCursor(0, 0)\n}\n\n// View renders the dialog",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_247": {
+      "name": "View",
+      "type": "method",
+      "start_line": 247,
+      "end_line": 280,
+      "content_hash": "3ee6c6c8f73863231b63604b975313bd9840fa28",
+      "content": "func (m *LocalModelsDialog) View() tea.View {\n\tt := styles.CurrentTheme()\n\n\tvar content string\n\tswitch m.step {\n\tcase LocalModelsStepIP:\n\t\tcontent = m.renderIPInput()\n\tcase LocalModelsStepKey:\n\t\tcontent = m.renderKeyInput()\n\tcase LocalModelsStepModels:\n\t\tcontent = m.renderModelSelection()\n\t}\n\n\tif m.detecting {\n\t\tcontent += \"\\n\\n\" + m.spinner.View() + \" Detecting models...\"\n\t}\n\n\tif m.error != \"\" {\n\t\tcontent += \"\\n\\n\" + lipgloss.NewStyle().Foreground(t.Cherry).Render(m.error)\n\t}\n\n\ttitle := lipgloss.NewStyle().Foreground(t.Primary).Bold(true).Render(\"Configure Local Models\")\n\tborder := lipgloss.NewStyle().\n\t\tBorder(lipgloss.RoundedBorder()).\n\t\tBorderForeground(t.Border).\n\t\tPadding(1, 2).\n\t\tWidth(m.width).\n\t\tHeight(m.height)\n\n\tview := tea.NewView(border.Render(title + \"\\n\\n\" + content))\n\treturn view\n}\n\n// renderIPInput shows endpoint input with API key hint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_renderIPInput_281": {
+      "name": "renderIPInput",
+      "type": "method",
+      "start_line": 281,
+      "end_line": 287,
+      "content_hash": "95bacf6d0b7c39271bc9d2b9c3fe2e7acfc53948",
+      "content": "func (m *LocalModelsDialog) renderIPInput() string {\n\tt := styles.CurrentTheme()\n\treturn lipgloss.NewStyle().Foreground(t.Primary).Render(\"Enter server endpoint:\") + \"\\n\\n\" +\n\t\tm.endpointInput.View() + \"\\n\\n\" +\n\t\tlipgloss.NewStyle().Foreground(t.FgMuted).Render(\"Examples:\\n  127.0.0.1:11434 (Ollama)\\n  192.168.1.10:1234 (LM-Studio)\\n  https://your-tunnel.ngrok-free.dev?api_key=sk-... (with API key)\\n\\nNow supports paste! Ctrl+V in terminal OR right-click.\\nEnter to detect, Escape to cancel\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_renderKeyInput_288": {
+      "name": "renderKeyInput",
+      "type": "method",
+      "start_line": 288,
+      "end_line": 294,
+      "content_hash": "0da5f5245dbe385763bb23a0db45cda10f730f9b",
+      "content": "func (m *LocalModelsDialog) renderKeyInput() string {\n\tt := styles.CurrentTheme()\n\n\treturn lipgloss.NewStyle().Foreground(t.Primary).Render(\"Enter API key (if required):\") + \"\\n\\n\" +\n\t\tlipgloss.NewStyle().Foreground(t.FgBase).Render(m.apiKey+\"_\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_renderModelSelection_295": {
+      "name": "renderModelSelection",
+      "type": "method",
+      "start_line": 295,
+      "end_line": 329,
+      "content_hash": "334b6a450e382f073e4e41daddc29bd0534ffa7e",
+      "content": "func (m *LocalModelsDialog) renderModelSelection() string {\n\tt := styles.CurrentTheme()\n\n\tif len(m.models) == 0 {\n\t\treturn lipgloss.NewStyle().Foreground(t.Cherry).Render(\"No models found\")\n\t}\n\n\tcontent := lipgloss.NewStyle().Foreground(t.Primary).Render(\"Select a model:\") + \"\\n\\n\"\n\tfor i, model := range m.models {\n\t\tprefix := \"  \"\n\t\tif i == m.selectedModel {\n\t\t\tprefix = lipgloss.NewStyle().Foreground(t.Accent).Render(\"> \")\n\t\t}\n\t\tcontent += prefix + lipgloss.NewStyle().Foreground(t.FgBase).Render(model.ID) + \"\\n\"\n\t\tif model.Context > 0 {\n\t\t\tcontent += \"    \" + lipgloss.NewStyle().Foreground(t.FgMuted).Render(fmt.Sprintf(\"Context: %d\", model.Context)) + \"\\n\"\n\t\t}\n\t}\n\n\treturn content\n}\n\n// Message types\ntype (\n\tLocalModelsDetectComplete struct {\n\t\tEndpoint   string\n\t\tAPIKey     string\n\t\tServerType string\n\t\tModels     []providers.LocalModel\n\t}\n\n\tLocalModelsDetectErrorMsg struct {\n\t\tError string\n\t}\n)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

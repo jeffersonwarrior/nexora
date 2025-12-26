@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/internal/config/provider.go",
+  "file_hash": "a191c7ca047a9949c25056aabf5624c9b673481b",
+  "updated_at": "2025-12-26T17:34:20.352956",
+  "symbols": {
+    "interface_ProviderClient_21": {
+      "name": "ProviderClient",
+      "type": "interface",
+      "start_line": 21,
+      "end_line": 31,
+      "content_hash": "73978124b89e516d424d234271f996e419130652",
+      "content": "type ProviderClient interface {\n\tGetProviders(context.Context, string) ([]catwalk.Provider, error)\n}\n\nvar (\n\tproviderOnce sync.Once\n\tproviderList []catwalk.Provider\n\tproviderErr  error\n)\n\n// AddLocalProvider adds a detected local provider to the configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_AddLocalProvider_32": {
+      "name": "AddLocalProvider",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 83,
+      "content_hash": "0d55457085e907a6ce4fa059c35ad1c1d94735bf",
+      "content": "func AddLocalProvider(provider *providers.LocalProvider) error {\n\tcfg := Get()\n\n\tif provider == nil {\n\t\treturn fmt.Errorf(\"local provider is nil\")\n\t}\n\n\t// Convert LocalProvider to config.ProviderConfig\n\t// Use openai-compat type since all local servers (Ollama, vLLM, LM-Studio)\n\t// use OpenAI-compatible APIs\n\tproviderConfig := ProviderConfig{\n\t\tID:      \"local\",\n\t\tName:    provider.Name,\n\t\tType:    catwalk.TypeOpenAICompat,\n\t\tBaseURL: provider.BaseURL,\n\t\tAPIKey:  provider.APIKey,\n\t}\n\n\t// Convert local models to catwalk.Models\n\tvar models []catwalk.Model\n\tfor _, m := range provider.Models {\n\t\t// Use friendly name if available, otherwise use ID\n\t\tdisplayName := m.Name\n\t\tif displayName == \"\" {\n\t\t\tdisplayName = m.ID\n\t\t}\n\t\tmodel := catwalk.Model{\n\t\t\tID:            m.ID,\n\t\t\tName:          displayName,\n\t\t\tContextWindow: int64(m.Context), // Convert int to int64\n\t\t}\n\t\tmodels = append(models, model)\n\t\tslog.Debug(\"Added local model\",\n\t\t\t\"id\", m.ID,\n\t\t\t\"name\", displayName,\n\t\t\t\"matched\", m.Matched,\n\t\t\t\"context\", m.Context)\n\t}\n\tslog.Info(\"Added local provider\",\n\t\t\"name\", provider.Name,\n\t\t\"models\", len(models),\n\t\t\"endpoint\", provider.BaseURL)\n\tproviderConfig.Models = models\n\n\t// Set the local provider in the config\n\tcfg.Providers.Set(\"local\", providerConfig)\n\n\t// Save the configuration by setting a field\n\treturn cfg.SetConfigField(\"providers.local\", providerConfig)\n}\n\n// file to cache provider data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_providerCacheFileData_84": {
+      "name": "providerCacheFileData",
+      "type": "function",
+      "start_line": 84,
+      "end_line": 104,
+      "content_hash": "430d797b219f5659be34117e3aaa1bcb0d4b89a7",
+      "content": "func providerCacheFileData() string {\n\txdgDataHome := os.Getenv(\"XDG_DATA_HOME\")\n\tif xdgDataHome != \"\" {\n\t\treturn filepath.Join(xdgDataHome, appName, \"providers.json\")\n\t}\n\n\t// return the path to the main data directory\n\t// for windows, it should be in `%LOCALAPPDATA%/nexora/`\n\t// for linux and macOS, it should be in `$HOME/.local/share/nexora/`\n\tif runtime.GOOS == \"windows\" {\n\t\tlocalAppData := os.Getenv(\"LOCALAPPDATA\")\n\t\tif localAppData == \"\" {\n\t\t\tlocalAppData = filepath.Join(os.Getenv(\"USERPROFILE\"), \"AppData\", \"Local\")\n\t\t}\n\t\treturn filepath.Join(localAppData, appName, \"providers.json\")\n\t}\n\n\treturn filepath.Join(home.Dir(), \".local\", \"share\", appName, \"providers.json\")\n}\n\n// IsZAIAvailable checks if the ZAI_API_KEY environment variable is set and non-empty",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_IsZAIAvailable_105": {
+      "name": "IsZAIAvailable",
+      "type": "function",
+      "start_line": 105,
+      "end_line": 113,
+      "content_hash": "2345b545414115f630f520575c269a137de6fb7c",
+      "content": "func IsZAIAvailable() bool {\n\tapiKey := os.Getenv(\"ZAI_API_KEY\")\n\t// Also check for test override\n\tif apiKey == \"\" {\n\t\tapiKey = os.Getenv(\"NEXORA_ZAI_API_KEY\")\n\t}\n\treturn apiKey != \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_saveProvidersInCache_114": {
+      "name": "saveProvidersInCache",
+      "type": "function",
+      "start_line": 114,
+      "end_line": 127,
+      "content_hash": "e76696db1acc6e18b0063b83babbc4ca249132eb",
+      "content": "func saveProvidersInCache(path string, providers []catwalk.Provider) error {\n\t// Ensure directory exists\n\tif err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {\n\t\treturn fmt.Errorf(\"failed to create provider cache directory: %w\", err)\n\t}\n\n\tdata, err := json.MarshalIndent(providers, \"\", \"  \")\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to marshal providers: %w\", err)\n\t}\n\n\treturn os.WriteFile(path, data, 0o644)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadProvidersFromCache_128": {
+      "name": "loadProvidersFromCache",
+      "type": "function",
+      "start_line": 128,
+      "end_line": 143,
+      "content_hash": "4f8738d6623b4002b731d60c79d47f51f9c034da",
+      "content": "func loadProvidersFromCache(path string) ([]catwalk.Provider, error) {\n\tdata, err := os.ReadFile(path)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to read provider cache file: %w\", err)\n\t}\n\n\tvar providers []catwalk.Provider\n\tif err := json.Unmarshal(data, &providers); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to unmarshal provider data from cache: %w\", err)\n\t}\n\n\t// Inject custom providers if they don't exist\n\tproviders = injectCustomProviders(providers)\n\treturn providers, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_UpdateProviders_144": {
+      "name": "UpdateProviders",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 178,
+      "content_hash": "0c8b97bfbbdb2dea2e52bd976e04a6bdee86a4c3",
+      "content": "func UpdateProviders(pathOrUrl string) error {\n\tvar providers []catwalk.Provider\n\tpathOrUrl = cmp.Or(pathOrUrl, os.Getenv(\"CATWALK_URL\"), defaultCatwalkURL)\n\n\tswitch {\n\tcase pathOrUrl == \"embedded\":\n\t\tproviders = embedded.GetAll()\n\tcase strings.HasPrefix(pathOrUrl, \"http://\") || strings.HasPrefix(pathOrUrl, \"https://\"):\n\t\tvar err error\n\t\tproviders, err = catwalk.NewWithURL(pathOrUrl).GetProviders(context.Background(), \"\")\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to fetch providers from Catwalk: %w\", err)\n\t\t}\n\tdefault:\n\t\tcontent, err := os.ReadFile(pathOrUrl)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to read file: %w\", err)\n\t\t}\n\t\tif err := json.Unmarshal(content, &providers); err != nil {\n\t\t\treturn fmt.Errorf(\"failed to unmarshal provider data: %w\", err)\n\t\t}\n\t\tif len(providers) == 0 {\n\t\t\treturn fmt.Errorf(\"no providers found in the provided source\")\n\t\t}\n\t}\n\n\tcachePath := providerCacheFileData()\n\tif err := saveProvidersInCache(cachePath, providers); err != nil {\n\t\treturn fmt.Errorf(\"failed to save providers to cache: %w\", err)\n\t}\n\n\tslog.Info(\"Providers updated successfully\", \"count\", len(providers), \"from\", pathOrUrl, \"to\", cachePath)\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Providers_179": {
+      "name": "Providers",
+      "type": "function",
+      "start_line": 179,
+      "end_line": 190,
+      "content_hash": "d5f63f3ffd7780d5eca345012935e8a9f9794a10",
+      "content": "func Providers(cfg *Config) ([]catwalk.Provider, error) {\n\tproviderOnce.Do(func() {\n\t\tcatwalkURL := cmp.Or(os.Getenv(\"CATWALK_URL\"), defaultCatwalkURL)\n\t\tclient := catwalk.NewWithURL(catwalkURL)\n\t\tpath := providerCacheFileData()\n\n\t\tautoUpdateDisabled := cfg.Options.DisableProviderAutoUpdate\n\t\tproviderList, providerErr = loadProviders(autoUpdateDisabled, client, path)\n\t})\n\treturn providerList, providerErr\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadProviders_191": {
+      "name": "loadProviders",
+      "type": "function",
+      "start_line": 191,
+      "end_line": 239,
+      "content_hash": "b6af1e78b3f1dcdd30510fe8e48777208af2255e",
+      "content": "func loadProviders(autoUpdateDisabled bool, client ProviderClient, path string) ([]catwalk.Provider, error) {\n\tcatwalkGetAndSave := func() ([]catwalk.Provider, error) {\n\t\tproviders, err := client.GetProviders(context.Background(), \"\")\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to fetch providers from catwalk: %w\", err)\n\t\t}\n\t\tif len(providers) == 0 {\n\t\t\treturn nil, fmt.Errorf(\"empty providers list from catwalk\")\n\t\t}\n\t\tif err := saveProvidersInCache(path, providers); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\treturn providers, nil\n\t}\n\n\t// Try cache first if auto-update is disabled\n\tif autoUpdateDisabled {\n\t\tslog.Debug(\"Auto-update disabled, loading from cache\")\n\t\tproviders, err := loadProvidersFromCache(path)\n\t\tif err == nil {\n\t\t\treturn providers, nil\n\t\t}\n\t\tslog.Warn(\"Failed to load from cache, falling back to embedded providers\", \"error\", err)\n\t\tproviders = embedded.GetAll()\n\t\tproviders = injectCustomProviders(providers)\n\t\tif err := saveProvidersInCache(path, providers); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\treturn providers, nil\n\t}\n\n\t// Try to fetch from Catwalk with cache fallback\n\tif providers, err := catwalkGetAndSave(); err == nil {\n\t\t// Inject custom providers when we get providers from Catwalk\n\t\tproviders = injectCustomProviders(providers)\n\t\treturn providers, nil\n\t}\n\n\t// Fallback to embedded providers\n\tslog.Info(\"Using embedded providers as fallback\")\n\tproviders := embedded.GetAll()\n\t// Don't cache embedded providers as they should be updated via releases\n\treturn providers, nil\n}\n\n// injectCustomProviders consolidates all custom provider injections.\n// Configured providers are prepended to the list (sorted to top).\n// injectCustomProviders consolidates all custom provider injections.\n// Configured providers are prepended to the list (sorted to top).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_injectCustomProviders_240": {
+      "name": "injectCustomProviders",
+      "type": "function",
+      "start_line": 240,
+      "end_line": 276,
+      "content_hash": "27837739b840a921c1bc5134a6f03dd475d4b643",
+      "content": "func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {\n\tinjectors := []func([]catwalk.Provider) catwalk.Provider{\n\t\t// Mistral variants (General, Devstral, Codestral, Native)\n\t\tproviders.MistralGeneralProvider,\n\t\tproviders.MistralDevstralProvider,\n\t\tproviders.MistralCodestralProvider,\n\t\tproviders.MistralNativeProvider,\n\t\t// New major providers\n\t\tproviders.OpenAIProvider,\n\t\tproviders.AnthropicProvider,\n\t\tproviders.GeminiProvider,\n\t\tproviders.ZAIProvider,\n\t\tproviders.CerebrasProvider,\n\t\t// Existing providers\n\t\tproviders.XAIProvider,\n\t\tproviders.MiniMaxProvider,\n\t}\n\n\t// Collect injected providers\n\tinjectedProviders := []catwalk.Provider{}\n\tinjectedCount := 0\n\tfor _, injector := range injectors {\n\t\tif p := injector(providerList); p.ID != \"\" {\n\t\t\tinjectedProviders = append(injectedProviders, p)\n\t\t\tinjectedCount++\n\t\t}\n\t}\n\n\t// Prepend injected providers to the list (configured providers on top)\n\tif injectedCount > 0 {\n\t\tinjectedProviders = append(injectedProviders, providerList...)\n\t\tproviderList = injectedProviders\n\t\tslog.Info(\"Injected custom providers\", \"count\", injectedCount, \"total\", len(providerList))\n\t}\n\n\treturn providerList\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

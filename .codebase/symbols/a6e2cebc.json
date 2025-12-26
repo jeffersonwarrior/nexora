@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/metrics_sender.rs",
+  "file_hash": "0eb77679272231e1d0e3d99b181212f17af90b12",
+  "updated_at": "2025-12-26T17:34:24.438815",
+  "symbols": {
+    "enum_MetricsLevel_22": {
+      "name": "MetricsLevel",
+      "type": "enum",
+      "start_line": 22,
+      "end_line": 29,
+      "content_hash": "8ed6abf21a2a29d1a4f03f19b1bcb941943be8ab",
+      "content": "pub enum MetricsLevel {\n    Full,\n    #[default]\n    Basic,\n    Off,\n}\n\n#[derive(Debug, Serialize, Deserialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MetricsConfig_30": {
+      "name": "MetricsConfig",
+      "type": "struct",
+      "start_line": 30,
+      "end_line": 38,
+      "content_hash": "c547e7ad71d7cee1368a497794d6b708f78ea067",
+      "content": "pub struct MetricsConfig {\n    pub level: MetricsLevel,\n    pub user_id: Option<&'static str>,\n    pub email: Option<&'static str>,\n    pub name: Option<&'static str>,\n    pub last_updated: u64,\n    pub install_event_sent: bool,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Default_39": {
+      "name": "Default",
+      "type": "impl",
+      "start_line": 39,
+      "end_line": 39,
+      "content_hash": "a1bd66a04965fedac889fb56e889b0cc8f4b0aae",
+      "content": "impl Default for MetricsConfig {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_default_40": {
+      "name": "default",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 53,
+      "content_hash": "374d83c51485461ae029c6ef76ac17f8878526c7",
+      "content": "    fn default() -> Self {\n        Self {\n            level: MetricsLevel::default(),\n            user_id: None,\n            email: None,\n            name: None,\n            last_updated: std::time::SystemTime::now()\n                .duration_since(std::time::UNIX_EPOCH)\n                .unwrap()\n                .as_secs(),\n            install_event_sent: false,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_MetricsConfig_54": {
+      "name": "MetricsConfig",
+      "type": "impl",
+      "start_line": 54,
+      "end_line": 55,
+      "content_hash": "d7d108f2c13a36b2285aa5ff99e48758d40419ee",
+      "content": "impl MetricsConfig {\n    #[allow(unused)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_56": {
+      "name": "new",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 70,
+      "content_hash": "353ec2d534888f0f2685324fd54d5ac99e07c438",
+      "content": "    pub fn new(user_id: Option<&'static str>) -> Self {\n        Self {\n            level: MetricsLevel::default(),\n            user_id,\n            email: None,\n            name: None,\n            last_updated: std::time::SystemTime::now()\n                .duration_since(std::time::UNIX_EPOCH)\n                .unwrap()\n                .as_secs(),\n            install_event_sent: false,\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MetricsSender_71": {
+      "name": "MetricsSender",
+      "type": "struct",
+      "start_line": 71,
+      "end_line": 76,
+      "content_hash": "70bb12a468fe7510b6541df03459229eac5e7bb4",
+      "content": "pub struct MetricsSender {\n    tx: Sender<MetricsMessage>,\n    handle: JoinHandle<()>,\n}\n\n#[derive(Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_MetricsMessage_77": {
+      "name": "MetricsMessage",
+      "type": "enum",
+      "start_line": 77,
+      "end_line": 81,
+      "content_hash": "aad3b84cf3a1be15aef5d58e8677bf3c1f8c88ec",
+      "content": "enum MetricsMessage {\n    Event(RawEvent<EventData>),\n    Shutdown,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_MetricsSender_82": {
+      "name": "MetricsSender",
+      "type": "impl",
+      "start_line": 82,
+      "end_line": 82,
+      "content_hash": "7a1bfd8a309efdae40bb4d624c0eeaab0e819369",
+      "content": "impl MetricsSender {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_83": {
+      "name": "new",
+      "type": "method",
+      "start_line": 83,
+      "end_line": 93,
+      "content_hash": "77b84754d09cabfd0e063437adcf7956001e8f2a",
+      "content": "    pub fn new() -> Result<Self> {\n        let (tx, rx) = unbounded();\n        let handle = tokio::spawn(async move {\n            if let Err(e) = metrics_task(rx).await {\n                eprintln!(\"Metrics task error: {e}\");\n            }\n        });\n\n        Ok(Self { tx, handle })\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_event_94": {
+      "name": "send_event",
+      "type": "method",
+      "start_line": 94,
+      "end_line": 169,
+      "content_hash": "de098ab29d2e8bb2970d86020cec6a1ff57ed49d",
+      "content": "    pub fn send_event(&self, event: RawEvent<EventData>) {\n        let _ = self.tx.send(MetricsMessage::Event(event));\n    }\n\n    pub async fn shutdown(self) -> Result<()> {\n        let _ = self.tx.send(MetricsMessage::Shutdown);\n        self.handle\n            .await\n            .map_err(|e| eyre!(\"Metrics task join error: {e}\"))?;\n        Ok(())\n    }\n}\n\nasync fn metrics_task(rx: Receiver<MetricsMessage>) -> Result<()> {\n    let mut log_writer = None;\n\n    let config = load_metrics_config().unwrap_or_default();\n\n    if config.level != MetricsLevel::Off {\n        let _ = upload_previous_logs().await;\n\n        let metrics_dir = get_metrics_dir()?;\n        let today = Local::now().format(\"%Y-%m-%d\").to_string();\n        let log_file_path = metrics_dir.join(format!(\"{today}.json\"));\n\n        log_writer = create_log_writer(&log_file_path).ok();\n    }\n\n    while let Ok(message) = rx.recv_async().await {\n        match message {\n            MetricsMessage::Event(event) => {\n                if let Some(ref mut writer) = log_writer\n                    && let Err(e) = write_event_to_log(writer, &event)\n                {\n                    eprintln!(\"Failed to write metrics event: {e}\");\n                }\n            }\n            MetricsMessage::Shutdown => {\n                break;\n            }\n        }\n    }\n\n    if let Some(mut writer) = log_writer {\n        let _ = writer.flush();\n    }\n\n    Ok(())\n}\n\npub(crate) fn load_metrics_config() -> Result<MetricsConfig> {\n    let config_path = get_metrics_config_path()?;\n\n    if !config_path.exists() {\n        return Ok(MetricsConfig::default());\n    }\n\n    let content: &'static str = fs::read_to_string(&config_path)?.leak();\n    let config = toml::from_str(content)?;\n    Ok(config)\n}\n\npub(crate) fn save_metrics_config(config: &MetricsConfig) -> Result<()> {\n    let config_path = get_metrics_config_path()?;\n    let content = toml::to_string_pretty(config)?;\n    fs::write(&config_path, content)?;\n    Ok(())\n}\n\npub(crate) fn get_metrics_config_path() -> Result<PathBuf> {\n    let home = home_dir().ok_or_eyre(\"Cannot find home directory\")?;\n    let helix_dir = home.join(\".helix\");\n    fs::create_dir_all(&helix_dir)?;\n    Ok(helix_dir.join(\"metrics.toml\"))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_metrics_dir_170": {
+      "name": "get_metrics_dir",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 176,
+      "content_hash": "d9df6fdee675cea649b456cf20c06fc5c1108b0c",
+      "content": "fn get_metrics_dir() -> Result<PathBuf> {\n    let home = home_dir().ok_or_eyre(\"Cannot find home directory\")?;\n    let metrics_dir = home.join(\".helix\").join(\"metrics\");\n    fs::create_dir_all(&metrics_dir)?;\n    Ok(metrics_dir)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_create_log_writer_177": {
+      "name": "create_log_writer",
+      "type": "method",
+      "start_line": 177,
+      "end_line": 237,
+      "content_hash": "c42792fdaf60fd229d5da82c02ec1626b6344c81",
+      "content": "fn create_log_writer(path: &PathBuf) -> Result<BufWriter<File>> {\n    let file = OpenOptions::new().create(true).append(true).open(path)?;\n    Ok(BufWriter::new(file))\n}\n\nfn write_event_to_log<W: Write>(writer: &mut W, event: &RawEvent<EventData>) -> Result<()> {\n    let json = serde_json::to_string(event)?;\n    writeln!(writer, \"{json}\")?;\n    writer.flush()?;\n    Ok(())\n}\n\nasync fn upload_previous_logs() -> Result<()> {\n    let metrics_dir = get_metrics_dir()?;\n    let client = Client::new();\n    let today = Local::now().date_naive();\n\n    let entries = fs::read_dir(&metrics_dir)?;\n\n    for entry in entries {\n        let entry = entry?;\n        let path = entry.path();\n\n        if let Some(file_name) = path.file_name().and_then(|n| n.to_str())\n            && let Some(date_str) = file_name.strip_suffix(\".json\")\n            && let Ok(file_date) = NaiveDate::parse_from_str(date_str, \"%Y-%m-%d\")\n            && file_date < today\n            && upload_log_file(&client, &path).await.is_ok()\n        {\n            let _ = fs::remove_file(&path);\n        }\n    }\n\n    Ok(())\n}\n\nasync fn upload_log_file(client: &Client, path: &PathBuf) -> Result<()> {\n    let content = fs::read_to_string(path)?;\n\n    if content.trim().is_empty() {\n        return Ok(());\n    }\n\n    let response = client\n        .post(METRICS_URL) // TODO: change to actual logs endpoint\n        .header(\"Content-Type\", \"application/x-ndjson\")\n        .body(content)\n        .send()\n        .await?;\n\n    if !response.status().is_success() {\n        return Err(eyre!(\n            \"Failed to upload log file: HTTP {}\",\n            response.status()\n        ));\n    }\n\n    Ok(())\n}\n\n// Helper functions for creating and sending events",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_MetricsSender_238": {
+      "name": "MetricsSender",
+      "type": "impl",
+      "start_line": 238,
+      "end_line": 238,
+      "content_hash": "7a1bfd8a309efdae40bb4d624c0eeaab0e819369",
+      "content": "impl MetricsSender {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_cli_install_event_if_first_time_239": {
+      "name": "send_cli_install_event_if_first_time",
+      "type": "method",
+      "start_line": 239,
+      "end_line": 258,
+      "content_hash": "96a586d95517bc1ed854506f72211dff3d0683d6",
+      "content": "    pub fn send_cli_install_event_if_first_time(&self) {\n        let mut config = load_metrics_config().unwrap_or_default();\n\n        if !config.install_event_sent {\n            let event = RawEvent {\n                os: get_os_string(),\n                event_type: EventType::CliInstall,\n                event_data: EventData::CliInstall,\n                user_id: get_user_id(),\n                email: get_email(),\n                timestamp: get_current_timestamp(),\n            };\n            self.send_event(event);\n\n            // Mark install event as sent\n            config.install_event_sent = true;\n            let _ = save_metrics_config(&config);\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_compile_event_259": {
+      "name": "send_compile_event",
+      "type": "method",
+      "start_line": 259,
+      "end_line": 285,
+      "content_hash": "c70cba6b4b7f5002b707d47b2ae2732a9e8c232d",
+      "content": "    pub fn send_compile_event(\n        &self,\n        cluster_id: String,\n        queries_string: String,\n        num_of_queries: u32,\n        time_taken_seconds: u32,\n        success: bool,\n        error_messages: Option<String>,\n    ) {\n        let event = RawEvent {\n            os: get_os_string(),\n            event_type: EventType::Compile,\n            event_data: EventData::Compile(CompileEvent {\n                cluster_id,\n                queries_string,\n                num_of_queries,\n                time_taken_seconds,\n                success,\n                error_messages,\n            }),\n            user_id: get_user_id(),\n            email: get_email(),\n            timestamp: get_current_timestamp(),\n        };\n        self.send_event(event);\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_deploy_local_event_286": {
+      "name": "send_deploy_local_event",
+      "type": "method",
+      "start_line": 286,
+      "end_line": 312,
+      "content_hash": "141381aba6e02af3ab65f9691f3783c3030c57f9",
+      "content": "    pub fn send_deploy_local_event(\n        &self,\n        cluster_id: String,\n        queries_string: String,\n        num_of_queries: u32,\n        time_taken_sec: u32,\n        success: bool,\n        error_messages: Option<String>,\n    ) {\n        let event = RawEvent {\n            os: get_os_string(),\n            event_type: EventType::DeployLocal,\n            event_data: EventData::DeployLocal(DeployLocalEvent {\n                cluster_id,\n                queries_string,\n                num_of_queries,\n                time_taken_sec,\n                success,\n                error_messages,\n            }),\n            user_id: get_user_id(),\n            email: get_email(),\n            timestamp: get_current_timestamp(),\n        };\n        self.send_event(event);\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_redeploy_local_event_313": {
+      "name": "send_redeploy_local_event",
+      "type": "method",
+      "start_line": 313,
+      "end_line": 339,
+      "content_hash": "71d83d52c00df117bc104ea32e2ef412e37a2ce0",
+      "content": "    pub fn send_redeploy_local_event(\n        &self,\n        cluster_id: String,\n        queries_string: String,\n        num_of_queries: u32,\n        time_taken_sec: u32,\n        success: bool,\n        error_messages: Option<String>,\n    ) {\n        let event = RawEvent {\n            os: get_os_string(),\n            event_type: EventType::RedeployLocal,\n            event_data: EventData::RedeployLocal(RedeployLocalEvent {\n                cluster_id,\n                queries_string,\n                num_of_queries,\n                time_taken_sec,\n                success,\n                error_messages,\n            }),\n            user_id: get_user_id(),\n            email: get_email(),\n            timestamp: get_current_timestamp(),\n        };\n        self.send_event(event);\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_deploy_cloud_event_340": {
+      "name": "send_deploy_cloud_event",
+      "type": "method",
+      "start_line": 340,
+      "end_line": 367,
+      "content_hash": "c084e65a91af8485ef2e12d8f1f9e76a996a0820",
+      "content": "    pub fn send_deploy_cloud_event(\n        &self,\n        cluster_id: String,\n        queries_string: String,\n        num_of_queries: u32,\n        time_taken_sec: u32,\n        success: bool,\n        error_messages: Option<String>,\n    ) {\n        let event = RawEvent {\n            os: get_os_string(),\n            event_type: EventType::DeployCloud,\n            event_data: EventData::DeployCloud(DeployCloudEvent {\n                cluster_id,\n                queries_string,\n                num_of_queries,\n                time_taken_sec,\n                success,\n                error_messages,\n            }),\n            user_id: get_user_id(),\n            email: get_email(),\n            timestamp: get_current_timestamp(),\n        };\n        self.send_event(event);\n    }\n\n    #[allow(unused)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_send_test_event_368": {
+      "name": "send_test_event",
+      "type": "method",
+      "start_line": 368,
+      "end_line": 395,
+      "content_hash": "07cc668c8d39349518accaecd00b2e10c370cc16",
+      "content": "    pub fn send_test_event(\n        &self,\n        cluster_id: String,\n        queries_string: String,\n        num_of_queries: u32,\n        time_taken_sec: u32,\n        success: bool,\n        error_messages: Option<String>,\n    ) {\n        let event = RawEvent {\n            os: get_os_string(),\n            event_type: EventType::Test,\n            event_data: EventData::Test(TestEvent {\n                cluster_id,\n                queries_string,\n                num_of_queries,\n                time_taken_sec,\n                success,\n                error_messages,\n            }),\n            user_id: get_user_id(),\n            email: get_email(),\n            timestamp: get_current_timestamp(),\n        };\n        self.send_event(event);\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_os_string_396": {
+      "name": "get_os_string",
+      "type": "method",
+      "start_line": 396,
+      "end_line": 399,
+      "content_hash": "840f3350e027b2c03d70ed616926016425c0d91b",
+      "content": "fn get_os_string() -> &'static str {\n    std::env::consts::OS\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_user_id_400": {
+      "name": "get_user_id",
+      "type": "method",
+      "start_line": 400,
+      "end_line": 403,
+      "content_hash": "01289288c6293bc89f66bc7f2c29ff533310350e",
+      "content": "fn get_user_id() -> Option<&'static str> {\n    load_metrics_config().ok().and_then(|config| config.user_id)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_email_404": {
+      "name": "get_email",
+      "type": "method",
+      "start_line": 404,
+      "end_line": 407,
+      "content_hash": "ea74127395baa1605b6defbbcd1d243ec1e62fc5",
+      "content": "fn get_email() -> Option<&'static str> {\n    load_metrics_config().ok().and_then(|config| config.email)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_current_timestamp_408": {
+      "name": "get_current_timestamp",
+      "type": "method",
+      "start_line": 408,
+      "end_line": 413,
+      "content_hash": "c514a72c41fd3d7780c18525e96fc6190d6a81c5",
+      "content": "fn get_current_timestamp() -> u64 {\n    std::time::SystemTime::now()\n        .duration_since(std::time::UNIX_EPOCH)\n        .unwrap()\n        .as_secs()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

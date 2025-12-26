@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/tools/download.go",
+  "file_hash": "97ba20e8df004797f23a120320c0297707904984",
+  "updated_at": "2025-12-26T17:34:23.662686",
+  "symbols": {
+    "struct_DownloadParams_20": {
+      "name": "DownloadParams",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 25,
+      "content_hash": "e9c3f985b6de8e3620d5054dbcf563354e4812a4",
+      "content": "type DownloadParams struct {\n\tURL      string `json:\"url\" description:\"The URL to download from\"`\n\tFilePath string `json:\"file_path\" description:\"The local file path where the downloaded content should be saved\"`\n\tTimeout  int    `json:\"timeout,omitempty\" description:\"Optional timeout in seconds (max 600)\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DownloadPermissionsParams_26": {
+      "name": "DownloadPermissionsParams",
+      "type": "struct",
+      "start_line": 26,
+      "end_line": 36,
+      "content_hash": "eaa6c4537c52bbba745675748841074acbe4047c",
+      "content": "type DownloadPermissionsParams struct {\n\tURL      string `json:\"url\"`\n\tFilePath string `json:\"file_path\"`\n\tTimeout  int    `json:\"timeout,omitempty\"`\n}\n\nconst DownloadToolName = \"download\"\n\n//go:embed download.md\nvar downloadDescription []byte\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewDownloadTool_37": {
+      "name": "NewDownloadTool",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 157,
+      "content_hash": "324fa085c86002f0a71d39ea5312a5b313c362f0",
+      "content": "func NewDownloadTool(permissions permission.Service, workingDir string, client *http.Client) fantasy.AgentTool {\n\tif client == nil {\n\t\tclient = &http.Client{\n\t\t\tTimeout: 5 * time.Minute, // Default 5 minute timeout for downloads\n\t\t\tTransport: &http.Transport{\n\t\t\t\tMaxIdleConns:        100,\n\t\t\t\tMaxIdleConnsPerHost: 10,\n\t\t\t\tIdleConnTimeout:     90 * time.Second,\n\t\t\t},\n\t\t}\n\t}\n\treturn fantasy.NewParallelAgentTool(\n\t\tDownloadToolName,\n\t\tstring(downloadDescription),\n\t\tfunc(ctx context.Context, params DownloadParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif params.URL == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"URL parameter is required\"), nil\n\t\t\t}\n\n\t\t\tif params.FilePath == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"file_path parameter is required\"), nil\n\t\t\t}\n\n\t\t\tif !strings.HasPrefix(params.URL, \"http://\") && !strings.HasPrefix(params.URL, \"https://\") {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"URL must start with http:// or https://\"), nil\n\t\t\t}\n\n\t\t\tfilePath := filepathext.SmartJoin(workingDir, params.FilePath)\n\t\t\trelPath, _ := filepath.Rel(workingDir, filePath)\n\t\t\trelPath = filepath.ToSlash(cmp.Or(relPath, filePath))\n\n\t\t\tsessionID := GetSessionFromContext(ctx)\n\t\t\tif sessionID == \"\" {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"session ID is required for downloading files\")\n\t\t\t}\n\n\t\t\tp := permissions.Request(\n\t\t\t\tpermission.CreatePermissionRequest{\n\t\t\t\t\tSessionID:   sessionID,\n\t\t\t\t\tPath:        filePath,\n\t\t\t\t\tToolName:    DownloadToolName,\n\t\t\t\t\tAction:      \"download\",\n\t\t\t\t\tDescription: fmt.Sprintf(\"Download file from URL: %s to %s\", params.URL, filePath),\n\t\t\t\t\tParams:      DownloadPermissionsParams(params),\n\t\t\t\t},\n\t\t\t)\n\n\t\t\tif !p {\n\t\t\t\treturn fantasy.ToolResponse{}, permission.ErrorPermissionDenied\n\t\t\t}\n\n\t\t\t// Handle timeout with context\n\t\t\trequestCtx := ctx\n\t\t\tif params.Timeout > 0 {\n\t\t\t\tmaxTimeout := 600 // 10 minutes\n\t\t\t\tif params.Timeout > maxTimeout {\n\t\t\t\t\tparams.Timeout = maxTimeout\n\t\t\t\t}\n\t\t\t\tvar cancel context.CancelFunc\n\t\t\t\trequestCtx, cancel = context.WithTimeout(ctx, time.Duration(params.Timeout)*time.Second)\n\t\t\t\tdefer cancel()\n\t\t\t}\n\n\t\t\treq, err := http.NewRequestWithContext(requestCtx, \"GET\", params.URL, nil)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to create request: %w\", err)\n\t\t\t}\n\n\t\t\treq.Header.Set(\"User-Agent\", \"nexora/1.0\")\n\n\t\t\tresp, err := client.Do(req)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to download from URL: %w\", err)\n\t\t\t}\n\t\t\tdefer resp.Body.Close()\n\n\t\t\tif resp.StatusCode != http.StatusOK {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"Request failed with status code: %d\", resp.StatusCode)), nil\n\t\t\t}\n\n\t\t\t// Check content length if available\n\t\t\tmaxSize := int64(100 * 1024 * 1024) // 100MB\n\t\t\tif resp.ContentLength > maxSize {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"File too large: %d bytes (max %d bytes)\", resp.ContentLength, maxSize)), nil\n\t\t\t}\n\n\t\t\t// Create parent directories if they don't exist\n\t\t\tif err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to create parent directories: %w\", err)\n\t\t\t}\n\n\t\t\t// Create the output file\n\t\t\toutFile, err := os.Create(filePath)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to create output file: %w\", err)\n\t\t\t}\n\t\t\tdefer outFile.Close()\n\n\t\t\t// Copy data with size limit\n\t\t\tlimitedReader := io.LimitReader(resp.Body, maxSize)\n\t\t\tbytesWritten, err := io.Copy(outFile, limitedReader)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to write file: %w\", err)\n\t\t\t}\n\n\t\t\t// Check if we hit the size limit\n\t\t\tif bytesWritten == maxSize {\n\t\t\t\t// Clean up the file since it might be incomplete\n\t\t\t\tos.Remove(filePath)\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"File too large: exceeded %d bytes limit\", maxSize)), nil\n\t\t\t}\n\n\t\t\tcontentType := resp.Header.Get(\"Content-Type\")\n\t\t\tresponseMsg := fmt.Sprintf(\"Successfully downloaded %d bytes to %s\", bytesWritten, relPath)\n\t\t\tif contentType != \"\" {\n\t\t\t\tresponseMsg += fmt.Sprintf(\" (Content-Type: %s)\", contentType)\n\t\t\t}\n\n\t\t\treturn fantasy.NewTextResponse(responseMsg), nil\n\t\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

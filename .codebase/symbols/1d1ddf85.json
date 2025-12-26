@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/task/service_test.go",
+  "file_hash": "6ed32774c31e553a619ac656980d3323f9d91f16",
+  "updated_at": "2025-12-26T17:34:23.848288",
+  "symbols": {
+    "function_TestNewService_10": {
+      "name": "TestNewService",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 20,
+      "content_hash": "78ab20177f0366b173155c9fa34beb78fc840541",
+      "content": "func TestNewService(t *testing.T) {\n\tt.Run(\"creates service successfully\", func(t *testing.T) {\n\t\t// Act\n\t\tservice := NewService()\n\n\t\t// Assert\n\t\tassert.NotNil(t, service)\n\t\tassert.Implements(t, (*Service)(nil), service)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_CreateTask_21": {
+      "name": "TestTaskService_CreateTask",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 65,
+      "content_hash": "552050b40e1c811dc0b58037291b181c9f6d4fba",
+      "content": "func TestTaskService_CreateTask(t *testing.T) {\n\tt.Run(\"creates task with valid inputs\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\ttitle := \"Test Task\"\n\t\tdescription := \"A test task\"\n\t\ttaskContext := \"Working on tests\"\n\t\tmilestones := []string{\"milestone1\", \"milestone2\"}\n\n\t\t// Act\n\t\ttask := service.CreateTask(ctx, sessionID, title, description, taskContext, milestones)\n\n\t\t// Assert\n\t\tassert.NotNil(t, task)\n\t\tassert.Equal(t, sessionID, task.SessionID)\n\t\tassert.Equal(t, title, task.Title)\n\t\tassert.Equal(t, description, task.Description)\n\t\tassert.Equal(t, taskContext, task.Context)\n\t\tassert.Equal(t, StatusActive, task.Status)\n\t\tassert.Equal(t, PriorityHigh, task.Priority) // Default priority is high\n\t\tassert.Len(t, task.Milestones, 2)\n\n\t\t// Check milestones - titles are auto-generated as \"Milestone N\"\n\t\tassert.Equal(t, \"Milestone 1\", task.Milestones[0].Title)\n\t\tassert.Equal(t, \"Milestone 2\", task.Milestones[1].Title)\n\t\tassert.Equal(t, StatusBlocked, task.Milestones[0].Status) // Initial milestone status\n\t\tassert.Equal(t, StatusBlocked, task.Milestones[1].Status)\n\t})\n\n\tt.Run(\"creates task with empty milestones\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act\n\t\ttask := service.CreateTask(ctx, \"session\", \"title\", \"desc\", \"context\", []string{})\n\n\t\t// Assert\n\t\tassert.NotNil(t, task)\n\t\tassert.Len(t, task.Milestones, 0)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_GetActiveTask_66": {
+      "name": "TestTaskService_GetActiveTask",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 96,
+      "content_hash": "34e593dffda43d17131f8a4056239e8156909bd8",
+      "content": "func TestTaskService_GetActiveTask(t *testing.T) {\n\tt.Run(\"returns newly created active task\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\n\t\t// Act\n\t\tcreatedTask := service.CreateTask(ctx, sessionID, \"Test\", \"Desc\", \"Context\", []string{\"m1\"})\n\t\tactiveTask, found := service.GetActiveTask(ctx, sessionID)\n\n\t\t// Assert\n\t\tassert.True(t, found)\n\t\tassert.NotNil(t, activeTask)\n\t\tassert.Equal(t, createdTask.ID, activeTask.ID)\n\t\tassert.Equal(t, createdTask.Title, activeTask.Title)\n\t})\n\n\tt.Run(\"returns false for non-existent session\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act\n\t\t_, found := service.GetActiveTask(ctx, \"non-existent\")\n\n\t\t// Assert\n\t\tassert.False(t, found)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_UpdateTaskContext_97": {
+      "name": "TestTaskService_UpdateTaskContext",
+      "type": "function",
+      "start_line": 97,
+      "end_line": 123,
+      "content_hash": "f3329890baaeceed50feec4a3d355814566baa0a",
+      "content": "func TestTaskService_UpdateTaskContext(t *testing.T) {\n\tt.Run(\"updates context for active task\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\tservice.CreateTask(ctx, sessionID, \"Test\", \"Desc\", \"Original context\", []string{})\n\n\t\t// Act\n\t\tservice.UpdateTaskContext(ctx, sessionID, \"Updated context\")\n\n\t\t// Assert\n\t\ttask, found := service.GetActiveTask(ctx, sessionID)\n\t\tassert.True(t, found)\n\t\tassert.Equal(t, \"Updated context\", task.Context)\n\t})\n\n\tt.Run(\"handles non-existent session gracefully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act & Assert - should not panic\n\t\tservice.UpdateTaskContext(ctx, \"non-existent\", \"new context\")\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_CompleteTask_124": {
+      "name": "TestTaskService_CompleteTask",
+      "type": "function",
+      "start_line": 124,
+      "end_line": 151,
+      "content_hash": "5f6ae0a4bbd23ae2f6a1addd65e08fd4efad2a69",
+      "content": "func TestTaskService_CompleteTask(t *testing.T) {\n\tt.Run(\"completes active task\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\tservice.CreateTask(ctx, sessionID, \"Test\", \"Desc\", \"Context\", []string{\"m1\"})\n\n\t\t// Act\n\t\tservice.CompleteTask(ctx, sessionID)\n\n\t\t// Assert - completed task is still in active map but with completed status\n\t\ttask, found := service.GetActiveTask(ctx, sessionID)\n\t\tassert.True(t, found) // Still in active map\n\t\tassert.NotNil(t, task)\n\t\tassert.Equal(t, StatusCompleted, task.Status)\n\t})\n\n\tt.Run(\"handles non-existent session gracefully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act & Assert - should not panic\n\t\tservice.CompleteTask(ctx, \"non-existent\")\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_CloseTask_152": {
+      "name": "TestTaskService_CloseTask",
+      "type": "function",
+      "start_line": 152,
+      "end_line": 180,
+      "content_hash": "32266b7ea9a8cb27dfed804bc8e70615c6b5b3c8",
+      "content": "func TestTaskService_CloseTask(t *testing.T) {\n\tt.Run(\"closes active task\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\tservice.CreateTask(ctx, sessionID, \"Test\", \"Desc\", \"Context\", []string{\"m1\"})\n\n\t\t// Act\n\t\tservice.CloseTask(ctx, sessionID)\n\n\t\t// Assert\n\t\ttask, found := service.GetActiveTask(ctx, sessionID)\n\t\tassert.False(t, found) // No longer active\n\t\tif found {\n\t\t\tassert.Equal(t, StatusCancelled, task.Status)\n\t\t}\n\t})\n\n\tt.Run(\"handles non-existent session gracefully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act & Assert - should not panic\n\t\tservice.CloseTask(ctx, \"non-existent\")\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_DriftAnalysis_181": {
+      "name": "TestTaskService_DriftAnalysis",
+      "type": "function",
+      "start_line": 181,
+      "end_line": 212,
+      "content_hash": "80301b2b21aadbadc8ce83056cc798aaf6076c95",
+      "content": "func TestTaskService_DriftAnalysis(t *testing.T) {\n\tt.Run(\"analyzes drift for simple response\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\tservice.CreateTask(ctx, sessionID, \"Test\", \"Desc\", \"Context\", []string{\"m1\"})\n\n\t\t// Act\n\t\tanalysis := service.AnalyzeDrift(ctx, sessionID, \"This is a response about something else\")\n\n\t\t// Assert - DriftAnalysis is a struct, check its fields\n\t\tassert.NotEmpty(t, analysis.Message)\n\t\tassert.GreaterOrEqual(t, analysis.Confidence, 0.0)\n\t\tassert.LessOrEqual(t, analysis.Confidence, 1.0)\n\t})\n\n\tt.Run(\"handles non-existent session gracefully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act\n\t\tanalysis := service.AnalyzeDrift(ctx, \"non-existent\", \"response\")\n\n\t\t// Assert\n\t\tassert.NotNil(t, analysis)\n\t\tassert.Empty(t, analysis.MilestoneProgress)\n\t\tassert.Empty(t, analysis.Recommendations)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_GetCorrectionPrompt_213": {
+      "name": "TestTaskService_GetCorrectionPrompt",
+      "type": "function",
+      "start_line": 213,
+      "end_line": 242,
+      "content_hash": "35c56f7f067a32f0e89d93ec4e64587d760a9a61",
+      "content": "func TestTaskService_GetCorrectionPrompt(t *testing.T) {\n\tt.Run(\"returns prompt for active task\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\tservice.CreateTask(ctx, sessionID, \"Test Task\", \"Desc\", \"Context\", []string{\"milestone1\"})\n\n\t\t// Act\n\t\tprompt := service.GetCorrectionPrompt(ctx, sessionID)\n\n\t\t// Assert\n\t\tassert.NotEmpty(t, prompt)\n\t\tassert.Contains(t, prompt, \"Test Task\")\n\t\tassert.Contains(t, prompt, \"Context\")\n\t})\n\n\tt.Run(\"returns empty for non-existent session\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act\n\t\tprompt := service.GetCorrectionPrompt(ctx, \"non-existent\")\n\n\t\t// Assert\n\t\tassert.Empty(t, prompt)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_MarkMilestoneProgress_243": {
+      "name": "TestTaskService_MarkMilestoneProgress",
+      "type": "function",
+      "start_line": 243,
+      "end_line": 276,
+      "content_hash": "f4f1c1eddbe89c741496aee4d5e02e3c2e42b059",
+      "content": "func TestTaskService_MarkMilestoneProgress(t *testing.T) {\n\tt.Run(\"marks milestone progress\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\ttask := service.CreateTask(ctx, sessionID, \"Test\", \"Desc\", \"Context\", []string{\"milestone1\"})\n\t\tmilestoneID := task.Milestones[0].ID\n\n\t\t// Act\n\t\tservice.MarkMilestoneProgress(ctx, sessionID, milestoneID, \"Completed the work\")\n\n\t\t// Assert\n\t\tupdatedTask, found := service.GetActiveTask(ctx, sessionID)\n\t\tassert.True(t, found)\n\n\t\tfor _, milestone := range updatedTask.Milestones {\n\t\t\tif milestone.ID == milestoneID {\n\t\t\t\tassert.Equal(t, StatusCompleted, milestone.Status)\n\t\t\t\tassert.Equal(t, \"Completed the work\", milestone.Evidence)\n\t\t\t}\n\t\t}\n\t})\n\n\tt.Run(\"handles non-existent session gracefully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act & Assert - should not panic\n\t\tservice.MarkMilestoneProgress(ctx, \"non-existent\", \"milestone-id\", \"evidence\")\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_GetTaskSummary_277": {
+      "name": "TestTaskService_GetTaskSummary",
+      "type": "function",
+      "start_line": 277,
+      "end_line": 311,
+      "content_hash": "29ae70965300e06170b4733da0f415fefb4d8963",
+      "content": "func TestTaskService_GetTaskSummary(t *testing.T) {\n\tt.Run(\"returns summary for active task\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"session-123\"\n\t\tservice.CreateTask(ctx, sessionID, \"Test Task\", \"Description\", \"Context\", []string{\"milestone1\"})\n\n\t\t// Act\n\t\tsummary := service.GetTaskSummary(ctx, sessionID)\n\n\t\t// Assert\n\t\tassert.NotEmpty(t, summary.TaskID)\n\t\tassert.Equal(t, \"Test Task\", summary.Title)\n\t\tassert.Equal(t, StatusActive, summary.Status)\n\t\tassert.GreaterOrEqual(t, summary.Progress, 0.0)\n\t\tassert.LessOrEqual(t, summary.Progress, 1.0)\n\t})\n\n\tt.Run(\"returns empty summary for non-existent session\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\n\t\t// Act\n\t\tsummary := service.GetTaskSummary(ctx, \"non-existent\")\n\n\t\t// Assert - empty summary has zero values\n\t\tassert.Empty(t, summary.TaskID)\n\t\tassert.Empty(t, summary.Title)\n\t\tassert.Empty(t, summary.Status)\n\t})\n}\n\n// Task data structure tests",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_StatusTransitions_312": {
+      "name": "TestTask_StatusTransitions",
+      "type": "function",
+      "start_line": 312,
+      "end_line": 328,
+      "content_hash": "923e44f165db97e65fd08e386b2e1e8a1dad4e26",
+      "content": "func TestTask_StatusTransitions(t *testing.T) {\n\tt.Run(\"valid status values\", func(t *testing.T) {\n\t\t// Arrange & Act & Assert\n\t\tvalidStatuses := []TaskStatus{\n\t\t\tStatusActive,\n\t\t\tStatusBlocked,\n\t\t\tStatusCompleted,\n\t\t\tStatusPaused,\n\t\t\tStatusCancelled,\n\t\t}\n\n\t\tfor _, status := range validStatuses {\n\t\t\tassert.NotEmpty(t, string(status))\n\t\t}\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_PriorityLevels_329": {
+      "name": "TestTask_PriorityLevels",
+      "type": "function",
+      "start_line": 329,
+      "end_line": 344,
+      "content_hash": "0ea65c0920009ac911e41044099cf2007aa2b6fd",
+      "content": "func TestTask_PriorityLevels(t *testing.T) {\n\tt.Run(\"valid priority values\", func(t *testing.T) {\n\t\t// Arrange & Act & Assert\n\t\tvalidPriorities := []Priority{\n\t\t\tPriorityHigh,\n\t\t\tPriorityMedium,\n\t\t\tPriorityLow,\n\t\t}\n\n\t\tfor _, priority := range validPriorities {\n\t\t\tassert.NotEmpty(t, string(priority))\n\t\t}\n\t})\n}\n\n// Integration tests to verify the complete flow",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskService_Workflow_345": {
+      "name": "TestTaskService_Workflow",
+      "type": "function",
+      "start_line": 345,
+      "end_line": 382,
+      "content_hash": "aba5e7635321c61e20693dc2018e324b3745ebde",
+      "content": "func TestTaskService_Workflow(t *testing.T) {\n\tt.Run(\"complete task workflow\", func(t *testing.T) {\n\t\t// Arrange\n\t\tservice := NewService()\n\t\tctx := context.Background()\n\t\tsessionID := \"workflow-test\"\n\n\t\t// 1. Create task\n\t\ttask := service.CreateTask(ctx, sessionID, \"Workflow Task\", \"Test workflow\", \"Initial context\", []string{\"Research\", \"Implementation\", \"Testing\"})\n\t\tassert.NotNil(t, task)\n\t\tassert.Equal(t, 3, len(task.Milestones))\n\n\t\t// 2. Get active task\n\t\tactiveTask, found := service.GetActiveTask(ctx, sessionID)\n\t\tassert.True(t, found)\n\t\tassert.Equal(t, task.ID, activeTask.ID)\n\n\t\t// 3. Update context\n\t\tservice.UpdateTaskContext(ctx, sessionID, \"Updated context after research\")\n\t\tupdatedTask, _ := service.GetActiveTask(ctx, sessionID)\n\t\tassert.Equal(t, \"Updated context after research\", updatedTask.Context)\n\n\t\t// 4. Mark milestone progress\n\t\tmilestoneID := updatedTask.Milestones[0].ID\n\t\tservice.MarkMilestoneProgress(ctx, sessionID, milestoneID, \"Research completed\")\n\n\t\t// 5. Get summary\n\t\tsummary := service.GetTaskSummary(ctx, sessionID)\n\t\tassert.Equal(t, \"Workflow Task\", summary.Title)\n\t\tassert.Equal(t, StatusActive, summary.Status)\n\n\t\t// 6. Complete task\n\t\tservice.CompleteTask(ctx, sessionID)\n\t\tcompletedTask, found := service.GetActiveTask(ctx, sessionID)\n\t\tassert.True(t, found) // Still in active map after completion\n\t\tassert.Equal(t, StatusCompleted, completedTask.Status)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

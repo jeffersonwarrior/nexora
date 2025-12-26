@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_router/config.py",
+  "file_hash": "bb261e6dbf1c20f0b67da9d99d35c27568905f09",
+  "updated_at": "2025-12-26T17:34:20.398970",
+  "symbols": {
+    "function_cache_ttl_sec_25": {
+      "name": "cache_ttl_sec",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 29,
+      "content_hash": "df8e8a35b289f2782eb019ed97f13f30c6fbf5ff",
+      "content": "def cache_ttl_sec() -> int:\n    try:\n        return int(os.environ.get(\"ROUTER_TOOLS_CACHE_TTL_SEC\", \"60\") or 60)\n    except Exception:\n        return 60",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_scratchpad_ttl_sec_32": {
+      "name": "scratchpad_ttl_sec",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 36,
+      "content_hash": "8ec10e93fc2f456ad64950ce1f83356cf4e3c91c",
+      "content": "def scratchpad_ttl_sec() -> int:\n    try:\n        return int(os.environ.get(\"ROUTER_SCRATCHPAD_TTL_SEC\", \"300\") or 300)\n    except Exception:\n        return 300",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_divergence_thresholds_39": {
+      "name": "divergence_thresholds",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 48,
+      "content_hash": "4b233d44e30ff2dda2583b3a4d8488a57a340245",
+      "content": "def divergence_thresholds() -> tuple[float, int]:\n    try:\n        drop_frac = float(os.environ.get(\"ROUTER_DIVERGENCE_DROP_FRAC\", \"0.5\") or 0.5)\n    except Exception:\n        drop_frac = 0.5\n    try:\n        min_base = int(os.environ.get(\"ROUTER_DIVERGENCE_MIN_BASE\", \"3\") or 3)\n    except Exception:\n        min_base = 3\n    return drop_frac, min_base",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_divergence_is_fatal_for_51": {
+      "name": "divergence_is_fatal_for",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 62,
+      "content_hash": "4ef10adb55893e1e014f9d4bec64f0e08f094024",
+      "content": "def divergence_is_fatal_for(tool: str) -> bool:\n    try:\n        s = (os.environ.get(\"ROUTER_DIVERGENCE_FATAL_TOOLS\", \"\") or \"\").strip()\n        if not s:\n            return False\n        low = s.lower()\n        if low in {\"*\", \"all\", \"1\", \"true\"}:\n            return True\n        names = {t.strip().lower() for t in s.split(\",\") if t.strip()}\n        return tool.strip().lower() in names\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

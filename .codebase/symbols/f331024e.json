@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/agent/tools/diagnostics_test.go",
+  "file_hash": "0e9e6f894e1f1ac4c149d78c1054ac941144c975",
+  "updated_at": "2025-12-26T17:34:22.017992",
+  "symbols": {
+    "function_TestNewDiagnosticsTool_Placeholder_11": {
+      "name": "TestNewDiagnosticsTool_Placeholder",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 17,
+      "content_hash": "b1cac89d63f4aa756c8375ceae0560625c063492",
+      "content": "func TestNewDiagnosticsTool_Placeholder(t *testing.T) {\n\t// Note: Diagnostics tool tests require LSP client mocks which have complex dependencies\n\t// Full testing is covered in LSP integration tests\n\t// This test ensures the package compiles\n\tassert.True(t, true)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFormatDiagnostic_18": {
+      "name": "TestFormatDiagnostic",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 91,
+      "content_hash": "038c018e95103f1429e81f18ddc71303b9326bda",
+      "content": "func TestFormatDiagnostic(t *testing.T) {\n\ttests := []struct {\n\t\tname       string\n\t\tpath       string\n\t\tdiagnostic protocol.Diagnostic\n\t\tsource     string\n\t\texpected   string\n\t}{\n\t\t{\n\t\t\tname: \"error diagnostic\",\n\t\t\tpath: \"/tmp/test.go\",\n\t\t\tdiagnostic: protocol.Diagnostic{\n\t\t\t\tRange: protocol.Range{\n\t\t\t\t\tStart: protocol.Position{Line: 9, Character: 4},\n\t\t\t\t},\n\t\t\t\tSeverity: protocol.SeverityError,\n\t\t\t\tMessage:  \"undefined variable\",\n\t\t\t\tSource:   \"gopls\",\n\t\t\t},\n\t\t\tsource:   \"gopls\",\n\t\t\texpected: \"Error: /tmp/test.go:10:5 [gopls] undefined variable\",\n\t\t},\n\t\t{\n\t\t\tname: \"warning diagnostic\",\n\t\t\tpath: \"/tmp/test.go\",\n\t\t\tdiagnostic: protocol.Diagnostic{\n\t\t\t\tRange: protocol.Range{\n\t\t\t\t\tStart: protocol.Position{Line: 5, Character: 0},\n\t\t\t\t},\n\t\t\t\tSeverity: protocol.SeverityWarning,\n\t\t\t\tMessage:  \"unused variable\",\n\t\t\t\tSource:   \"gopls\",\n\t\t\t},\n\t\t\tsource:   \"gopls\",\n\t\t\texpected: \"Warn: /tmp/test.go:6:1 [gopls] unused variable\",\n\t\t},\n\t\t{\n\t\t\tname: \"hint diagnostic\",\n\t\t\tpath: \"/tmp/test.go\",\n\t\t\tdiagnostic: protocol.Diagnostic{\n\t\t\t\tRange: protocol.Range{\n\t\t\t\t\tStart: protocol.Position{Line: 0, Character: 0},\n\t\t\t\t},\n\t\t\t\tSeverity: protocol.SeverityHint,\n\t\t\t\tMessage:  \"can be simplified\",\n\t\t\t\tSource:   \"gopls\",\n\t\t\t},\n\t\t\tsource:   \"gopls\",\n\t\t\texpected: \"Hint: /tmp/test.go:1:1 [gopls] can be simplified\",\n\t\t},\n\t\t{\n\t\t\tname: \"info diagnostic\",\n\t\t\tpath: \"/tmp/test.go\",\n\t\t\tdiagnostic: protocol.Diagnostic{\n\t\t\t\tRange: protocol.Range{\n\t\t\t\t\tStart: protocol.Position{Line: 0, Character: 0},\n\t\t\t\t},\n\t\t\t\tSeverity: protocol.SeverityInformation,\n\t\t\t\tMessage:  \"information\",\n\t\t\t\tSource:   \"gopls\",\n\t\t\t},\n\t\t\tsource:   \"gopls\",\n\t\t\texpected: \"Info: /tmp/test.go:1:1 [gopls] information\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := formatDiagnostic(tt.path, tt.diagnostic, tt.source)\n\t\t\tassert.Contains(t, result, tt.expected)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFormatDiagnostic_WithCode_92": {
+      "name": "TestFormatDiagnostic_WithCode",
+      "type": "function",
+      "start_line": 92,
+      "end_line": 106,
+      "content_hash": "fed7bdb134a172f6752d6a9c720f263c15a0e468",
+      "content": "func TestFormatDiagnostic_WithCode(t *testing.T) {\n\tdiagnostic := protocol.Diagnostic{\n\t\tRange: protocol.Range{\n\t\t\tStart: protocol.Position{Line: 0, Character: 0},\n\t\t},\n\t\tSeverity: protocol.SeverityError,\n\t\tMessage:  \"test error\",\n\t\tSource:   \"gopls\",\n\t\tCode:     \"E001\",\n\t}\n\n\tresult := formatDiagnostic(\"/tmp/test.go\", diagnostic, \"gopls\")\n\tassert.Contains(t, result, \"[E001]\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFormatDiagnostic_WithTags_107": {
+      "name": "TestFormatDiagnostic_WithTags",
+      "type": "function",
+      "start_line": 107,
+      "end_line": 121,
+      "content_hash": "2edab2b86d39a1689e9d1f862e52b24ba6be04a6",
+      "content": "func TestFormatDiagnostic_WithTags(t *testing.T) {\n\tdiagnostic := protocol.Diagnostic{\n\t\tRange: protocol.Range{\n\t\t\tStart: protocol.Position{Line: 0, Character: 0},\n\t\t},\n\t\tSeverity: protocol.SeverityWarning,\n\t\tMessage:  \"test warning\",\n\t\tSource:   \"gopls\",\n\t\tTags:     []protocol.DiagnosticTag{protocol.Unnecessary},\n\t}\n\n\tresult := formatDiagnostic(\"/tmp/test.go\", diagnostic, \"gopls\")\n\tassert.Contains(t, result, \"unnecessary\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFormatDiagnostic_WithDeprecatedTag_122": {
+      "name": "TestFormatDiagnostic_WithDeprecatedTag",
+      "type": "function",
+      "start_line": 122,
+      "end_line": 136,
+      "content_hash": "f4daed93bf45867a48100f01e7651f69570f96cc",
+      "content": "func TestFormatDiagnostic_WithDeprecatedTag(t *testing.T) {\n\tdiagnostic := protocol.Diagnostic{\n\t\tRange: protocol.Range{\n\t\t\tStart: protocol.Position{Line: 0, Character: 0},\n\t\t},\n\t\tSeverity: protocol.SeverityWarning,\n\t\tMessage:  \"test warning\",\n\t\tSource:   \"gopls\",\n\t\tTags:     []protocol.DiagnosticTag{protocol.Deprecated},\n\t}\n\n\tresult := formatDiagnostic(\"/tmp/test.go\", diagnostic, \"gopls\")\n\tassert.Contains(t, result, \"deprecated\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFormatDiagnostic_NoSource_137": {
+      "name": "TestFormatDiagnostic_NoSource",
+      "type": "function",
+      "start_line": 137,
+      "end_line": 149,
+      "content_hash": "67610672395c7c9e64d867a2c782ec10d2e88836",
+      "content": "func TestFormatDiagnostic_NoSource(t *testing.T) {\n\tdiagnostic := protocol.Diagnostic{\n\t\tRange: protocol.Range{\n\t\t\tStart: protocol.Position{Line: 0, Character: 0},\n\t\t},\n\t\tSeverity: protocol.SeverityError,\n\t\tMessage:  \"test error\",\n\t}\n\n\tresult := formatDiagnostic(\"/tmp/test.go\", diagnostic, \"fallback-source\")\n\tassert.Contains(t, result, \"[fallback-source]\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSortDiagnostics_150": {
+      "name": "TestSortDiagnostics",
+      "type": "function",
+      "start_line": 150,
+      "end_line": 167,
+      "content_hash": "80702d3120e099f4693c601ad7c795319334209b",
+      "content": "func TestSortDiagnostics(t *testing.T) {\n\tdiagnostics := []string{\n\t\t\"Warn: /tmp/test.go:10:5 warning message\",\n\t\t\"Error: /tmp/test.go:5:1 error message\",\n\t\t\"Info: /tmp/test.go:15:2 info message\",\n\t\t\"Error: /tmp/test.go:2:1 another error\",\n\t}\n\n\tsorted := sortDiagnostics(diagnostics)\n\n\t// Errors should come first\n\tassert.True(t, strings.HasPrefix(sorted[0], \"Error\"))\n\tassert.True(t, strings.HasPrefix(sorted[1], \"Error\"))\n\t// Then non-errors\n\tassert.False(t, strings.HasPrefix(sorted[2], \"Error\"))\n\tassert.False(t, strings.HasPrefix(sorted[3], \"Error\"))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWriteDiagnostics_Empty_168": {
+      "name": "TestWriteDiagnostics_Empty",
+      "type": "function",
+      "start_line": 168,
+      "end_line": 174,
+      "content_hash": "00cd92184e1dfd1f9b85f26bdb62680ba57c5674",
+      "content": "func TestWriteDiagnostics_Empty(t *testing.T) {\n\tvar output strings.Builder\n\twriteDiagnostics(&output, \"test_diagnostics\", []string{})\n\n\tassert.Empty(t, output.String())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWriteDiagnostics_Few_175": {
+      "name": "TestWriteDiagnostics_Few",
+      "type": "function",
+      "start_line": 175,
+      "end_line": 191,
+      "content_hash": "44d2a967591a4bb27b262f1d020a8f160a369dd5",
+      "content": "func TestWriteDiagnostics_Few(t *testing.T) {\n\tvar output strings.Builder\n\tdiagnostics := []string{\n\t\t\"Error: /tmp/test.go:1:1 error 1\",\n\t\t\"Warn: /tmp/test.go:2:1 warning 1\",\n\t}\n\n\twriteDiagnostics(&output, \"test_diagnostics\", diagnostics)\n\n\tresult := output.String()\n\tassert.Contains(t, result, \"<test_diagnostics>\")\n\tassert.Contains(t, result, \"</test_diagnostics>\")\n\tassert.Contains(t, result, \"Error: /tmp/test.go:1:1 error 1\")\n\tassert.Contains(t, result, \"Warn: /tmp/test.go:2:1 warning 1\")\n\tassert.NotContains(t, result, \"... and\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWriteDiagnostics_Many_192": {
+      "name": "TestWriteDiagnostics_Many",
+      "type": "function",
+      "start_line": 192,
+      "end_line": 206,
+      "content_hash": "76619ae2b9edeb64df79c011f0b15da057aa1833",
+      "content": "func TestWriteDiagnostics_Many(t *testing.T) {\n\tvar output strings.Builder\n\tdiagnostics := make([]string, 15)\n\tfor i := 0; i < 15; i++ {\n\t\tdiagnostics[i] = \"Error: /tmp/test.go:1:1 error message\"\n\t}\n\n\twriteDiagnostics(&output, \"test_diagnostics\", diagnostics)\n\n\tresult := output.String()\n\tassert.Contains(t, result, \"<test_diagnostics>\")\n\tassert.Contains(t, result, \"</test_diagnostics>\")\n\tassert.Contains(t, result, \"... and 5 more diagnostics\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCountSeverity_207": {
+      "name": "TestCountSeverity",
+      "type": "function",
+      "start_line": 207,
+      "end_line": 224,
+      "content_hash": "ebc8be331803d75cc448343086a9f0dfd1355187",
+      "content": "func TestCountSeverity(t *testing.T) {\n\tdiagnostics := []string{\n\t\t\"Error: /tmp/test.go:1:1 error 1\",\n\t\t\"Error: /tmp/test.go:2:1 error 2\",\n\t\t\"Warn: /tmp/test.go:3:1 warning 1\",\n\t\t\"Info: /tmp/test.go:4:1 info 1\",\n\t\t\"Error: /tmp/test.go:5:1 error 3\",\n\t}\n\n\terrorCount := countSeverity(diagnostics, \"Error\")\n\twarnCount := countSeverity(diagnostics, \"Warn\")\n\tinfoCount := countSeverity(diagnostics, \"Info\")\n\n\tassert.Equal(t, 3, errorCount)\n\tassert.Equal(t, 1, warnCount)\n\tassert.Equal(t, 1, infoCount)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCountSeverity_Empty_225": {
+      "name": "TestCountSeverity_Empty",
+      "type": "function",
+      "start_line": 225,
+      "end_line": 229,
+      "content_hash": "36f90987dd399e67e7bca470247cf674552225aa",
+      "content": "func TestCountSeverity_Empty(t *testing.T) {\n\tcount := countSeverity([]string{}, \"Error\")\n\tassert.Equal(t, 0, count)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCountSeverity_NoMatches_230": {
+      "name": "TestCountSeverity_NoMatches",
+      "type": "function",
+      "start_line": 230,
+      "end_line": 238,
+      "content_hash": "1d5b0d99d072ce62529c70c04a042f1061ae22ce",
+      "content": "func TestCountSeverity_NoMatches(t *testing.T) {\n\tdiagnostics := []string{\n\t\t\"Warn: /tmp/test.go:1:1 warning 1\",\n\t\t\"Info: /tmp/test.go:2:1 info 1\",\n\t}\n\n\tcount := countSeverity(diagnostics, \"Error\")\n\tassert.Equal(t, 0, count)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/analyzer/fix.rs",
+  "file_hash": "cc47ec330cb926929841ee4ab8c1568352db3dd3",
+  "updated_at": "2025-12-26T17:34:22.952600",
+  "symbols": {
+    "struct_Fix_4": {
+      "name": "Fix",
+      "type": "struct",
+      "start_line": 4,
+      "end_line": 9,
+      "content_hash": "9dbca9e6bf5cc5735aeecce979a95b84528d8057",
+      "content": "pub struct Fix {\n    pub span: Option<Loc>,\n    pub to_remove: Option<Loc>,\n    pub to_add: Option<String>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Fix_10": {
+      "name": "Fix",
+      "type": "impl",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "d5811b081b54e7a3e05604a1f3ab25d0a9b82347",
+      "content": "impl Fix {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_11": {
+      "name": "new",
+      "type": "method",
+      "start_line": 11,
+      "end_line": 18,
+      "content_hash": "c86944d7579d6c64fa1224b8e05c89ab303f1463",
+      "content": "    pub fn new(span: Option<Loc>, to_remove: Option<Loc>, to_add: Option<String>) -> Self {\n        Self {\n            span,\n            to_remove,\n            to_add,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

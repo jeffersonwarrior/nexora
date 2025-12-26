@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_impl/admin_tools.py",
+  "file_hash": "e44fd06422e0fa38d5838e72111790528889c096",
+  "updated_at": "2025-12-26T17:34:23.874789",
+  "symbols": {
+    "function__get_embedding_model_47": {
+      "name": "_get_embedding_model",
+      "type": "function",
+      "start_line": 47,
+      "end_line": 80,
+      "content_hash": "269df2e7aa217f6bab0efdd4b7692f9600691b24",
+      "content": "def _get_embedding_model(model_name: str):\n    \"\"\"Get cached embedding model with optional Qwen3 support.\n\n    Uses the centralized embedder factory if available, with fallback\n    to direct fastembed initialization for backwards compatibility.\n    \"\"\"\n    # Try centralized embedder factory first (supports Qwen3 feature flag)\n    try:\n        from scripts.embedder import get_embedding_model\n        return get_embedding_model(model_name)\n    except ImportError:\n        pass\n\n    # Fallback to original implementation\n    try:\n        from fastembed import TextEmbedding  # type: ignore\n    except Exception:\n        raise\n\n    m = _EMBED_MODEL_CACHE.get(model_name)\n    if m is None:\n        # Double-checked locking to avoid duplicate inits under concurrency\n        lock = _EMBED_MODEL_LOCKS.setdefault(model_name, threading.Lock())\n        with lock:\n            m = _EMBED_MODEL_CACHE.get(model_name)\n            if m is None:\n                m = TextEmbedding(model_name=model_name)\n                try:\n                    # Warmup with common patterns to optimize internal caches\n                    _ = list(m.embed([\"function\", \"class\", \"import\", \"def\", \"const\"]))\n                except Exception:\n                    pass\n                _EMBED_MODEL_CACHE[model_name] = m\n    return m",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__run_async_86": {
+      "name": "_run_async",
+      "type": "function",
+      "start_line": 86,
+      "end_line": 98,
+      "content_hash": "d78a70ff5ca76c02524d19e95d01bb79f34110de",
+      "content": "async def _run_async(\n    cmd: list[str],\n    env: Optional[Dict[str, str]] = None,\n    timeout: Optional[float] = None,\n) -> Dict[str, Any]:\n    \"\"\"Run subprocess with proper resource management using SubprocessManager.\"\"\"\n    from scripts.async_subprocess_manager import run_subprocess_async\n\n    # Default timeout from env if not provided\n    if timeout is None:\n        timeout = float(os.environ.get(\"MCP_TOOL_TIMEOUT_SECS\", \"600\"))\n\n    return await run_subprocess_async(cmd, timeout=timeout, env=env)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__invalidate_router_scratchpad_104": {
+      "name": "_invalidate_router_scratchpad",
+      "type": "function",
+      "start_line": 104,
+      "end_line": 114,
+      "content_hash": "831b858cf919eddf4a31a9d868ba3384815275fe",
+      "content": "def _invalidate_router_scratchpad(workspace_path: str) -> bool:\n    \"\"\"Invalidate any cached router scratchpad for the workspace.\n\n    This is called after indexing operations to ensure the router\n    picks up new/changed code. Returns True if invalidation occurred.\n    \"\"\"\n    try:\n        # Clear any in-memory caches that might be stale\n        return True\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__detect_current_repo_120": {
+      "name": "_detect_current_repo",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 170,
+      "content_hash": "61407a59084c7a975e6ea5a1e93a212c68871473",
+      "content": "def _detect_current_repo() -> Optional[str]:\n    \"\"\"Detect the current repository name from workspace/env.\n\n    Priority:\n    1. CURRENT_REPO env var (explicitly set)\n    2. REPO_NAME env var\n    3. Detect from /work directory structure (first subdirectory with .git)\n    4. Git remote origin name\n\n    Returns: repo name or None if detection fails\n    \"\"\"\n    # Check explicit env vars first\n    for env_key in (\"CURRENT_REPO\", \"REPO_NAME\"):\n        val = os.environ.get(env_key, \"\").strip()\n        if val:\n            return val\n\n    # Try to detect from /work directory\n    work_path = Path(\"/work\")\n    if work_path.exists():\n        try:\n            # Check for .git in /work itself\n            if (work_path / \".git\").exists():\n                # Use git to get repo name from remote\n                try:\n                    import subprocess\n                    result = subprocess.run(\n                        [\"git\", \"-C\", str(work_path), \"config\", \"--get\", \"remote.origin.url\"],\n                        capture_output=True, text=True, timeout=5\n                    )\n                    if result.returncode == 0 and result.stdout.strip():\n                        url = result.stdout.strip()\n                        # Extract repo name from URL\n                        name = url.rstrip(\"/\").rsplit(\"/\", 1)[-1]\n                        if name.endswith(\".git\"):\n                            name = name[:-4]\n                        if name:\n                            return name\n                except Exception:\n                    pass\n                # Fallback to directory name\n                return work_path.name\n\n            # Check subdirectories for repos\n            for subdir in work_path.iterdir():\n                if subdir.is_dir() and (subdir / \".git\").exists():\n                    return subdir.name\n        except Exception:\n            pass\n\n    return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__collection_map_impl_179": {
+      "name": "_collection_map_impl",
+      "type": "function",
+      "start_line": 179,
+      "end_line": 399,
+      "content_hash": "fbf3dbaef4421f8155be4ea68a9d3e700bce350e",
+      "content": "async def _collection_map_impl(\n    search_root: Optional[str] = None,\n    collection: Optional[str] = None,\n    repo_name: Optional[str] = None,\n    include_samples: Optional[bool] = None,\n    limit: Optional[int] = None,\n    coerce_bool_fn=None,\n) -> Dict[str, Any]:\n    \"\"\"Return collection\u2194repo mappings with optional Qdrant payload samples.\n\n    Implementation extracted from mcp_indexer_server.py for modularity.\n    \"\"\"\n    from scripts.mcp_impl.utils import _coerce_bool\n\n    _coerce = coerce_bool_fn or _coerce_bool\n\n    def _norm_str(val: Any) -> Optional[str]:\n        if val is None:\n            return None\n        try:\n            s = str(val).strip()\n        except Exception:\n            return None\n        return s or None\n\n    collection_filter = _norm_str(collection)\n    repo_filter = _norm_str(repo_name)\n    sample_flag = _coerce(include_samples, False)\n\n    max_entries: Optional[int] = None\n    if limit is not None:\n        try:\n            max_entries = max(1, int(limit))\n        except Exception:\n            max_entries = None\n\n    state_entries: List[Dict[str, Any]] = []\n    state_error: Optional[str] = None\n\n    try:\n        from scripts.workspace_state import get_collection_mappings as _get_collection_mappings  # type: ignore\n\n        try:\n            state_entries = await asyncio.to_thread(\n                lambda: _get_collection_mappings(search_root)\n            )\n        except Exception as exc:\n            state_error = str(exc)\n            state_entries = []\n    except Exception as exc:  # pragma: no cover\n        state_error = f\"workspace_state unavailable: {exc}\"\n        state_entries = []\n\n    if repo_filter:\n        state_entries = [\n            entry for entry in state_entries if _norm_str(entry.get(\"repo_name\")) == repo_filter\n        ]\n    if collection_filter:\n        state_entries = [\n            entry\n            for entry in state_entries\n            if _norm_str(entry.get(\"collection_name\")) == collection_filter\n        ]\n\n    results: List[Dict[str, Any]] = []\n    seen_collections: set[str] = set()\n\n    for entry in state_entries:\n        item = dict(entry)\n        item[\"source\"] = \"state\"\n        results.append(item)\n        coll = _norm_str(entry.get(\"collection_name\"))\n        if coll:\n            seen_collections.add(coll)\n\n    # Qdrant helpers -----------------------------------------------------\n    sample_cache: Dict[str, Tuple[Optional[Dict[str, Any]], Optional[str]]] = {}\n    qdrant_error: Optional[str] = None\n    qdrant_used = False\n    client = None\n\n    def _ensure_qdrant_client():\n        nonlocal client, qdrant_error, qdrant_used\n        if client is not None or qdrant_error:\n            return client\n        try:\n            from qdrant_client import QdrantClient  # type: ignore\n        except Exception as exc:  # pragma: no cover\n            qdrant_error = f\"qdrant_client unavailable: {exc}\"\n            return None\n\n        try:\n            qdrant_used = True\n            return QdrantClient(\n                url=QDRANT_URL,\n                api_key=os.environ.get(\"QDRANT_API_KEY\"),\n                timeout=float(os.environ.get(\"QDRANT_TIMEOUT\", \"20\") or 20),\n            )\n        except Exception as exc:  # pragma: no cover\n            qdrant_error = str(exc)\n            return None\n\n    async def _sample_payload(coll_name: Optional[str]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:\n        key = _norm_str(coll_name) or \"\"\n        if not key:\n            return None, \"missing_collection\"\n        if key in sample_cache:\n            return sample_cache[key]\n\n        cli = _ensure_qdrant_client()\n        if cli is None:\n            sample_cache[key] = (None, qdrant_error)\n            return sample_cache[key]\n\n        def _scroll_one():\n            try:\n                points, _ = cli.scroll(\n                    collection_name=key,\n                    limit=1,\n                    with_payload=True,\n                    with_vectors=False,\n                )\n                return points\n            except Exception as exc:  # pragma: no cover\n                raise exc\n\n        try:\n            points = await asyncio.to_thread(_scroll_one)\n        except Exception as exc:  # pragma: no cover\n            err = str(exc)\n            sample_cache[key] = (None, err)\n            return sample_cache[key]\n\n        if not points:\n            sample_cache[key] = (None, None)\n            return sample_cache[key]\n\n        payload = points[0].payload or {}\n        metadata = payload.get(\"metadata\") or {}\n        sample = {\n            \"host_path\": metadata.get(\"host_path\"),\n            \"container_path\": metadata.get(\"container_path\"),\n            \"path\": metadata.get(\"path\") or payload.get(\"path\"),\n            \"start_line\": metadata.get(\"start_line\"),\n            \"end_line\": metadata.get(\"end_line\"),\n        }\n        sample_cache[key] = (sample, None)\n        return sample_cache[key]\n\n    # Attach samples to state-backed entries when requested\n    if sample_flag and results:\n        for entry in results:\n            coll_name = entry.get(\"collection_name\")\n            sample, err = await _sample_payload(coll_name)\n            if sample:\n                entry[\"sample\"] = sample\n            if err:\n                entry.setdefault(\"warnings\", []).append(err)\n\n    # If no state entries (or explicit collection filtered out), fall back to Qdrant listings\n    fallback_entries: List[Dict[str, Any]] = []\n    need_qdrant_listing = not results\n\n    if need_qdrant_listing:\n        cli = _ensure_qdrant_client()\n        if cli is not None:\n            def _list_collections():\n                info = cli.get_collections()\n                return [c.name for c in info.collections]\n\n            try:\n                collection_names = await asyncio.to_thread(_list_collections)\n            except Exception as exc:  # pragma: no cover\n                qdrant_error = str(exc)\n                collection_names = []\n\n            if collection_filter:\n                collection_names = [\n                    name for name in collection_names if _norm_str(name) == collection_filter\n                ]\n\n            count = 0\n            for name in collection_names:\n                if name in seen_collections:\n                    continue\n                entry: Dict[str, Any] = {\n                    \"collection_name\": name,\n                    \"source\": \"qdrant\",\n                }\n                sample, err = await _sample_payload(name) if sample_flag else (None, None)\n                if sample:\n                    entry[\"sample\"] = sample\n                if err:\n                    entry.setdefault(\"warnings\", []).append(err)\n                fallback_entries.append(entry)\n                count += 1\n                if max_entries is not None and count >= max_entries:\n                    break\n\n    entries = results + fallback_entries\n\n    return {\n        \"results\": entries,\n        \"counts\": {\n            \"state\": len(state_entries),\n            \"returned\": len(entries),\n            \"fallback\": len(fallback_entries),\n        },\n        \"errors\": {\n            \"state\": state_error,\n            \"qdrant\": qdrant_error,\n        },\n        \"qdrant_used\": qdrant_used,\n        \"filters\": {\n            \"collection\": collection_filter,\n            \"repo_name\": repo_filter,\n            \"search_root\": search_root,\n            \"include_samples\": sample_flag,\n            \"limit\": max_entries,\n        },\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__norm_str_195": {
+      "name": "_norm_str",
+      "type": "function",
+      "start_line": 195,
+      "end_line": 202,
+      "content_hash": "a2baeaae056981c7d387f8daefb3ef0ab4b59850",
+      "content": "    def _norm_str(val: Any) -> Optional[str]:\n        if val is None:\n            return None\n        try:\n            s = str(val).strip()\n        except Exception:\n            return None\n        return s or None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ensure_qdrant_client_260": {
+      "name": "_ensure_qdrant_client",
+      "type": "function",
+      "start_line": 260,
+      "end_line": 279,
+      "content_hash": "a6495e0b0c485bc6bb61c86926bc0826ff1f7f08",
+      "content": "    def _ensure_qdrant_client():\n        nonlocal client, qdrant_error, qdrant_used\n        if client is not None or qdrant_error:\n            return client\n        try:\n            from qdrant_client import QdrantClient  # type: ignore\n        except Exception as exc:  # pragma: no cover\n            qdrant_error = f\"qdrant_client unavailable: {exc}\"\n            return None\n\n        try:\n            qdrant_used = True\n            return QdrantClient(\n                url=QDRANT_URL,\n                api_key=os.environ.get(\"QDRANT_API_KEY\"),\n                timeout=float(os.environ.get(\"QDRANT_TIMEOUT\", \"20\") or 20),\n            )\n        except Exception as exc:  # pragma: no cover\n            qdrant_error = str(exc)\n            return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__sample_payload_281": {
+      "name": "_sample_payload",
+      "type": "function",
+      "start_line": 281,
+      "end_line": 326,
+      "content_hash": "1ff743918c3a38676b7b627c1a228c67a0ab0755",
+      "content": "    async def _sample_payload(coll_name: Optional[str]) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:\n        key = _norm_str(coll_name) or \"\"\n        if not key:\n            return None, \"missing_collection\"\n        if key in sample_cache:\n            return sample_cache[key]\n\n        cli = _ensure_qdrant_client()\n        if cli is None:\n            sample_cache[key] = (None, qdrant_error)\n            return sample_cache[key]\n\n        def _scroll_one():\n            try:\n                points, _ = cli.scroll(\n                    collection_name=key,\n                    limit=1,\n                    with_payload=True,\n                    with_vectors=False,\n                )\n                return points\n            except Exception as exc:  # pragma: no cover\n                raise exc\n\n        try:\n            points = await asyncio.to_thread(_scroll_one)\n        except Exception as exc:  # pragma: no cover\n            err = str(exc)\n            sample_cache[key] = (None, err)\n            return sample_cache[key]\n\n        if not points:\n            sample_cache[key] = (None, None)\n            return sample_cache[key]\n\n        payload = points[0].payload or {}\n        metadata = payload.get(\"metadata\") or {}\n        sample = {\n            \"host_path\": metadata.get(\"host_path\"),\n            \"container_path\": metadata.get(\"container_path\"),\n            \"path\": metadata.get(\"path\") or payload.get(\"path\"),\n            \"start_line\": metadata.get(\"start_line\"),\n            \"end_line\": metadata.get(\"end_line\"),\n        }\n        sample_cache[key] = (sample, None)\n        return sample_cache[key]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__scroll_one_293": {
+      "name": "_scroll_one",
+      "type": "function",
+      "start_line": 293,
+      "end_line": 303,
+      "content_hash": "80f3b74e906e1b07fd40138488e638d10273b57f",
+      "content": "        def _scroll_one():\n            try:\n                points, _ = cli.scroll(\n                    collection_name=key,\n                    limit=1,\n                    with_payload=True,\n                    with_vectors=False,\n                )\n                return points\n            except Exception as exc:  # pragma: no cover\n                raise exc",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__list_collections_345": {
+      "name": "_list_collections",
+      "type": "function",
+      "start_line": 345,
+      "end_line": 347,
+      "content_hash": "3bd7d10a3347300c02a0fe6a455f5ae9d8cd512d",
+      "content": "            def _list_collections():\n                info = cli.get_collections()\n                return [c.name for c in info.collections]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

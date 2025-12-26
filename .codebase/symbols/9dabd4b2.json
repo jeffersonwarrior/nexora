@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/context-engine/deploy/kubernetes/rbac.yaml",
+  "file_hash": "485661e6807239cdb6215fbab7c244600e4645e2",
+  "updated_at": "2025-12-26T17:34:24.429686",
+  "symbols": {
+    "key_apiVersion_2": {
+      "name": "apiVersion",
+      "type": "key",
+      "start_line": 2,
+      "end_line": 2,
+      "content_hash": "c0a550963fd5e81041b9eaca5adf04e3017a866d",
+      "content": "apiVersion: v1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_kind_3": {
+      "name": "kind",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 3,
+      "content_hash": "bbd6be6efc74900b749ffe3e132aeb9716a5c31f",
+      "content": "kind: ServiceAccount",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata_4": {
+      "name": "metadata",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 8,
+      "content_hash": "8d0950225dcb48ce586b393160019bd4da4c0767",
+      "content": "metadata:\n  name: context-engine\n  namespace: context-engine\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.name_5": {
+      "name": "metadata.name",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "1e8be6da6c02fb5522d10892d50585415437faf8",
+      "content": "  name: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.namespace_6": {
+      "name": "metadata.namespace",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 6,
+      "content_hash": "1a68fd2e6c59390f3813b7e9d5ff5c156e377737",
+      "content": "  namespace: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

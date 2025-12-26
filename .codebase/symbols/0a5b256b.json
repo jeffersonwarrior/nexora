@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/prompts.rs",
+  "file_hash": "05fc81cea74523ff15626291f2378386d7017aa1",
+  "updated_at": "2025-12-26T17:34:22.354401",
+  "symbols": {
+    "enum_DeploymentType_14": {
+      "name": "DeploymentType",
+      "type": "enum",
+      "start_line": 14,
+      "end_line": 22,
+      "content_hash": "29e3b89800a1d023d4b98d03270a84108ac65d5a",
+      "content": "pub enum DeploymentType {\n    Local,\n    HelixCloud,\n    Ecr,\n    Fly,\n}\n\n/// AWS/Helix Cloud region options\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_Region_23": {
+      "name": "Region",
+      "type": "enum",
+      "start_line": 23,
+      "end_line": 29,
+      "content_hash": "797d8cb529c7d3001acaf6b9ccfc481a0acffdcc",
+      "content": "pub enum Region {\n    UsEast1,\n    UsWest2,\n    EuWest1,\n    ApSoutheast1,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Region_30": {
+      "name": "Region",
+      "type": "impl",
+      "start_line": 30,
+      "end_line": 30,
+      "content_hash": "c21194cb16e886f89a79b9056d773778a5e3bd97",
+      "content": "impl Region {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_as_str_31": {
+      "name": "as_str",
+      "type": "method",
+      "start_line": 31,
+      "end_line": 41,
+      "content_hash": "0d1391c7a259050c916a9464ad8c8eb2a374f474",
+      "content": "    pub fn as_str(&self) -> &'static str {\n        match self {\n            Region::UsEast1 => \"us-east-1\",\n            Region::UsWest2 => \"us-west-2\",\n            Region::EuWest1 => \"eu-west-1\",\n            Region::ApSoutheast1 => \"ap-southeast-1\",\n        }\n    }\n}\n\n/// Show the intro banner for interactive mode",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_intro_42": {
+      "name": "intro",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 51,
+      "content_hash": "a41919370b3807c46c45bd02e7b0601a6be7778e",
+      "content": "pub fn intro(title: &str, subheader: Option<&str>) -> Result<()> {\n    match subheader {\n        Some(sub) => cliclack::note(title, sub)?,\n        None => cliclack::intro(title.to_string())?,\n    }\n    Ok(())\n}\n\n/// Show note banner\n#[allow(unused)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_note_52": {
+      "name": "note",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 58,
+      "content_hash": "bdefea39aca759de4e0ac300a2f0041e8dcb11cf",
+      "content": "pub fn note(message: &str) -> Result<()> {\n    cliclack::log::remark(message)?;\n    Ok(())\n}\n\n/// Show warning banner\n#[allow(unused)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_warning_59": {
+      "name": "warning",
+      "type": "method",
+      "start_line": 59,
+      "end_line": 65,
+      "content_hash": "4d67aaff38ba6dfd033e49ce8fc08e1001d48e79",
+      "content": "pub fn warning(message: &str) -> Result<()> {\n    cliclack::log::warning(message)?;\n    Ok(())\n}\n\n/// Show the outro banner when interactive mode completes\n#[allow(dead_code)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_outro_66": {
+      "name": "outro",
+      "type": "method",
+      "start_line": 66,
+      "end_line": 71,
+      "content_hash": "70d42fce8e51cde6c1d57833e043877599a79e3e",
+      "content": "pub fn outro(message: &str) -> Result<()> {\n    cliclack::outro(message.to_string())?;\n    Ok(())\n}\n\n/// Prompt user to select a deployment type with descriptions",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_select_deployment_type_72": {
+      "name": "select_deployment_type",
+      "type": "method",
+      "start_line": 72,
+      "end_line": 99,
+      "content_hash": "0109df376facaf4eea6a86c7ac00a1267af5caef",
+      "content": "pub fn select_deployment_type() -> Result<DeploymentType> {\n    let selected: DeploymentType = cliclack::select(\"Where would you like to deploy?\")\n        .item(\n            DeploymentType::Local,\n            \"Local\",\n            \"Run Helix locally in Docker. Best for development.\",\n        )\n        .item(\n            DeploymentType::HelixCloud,\n            \"Helix Cloud\",\n            \"Managed hosting with automatic scaling. One-click deployment.\",\n        )\n        .item(\n            DeploymentType::Ecr,\n            \"AWS ECR\",\n            \"Push to your own AWS Elastic Container Registry.\",\n        )\n        .item(\n            DeploymentType::Fly,\n            \"Fly.io\",\n            \"Deploy globally on Fly.io edge infrastructure.\",\n        )\n        .interact()?;\n\n    Ok(selected)\n}\n\n/// Prompt user to select a cloud region",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_select_region_100": {
+      "name": "select_region",
+      "type": "method",
+      "start_line": 100,
+      "end_line": 119,
+      "content_hash": "4bc524440acbb4e4a4503aff94c5fe4553190eda",
+      "content": "pub fn select_region() -> Result<String> {\n    let selected: Region = cliclack::select(\"Select a region\")\n        .item(\n            Region::UsEast1,\n            \"us-east-1\",\n            \"N. Virginia - Lowest latency for US East\",\n        )\n        .item(Region::UsWest2, \"us-west-2\", \"Oregon - US West Coast\")\n        .item(Region::EuWest1, \"eu-west-1\", \"Ireland - Europe\")\n        .item(\n            Region::ApSoutheast1,\n            \"ap-southeast-1\",\n            \"Singapore - Asia Pacific\",\n        )\n        .interact()?;\n\n    Ok(selected.as_str().to_string())\n}\n\n/// Prompt user to select a Fly.io VM size",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_select_fly_vm_size_120": {
+      "name": "select_fly_vm_size",
+      "type": "method",
+      "start_line": 120,
+      "end_line": 147,
+      "content_hash": "d0901aab6f3b4cec39be07fcccefd6efc6929a9e",
+      "content": "pub fn select_fly_vm_size() -> Result<VmSize> {\n    let selected: VmSize = cliclack::select(\"Select VM size\")\n        .item(\n            VmSize::SharedCpu4x,\n            \"shared-cpu-4x\",\n            \"4 shared CPUs, 1GB RAM - Development & small workloads\",\n        )\n        .item(\n            VmSize::SharedCpu8x,\n            \"shared-cpu-8x\",\n            \"8 shared CPUs, 2GB RAM - Medium workloads\",\n        )\n        .item(\n            VmSize::PerformanceCpu4x,\n            \"performance-4x\",\n            \"4 dedicated CPUs, 8GB RAM - Production (Recommended)\",\n        )\n        .item(\n            VmSize::PerformanceCpu8x,\n            \"performance-8x\",\n            \"8 dedicated CPUs, 16GB RAM - High performance\",\n        )\n        .interact()?;\n\n    Ok(selected)\n}\n\n/// Prompt user to enter Fly.io volume size in GB",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_input_fly_volume_size_148": {
+      "name": "input_fly_volume_size",
+      "type": "method",
+      "start_line": 148,
+      "end_line": 162,
+      "content_hash": "7b8449e94950ddc6ed77715568820582fd87cead",
+      "content": "pub fn input_fly_volume_size() -> Result<u16> {\n    let size: String = cliclack::input(\"Volume size in GB\")\n        .default_input(\"20\")\n        .placeholder(\"20\")\n        .validate(|input: &String| match input.parse::<u16>() {\n            Ok(n) if (1..=500).contains(&n) => Ok(()),\n            Ok(_) => Err(\"Volume size must be between 1 and 500 GB\"),\n            Err(_) => Err(\"Please enter a valid number\"),\n        })\n        .interact()?;\n\n    Ok(size.parse().unwrap_or(20))\n}\n\n/// Prompt user for a yes/no confirmation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_confirm_163": {
+      "name": "confirm",
+      "type": "method",
+      "start_line": 163,
+      "end_line": 168,
+      "content_hash": "f35671527f4ea4e938a9315656c3af6fe59e446d",
+      "content": "pub fn confirm(message: &str) -> Result<bool> {\n    let result = cliclack::confirm(message).interact()?;\n    Ok(result)\n}\n\n/// Prompt user to enter an instance name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_input_instance_name_169": {
+      "name": "input_instance_name",
+      "type": "method",
+      "start_line": 169,
+      "end_line": 279,
+      "content_hash": "d1edd65aaa223406d41ee438f7631afd7daa943d",
+      "content": "pub fn input_instance_name(default: &str) -> Result<String> {\n    let name: String = cliclack::input(\"Instance name\")\n        .default_input(default)\n        .placeholder(default)\n        .validate(|input: &String| {\n            if input.is_empty() {\n                Err(\"Instance name cannot be empty\")\n            } else if input.len() > 32 {\n                Err(\"Instance name must be 32 characters or less\")\n            } else if !input\n                .chars()\n                .all(|c| c.is_alphanumeric() || c == '-' || c == '_')\n            {\n                Err(\"Instance name can only contain letters, numbers, hyphens, and underscores\")\n            } else {\n                Ok(())\n            }\n        })\n        .interact()?;\n\n    Ok(name)\n}\n\n/// Build a CloudDeploymentTypeCommand from interactive selections\n///\n/// This is the main entry point for interactive mode for `helix add`.\n/// It prompts the user through all necessary options including instance name,\n/// and returns a fully configured command.\npub async fn build_deployment_command(\n    default_name: &str,\n) -> Result<Option<CloudDeploymentTypeCommand>> {\n    let deployment_type = select_deployment_type()?;\n\n    // Check auth early for Helix Cloud instances before prompting for more details\n    if matches!(deployment_type, DeploymentType::HelixCloud) {\n        require_auth().await?;\n    }\n\n    // Prompt for instance name with project name as default\n    let instance_name = input_instance_name(default_name)?;\n\n    match deployment_type {\n        DeploymentType::Local => Ok(Some(CloudDeploymentTypeCommand::Local {\n            name: Some(instance_name),\n        })),\n        DeploymentType::HelixCloud => {\n            // Check auth early for Helix Cloud instances\n            let region = select_region()?;\n            Ok(Some(CloudDeploymentTypeCommand::Helix {\n                region: Some(region),\n                name: Some(instance_name),\n            }))\n        }\n        DeploymentType::Ecr => Ok(Some(CloudDeploymentTypeCommand::Ecr {\n            name: Some(instance_name),\n        })),\n        DeploymentType::Fly => {\n            let vm_size = select_fly_vm_size()?;\n            let volume_size = input_fly_volume_size()?;\n            let private = confirm(\"Make deployment private (internal network only)?\")?;\n\n            Ok(Some(CloudDeploymentTypeCommand::Fly {\n                auth: \"cli\".to_string(),\n                volume_size,\n                vm_size: vm_size.as_str().to_string(),\n                private,\n                name: Some(instance_name),\n            }))\n        }\n    }\n}\n\n/// Build a CloudDeploymentTypeCommand for the init command\n/// Returns None for local deployment (the default)\npub async fn build_init_deployment_command() -> Result<Option<CloudDeploymentTypeCommand>> {\n    let deployment_type = select_deployment_type()?;\n\n    if matches!(deployment_type, DeploymentType::HelixCloud) {\n        require_auth().await?;\n    }\n\n    match deployment_type {\n        DeploymentType::Local => {\n            // Local is the default for init, return None to use default behavior\n            Ok(None)\n        }\n        DeploymentType::HelixCloud => {\n            let region = select_region()?;\n            Ok(Some(CloudDeploymentTypeCommand::Helix {\n                region: Some(region),\n                name: None,\n            }))\n        }\n        DeploymentType::Ecr => Ok(Some(CloudDeploymentTypeCommand::Ecr { name: None })),\n        DeploymentType::Fly => {\n            let vm_size = select_fly_vm_size()?;\n            let volume_size = input_fly_volume_size()?;\n            let private = confirm(\"Make deployment private (internal network only)?\")?;\n\n            Ok(Some(CloudDeploymentTypeCommand::Fly {\n                auth: \"cli\".to_string(),\n                volume_size,\n                vm_size: vm_size.as_str().to_string(),\n                private,\n                name: None,\n            }))\n        }\n    }\n}\n\n/// Check if we're running in an interactive terminal",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_is_interactive_280": {
+      "name": "is_interactive",
+      "type": "method",
+      "start_line": 280,
+      "end_line": 289,
+      "content_hash": "35e1ad2f393a06aca9d0aa500aac2b591d8edbc6",
+      "content": "pub fn is_interactive() -> bool {\n    use std::io::IsTerminal;\n    std::io::stdin().is_terminal() && std::io::stdout().is_terminal()\n}\n\n/// Prompt user to select an instance from available instances\n///\n/// Takes a slice of (name, type_hint) tuples to show instance types.\n/// If only one instance exists, it will be auto-selected without prompting.\n/// If no instances exist, returns an error.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_select_instance_290": {
+      "name": "select_instance",
+      "type": "method",
+      "start_line": 290,
+      "end_line": 310,
+      "content_hash": "6a9c54af20b13a610af16333d51f2e7edd71d2e1",
+      "content": "pub fn select_instance(instances: &[(&String, &str)]) -> Result<String> {\n    if instances.is_empty() {\n        return Err(eyre::eyre!(\n            \"No instances found in helix.toml. Run 'helix init' to create a project first.\"\n        ));\n    }\n\n    // Auto-select if only one instance\n    if instances.len() == 1 {\n        return Ok(instances[0].0.clone());\n    }\n\n    let mut select = cliclack::select(\"Select an instance\");\n    for (name, type_hint) in instances {\n        select = select.item((*name).clone(), name.as_str(), *type_hint);\n    }\n    let selected = select.interact()?;\n    Ok(selected)\n}\n\n/// Prompt user to select a feedback type",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_select_feedback_type_311": {
+      "name": "select_feedback_type",
+      "type": "method",
+      "start_line": 311,
+      "end_line": 333,
+      "content_hash": "d8fb57b0d5b5a6e826bda074cdb25a6697a352eb",
+      "content": "pub fn select_feedback_type() -> Result<FeedbackType> {\n    let selected: FeedbackType = cliclack::select(\"What type of feedback would you like to send?\")\n        .item(\n            FeedbackType::Bug,\n            \"Bug Report\",\n            \"Report a bug or issue you've encountered\",\n        )\n        .item(\n            FeedbackType::FeatureRequest,\n            \"Feature Request\",\n            \"Suggest a new feature or improvement\",\n        )\n        .item(\n            FeedbackType::General,\n            \"General Feedback\",\n            \"Share general thoughts or comments\",\n        )\n        .interact()?;\n\n    Ok(selected)\n}\n\n/// Prompt user to enter their feedback message",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_input_feedback_message_334": {
+      "name": "input_feedback_message",
+      "type": "method",
+      "start_line": 334,
+      "end_line": 349,
+      "content_hash": "10b5b238281390c56adfd0cb107543729e664563",
+      "content": "pub fn input_feedback_message() -> Result<String> {\n    let message: String = cliclack::input(\"Enter your feedback\")\n        .placeholder(\"Describe your feedback here...\")\n        .validate(|input: &String| {\n            if input.trim().is_empty() {\n                Err(\"Feedback message cannot be empty\")\n            } else if input.len() < 10 {\n                Err(\"Please provide more detail (at least 10 characters)\")\n            } else {\n                Ok(())\n            }\n        })\n        .interact()?;\n\n    Ok(message)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/cmd/index_cmd_test.go",
+  "file_hash": "ca028a5b397820491f08321c1e1bd56bae400221",
+  "updated_at": "2025-12-26T17:34:23.436567",
+  "symbols": {
+    "function_TestIndexCmd_11": {
+      "name": "TestIndexCmd",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 29,
+      "content_hash": "d7698809e7c7a932635852fc8a2399c288250577",
+      "content": "func TestIndexCmd(t *testing.T) {\n\t// Save current WD\n\toriginalWd, err := os.Getwd()\n\trequire.NoError(t, err)\n\tdefer os.Chdir(originalWd)\n\n\t// Create temporary directory for testing\n\ttempDir, err := os.MkdirTemp(\"\", \"nexora-index-test\")\n\trequire.NoError(t, err)\n\tdefer os.RemoveAll(tempDir)\n\n\t// Create a test Go file\n\ttestFile := filepath.Join(tempDir, \"test.go\")\n\ttestContent := `\npackage main\n\nimport \"fmt\"\n\n// TestFunction is a test function",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFunction_30": {
+      "name": "TestFunction",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 34,
+      "content_hash": "2eb6bdc9395c9ee115e63b2599ea5f523d2ad842",
+      "content": "func TestFunction(name string) string {\n\treturn \"Hello, \" + name\n}\n\n// TestStruct is a test struct",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TestStruct_35": {
+      "name": "TestStruct",
+      "type": "struct",
+      "start_line": 35,
+      "end_line": 70,
+      "content_hash": "682ada561fe63bdceefd717f1931651b6113a40f",
+      "content": "type TestStruct struct {\n\tName string\n\tAge  int\n}\n`\n\terr = os.WriteFile(testFile, []byte(testContent), 0o644)\n\trequire.NoError(t, err)\n\n\t// Create temporary database path\n\tdbPath := filepath.Join(tempDir, \"test.db\")\n\n\t// Execute index command via rootCmd\n\trootCmd.SetArgs([]string{\"index\", \"--cwd\", tempDir, \"--output\", dbPath, \"--embeddings\"})\n\terr = rootCmd.Execute()\n\trequire.NoError(t, err)\n\n\t// Verify database was created\n\tif _, err := os.Stat(dbPath); os.IsNotExist(err) {\n\t\tt.Logf(\"Database not found at %s\", dbPath)\n\t\t// List files in tempDir\n\t\tfiles, _ := os.ReadDir(tempDir)\n\t\tfor _, f := range files {\n\t\t\tt.Logf(\"Found file: %s\", f.Name())\n\t\t}\n\t\tcwd, _ := os.Getwd()\n\t\tt.Logf(\"Current WD: %s\", cwd)\n\t}\n\t_, err = os.Stat(dbPath)\n\trequire.NoError(t, err)\n\n\t// Verify database has content\n\tdbSize, err := os.Stat(dbPath)\n\trequire.NoError(t, err)\n\trequire.Greater(t, dbSize.Size(), int64(0), \"Database should not be empty\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestQueryCmd_71": {
+      "name": "TestQueryCmd",
+      "type": "function",
+      "start_line": 71,
+      "end_line": 89,
+      "content_hash": "4304631350c47bbc300ded23d604f19916a93fca",
+      "content": "func TestQueryCmd(t *testing.T) {\n\t// Save current WD\n\toriginalWd, err := os.Getwd()\n\trequire.NoError(t, err)\n\tdefer os.Chdir(originalWd)\n\n\t// Create temporary directory for testing\n\ttempDir, err := os.MkdirTemp(\"\", \"nexora-query-test\")\n\trequire.NoError(t, err)\n\tdefer os.RemoveAll(tempDir)\n\n\t// Create a test Go file\n\ttestFile := filepath.Join(tempDir, \"test.go\")\n\ttestContent := `\npackage main\n\nimport \"fmt\"\n\n// HelloFunction says hello",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_HelloFunction_90": {
+      "name": "HelloFunction",
+      "type": "function",
+      "start_line": 90,
+      "end_line": 113,
+      "content_hash": "4eb7be432ea3f622169dff595386bff7fc3f979d",
+      "content": "func HelloFunction(name string) string {\n\treturn fmt.Sprintf(\"Hello, %s!\", name)\n}\n`\n\terr = os.WriteFile(testFile, []byte(testContent), 0o644)\n\trequire.NoError(t, err)\n\n\t// Create temporary database path\n\tdbPath := filepath.Join(tempDir, \"test.db\")\n\n\t// First index the file via rootCmd\n\trootCmd.SetArgs([]string{\"index\", \"--cwd\", tempDir, \"--output\", dbPath})\n\terr = rootCmd.Execute()\n\trequire.NoError(t, err)\n\n\t// Test query command via rootCmd\n\t// Note: query command might be 'query' or just default args?\n\t// root.go adds queryCmd. Check query_cmd.go usage.\n\t// Assuming \"query\" subcommand exists.\n\trootCmd.SetArgs([]string{\"query\", \"HelloFunction\", \"--cwd\", tempDir, \"--database\", dbPath, \"--limit\", \"1\"})\n\terr = rootCmd.Execute()\n\trequire.NoError(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestIndexCmdWithInvalidPath_114": {
+      "name": "TestIndexCmdWithInvalidPath",
+      "type": "function",
+      "start_line": 114,
+      "end_line": 128,
+      "content_hash": "a3bd06770471730b3071ba7ab6f74c294974241f",
+      "content": "func TestIndexCmdWithInvalidPath(t *testing.T) {\n\t// Save current WD\n\toriginalWd, err := os.Getwd()\n\trequire.NoError(t, err)\n\tdefer os.Chdir(originalWd)\n\n\t// Test with non-existent directory\n\t// Use rootCmd to execute index command to ensure proper flag/arg parsing\n\trootCmd.SetArgs([]string{\"index\", \"/non/existent/path\", \"--cwd\", \".\"})\n\n\terr = rootCmd.Execute()\n\trequire.Error(t, err)\n\trequire.Contains(t, err.Error(), \"path does not exist\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestQueryCmdWithoutDatabase_129": {
+      "name": "TestQueryCmdWithoutDatabase",
+      "type": "function",
+      "start_line": 129,
+      "end_line": 142,
+      "content_hash": "bf462d961f9b82f538fe262b0805e76b374f5506",
+      "content": "func TestQueryCmdWithoutDatabase(t *testing.T) {\n\t// Save current WD\n\toriginalWd, err := os.Getwd()\n\trequire.NoError(t, err)\n\tdefer os.Chdir(originalWd)\n\n\t// Test query without database\n\trootCmd.SetArgs([]string{\"query\", \"test\", \"--database\", \"/non/existent.db\", \"--cwd\", \".\"})\n\n\terr = rootCmd.Execute()\n\trequire.Error(t, err)\n\t// Update expectation to match actual error\n\trequire.Contains(t, err.Error(), \"index database not found\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/context-engine/tests/test_hybrid_relations.py",
+  "file_hash": "98b55ef69b0299cbddaafde232cd253dbd1a1f42",
+  "updated_at": "2025-12-26T17:34:23.447753",
+  "symbols": {
+    "class__Pt_7": {
+      "name": "_Pt",
+      "type": "class",
+      "start_line": 7,
+      "end_line": 21,
+      "content_hash": "a3b02df901694d2eaa911bda2f1c6c0e75c8a321",
+      "content": "class _Pt:\n    def __init__(self, pid, path):\n        self.id = pid\n        # Minimal payload; include path_prefix so related_paths can be computed\n        self.payload = {\n            \"metadata\": {\n                \"path\": path,\n                \"path_prefix\": \"/\" + \"/\".join(path.split(\"/\")[:-1]).strip(\"/\") or \"/\",\n                \"start_line\": 1,\n                \"end_line\": 2,\n                # Provide empty imports/calls lists\n                \"imports\": [],\n                \"calls\": [],\n            }\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___8": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 8,
+      "end_line": 21,
+      "content_hash": "e88c711de506dd74142ead11411c4cb67acdb68a",
+      "content": "    def __init__(self, pid, path):\n        self.id = pid\n        # Minimal payload; include path_prefix so related_paths can be computed\n        self.payload = {\n            \"metadata\": {\n                \"path\": path,\n                \"path_prefix\": \"/\" + \"/\".join(path.split(\"/\")[:-1]).strip(\"/\") or \"/\",\n                \"start_line\": 1,\n                \"end_line\": 2,\n                # Provide empty imports/calls lists\n                \"imports\": [],\n                \"calls\": [],\n            }\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__QP_24": {
+      "name": "_QP",
+      "type": "class",
+      "start_line": 24,
+      "end_line": 26,
+      "content_hash": "ef9c614735ab57921cb3f41389956e6ef74be590",
+      "content": "class _QP:\n    def __init__(self, points):\n        self.points = points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___25": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 25,
+      "end_line": 26,
+      "content_hash": "9a6a49b3de50e1344e6f2281b0f97d71aa6b85c2",
+      "content": "    def __init__(self, points):\n        self.points = points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakeQdrant_29": {
+      "name": "FakeQdrant",
+      "type": "class",
+      "start_line": 29,
+      "end_line": 37,
+      "content_hash": "c9fafea25d8d93185303c47a4d5a374e595f3c14",
+      "content": "class FakeQdrant:\n    def __init__(self, points):\n        self._points = points\n\n    def query_points(self, **kwargs):\n        return _QP(self._points)\n\n    def search(self, **kwargs):\n        return self._points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___30": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 31,
+      "content_hash": "4d437af401b79f04defdd313c88ac7aa989e27a4",
+      "content": "    def __init__(self, points):\n        self._points = points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_query_points_33": {
+      "name": "query_points",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 34,
+      "content_hash": "ba34ef8978b4b1dd4aa10519300c218f1388d004",
+      "content": "    def query_points(self, **kwargs):\n        return _QP(self._points)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_search_36": {
+      "name": "search",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 37,
+      "content_hash": "659a49ce52fa60b955fce5cc1f6cd65e2291b98f",
+      "content": "    def search(self, **kwargs):\n        return self._points",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakeEmbed_40": {
+      "name": "FakeEmbed",
+      "type": "class",
+      "start_line": 40,
+      "end_line": 50,
+      "content_hash": "b7354972d58dbf1b39a0eebbb6593989d3e4a681",
+      "content": "class FakeEmbed:\n    class _Vec:\n        def __init__(self):\n            self._v = [0.01] * 8\n\n        def tolist(self):\n            return self._v\n\n    def embed(self, texts):\n        for _ in texts:\n            yield FakeEmbed._Vec()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__Vec_41": {
+      "name": "_Vec",
+      "type": "class",
+      "start_line": 41,
+      "end_line": 46,
+      "content_hash": "ce2dafce23b826e82390bfd9170570b8d381ea17",
+      "content": "    class _Vec:\n        def __init__(self):\n            self._v = [0.01] * 8\n\n        def tolist(self):\n            return self._v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___42": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 43,
+      "content_hash": "35dc3f72ee5fe4f5ad89c920fa78164821c9d1a3",
+      "content": "        def __init__(self):\n            self._v = [0.01] * 8",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tolist_45": {
+      "name": "tolist",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 46,
+      "content_hash": "47bd73574e3227f54d772588ec5fe7dfd361c9db",
+      "content": "        def tolist(self):\n            return self._v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_embed_48": {
+      "name": "embed",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 50,
+      "content_hash": "53d4723d641b6074a042651460d52e04a50bbb53",
+      "content": "    def embed(self, texts):\n        for _ in texts:\n            yield FakeEmbed._Vec()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_run_hybrid_search_relations_and_related_paths_54": {
+      "name": "test_run_hybrid_search_relations_and_related_paths",
+      "type": "function",
+      "start_line": 54,
+      "end_line": 90,
+      "content_hash": "0648af215a4f2f51d1a829a03de7853e8203808d",
+      "content": "def test_run_hybrid_search_relations_and_related_paths(monkeypatch):\n    # Two files in same directory -> should yield related_paths for each other\n    pts = [\n        _Pt(\"1\", \"src/a.py\"),\n        _Pt(\"2\", \"src/b.py\"),\n        _Pt(\"3\", \"tests/c_test.py\"),\n    ]\n    # Add an import-like path so a.py imports b -> should appear via import-based resolution\n    pts[0].payload[\"metadata\"][\"imports\"] = [\"./b\"]\n\n    monkeypatch.setattr(hyb, \"QdrantClient\", lambda *a, **k: FakeQdrant(pts))\n    monkeypatch.setattr(hyb, \"TextEmbedding\", lambda *a, **k: FakeEmbed())\n    monkeypatch.setattr(hyb, \"_get_embedding_model\", lambda *a, **k: FakeEmbed())\n    monkeypatch.setenv(\"EMBEDDING_MODEL\", \"unit-test\")\n    monkeypatch.setenv(\"QDRANT_URL\", \"http://localhost:6333\")\n\n    items = hyb.run_hybrid_search(\n        queries=[\"foo\"],\n        limit=5,\n        per_path=2,\n        path_glob=[\"src/*.py\", \"tests/*\"],\n        expand=False,\n        model=FakeEmbed(),\n    )\n    assert items, \"expected some items\"\n    for it in items:\n        # Keys should exist even if lists might be empty\n        assert \"relations\" in it\n        assert \"related_paths\" in it\n    # Ensure related_paths captured sibling in same dir\n    src_items = [it for it in items if str(it.get(\"path\")).startswith(\"src/\")]\n    if len(src_items) >= 2:\n        # Each src item should mention the other in related_paths\n        paths = {it[\"path\"] for it in src_items}\n        for it in src_items:\n            rels = set(it.get(\"related_paths\") or [])\n            assert rels & (paths - {it[\"path\"]}), \"expected sibling path in related_paths\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

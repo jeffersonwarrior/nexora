@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/internal/fsext/ls_test.go",
+  "file_hash": "549a2edce3f22d2918cb62bd0a789ba111fe6ef6",
+  "updated_at": "2025-12-26T17:34:23.905376",
+  "symbols": {
+    "function_TestListDirectory_11": {
+      "name": "TestListDirectory",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 49,
+      "content_hash": "0d273195e2c597647cbeea46824245260561b6e2",
+      "content": "func TestListDirectory(t *testing.T) {\n\ttmp := t.TempDir()\n\n\ttestFiles := map[string]string{\n\t\t\"regular.txt\":     \"content\",\n\t\t\".hidden\":         \"hidden content\",\n\t\t\".gitignore\":      \".*\\n*.log\\n\",\n\t\t\"subdir/file.go\":  \"package main\",\n\t\t\"subdir/.another\": \"more hidden\",\n\t\t\"build.log\":       \"build output\",\n\t}\n\n\tfor name, content := range testFiles {\n\t\tfp := filepath.Join(tmp, name)\n\t\tdir := filepath.Dir(fp)\n\t\trequire.NoError(t, os.MkdirAll(dir, 0o755))\n\t\trequire.NoError(t, os.WriteFile(fp, []byte(content), 0o644))\n\t}\n\n\tt.Run(\"no limit\", func(t *testing.T) {\n\t\tfiles, truncated, err := ListDirectory(tmp, nil, -1, -1)\n\t\trequire.NoError(t, err)\n\t\trequire.False(t, truncated)\n\t\trequire.Len(t, files, 4)\n\t\trequire.ElementsMatch(t, []string{\n\t\t\t\"regular.txt\",\n\t\t\t\"subdir\",\n\t\t\t\"subdir/.another\",\n\t\t\t\"subdir/file.go\",\n\t\t}, relPaths(t, files, tmp))\n\t})\n\tt.Run(\"limit\", func(t *testing.T) {\n\t\tfiles, truncated, err := ListDirectory(tmp, nil, -1, 2)\n\t\trequire.NoError(t, err)\n\t\trequire.True(t, truncated)\n\t\trequire.Len(t, files, 2)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_relPaths_50": {
+      "name": "relPaths",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 59,
+      "content_hash": "56b1e95bb6f5cf377ae4e4f5a2f4353166c184f0",
+      "content": "func relPaths(tb testing.TB, in []string, base string) []string {\n\ttb.Helper()\n\tout := make([]string, 0, len(in))\n\tfor _, p := range in {\n\t\trel, err := filepath.Rel(base, p)\n\t\trequire.NoError(tb, err)\n\t\tout = append(out, filepath.ToSlash(rel))\n\t}\n\treturn out\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

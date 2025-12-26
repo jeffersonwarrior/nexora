@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/metrics/hook.go",
+  "file_hash": "d9209559dbb8d6bfae03b3bbd60945fc11aa68a7",
+  "updated_at": "2025-12-26T17:34:24.419639",
+  "symbols": {
+    "struct_Hook_10": {
+      "name": "Hook",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 14,
+      "content_hash": "cab350913b721408aabdb15bcd826ce8fd603424",
+      "content": "type Hook struct {\n\tcollector *Collector\n}\n\n// NewHook creates a new metrics hook with the given collector.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewHook_15": {
+      "name": "NewHook",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 20,
+      "content_hash": "87bb4dc96390c72a6073daa43bf96422f0f8cd44",
+      "content": "func NewHook(collector *Collector) *Hook {\n\treturn &Hook{collector: collector}\n}\n\n// StartTimer returns a function that should be called when a tool execution completes.\n// It captures the start memory and time for later recording.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_StartTimer_21": {
+      "name": "StartTimer",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 50,
+      "content_hash": "3f8a27bb754ec8b75ba032c235d9aadea9113229",
+      "content": "func (h *Hook) StartTimer() func(toolName string, success bool, err error) {\n\tstartTime := time.Now()\n\n\tvar m runtime.MemStats\n\truntime.ReadMemStats(&m)\n\tstartMemory := m.Alloc\n\n\treturn func(toolName string, success bool, err error) {\n\t\tendTime := time.Now()\n\n\t\tvar m runtime.MemStats\n\t\truntime.ReadMemStats(&m)\n\t\tendMemory := m.Alloc\n\n\t\terrMsg := \"\"\n\t\tif err != nil {\n\t\t\terrMsg = err.Error()\n\t\t}\n\n\t\th.collector.RecordMetric(Metric{\n\t\t\tToolName:      toolName,\n\t\t\tExecutionTime: endTime.Sub(startTime),\n\t\t\tSuccess:       success,\n\t\t\tError:         errMsg,\n\t\t\tMemoryUsed:    int64(endMemory - startMemory),\n\t\t})\n\t}\n}\n\n// StartTimerWithContext is like StartTimer but takes a context for additional flexibility.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_StartTimerWithContext_51": {
+      "name": "StartTimerWithContext",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 55,
+      "content_hash": "72e5f9e20fd6be8f0a7c005592d39bcf792a5e89",
+      "content": "func (h *Hook) StartTimerWithContext(ctx context.Context) func(toolName string, success bool, err error) {\n\treturn h.StartTimer()\n}\n\n// GetCollector returns the underlying metrics collector.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCollector_56": {
+      "name": "GetCollector",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 58,
+      "content_hash": "81dab28e71f71681b0a564c8ed8af6317546c7f1",
+      "content": "func (h *Hook) GetCollector() *Collector {\n\treturn h.collector\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

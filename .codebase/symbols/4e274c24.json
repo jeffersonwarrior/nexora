@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/internal/indexer/interfaces.go",
+  "file_hash": "49ac4e9050b86b840a9752b0694aba042c7b7a21",
+  "updated_at": "2025-12-26T17:34:21.174554",
+  "symbols": {
+    "struct_QueryStats_9": {
+      "name": "QueryStats",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 17,
+      "content_hash": "b41b625be7700a53a5e07df1e59f0b7dfa6db712",
+      "content": "type QueryStats struct {\n\tTotalQueries      int64         `json:\"total_queries\"`\n\tSuccessfulQueries int64         `json:\"successful_queries\"`\n\tFailedQueries     int64         `json:\"failed_queries\"`\n\tAverageLatency    time.Duration `json:\"average_latency\"`\n\tLastQueryTime     time.Time     `json:\"last_query_time\"`\n}\n\n// CacheStats represents cache statistics",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CacheStats_18": {
+      "name": "CacheStats",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 26,
+      "content_hash": "06374bc65a4d77ea02cd56d024f211d08a925994",
+      "content": "type CacheStats struct {\n\tTotalItems   int64   `json:\"total_items\"`\n\tHitRate      float64 `json:\"hit_rate\"`\n\tMissRate     float64 `json:\"miss_rate\"`\n\tEvictionRate float64 `json:\"eviction_rate\"`\n\tMemoryUsage  int64   `json:\"memory_usage_bytes\"`\n}\n\n// SymbolStore defines operations for storing and retrieving code symbols",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_SymbolStore_27": {
+      "name": "SymbolStore",
+      "type": "interface",
+      "start_line": 27,
+      "end_line": 42,
+      "content_hash": "73902496b9e885e520df549ad2cb8a6b4ae8488f",
+      "content": "type SymbolStore interface {\n\t// Storage operations\n\tStoreSymbols(ctx context.Context, symbols []Symbol) error\n\tDeleteSymbolsByFile(ctx context.Context, filePath string) error\n\n\t// Retrieval operations\n\tSearchSymbols(ctx context.Context, query string, limit int) ([]Symbol, error)\n\tGetSymbol(ctx context.Context, id string) (*Symbol, error)\n\tGetCalledSymbols(ctx context.Context, symbolName string) ([]Symbol, error)\n\tGetAllSymbols(ctx context.Context) ([]Symbol, error)\n\n\t// Metadata operations\n\tClose() error\n}\n\n// EmbeddingStore defines operations for storing and retrieving embeddings",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_EmbeddingStore_43": {
+      "name": "EmbeddingStore",
+      "type": "interface",
+      "start_line": 43,
+      "end_line": 56,
+      "content_hash": "ede1a3a01e2966d687b430e12320e106046b052d",
+      "content": "type EmbeddingStore interface {\n\t// Storage operations\n\tStoreEmbeddings(ctx context.Context, embeddings []Embedding) error\n\tDeleteEmbeddingsByFile(ctx context.Context, filePath string) error\n\n\t// Retrieval operations\n\tGetAllEmbeddings(ctx context.Context) ([]Embedding, error)\n\tSearchSimilar(ctx context.Context, query string, limit int) ([]Embedding, error)\n\n\t// Metadata operations\n\tClose() error\n}\n\n// CodeParser defines operations for parsing Go source code",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_CodeParser_57": {
+      "name": "CodeParser",
+      "type": "interface",
+      "start_line": 57,
+      "end_line": 69,
+      "content_hash": "cd6fc0da29624356f4d21c39fcde370dff3f402a",
+      "content": "type CodeParser interface {\n\t// Directory parsing\n\tParseDirectory(ctx context.Context, dir string) ([]Symbol, error)\n\n\t// Single file parsing\n\tParseFile(ctx context.Context, filename string) ([]Symbol, error)\n\n\t// Configuration\n\tSetIncludeTests(include bool)\n\tSetIgnoredDirs(dirs []string)\n}\n\n// EmbeddingGenerator defines operations for generating embeddings",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_EmbeddingGenerator_70": {
+      "name": "EmbeddingGenerator",
+      "type": "interface",
+      "start_line": 70,
+      "end_line": 85,
+      "content_hash": "98907eb6093177b9f5d37fd50ed37a9ea57677ab",
+      "content": "type EmbeddingGenerator interface {\n\t// Single embedding generation\n\tGenerateEmbedding(ctx context.Context, text string) ([]float32, error)\n\n\t// Batch embedding generation\n\tGenerateBatchEmbeddings(ctx context.Context, texts []string) ([][]float32, error)\n\n\t// Symbol-specific operations\n\tGenerateSymbolEmbeddings(ctx context.Context, symbols []Symbol) ([]Embedding, error)\n\n\t// Metadata\n\tName() string\n\tValidateAPIKey(ctx context.Context) bool\n}\n\n// GraphBuilder defines operations for building and managing code graphs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_CodeGraphBuilder_86": {
+      "name": "CodeGraphBuilder",
+      "type": "interface",
+      "start_line": 86,
+      "end_line": 104,
+      "content_hash": "c67e495759dd11433c7afa3e618532485ef1f62d",
+      "content": "type CodeGraphBuilder interface {\n\t// Graph construction\n\tBuildGraph(ctx context.Context, symbols []Symbol) (*Graph, error)\n\n\t// Graph analysis\n\tGetDependencies(ctx context.Context, symbolID string) ([]string, error)\n\tGetDependents(ctx context.Context, symbolID string) ([]string, error)\n\tGetCallGraph(ctx context.Context, symbolID string) ([]string, error)\n\n\t// Graph traversal\n\tGetTransitiveDependencies(ctx context.Context, symbolID string, maxDepth int) ([]string, error)\n\tGetTransitiveDependents(ctx context.Context, symbolID string, maxDepth int) ([]string, error)\n\n\t// Metadata\n\tGetAllNodes(ctx context.Context) ([]string, error)\n\tGetRelationships(ctx context.Context, symbolID string) ([]string, error)\n}\n\n// QueryExecutor defines operations for querying indexed code",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_QueryExecutor_105": {
+      "name": "QueryExecutor",
+      "type": "interface",
+      "start_line": 105,
+      "end_line": 124,
+      "content_hash": "2b28818c2e684325d6f4f7e32436072307ee4164",
+      "content": "type QueryExecutor interface {\n\t// Search operations\n\tSearch(ctx context.Context, req *QueryRequest) ([]QueryResult, error)\n\tAdvancedQuery(ctx context.Context, query string) ([]QueryResult, error)\n\n\t// Search types\n\tSearchSymbols(ctx context.Context, query string, limit int) ([]Symbol, error)\n\tSearchSimilar(ctx context.Context, query string, limit int) ([]Embedding, error)\n\tSearchGraph(ctx context.Context, query string, limit int) ([]QueryResult, error)\n\n\t// Configuration\n\tSetSymbolStore(store SymbolStore)\n\tSetEmbeddingStore(store EmbeddingStore)\n\tSetGraphBuilder(builder GraphBuilder)\n\n\t// Metadata\n\tGetQueryStats() QueryStats\n}\n\n// FileManager defines operations for file system monitoring",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_FileManager_125": {
+      "name": "FileManager",
+      "type": "interface",
+      "start_line": 125,
+      "end_line": 147,
+      "content_hash": "93e20c90c5001ed3698c1dffb3e5a57750481fa8",
+      "content": "type FileManager interface {\n\t// Path management\n\tAddPath(path string) error\n\tRemovePath(path string) error\n\tGetWatchedPaths() []string\n\tIsWatching() bool\n\n\t// Configuration\n\tSetIgnoredDirs(dirs []string)\n\tSetIgnoredExts(exts []string)\n\tSetDebounceDelay(delay time.Duration)\n\n\t// Event handling\n\tOnFileAdded(callback func(string))\n\tOnFileChanged(callback func(string))\n\tOnFileRemoved(callback func(string))\n\n\t// Lifecycle\n\tStart() error\n\tStop() error\n}\n\n// CacheManager defines operations for caching system",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_CacheManager_148": {
+      "name": "CacheManager",
+      "type": "interface",
+      "start_line": 148,
+      "end_line": 167,
+      "content_hash": "f5c42e4b4e24caf7ad7d149657a19b3b37ee1ce5",
+      "content": "type CacheManager interface {\n\t// Cache operations\n\tGet(ctx context.Context, key string) (interface{}, bool)\n\tSet(ctx context.Context, key string, value interface{})\n\tDelete(ctx context.Context, key string)\n\tClear(ctx context.Context)\n\n\t// Batch operations\n\tGetBatch(ctx context.Context, keys []string) (map[string]interface{}, error)\n\tSetBatch(ctx context.Context, items map[string]interface{}) error\n\n\t// Metadata\n\tGetMetrics() CacheMetrics\n\tGetStats() CacheStats\n\n\t// Configuration\n\tClose() error\n}\n\n// DeltaManager defines operations for incremental updates",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_DeltaManager_168": {
+      "name": "DeltaManager",
+      "type": "interface",
+      "start_line": 168,
+      "end_line": 185,
+      "content_hash": "659dd3b959eea593584487e76b3409ad0368751a",
+      "content": "type DeltaManager interface {\n\t// Delta operations\n\tProcessDelta(ctx context.Context, batch DeltaBatch) error\n\tCreateBatch(added, modified, removed []string) DeltaBatch\n\n\t// State management\n\tGetLastSync() time.Time\n\tSetLastSync(t time.Time)\n\tCheckpoint(ctx context.Context) error\n\tGetLastCheckpoint(ctx context.Context) (time.Time, error)\n\n\t// Configuration\n\tConfigureIndexer(indexer SymbolStore)\n\tConfigureParser(parser CodeParser)\n\tConfigureGenerator(generator EmbeddingGenerator)\n}\n\n// Composed interfaces for common use cases",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_IndexerService_186": {
+      "name": "IndexerService",
+      "type": "interface",
+      "start_line": 186,
+      "end_line": 190,
+      "content_hash": "9efeaa31939eb0965b17c5c709aee3facccebf76",
+      "content": "type IndexerService interface {\n\tSymbolStore\n\tEmbeddingStore\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_SearchService_191": {
+      "name": "SearchService",
+      "type": "interface",
+      "start_line": 191,
+      "end_line": 195,
+      "content_hash": "86384f961febdecc08eb1c162e6a76dca89039c7",
+      "content": "type SearchService interface {\n\tQueryExecutor\n\tEmbeddingStore\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_MonitoringService_196": {
+      "name": "MonitoringService",
+      "type": "interface",
+      "start_line": 196,
+      "end_line": 201,
+      "content_hash": "9bdbe8c6a15f5326316f776a17c5a9103694f839",
+      "content": "type MonitoringService interface {\n\tFileManager\n\tDeltaManager\n}\n\n// Factory interfaces for dependency injection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_SymbolStoreFactory_202": {
+      "name": "SymbolStoreFactory",
+      "type": "interface",
+      "start_line": 202,
+      "end_line": 205,
+      "content_hash": "c57348e15c9d76a3280cccaf28c4fbb131b069bc",
+      "content": "type SymbolStoreFactory interface {\n\tCreateSymbolStore(config SymbolStoreConfig) (SymbolStore, error)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_EmbeddingGeneratorFactory_206": {
+      "name": "EmbeddingGeneratorFactory",
+      "type": "interface",
+      "start_line": 206,
+      "end_line": 210,
+      "content_hash": "4b0f7919ab61a941cebb01b6c2b3f0b329e77722",
+      "content": "type EmbeddingGeneratorFactory interface {\n\tCreateEmbeddingGenerator(config EmbeddingConfig) (EmbeddingGenerator, error)\n}\n\n// Configuration types",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_SymbolStoreConfig_211": {
+      "name": "SymbolStoreConfig",
+      "type": "struct",
+      "start_line": 211,
+      "end_line": 216,
+      "content_hash": "39b273cda557a3a979d314bc584c4e30b7d8fa31",
+      "content": "type SymbolStoreConfig struct {\n\tDatabasePath string\n\tCacheEnabled bool\n\tReadOnly     bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EmbeddingConfig_217": {
+      "name": "EmbeddingConfig",
+      "type": "struct",
+      "start_line": 217,
+      "end_line": 225,
+      "content_hash": "ea7605f72fc65e48a1a27d7b2d96d9a1cc8007ce",
+      "content": "type EmbeddingConfig struct {\n\tProvider   string\n\tModel      string\n\tAPIKey     string\n\tTimeout    time.Duration\n\tMaxRetries int\n}\n\n// Configuration types",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

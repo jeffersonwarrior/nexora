@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/react_planner.go",
+  "file_hash": "5c571ffee1f400cccb7b10cb8cf9c40e529aab8e",
+  "updated_at": "2025-12-26T17:34:22.611461",
+  "symbols": {
+    "struct_ReActPlanner_11": {
+      "name": "ReActPlanner",
+      "type": "struct",
+      "start_line": 11,
+      "end_line": 18,
+      "content_hash": "8756fbed747f96bafaa6dea6245c66b41304e05c",
+      "content": "type ReActPlanner struct {\n\tmaxThoughts  int\n\tmaxActions   int\n\ttoolSelector ToolSelector\n\tmemoryKey    string // key to store reasoning history in memory\n}\n\n// ToolSelector helps select appropriate tools based on the context",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ToolSelector_19": {
+      "name": "ToolSelector",
+      "type": "interface",
+      "start_line": 19,
+      "end_line": 23,
+      "content_hash": "0e41b7ec660c0525999e4c2c82a82c85549c0ccc",
+      "content": "type ToolSelector interface {\n\tSelectTool(ctx context.Context, tools []Tool, goal string, thoughts []string) (Tool, map[string]interface{}, error)\n}\n\n// NewReActPlanner creates a new ReAct planner",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewReActPlanner_24": {
+      "name": "NewReActPlanner",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 33,
+      "content_hash": "f4968a42940125824aa1408fc5d1d261a05dbef9",
+      "content": "func NewReActPlanner() *ReActPlanner {\n\treturn &ReActPlanner{\n\t\tmaxThoughts:  5,\n\t\tmaxActions:   3,\n\t\ttoolSelector: &DefaultToolSelector{},\n\t\tmemoryKey:    \"react_history\",\n\t}\n}\n\n// WithMaxThoughts sets the maximum number of reasoning steps",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithMaxThoughts_34": {
+      "name": "WithMaxThoughts",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 39,
+      "content_hash": "2ab9585784f7388b32ff41b668a23d30902c16af",
+      "content": "func (r *ReActPlanner) WithMaxThoughts(max int) *ReActPlanner {\n\tr.maxThoughts = max\n\treturn r\n}\n\n// WithMaxActions sets the maximum number of tool actions",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithMaxActions_40": {
+      "name": "WithMaxActions",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 45,
+      "content_hash": "1824156d7fc70669433398a2579afee3c4f595a2",
+      "content": "func (r *ReActPlanner) WithMaxActions(max int) *ReActPlanner {\n\tr.maxActions = max\n\treturn r\n}\n\n// WithToolSelector sets a custom tool selector",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithToolSelector_46": {
+      "name": "WithToolSelector",
+      "type": "method",
+      "start_line": 46,
+      "end_line": 51,
+      "content_hash": "47e975564dd229712be81457856f93f47be929b0",
+      "content": "func (r *ReActPlanner) WithToolSelector(selector ToolSelector) *ReActPlanner {\n\tr.toolSelector = selector\n\treturn r\n}\n\n// Plan generates a ReAct plan based on the current state and goal",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Plan_52": {
+      "name": "Plan",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 101,
+      "content_hash": "6d9f0036bd6856013952111217d88920aa17ba27",
+      "content": "func (r *ReActPlanner) Plan(ctx context.Context, state State, goal string) (Plan, error) {\n\t// Extract previous thoughts from messages if available\n\tvar thoughts []string\n\tfor _, msg := range state.Messages {\n\t\tif contains(msg.Content, \"Thought:\") ||\n\t\t\tcontains(msg.Content, \"Action:\") ||\n\t\t\tcontains(msg.Content, \"Observation:\") {\n\t\t\tthoughts = append(thoughts, msg.Content)\n\t\t}\n\t}\n\n\tplan := Plan{}\n\tsteps := []PlanStep{}\n\n\t// Generate initial thought about the goal\n\tinitialThought := r.generateInitialThought(goal, state)\n\tsteps = append(steps, PlanStep{\n\t\tType:    \"think\",\n\t\tThought: initialThought,\n\t})\n\tthoughts = append(thoughts, fmt.Sprintf(\"Thought: %s\", initialThought))\n\n\t// Decide if we need to use tools\n\tif len(state.Tools) > 0 && r.shouldUseTools(goal, thoughts) {\n\t\ttool, params, err := r.toolSelector.SelectTool(ctx, state.Tools, goal, thoughts)\n\t\tif err != nil {\n\t\t\treturn Plan{}, fmt.Errorf(\"tool selection failed: %w\", err)\n\t\t}\n\n\t\t// Add action step\n\t\tsteps = append(steps, PlanStep{\n\t\t\tType:       \"tool\",\n\t\t\tToolName:   tool.Name(),\n\t\t\tParameters: params,\n\t\t})\n\t\tthoughts = append(thoughts, fmt.Sprintf(\"Action: Use %s with %v\", tool.Name(), params))\n\t}\n\n\t// Generate final thought\n\tfinalThought := r.generateFinalThought(goal, thoughts)\n\tsteps = append(steps, PlanStep{\n\t\tType:    \"think\",\n\t\tThought: finalThought,\n\t})\n\n\tplan.Steps = steps\n\treturn plan, nil\n}\n\n// generateInitialThought creates the first reasoning step",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_generateInitialThought_102": {
+      "name": "generateInitialThought",
+      "type": "method",
+      "start_line": 102,
+      "end_line": 120,
+      "content_hash": "3ce2da08b1e608404b3fd5cfdb97ea61390f1389",
+      "content": "func (r *ReActPlanner) generateInitialThought(goal string, state State) string {\n\tthought := fmt.Sprintf(\"I need to: %s\", goal)\n\n\tif len(state.Messages) > 0 {\n\t\tthought += \". I will use my memory to help with this task.\"\n\t}\n\n\tif len(state.Tools) > 0 {\n\t\tavailableTools := make([]string, len(state.Tools))\n\t\tfor i, tool := range state.Tools {\n\t\t\tavailableTools[i] = tool.Name()\n\t\t}\n\t\tthought += fmt.Sprintf(\". Available tools: %s\", strings.Join(availableTools, \", \"))\n\t}\n\n\treturn thought\n}\n\n// shouldUseTools determines if tools are needed for this goal",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_shouldUseTools_121": {
+      "name": "shouldUseTools",
+      "type": "method",
+      "start_line": 121,
+      "end_line": 156,
+      "content_hash": "2c3d2114ed2c11ab4f3a570b53dcbee03c63f7f0",
+      "content": "func (r *ReActPlanner) shouldUseTools(goal string, thoughts []string) bool {\n\t// Simple heuristic: use tools for goals that suggest action\n\tactionKeywords := []string{\n\t\t\"calculate\", \"compute\", \"find\", \"search\", \"get\", \"fetch\",\n\t\t\"send\", \"write\", \"create\", \"update\", \"delete\", \"modify\",\n\t\t\"execute\", \"run\", \"perform\", \"do\", \"make\", \"build\", \"use\",\n\t}\n\n\tgoalLower := strings.ToLower(goal)\n\tfor _, keyword := range actionKeywords {\n\t\tif strings.Contains(goalLower, keyword) {\n\t\t\treturn true\n\t\t}\n\t}\n\n\t// Always use tools for goals that have tool names\n\t// This handles cases like \"echo this message\"\n\tif strings.Contains(goalLower, \"echo\") ||\n\t\tstrings.Contains(goalLower, \"calculate\") ||\n\t\tstrings.Contains(goalLower, \"test\") ||\n\t\tstrings.Contains(goalLower, \"tool\") {\n\t\treturn true\n\t}\n\n\t// Check if previous thoughts indicate a need for tools\n\tfor _, thought := range thoughts {\n\t\tif strings.Contains(strings.ToLower(thought), \"need to use\") ||\n\t\t\tstrings.Contains(strings.ToLower(thought), \"should try\") {\n\t\t\treturn true\n\t\t}\n\t}\n\n\treturn false\n}\n\n// generateFinalThought creates the concluding reasoning step",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_generateFinalThought_157": {
+      "name": "generateFinalThought",
+      "type": "method",
+      "start_line": 157,
+      "end_line": 169,
+      "content_hash": "6821fd88609bcceb3011cd060b32af36b8e5fffe",
+      "content": "func (r *ReActPlanner) generateFinalThought(goal string, thoughts []string) string {\n\tif len(thoughts) == 1 {\n\t\treturn \"I will proceed with the initial approach.\"\n\t}\n\n\tif len(thoughts) >= 3 {\n\t\treturn \"Based on my reasoning and available actions, I believe I have a good plan to achieve this goal.\"\n\t}\n\n\treturn \"I should proceed step by step to achieve the goal.\"\n}\n\n// DefaultToolSelector provides basic tool selection logic",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DefaultToolSelector_170": {
+      "name": "DefaultToolSelector",
+      "type": "struct",
+      "start_line": 170,
+      "end_line": 172,
+      "content_hash": "4c18c170008729041523d5d2b72dc45f88e74afd",
+      "content": "type DefaultToolSelector struct{}\n\n// SelectTool chooses the most appropriate tool for the given context",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SelectTool_173": {
+      "name": "SelectTool",
+      "type": "method",
+      "start_line": 173,
+      "end_line": 207,
+      "content_hash": "9b7792cce1673bc6d3f41ee6b0a051adb89a49a2",
+      "content": "func (d *DefaultToolSelector) SelectTool(ctx context.Context, tools []Tool, goal string, thoughts []string) (Tool, map[string]interface{}, error) {\n\tif len(tools) == 0 {\n\t\treturn nil, nil, fmt.Errorf(\"no tools available\")\n\t}\n\n\t// Simple selection strategy: choose based on goal keywords\n\tgoalLower := strings.ToLower(goal)\n\n\t// Calculator for math-related goals\n\tfor _, tool := range tools {\n\t\tif strings.Contains(strings.ToLower(tool.Name()), \"calculator\") &&\n\t\t\t(strings.Contains(goalLower, \"calculate\") ||\n\t\t\t\tstrings.Contains(goalLower, \"compute\") ||\n\t\t\t\tstrings.Contains(goalLower, \"add\") ||\n\t\t\t\tstrings.Contains(goalLower, \"multiply\") ||\n\t\t\t\tstrings.Contains(goalLower, \"multiply\") ||\n\t\t\t\tstrings.Contains(goalLower, \"is *\")) {\n\t\t\treturn tool, d.guessCalculatorParams(goal), nil\n\t\t}\n\t}\n\n\t// Echo tool for general content processing\n\tfor _, tool := range tools {\n\t\tif strings.Contains(strings.ToLower(tool.Name()), \"echo\") {\n\t\t\treturn tool, map[string]interface{}{\n\t\t\t\t\"message\": goal,\n\t\t\t}, nil\n\t\t}\n\t}\n\n\t// Default: use first available tool with empty parameters\n\treturn tools[0], map[string]interface{}{}, nil\n}\n\n// guessCalculatorParams attempts to extract numbers from the goal",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_guessCalculatorParams_208": {
+      "name": "guessCalculatorParams",
+      "type": "method",
+      "start_line": 208,
+      "end_line": 218,
+      "content_hash": "7953d26cbfe0b9b888cd7ac0a4c0884b25f13d02",
+      "content": "func (d *DefaultToolSelector) guessCalculatorParams(goal string) map[string]interface{} {\n\t// Very simple number extraction - in real implementation would be more sophisticated\n\tparams := map[string]interface{}{\n\t\t\"operation\": \"add\",\n\t\t\"a\":         1.0,\n\t\t\"b\":         1.0,\n\t}\n\treturn params\n}\n\n// contains checks if a string contains a substring (case-insensitive)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_contains_219": {
+      "name": "contains",
+      "type": "function",
+      "start_line": 219,
+      "end_line": 225,
+      "content_hash": "aa2b36cde3ae12ab6a3abe927e7e7600e7c2d043",
+      "content": "func contains(s, substr string) bool {\n\treturn len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&\n\t\t(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||\n\t\t\tindexOf(s, substr) >= 0))\n}\n\n// indexOf finds the index of a substring",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_indexOf_226": {
+      "name": "indexOf",
+      "type": "function",
+      "start_line": 226,
+      "end_line": 233,
+      "content_hash": "6ef3c1a144257eb31fcb576852e1bfac8cf31a88",
+      "content": "func indexOf(s, substr string) int {\n\tfor i := 0; i <= len(s)-len(substr); i++ {\n\t\tif s[i:i+len(substr)] == substr {\n\t\t\treturn i\n\t\t}\n\t}\n\treturn -1\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

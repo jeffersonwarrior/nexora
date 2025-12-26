@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/cmd/query_cmd.go",
+  "file_hash": "66bcc28e045df63e301687e1b2b41c0dec62459e",
+  "updated_at": "2025-12-26T17:34:21.045821",
+  "symbols": {
+    "function_init_49": {
+      "name": "init",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 69,
+      "content_hash": "227f2e8a9a04213b45bd58e157373fcd126d8774",
+      "content": "func init() {\n\trootCmd.AddCommand(queryCmd)\n\n\tqueryCmd.Flags().StringVarP(&queryType, \"type\", \"t\", \"all\",\n\t\t\"Search type: all, semantic, text, or graph\")\n\tqueryCmd.Flags().IntVarP(&queryLimit, \"limit\", \"l\", 20,\n\t\t\"Maximum number of results to return\")\n\tqueryCmd.Flags().StringVarP(&queryContext, \"context\", \"x\", \"\",\n\t\t\"Filter by package, file, or type context\")\n\tqueryCmd.Flags().StringSliceVarP(&querySymbolTypes, \"symbol-types\", \"s\", []string{},\n\t\t\"Filter by symbol types: func, struct, interface, var, const\")\n\tqueryCmd.Flags().BoolVarP(&queryIncludeDocs, \"include-docs\", \"i\", true,\n\t\t\"Include documentation in search\")\n\tqueryCmd.Flags().BoolVarP(&queryAdvanced, \"advanced\", \"a\", false,\n\t\t\"Use advanced query parsing for natural language queries\")\n\tqueryCmd.Flags().BoolVarP(&queryExplain, \"explain\", \"e\", false,\n\t\t\"Explain why results were returned\")\n\tqueryCmd.Flags().StringVarP(&queryDatabase, \"database\", \"b\", \"nexora_index.db\",\n\t\t\"Path to index database\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runQuery_70": {
+      "name": "runQuery",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 147,
+      "content_hash": "f9613be1200575d359fc85e8058b13ae50133f5d",
+      "content": "func runQuery(cmd *cobra.Command, args []string) error {\n\tctx := context.Background()\n\tstart := time.Now()\n\n\t// Check if database exists\n\tif _, err := os.Stat(queryDatabase); os.IsNotExist(err) {\n\t\treturn fmt.Errorf(\"index database not found: %s\\nRun 'nexora index' first to create an index\", queryDatabase)\n\t}\n\n\t// Build query string\n\tquery := strings.Join(args, \" \")\n\n\t// Initialize indexer\n\tstorage, err := indexer.NewIndexer(queryDatabase)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to open index database: %w\", err)\n\t}\n\tdefer storage.Close()\n\n\t// Initialize components\n\tprovider := indexer.NewLocalProvider(\"mock\", \"/tmp\")\n\tembeddingEngine := indexer.NewEmbeddingEngine(provider, storage)\n\tqueryEngine := indexer.NewQueryEngine(storage, embeddingEngine)\n\n\t// Build graph for graph-based search\n\tsymbols, err := storage.SearchSymbols(ctx, \"\", 10000)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to load symbols: %w\", err)\n\t}\n\n\tsymbolMap := make(map[string]*indexer.Symbol)\n\tfor i := range symbols {\n\t\ts := &symbols[i]\n\t\tsymbolMap[s.Name+\"@\"+s.Package] = s\n\t}\n\n\tgraphBuilder := indexer.NewGraphBuilder()\n\tgraph, err := graphBuilder.BuildGraph(ctx, symbolMap)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to build graph: %w\", err)\n\t}\n\tqueryEngine.SetGraph(graph)\n\n\tfmt.Printf(\"\ud83d\udd0d Searching index: %s\\n\", query)\n\n\tvar results string\n\tif queryAdvanced {\n\t\t// Use advanced query parsing\n\t\tqueryResults, err := queryEngine.AdvancedQuery(ctx, query)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"advanced query failed: %w\", err)\n\t\t}\n\t\tresults = formatAdvancedResults(query, queryResults)\n\t} else if queryExplain {\n\t\t// Use explain mode\n\t\texplanation, err := queryEngine.ExplainQuery(ctx, query)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"explain query failed: %w\", err)\n\t\t}\n\t\tresults = explanation\n\t} else {\n\t\t// Use standard query\n\t\tresults, err = performStandardQuery(ctx, queryEngine, query)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"query failed: %w\", err)\n\t\t}\n\t}\n\n\t// Print results\n\tfmt.Print(results)\n\n\tduration := time.Since(start)\n\tfmt.Printf(\"\u23f1\ufe0f  Query completed in %s\\n\", duration.Round(time.Millisecond))\n\n\treturn nil\n}\n\n// performStandardQuery handles regular search queries",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_performStandardQuery_148": {
+      "name": "performStandardQuery",
+      "type": "function",
+      "start_line": 148,
+      "end_line": 174,
+      "content_hash": "7c3f111db3e8965cb8585835ad0084df56335ac3",
+      "content": "func performStandardQuery(ctx context.Context, engine *indexer.QueryEngine, query string) (string, error) {\n\t// Parse query type\n\tqueryType, err := parseQueryType(queryType)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"invalid query type: %w\", err)\n\t}\n\n\t// Build request\n\treq := &indexer.QueryRequest{\n\t\tQuery:       query,\n\t\tType:        queryType,\n\t\tLimit:       queryLimit,\n\t\tContext:     queryContext,\n\t\tSymbolTypes: querySymbolTypes,\n\t\tIncludeDocs: queryIncludeDocs,\n\t}\n\n\t// Execute search\n\tresult, err := engine.Search(ctx, req)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn formatSearchResults(result), nil\n}\n\n// parseQueryType converts string query type to indexer.QueryType",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parseQueryType_175": {
+      "name": "parseQueryType",
+      "type": "function",
+      "start_line": 175,
+      "end_line": 190,
+      "content_hash": "877b05a7c4f337fb7b43e39c2f3838139bd4bb24",
+      "content": "func parseQueryType(typeStr string) (indexer.QueryType, error) {\n\tswitch strings.ToLower(typeStr) {\n\tcase \"all\":\n\t\treturn indexer.QueryTypeAll, nil\n\tcase \"semantic\":\n\t\treturn indexer.QueryTypeSemantic, nil\n\tcase \"text\":\n\t\treturn indexer.QueryTypeText, nil\n\tcase \"graph\":\n\t\treturn indexer.QueryTypeGraph, nil\n\tdefault:\n\t\treturn indexer.QueryTypeAll, fmt.Errorf(\"unknown query type: %s\", typeStr)\n\t}\n}\n\n// formatSearchResults formats search results for display",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatSearchResults_191": {
+      "name": "formatSearchResults",
+      "type": "function",
+      "start_line": 191,
+      "end_line": 257,
+      "content_hash": "12b6cd1c0e93b9819d68d5061699d2739214d79a",
+      "content": "func formatSearchResults(result *indexer.SearchResult) string {\n\tvar output strings.Builder\n\n\t// Header\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udd0d Search Results for: %s\\n\", result.Query))\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udcca Type: %v | Total: %d results | Duration: %s\\n\\n\",\n\t\tresult.Type, result.Total, result.Duration))\n\n\tif len(result.Results) == 0 {\n\t\toutput.WriteString(\"No results found.\\n\")\n\t\treturn output.String()\n\t}\n\n\t// Results\n\tfor i, res := range result.Results {\n\t\toutput.WriteString(fmt.Sprintf(\"%d. **%s** `%s`\\n\", i+1, res.Symbol.Name, res.Symbol.Type))\n\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udccd Location: %s\\n\", res.Location))\n\t\toutput.WriteString(fmt.Sprintf(\"   \ud83c\udfaf Score: %.3f (%s)\\n\", res.Score, res.MatchType))\n\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udca1 Reason: %s\\n\", res.Reason))\n\n\t\t// Package context\n\t\tif res.Symbol.Package != \"\" {\n\t\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udce6 Package: %s\\n\", res.Symbol.Package))\n\t\t}\n\n\t\t// Documentation (if available and not too long)\n\t\tif res.Symbol.Doc != \"\" && len(res.Symbol.Doc) < 200 {\n\t\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udcd6 Documentation: %s\\n\", res.Symbol.Doc))\n\t\t}\n\n\t\t// Signature (if available and not too long)\n\t\tif res.Symbol.Signature != \"\" && len(res.Symbol.Signature) < 200 {\n\t\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udd0d Signature: %s\\n\", res.Symbol.Signature))\n\t\t} else if res.Symbol.Signature != \"\" {\n\t\t\t// truncated signature for very long ones\n\t\t\ttruncated := res.Symbol.Signature\n\t\t\tif len(truncated) > 200 {\n\t\t\t\ttruncated = truncated[:197] + \"...\"\n\t\t\t}\n\t\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udd0d Signature: %s\\n\", truncated))\n\t\t}\n\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\t// Footer with tips\n\tif queryType == \"semantic\" || queryType == \"all\" {\n\t\toutput.WriteString(\"\ud83d\udca1 **Semantic Search Tips:**\\n\")\n\t\toutput.WriteString(\"   \u2022 Try describing what you want in natural language\\n\")\n\t\toutput.WriteString(\"   \u2022 Include concepts like \\\"authentication\\\", \\\"validation\\\", \\\"error handling\\\"\\n\")\n\t\toutput.WriteString(\"   \u2022 Results are ranked by semantic similarity\\n\")\n\t} else if queryType == \"text\" {\n\t\toutput.WriteString(\"\ud83d\udca1 **Text Search Tips:**\\n\")\n\t\toutput.WriteString(\"   \u2022 Use exact names, patterns, and keywords\\n\")\n\t\toutput.WriteString(\"   \u2022 Supports regex patterns for function names\\n\")\n\t\toutput.WriteString(\"   \u2022 Results are ranked by text relevance\\n\")\n\t} else if queryType == \"graph\" {\n\t\toutput.WriteString(\"\ud83d\udca1 **Graph Search Tips:**\\n\")\n\t\toutput.WriteString(\"   \u2022 Finds related symbols through dependencies\\n\")\n\t\toutput.WriteString(\"   \u2022 Useful for impact analysis and function relationships\\n\")\n\t\toutput.WriteString(\"   \u2022 Results include callers and callees\\n\")\n\t}\n\n\treturn output.String()\n}\n\n// formatAdvancedResults formats advanced query results",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatAdvancedResults_258": {
+      "name": "formatAdvancedResults",
+      "type": "function",
+      "start_line": 258,
+      "end_line": 284,
+      "content_hash": "d814a5fd8bdeda51a7adbf752d8ce049efd5f0cf",
+      "content": "func formatAdvancedResults(query string, results []indexer.QueryResult) string {\n\tvar output strings.Builder\n\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udd0d Advanced Search Results for: %s\\n\", query))\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udcca Found %d results\\n\\n\", len(results)))\n\n\tif len(results) == 0 {\n\t\toutput.WriteString(\"No results found.\\n\")\n\t\treturn output.String()\n\t}\n\n\t// Results\n\tfor i, res := range results {\n\t\toutput.WriteString(fmt.Sprintf(\"%d. **%s** `%s`\\n\", i+1, res.Symbol.Name, res.Symbol.Type))\n\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udccd Location: %s\\n\", res.Location))\n\t\toutput.WriteString(fmt.Sprintf(\"   \ud83c\udfaf Score: %.3f (%s)\\n\", res.Score, res.MatchType))\n\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udca1 Reason: %s\\n\", res.Reason))\n\n\t\tif res.Symbol.Package != \"\" {\n\t\t\toutput.WriteString(fmt.Sprintf(\"   \ud83d\udce6 Package: %s\\n\", res.Symbol.Package))\n\t\t}\n\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\treturn output.String()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

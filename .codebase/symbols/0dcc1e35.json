@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/internal/agent/state/machine.go",
+  "file_hash": "21130ced5a28304433d57ee3c17bc34662c5b940",
+  "updated_at": "2025-12-26T17:34:24.942454",
+  "symbols": {
+    "struct_StateMachine_12": {
+      "name": "StateMachine",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 40,
+      "content_hash": "f040bba38089b22ee5865c48a37de8ea8e4541e0",
+      "content": "type StateMachine struct {\n\tmu sync.RWMutex\n\n\t// Core state\n\tcurrentState AgentState\n\tsessionID    string\n\tstartTime    time.Time\n\tpauseReason  string // Reason for being in paused state\n\n\t// Progress tracking\n\tprogressTracker *ProgressTracker\n\tphaseContext    *PhaseContext\n\n\t// Context management\n\tctx        context.Context\n\tcancelFunc context.CancelFunc\n\n\t// Metrics\n\ttoolCallCount int\n\tstateHistory  []StateMetrics\n\tmaxHistory    int\n\n\t// Callbacks\n\tonStateChange func(from, to AgentState)\n\tonStuck       func(reason string)\n\tonProgress    func(stats ProgressStats)\n}\n\n// Config for state machine initialization.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Config_41": {
+      "name": "Config",
+      "type": "struct",
+      "start_line": 41,
+      "end_line": 51,
+      "content_hash": "bce46bbdd3528368d5d48dcbf13f4a3e446ba0c2",
+      "content": "type Config struct {\n\tSessionID     string\n\tContext       context.Context\n\tTotalPhases   int\n\tMaxHistory    int\n\tOnStateChange func(from, to AgentState)\n\tOnStuck       func(reason string)\n\tOnProgress    func(stats ProgressStats)\n}\n\n// NewStateMachine creates a new state machine.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewStateMachine_52": {
+      "name": "NewStateMachine",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 87,
+      "content_hash": "49cc005b4a46c692e3bab94b7a96ede222f2227f",
+      "content": "func NewStateMachine(cfg Config) *StateMachine {\n\tctx := cfg.Context\n\tif ctx == nil {\n\t\tctx = context.Background()\n\t}\n\n\tctx, cancel := context.WithCancel(ctx)\n\n\tmaxHistory := cfg.MaxHistory\n\tif maxHistory == 0 {\n\t\tmaxHistory = 100\n\t}\n\n\tvar phaseContext *PhaseContext\n\tif cfg.TotalPhases > 0 {\n\t\tphaseContext = NewPhaseContext(cfg.TotalPhases)\n\t}\n\n\treturn &StateMachine{\n\t\tcurrentState:    StateIdle,\n\t\tsessionID:       cfg.SessionID,\n\t\tstartTime:       time.Now(),\n\t\tprogressTracker: NewProgressTracker(),\n\t\tphaseContext:    phaseContext,\n\t\tctx:             ctx,\n\t\tcancelFunc:      cancel,\n\t\ttoolCallCount:   0,\n\t\tstateHistory:    make([]StateMetrics, 0, maxHistory),\n\t\tmaxHistory:      maxHistory,\n\t\tonStateChange:   cfg.OnStateChange,\n\t\tonStuck:         cfg.OnStuck,\n\t\tonProgress:      cfg.OnProgress,\n\t}\n}\n\n// TransitionTo attempts to transition to a new state.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_TransitionTo_88": {
+      "name": "TransitionTo",
+      "type": "method",
+      "start_line": 88,
+      "end_line": 145,
+      "content_hash": "f8569ad61cdbf2694bcd8004b5e9bb867c32d5a6",
+      "content": "func (sm *StateMachine) TransitionTo(newState AgentState) error {\n\tsm.mu.Lock()\n\tdefer sm.mu.Unlock()\n\n\toldState := sm.currentState\n\n\t// Check if transition is valid\n\tif !oldState.CanTransitionTo(newState) {\n\t\treturn &TransitionError{\n\t\t\tFrom:   oldState,\n\t\t\tTo:     newState,\n\t\t\tReason: \"invalid transition\",\n\t\t}\n\t}\n\n\t// Record state exit metrics\n\tif len(sm.stateHistory) > 0 {\n\t\tlastMetric := &sm.stateHistory[len(sm.stateHistory)-1]\n\t\tlastMetric.ExitTime = time.Now()\n\t\tlastMetric.Duration = lastMetric.ExitTime.Sub(lastMetric.EnterTime)\n\t\tlastMetric.TransitionTo = newState\n\t}\n\n\t// Transition\n\tsm.currentState = newState\n\tif newState != StateResourcePaused {\n\t\tsm.pauseReason = \"\" // Clear pause reason when leaving paused state\n\t}\n\n\t// Record state entry\n\tmetric := StateMetrics{\n\t\tState:     newState,\n\t\tEnterTime: time.Now(),\n\t}\n\tsm.stateHistory = append(sm.stateHistory, metric)\n\n\t// Trim history if needed\n\tif len(sm.stateHistory) > sm.maxHistory {\n\t\tsm.stateHistory = sm.stateHistory[1:]\n\t}\n\n\t// Log transition\n\tslog.Info(\"state transition\",\n\t\t\"session_id\", sm.sessionID,\n\t\t\"from\", oldState.String(),\n\t\t\"to\", newState.String(),\n\t\t\"tool_calls\", sm.toolCallCount,\n\t)\n\n\t// Callback\n\tif sm.onStateChange != nil {\n\t\tgo sm.onStateChange(oldState, newState)\n\t}\n\n\treturn nil\n}\n\n// CanTransitionTo checks if a transition to the target state is valid",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CanTransitionTo_146": {
+      "name": "CanTransitionTo",
+      "type": "method",
+      "start_line": 146,
+      "end_line": 152,
+      "content_hash": "4c1ccb0990439df47ca09b4ff4084c0570b310de",
+      "content": "func (sm *StateMachine) CanTransitionTo(targetState AgentState) bool {\n\tsm.mu.RLock()\n\tdefer sm.mu.RUnlock()\n\treturn sm.currentState.CanTransitionTo(targetState)\n}\n\n// SetPauseReason sets the reason for being in paused state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetPauseReason_153": {
+      "name": "SetPauseReason",
+      "type": "method",
+      "start_line": 153,
+      "end_line": 159,
+      "content_hash": "4da925ac22d7de820d49060e493b4f075024ac5c",
+      "content": "func (sm *StateMachine) SetPauseReason(reason string) {\n\tsm.mu.Lock()\n\tdefer sm.mu.Unlock()\n\tsm.pauseReason = reason\n}\n\n// GetPauseReason returns the reason for being in paused state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetPauseReason_160": {
+      "name": "GetPauseReason",
+      "type": "method",
+      "start_line": 160,
+      "end_line": 166,
+      "content_hash": "d8a58a7567ed0d430a0185b286f18e96134bbd9f",
+      "content": "func (sm *StateMachine) GetPauseReason() string {\n\tsm.mu.RLock()\n\tdefer sm.mu.RUnlock()\n\treturn sm.pauseReason\n}\n\n// GetState returns the current state.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetState_167": {
+      "name": "GetState",
+      "type": "method",
+      "start_line": 167,
+      "end_line": 173,
+      "content_hash": "10e74c64152c96bb70f69c74eaf232a05c1afbb5",
+      "content": "func (sm *StateMachine) GetState() AgentState {\n\tsm.mu.RLock()\n\tdefer sm.mu.RUnlock()\n\treturn sm.currentState\n}\n\n// RecordToolCall records a tool execution.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordToolCall_174": {
+      "name": "RecordToolCall",
+      "type": "method",
+      "start_line": 174,
+      "end_line": 207,
+      "content_hash": "4b6aac2767577103ce20b3f9d12574c816f87a0e",
+      "content": "func (sm *StateMachine) RecordToolCall(toolName, targetFile, command, errorMsg string, success bool) {\n\tsm.mu.Lock()\n\tsm.toolCallCount++\n\tsm.mu.Unlock()\n\n\t// Record in progress tracker\n\tsm.progressTracker.RecordAction(toolName, targetFile, command, errorMsg, success)\n\n\t// Record in phase context if applicable\n\tif sm.phaseContext != nil && success && targetFile != \"\" {\n\t\tsm.phaseContext.RecordFileChange(targetFile)\n\t}\n\n\t// Check for stuck condition\n\tif stuck, reason := sm.progressTracker.IsStuck(); stuck {\n\t\tslog.Warn(\"stuck condition detected\",\n\t\t\t\"session_id\", sm.sessionID,\n\t\t\t\"reason\", reason,\n\t\t\t\"tool_calls\", sm.toolCallCount,\n\t\t)\n\n\t\tif sm.onStuck != nil {\n\t\t\tgo sm.onStuck(reason)\n\t\t}\n\t}\n\n\t// Progress callback\n\tif sm.onProgress != nil && sm.toolCallCount%10 == 0 {\n\t\tstats := sm.progressTracker.GetStats()\n\t\tgo sm.onProgress(stats)\n\t}\n}\n\n// RecordMessage records a message for deduplication.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordMessage_208": {
+      "name": "RecordMessage",
+      "type": "method",
+      "start_line": 208,
+      "end_line": 212,
+      "content_hash": "6132386b0724f183bc06f2033a04f497dbdea964",
+      "content": "func (sm *StateMachine) RecordMessage(message string) bool {\n\treturn sm.progressTracker.RecordMessage(message)\n}\n\n// RecordFileModification records a file change with content hash.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordFileModification_213": {
+      "name": "RecordFileModification",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 221,
+      "content_hash": "48520c5999f6984887f961672010fcb654c0a1c8",
+      "content": "func (sm *StateMachine) RecordFileModification(filePath, contentHash string) {\n\tsm.progressTracker.RecordFileModification(filePath, contentHash)\n\n\tif sm.phaseContext != nil {\n\t\tsm.phaseContext.RecordFileChange(filePath)\n\t}\n}\n\n// RecordTest records a test execution.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordTest_222": {
+      "name": "RecordTest",
+      "type": "method",
+      "start_line": 222,
+      "end_line": 230,
+      "content_hash": "55a83f20d1f46d91eb9d0a8e57fc6ceb26106587",
+      "content": "func (sm *StateMachine) RecordTest(command string, passed bool, output string) {\n\tsm.progressTracker.RecordTest(command, passed, output)\n\n\tif sm.phaseContext != nil {\n\t\tsm.phaseContext.MarkTestsPassed(passed)\n\t}\n}\n\n// RecordMilestone records a progress milestone.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordMilestone_231": {
+      "name": "RecordMilestone",
+      "type": "method",
+      "start_line": 231,
+      "end_line": 240,
+      "content_hash": "3458d905571691bdb5648c49465404c8094951d5",
+      "content": "func (sm *StateMachine) RecordMilestone(description string, metadata map[string]interface{}) {\n\tphase := 0\n\tif sm.phaseContext != nil {\n\t\tphase = sm.phaseContext.CurrentPhase\n\t}\n\n\tsm.progressTracker.RecordMilestone(description, phase, metadata)\n}\n\n// StartPhase begins a new phase (resets progress tracking).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_StartPhase_241": {
+      "name": "StartPhase",
+      "type": "method",
+      "start_line": 241,
+      "end_line": 269,
+      "content_hash": "248934ea9bd6fa6b224dd908f0918557a348526a",
+      "content": "func (sm *StateMachine) StartPhase(phaseNumber int, description string, expectedDuration time.Duration) error {\n\tif sm.phaseContext == nil {\n\t\treturn fmt.Errorf(\"phase context not initialized\")\n\t}\n\n\t// Complete previous phase if transitioning from one phase to another\n\t// (but not on first phase)\n\tif phaseNumber > 1 && sm.phaseContext.CurrentPhase > 0 {\n\t\tsm.phaseContext.CompletePhase(true)\n\t}\n\n\t// Start new phase\n\tsm.phaseContext.StartPhase(phaseNumber, description, expectedDuration)\n\n\t// Reset progress tracker (keep history, reset error tracking)\n\tsm.progressTracker.Reset()\n\n\tslog.Info(\"phase started\",\n\t\t\"session_id\", sm.sessionID,\n\t\t\"phase\", phaseNumber,\n\t\t\"description\", description,\n\t\t\"expected_duration\", expectedDuration,\n\t)\n\n\t// Transition to phase transition state\n\treturn sm.TransitionTo(StatePhaseTransition)\n}\n\n// CompletePhase marks the current phase as complete.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CompletePhase_270": {
+      "name": "CompletePhase",
+      "type": "method",
+      "start_line": 270,
+      "end_line": 290,
+      "content_hash": "2e66a49719e18e7b67e2659eca606eea4723effd",
+      "content": "func (sm *StateMachine) CompletePhase(success bool) error {\n\tif sm.phaseContext == nil {\n\t\treturn fmt.Errorf(\"phase context not initialized\")\n\t}\n\n\tsm.phaseContext.CompletePhase(success)\n\n\tphaseInfo := sm.phaseContext.GetCurrentPhaseInfo()\n\tslog.Info(\"phase completed\",\n\t\t\"session_id\", sm.sessionID,\n\t\t\"phase\", phaseInfo.PhaseNumber,\n\t\t\"success\", success,\n\t\t\"duration\", phaseInfo.Elapsed,\n\t\t\"files_changed\", phaseInfo.FilesChanged,\n\t\t\"tests_passed\", phaseInfo.TestsPassed,\n\t)\n\n\treturn nil\n}\n\n// IsStuck checks if the agent is stuck in a loop.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsStuck_291": {
+      "name": "IsStuck",
+      "type": "method",
+      "start_line": 291,
+      "end_line": 295,
+      "content_hash": "f200e298e2cdd1f519deba73cd791179909c9171",
+      "content": "func (sm *StateMachine) IsStuck() (bool, string) {\n\treturn sm.progressTracker.IsStuck()\n}\n\n// GetProgress returns current progress statistics.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetProgress_296": {
+      "name": "GetProgress",
+      "type": "method",
+      "start_line": 296,
+      "end_line": 300,
+      "content_hash": "d2bd2adc70c7f3e23470d8483c033195dee5f6ca",
+      "content": "func (sm *StateMachine) GetProgress() ProgressStats {\n\treturn sm.progressTracker.GetStats()\n}\n\n// GetPhaseInfo returns current phase information.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetPhaseInfo_301": {
+      "name": "GetPhaseInfo",
+      "type": "method",
+      "start_line": 301,
+      "end_line": 310,
+      "content_hash": "71d618121cb2f1c30e8285bf6c8335588ce9753b",
+      "content": "func (sm *StateMachine) GetPhaseInfo() *PhaseInfo {\n\tif sm.phaseContext == nil {\n\t\treturn nil\n\t}\n\n\tinfo := sm.phaseContext.GetCurrentPhaseInfo()\n\treturn &info\n}\n\n// GetTotalProgress returns overall progress across all phases.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetTotalProgress_311": {
+      "name": "GetTotalProgress",
+      "type": "method",
+      "start_line": 311,
+      "end_line": 320,
+      "content_hash": "7675d0867aa8f1777d07ef13f1af03825455e615",
+      "content": "func (sm *StateMachine) GetTotalProgress() *TotalProgress {\n\tif sm.phaseContext == nil {\n\t\treturn nil\n\t}\n\n\tprogress := sm.phaseContext.GetTotalProgress()\n\treturn &progress\n}\n\n// GetToolCallCount returns the total number of tool calls.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetToolCallCount_321": {
+      "name": "GetToolCallCount",
+      "type": "method",
+      "start_line": 321,
+      "end_line": 327,
+      "content_hash": "d051eb414c64beb3881697b8e07f69c87137991a",
+      "content": "func (sm *StateMachine) GetToolCallCount() int {\n\tsm.mu.RLock()\n\tdefer sm.mu.RUnlock()\n\treturn sm.toolCallCount\n}\n\n// GetElapsedTime returns time since state machine started.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetElapsedTime_328": {
+      "name": "GetElapsedTime",
+      "type": "method",
+      "start_line": 328,
+      "end_line": 334,
+      "content_hash": "1a903177e73c4b1e0d4e7b0a0ed26f426099e11a",
+      "content": "func (sm *StateMachine) GetElapsedTime() time.Duration {\n\tsm.mu.RLock()\n\tdefer sm.mu.RUnlock()\n\treturn time.Since(sm.startTime)\n}\n\n// Cancel cancels the state machine context.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cancel_335": {
+      "name": "Cancel",
+      "type": "method",
+      "start_line": 335,
+      "end_line": 343,
+      "content_hash": "ea5a0c9659a78e6bcad55d7ce430a3f8fcf4d1be",
+      "content": "func (sm *StateMachine) Cancel() {\n\tif sm.cancelFunc != nil {\n\t\tsm.cancelFunc()\n\t}\n\n\t_ = sm.TransitionTo(StateHalted)\n}\n\n// Context returns the state machine context.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Context_344": {
+      "name": "Context",
+      "type": "method",
+      "start_line": 344,
+      "end_line": 348,
+      "content_hash": "6e86ab6316e9f72adec82fbe379d0206a2c12c01",
+      "content": "func (sm *StateMachine) Context() context.Context {\n\treturn sm.ctx\n}\n\n// GetStateHistory returns recent state transitions.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetStateHistory_349": {
+      "name": "GetStateHistory",
+      "type": "method",
+      "start_line": 349,
+      "end_line": 362,
+      "content_hash": "21cb09163f537aaea4c7239160ace4f2f74e6854",
+      "content": "func (sm *StateMachine) GetStateHistory(limit int) []StateMetrics {\n\tsm.mu.RLock()\n\tdefer sm.mu.RUnlock()\n\n\tif limit <= 0 || limit > len(sm.stateHistory) {\n\t\tlimit = len(sm.stateHistory)\n\t}\n\n\tstart := len(sm.stateHistory) - limit\n\thistory := make([]StateMetrics, limit)\n\tcopy(history, sm.stateHistory[start:])\n\n\treturn history\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

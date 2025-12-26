@@ -1,0 +1,260 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/logger.py",
+  "file_hash": "8a4b8ebd2c3c4d07b82a36008de112a4d926fb0f",
+  "updated_at": "2025-12-26T17:34:24.326684",
+  "symbols": {
+    "class_JSONFormatter_27": {
+      "name": "JSONFormatter",
+      "type": "class",
+      "start_line": 27,
+      "end_line": 53,
+      "content_hash": "58ab636d62023af20ceaf6e0d5eeb172e264e52a",
+      "content": "class JSONFormatter(logging.Formatter):\n    \"\"\"Format log records as JSON for structured logging.\"\"\"\n    \n    __slots__ = ()\n    \n    def format(self, record: logging.LogRecord) -> str:\n        log_data: Dict[str, Any] = {\n            \"timestamp\": datetime.now(timezone.utc).isoformat(),\n            \"level\": record.levelname,\n            \"logger\": record.name,\n            \"message\": record.getMessage(),\n        }\n        \n        # Add exception info if present\n        if record.exc_info and record.exc_info[0] is not None:\n            log_data[\"exception\"] = {\n                \"type\": record.exc_info[0].__name__,\n                \"message\": str(record.exc_info[1]) if record.exc_info[1] else None,\n                \"traceback\": traceback.format_exception(*record.exc_info),\n            }\n        \n        # Add extra fields\n        extra = getattr(record, 'extra_fields', None)\n        if extra:\n            log_data.update(extra)\n        \n        return json.dumps(log_data, default=str)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_format_32": {
+      "name": "format",
+      "type": "method",
+      "start_line": 32,
+      "end_line": 53,
+      "content_hash": "9eacef9e0fdd6e3d4d5799eb433bd2070cc893da",
+      "content": "    def format(self, record: logging.LogRecord) -> str:\n        log_data: Dict[str, Any] = {\n            \"timestamp\": datetime.now(timezone.utc).isoformat(),\n            \"level\": record.levelname,\n            \"logger\": record.name,\n            \"message\": record.getMessage(),\n        }\n        \n        # Add exception info if present\n        if record.exc_info and record.exc_info[0] is not None:\n            log_data[\"exception\"] = {\n                \"type\": record.exc_info[0].__name__,\n                \"message\": str(record.exc_info[1]) if record.exc_info[1] else None,\n                \"traceback\": traceback.format_exception(*record.exc_info),\n            }\n        \n        # Add extra fields\n        extra = getattr(record, 'extra_fields', None)\n        if extra:\n            log_data.update(extra)\n        \n        return json.dumps(log_data, default=str)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_logger_56": {
+      "name": "get_logger",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 80,
+      "content_hash": "a373a0f3d36dc8c129ed48e545b2956d7361c272",
+      "content": "def get_logger(name: str, json_format: bool = False) -> logging.Logger:\n    \"\"\"Get a logger instance with optional JSON formatting.\n    \n    Args:\n        name: Logger name (typically __name__)\n        json_format: If True, use JSON formatter; otherwise use default\n    \n    Returns:\n        Configured logger instance\n    \"\"\"\n    cache_key = f\"{name}:{json_format}\"\n    if cache_key in _logger_cache:\n        return _logger_cache[cache_key]\n    \n    logger = logging.getLogger(name)\n    logger.setLevel(_log_level)\n    \n    if json_format and not any(isinstance(h.formatter, JSONFormatter) for h in logger.handlers):\n        handler = logging.StreamHandler(sys.stdout)\n        handler.setFormatter(JSONFormatter())\n        logger.addHandler(handler)\n        logger.propagate = False\n    \n    _logger_cache[cache_key] = logger\n    return logger",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_ContextLogger_83": {
+      "name": "ContextLogger",
+      "type": "class",
+      "start_line": 83,
+      "end_line": 130,
+      "content_hash": "9537f840537b79dd2af82fa07218dc2391983eb9",
+      "content": "class ContextLogger:\n    \"\"\"Logger wrapper that adds context fields to all log messages.\"\"\"\n    \n    __slots__ = ('logger', 'context')\n    \n    def __init__(self, logger: logging.Logger, **context):\n        self.logger = logger\n        self.context = context\n    \n    def _log(self, level: int, msg: str, exc_info: Any = None, **extra):\n        \"\"\"Internal log method that merges context.\"\"\"\n        if not self.logger.isEnabledFor(level):\n            return\n        merged = {**self.context, **extra} if extra else self.context\n        record = self.logger.makeRecord(\n            self.logger.name,\n            level,\n            \"(unknown file)\",\n            0,\n            msg,\n            (),\n            exc_info,\n        )\n        record.extra_fields = merged\n        self.logger.handle(record)\n    \n    def debug(self, msg: str, **extra):\n        self._log(logging.DEBUG, msg, **extra)\n    \n    def info(self, msg: str, **extra):\n        self._log(logging.INFO, msg, **extra)\n    \n    def warning(self, msg: str, **extra):\n        self._log(logging.WARNING, msg, **extra)\n    \n    def error(self, msg: str, exc_info: Any = None, **extra):\n        self._log(logging.ERROR, msg, exc_info=exc_info, **extra)\n    \n    def exception(self, msg: str, **extra):\n        \"\"\"Log an exception with traceback.\"\"\"\n        self._log(logging.ERROR, msg, exc_info=sys.exc_info(), **extra)\n    \n    def critical(self, msg: str, exc_info: Any = None, **extra):\n        self._log(logging.CRITICAL, msg, exc_info=exc_info, **extra)\n    \n    def isEnabledFor(self, level: int) -> bool:\n        \"\"\"Check if this logger is enabled for the given level.\"\"\"\n        return self.logger.isEnabledFor(level)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___88": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 88,
+      "end_line": 90,
+      "content_hash": "62809e94b30c04483b13ba66f087caca3eb08b70",
+      "content": "    def __init__(self, logger: logging.Logger, **context):\n        self.logger = logger\n        self.context = context",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__log_92": {
+      "name": "_log",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 107,
+      "content_hash": "15f4d4e5dba1a5004cbd3468d287f2a892a9deab",
+      "content": "    def _log(self, level: int, msg: str, exc_info: Any = None, **extra):\n        \"\"\"Internal log method that merges context.\"\"\"\n        if not self.logger.isEnabledFor(level):\n            return\n        merged = {**self.context, **extra} if extra else self.context\n        record = self.logger.makeRecord(\n            self.logger.name,\n            level,\n            \"(unknown file)\",\n            0,\n            msg,\n            (),\n            exc_info,\n        )\n        record.extra_fields = merged\n        self.logger.handle(record)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_debug_109": {
+      "name": "debug",
+      "type": "method",
+      "start_line": 109,
+      "end_line": 110,
+      "content_hash": "f93ac94bb8603bd33ec3f776d4c2d6345254bfc7",
+      "content": "    def debug(self, msg: str, **extra):\n        self._log(logging.DEBUG, msg, **extra)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_info_112": {
+      "name": "info",
+      "type": "method",
+      "start_line": 112,
+      "end_line": 113,
+      "content_hash": "99fe9a777690451ebffd64891df9d56d86b0136a",
+      "content": "    def info(self, msg: str, **extra):\n        self._log(logging.INFO, msg, **extra)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_warning_115": {
+      "name": "warning",
+      "type": "method",
+      "start_line": 115,
+      "end_line": 116,
+      "content_hash": "2609066cfe805064148172192994ef454f641b8a",
+      "content": "    def warning(self, msg: str, **extra):\n        self._log(logging.WARNING, msg, **extra)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_error_118": {
+      "name": "error",
+      "type": "method",
+      "start_line": 118,
+      "end_line": 119,
+      "content_hash": "e8866efecdff90d3d6de955e9be94d327e2a92d2",
+      "content": "    def error(self, msg: str, exc_info: Any = None, **extra):\n        self._log(logging.ERROR, msg, exc_info=exc_info, **extra)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_exception_121": {
+      "name": "exception",
+      "type": "method",
+      "start_line": 121,
+      "end_line": 123,
+      "content_hash": "512418d70eef659bbe97526471f0455029342ed0",
+      "content": "    def exception(self, msg: str, **extra):\n        \"\"\"Log an exception with traceback.\"\"\"\n        self._log(logging.ERROR, msg, exc_info=sys.exc_info(), **extra)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_critical_125": {
+      "name": "critical",
+      "type": "method",
+      "start_line": 125,
+      "end_line": 126,
+      "content_hash": "a518857127a874663048841fff3c35381947aab6",
+      "content": "    def critical(self, msg: str, exc_info: Any = None, **extra):\n        self._log(logging.CRITICAL, msg, exc_info=exc_info, **extra)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isEnabledFor_128": {
+      "name": "isEnabledFor",
+      "type": "method",
+      "start_line": 128,
+      "end_line": 130,
+      "content_hash": "d3859bcec57c83afc37e8a56cc992f79b92226f6",
+      "content": "    def isEnabledFor(self, level: int) -> bool:\n        \"\"\"Check if this logger is enabled for the given level.\"\"\"\n        return self.logger.isEnabledFor(level)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_ContextEngineError_134": {
+      "name": "ContextEngineError",
+      "type": "class",
+      "start_line": 134,
+      "end_line": 136,
+      "content_hash": "f0e5e13c19262e3d8bca2b15fe4e325e408878c4",
+      "content": "class ContextEngineError(Exception):\n    \"\"\"Base exception for all Context Engine errors.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_RetrievalError_139": {
+      "name": "RetrievalError",
+      "type": "class",
+      "start_line": 139,
+      "end_line": 141,
+      "content_hash": "3befa4b2c3b4eb02c3350c4388c65e5743f07f53",
+      "content": "class RetrievalError(ContextEngineError):\n    \"\"\"Error during retrieval/search operations.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_IndexingError_144": {
+      "name": "IndexingError",
+      "type": "class",
+      "start_line": 144,
+      "end_line": 146,
+      "content_hash": "908d495e64738cfe87570e03c5f8f2877e79b5a4",
+      "content": "class IndexingError(ContextEngineError):\n    \"\"\"Error during indexing operations.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_DecoderError_149": {
+      "name": "DecoderError",
+      "type": "class",
+      "start_line": 149,
+      "end_line": 151,
+      "content_hash": "052335607ae9de139bd68216ba2348a8d294da96",
+      "content": "class DecoderError(ContextEngineError):\n    \"\"\"Error during LLM decoder operations.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_ValidationError_154": {
+      "name": "ValidationError",
+      "type": "class",
+      "start_line": 154,
+      "end_line": 156,
+      "content_hash": "f13e56b1e094307c344e619f85e7eb5ab49d5c7d",
+      "content": "class ValidationError(ContextEngineError):\n    \"\"\"Error during input validation.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_ConfigurationError_159": {
+      "name": "ConfigurationError",
+      "type": "class",
+      "start_line": 159,
+      "end_line": 161,
+      "content_hash": "64ddf2a7d4c523accbb18dce18ffcb3f24f64fc2",
+      "content": "class ConfigurationError(ContextEngineError):\n    \"\"\"Error in configuration or environment setup.\"\"\"\n    pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_and_reraise_165": {
+      "name": "log_and_reraise",
+      "type": "function",
+      "start_line": 165,
+      "end_line": 178,
+      "content_hash": "7fd5b9152d0a1bf3cdb25eb07cfba5ad155ae492",
+      "content": "def log_and_reraise(logger: logging.Logger, msg: str, exc: Exception, **context):\n    \"\"\"Log an exception with context and re-raise it.\n    \n    Args:\n        logger: Logger instance\n        msg: Error message\n        exc: Exception to log and re-raise\n        **context: Additional context fields\n    \"\"\"\n    if isinstance(logger, ContextLogger):\n        logger.exception(msg, **context)\n    else:\n        logger.exception(msg, extra=context)\n    raise exc",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_safe_int_181": {
+      "name": "safe_int",
+      "type": "function",
+      "start_line": 181,
+      "end_line": 200,
+      "content_hash": "f012e40513d9890038798bb2e3b3bd913f15a1cb",
+      "content": "def safe_int(value: Any, default: int, logger: Optional[logging.Logger] = None, context: str = \"\") -> int:\n    \"\"\"Safely convert value to int with logging on failure.\n    \n    Args:\n        value: Value to convert\n        default: Default value if conversion fails\n        logger: Optional logger for warnings\n        context: Context string for log message\n    \n    Returns:\n        Converted int or default\n    \"\"\"\n    try:\n        if value is None or (isinstance(value, str) and value.strip() == \"\"):\n            return default\n        return int(value)\n    except (ValueError, TypeError) as e:\n        if logger:\n            logger.warning(f\"Failed to convert {context} to int: {value}\", exc_info=e)\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_safe_float_203": {
+      "name": "safe_float",
+      "type": "function",
+      "start_line": 203,
+      "end_line": 222,
+      "content_hash": "86418f596fc338734de66fcc9ff90d25fa0007ba",
+      "content": "def safe_float(value: Any, default: float, logger: Optional[logging.Logger] = None, context: str = \"\") -> float:\n    \"\"\"Safely convert value to float with logging on failure.\n    \n    Args:\n        value: Value to convert\n        default: Default value if conversion fails\n        logger: Optional logger for warnings\n        context: Context string for log message\n    \n    Returns:\n        Converted float or default\n    \"\"\"\n    try:\n        if value is None or (isinstance(value, str) and value.strip() == \"\"):\n            return default\n        return float(value)\n    except (ValueError, TypeError) as e:\n        if logger:\n            logger.warning(f\"Failed to convert {context} to float: {value}\", exc_info=e)\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_safe_bool_225": {
+      "name": "safe_bool",
+      "type": "function",
+      "start_line": 225,
+      "end_line": 251,
+      "content_hash": "46c7afd0c97333a127a39e963a6aa86f61aea379",
+      "content": "def safe_bool(value: Any, default: bool, logger: Optional[logging.Logger] = None, context: str = \"\") -> bool:\n    \"\"\"Safely convert value to bool with logging on failure.\n    \n    Args:\n        value: Value to convert\n        default: Default value if conversion fails\n        logger: Optional logger for warnings\n        context: Context string for log message\n    \n    Returns:\n        Converted bool or default\n    \"\"\"\n    try:\n        if value is None or (isinstance(value, str) and value.strip() == \"\"):\n            return default\n        if isinstance(value, bool):\n            return value\n        s = str(value).strip().lower()\n        if s in {\"1\", \"true\", \"yes\", \"on\"}:\n            return True\n        if s in {\"0\", \"false\", \"no\", \"off\"}:\n            return False\n        return default\n    except (ValueError, TypeError) as e:\n        if logger:\n            logger.warning(f\"Failed to convert {context} to bool: {value}\", exc_info=e)\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

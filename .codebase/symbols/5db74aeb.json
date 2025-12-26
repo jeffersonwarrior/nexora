@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/agent/conversation_loop.go",
+  "file_hash": "e792d188d2054f95c16ba29554f17d458ad6e084",
+  "updated_at": "2025-12-26T17:34:21.538987",
+  "symbols": {
+    "struct_ConversationFlowState_9": {
+      "name": "ConversationFlowState",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 17,
+      "content_hash": "c6ece0be8c52aec251001dbf26f458e70c4a0906",
+      "content": "type ConversationFlowState struct {\n\tsessionID      string\n\tpendingTool    string\n\ttoolResults    []fantasy.ToolResultContent\n\tshouldContinue bool\n\tlastAction     string\n}\n\n// ConversationLoopManager manages automatic continuation of agent workflows",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ConversationLoopManager_18": {
+      "name": "ConversationLoopManager",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 21,
+      "content_hash": "8ecbe84e0f37760e249dda819898a2e387fee8b3",
+      "content": "type ConversationLoopManager struct {\n\tstates map[string]*ConversationFlowState\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewConversationLoopManager_22": {
+      "name": "NewConversationLoopManager",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 28,
+      "content_hash": "02613a925ca7501d7ad287aec6f39c08ac06aae6",
+      "content": "func NewConversationLoopManager() *ConversationLoopManager {\n\treturn &ConversationLoopManager{\n\t\tstates: make(map[string]*ConversationFlowState),\n\t}\n}\n\n// ShouldAutoContinue determines if the conversation should automatically continue",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShouldAutoContinue_29": {
+      "name": "ShouldAutoContinue",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 34,
+      "content_hash": "fe152c4a04dd19b4bbf99ab1110e752f2cc1f06b",
+      "content": "func (c *ConversationLoopManager) ShouldAutoContinue(sessionID string, msg message.Message) bool {\n\t// Don't use auto-continue based on tool results alone\n\t// Let the conversation manager handle state-based continuation\n\treturn false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordToolResult_35": {
+      "name": "RecordToolResult",
+      "type": "method",
+      "start_line": 35,
+      "end_line": 49,
+      "content_hash": "d074dc1cd7c69bda28de57977c062078065d7b52",
+      "content": "func (c *ConversationLoopManager) RecordToolResult(sessionID string, toolName string, result fantasy.ToolResultContent) {\n\tif _, exists := c.states[sessionID]; !exists {\n\t\tc.states[sessionID] = &ConversationFlowState{\n\t\t\tsessionID: sessionID,\n\t\t}\n\t}\n\n\tstate := c.states[sessionID]\n\tstate.toolResults = append(state.toolResults, result)\n\tstate.pendingTool = \"\"\n\tstate.shouldContinue = true\n\tstate.lastAction = toolName\n}\n\n// RecordToolUse tracks when a tool is being used",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordToolUse_50": {
+      "name": "RecordToolUse",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 59,
+      "content_hash": "7c22b8082ef929df295d90d121de2d10816cf6c5",
+      "content": "func (c *ConversationLoopManager) RecordToolUse(sessionID string, toolName string) {\n\tif _, exists := c.states[sessionID]; !exists {\n\t\tc.states[sessionID] = &ConversationFlowState{\n\t\t\tsessionID: sessionID,\n\t\t}\n\t}\n\tc.states[sessionID].pendingTool = toolName\n}\n\n// Reset clears the conversation state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Reset_60": {
+      "name": "Reset",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 62,
+      "content_hash": "789cb2036c8a2aaab094e955fe9f043dc73cc5e0",
+      "content": "func (c *ConversationLoopManager) Reset(sessionID string) {\n\tdelete(c.states, sessionID)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

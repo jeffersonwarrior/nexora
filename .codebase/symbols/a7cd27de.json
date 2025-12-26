@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/fsext/ignore_test.go",
+  "file_hash": "d523191441f7056ba7791d60e79cf576c47c758a",
+  "updated_at": "2025-12-26T17:34:22.469550",
+  "symbols": {
+    "function_TestNexoraIgnore_11": {
+      "name": "TestNexoraIgnore",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 28,
+      "content_hash": "20b2352968edb2a5a176d3b4a716ab114acf3a24",
+      "content": "func TestNexoraIgnore(t *testing.T) {\n\ttempDir := t.TempDir()\n\tt.Chdir(tempDir)\n\n\t// Create test files\n\trequire.NoError(t, os.WriteFile(\"test1.txt\", []byte(\"test\"), 0o644))\n\trequire.NoError(t, os.WriteFile(\"test2.log\", []byte(\"test\"), 0o644))\n\trequire.NoError(t, os.WriteFile(\"test3.tmp\", []byte(\"test\"), 0o644))\n\n\t// Create a .nexoraignore file that ignores .log files\n\trequire.NoError(t, os.WriteFile(\".nexoraignore\", []byte(\"*.log\\n\"), 0o644))\n\n\tdl := NewDirectoryLister(tempDir)\n\trequire.True(t, dl.shouldIgnore(\"test2.log\", nil), \".log files should be ignored\")\n\trequire.False(t, dl.shouldIgnore(\"test1.txt\", nil), \".txt files should not be ignored\")\n\trequire.True(t, dl.shouldIgnore(\"test3.tmp\", nil), \".tmp files should be ignored by common patterns\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestShouldExcludeFile_29": {
+      "name": "TestShouldExcludeFile",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 70,
+      "content_hash": "45f81812a1a8d69a8392c227f6a54ed1954f3f63",
+      "content": "func TestShouldExcludeFile(t *testing.T) {\n\tt.Parallel()\n\n\t// Create a temporary directory structure for testing\n\ttempDir := t.TempDir()\n\n\t// Create directories that should be ignored\n\tnodeModules := filepath.Join(tempDir, \"node_modules\")\n\ttarget := filepath.Join(tempDir, \"target\")\n\tcustomIgnored := filepath.Join(tempDir, \"custom_ignored\")\n\tnormalDir := filepath.Join(tempDir, \"src\")\n\n\tfor _, dir := range []string{nodeModules, target, customIgnored, normalDir} {\n\t\tif err := os.MkdirAll(dir, 0o755); err != nil {\n\t\t\tt.Fatalf(\"Failed to create directory %s: %v\", dir, err)\n\t\t}\n\t}\n\n\t// Create .gitignore file\n\tgitignoreContent := \"node_modules/\\ntarget/\\n\"\n\tif err := os.WriteFile(filepath.Join(tempDir, \".gitignore\"), []byte(gitignoreContent), 0o644); err != nil {\n\t\tt.Fatalf(\"Failed to create .gitignore: %v\", err)\n\t}\n\n\t// Create .nexoraignore file\n\tnexoraignoreContent := \"custom_ignored/\\n\"\n\tif err := os.WriteFile(filepath.Join(tempDir, \".nexoraignore\"), []byte(nexoraignoreContent), 0o644); err != nil {\n\t\tt.Fatalf(\"Failed to create .nexoraignore: %v\", err)\n\t}\n\n\t// Test that ignored directories are properly ignored\n\trequire.True(t, ShouldExcludeFile(tempDir, nodeModules), \"Expected node_modules to be ignored by .gitignore\")\n\trequire.True(t, ShouldExcludeFile(tempDir, target), \"Expected target to be ignored by .gitignore\")\n\trequire.True(t, ShouldExcludeFile(tempDir, customIgnored), \"Expected custom_ignored to be ignored by .nexoraignore\")\n\n\t// Test that normal directories are not ignored\n\trequire.False(t, ShouldExcludeFile(tempDir, normalDir), \"Expected src directory to not be ignored\")\n\n\t// Test that the workspace root itself is not ignored\n\trequire.False(t, ShouldExcludeFile(tempDir, tempDir), \"Expected workspace root to not be ignored\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestShouldExcludeFileHierarchical_71": {
+      "name": "TestShouldExcludeFileHierarchical",
+      "type": "function",
+      "start_line": 71,
+      "end_line": 97,
+      "content_hash": "9311be4e7786473165a88123aeb180d08d69f004",
+      "content": "func TestShouldExcludeFileHierarchical(t *testing.T) {\n\tt.Parallel()\n\n\t// Create a nested directory structure for testing hierarchical ignore\n\ttempDir := t.TempDir()\n\n\t// Create nested directories\n\tsubDir := filepath.Join(tempDir, \"subdir\")\n\tnestedNormal := filepath.Join(subDir, \"normal_nested\")\n\n\tfor _, dir := range []string{subDir, nestedNormal} {\n\t\tif err := os.MkdirAll(dir, 0o755); err != nil {\n\t\t\tt.Fatalf(\"Failed to create directory %s: %v\", dir, err)\n\t\t}\n\t}\n\n\t// Create .nexoraignore in subdir that ignores normal_nested\n\tsubNexoraignore := \"normal_nested/\\n\"\n\tif err := os.WriteFile(filepath.Join(subDir, \".nexoraignore\"), []byte(subNexoraignore), 0o644); err != nil {\n\t\tt.Fatalf(\"Failed to create subdir .nexoraignore: %v\", err)\n\t}\n\n\t// Test hierarchical ignore behavior - this should work because the .nexoraignore is in the parent directory\n\trequire.True(t, ShouldExcludeFile(tempDir, nestedNormal), \"Expected normal_nested to be ignored by subdir .nexoraignore\")\n\trequire.False(t, ShouldExcludeFile(tempDir, subDir), \"Expected subdir itself to not be ignored\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestShouldExcludeFileCommonPatterns_98": {
+      "name": "TestShouldExcludeFileCommonPatterns",
+      "type": "function",
+      "start_line": 98,
+      "end_line": 122,
+      "content_hash": "ce8fd679681805532da1b4b3850e40d7093bc3a1",
+      "content": "func TestShouldExcludeFileCommonPatterns(t *testing.T) {\n\tt.Parallel()\n\n\ttempDir := t.TempDir()\n\n\t// Create directories that should be ignored by common patterns\n\tcommonIgnored := []string{\n\t\tfilepath.Join(tempDir, \".git\"),\n\t\tfilepath.Join(tempDir, \"node_modules\"),\n\t\tfilepath.Join(tempDir, \"__pycache__\"),\n\t\tfilepath.Join(tempDir, \"target\"),\n\t\tfilepath.Join(tempDir, \".vscode\"),\n\t}\n\n\tfor _, dir := range commonIgnored {\n\t\tif err := os.MkdirAll(dir, 0o755); err != nil {\n\t\t\tt.Fatalf(\"Failed to create directory %s: %v\", dir, err)\n\t\t}\n\t}\n\n\t// Test that common patterns are ignored even without explicit ignore files\n\tfor _, dir := range commonIgnored {\n\t\trequire.True(t, ShouldExcludeFile(tempDir, dir), \"Expected %s to be ignored by common patterns\", filepath.Base(dir))\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

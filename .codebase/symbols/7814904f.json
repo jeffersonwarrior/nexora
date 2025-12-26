@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/anthropic_test.go",
+  "file_hash": "1a3f62e7e4b88cf6248c95b8eed576ccff482419",
+  "updated_at": "2025-12-26T17:34:22.148258",
+  "symbols": {
+    "function_TestAnthropicProvider_11": {
+      "name": "TestAnthropicProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 92,
+      "content_hash": "8f1499ce46f1caf7f3c63c0887ba0acb13eb1e07",
+      "content": "func TestAnthropicProvider(t *testing.T) {\n\tt.Run(\"creates provider with correct basic info\", func(t *testing.T) {\n\t\tprovider := AnthropicProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.Equal(t, \"anthropic\", string(provider.ID))\n\t\tassert.Equal(t, \"Anthropic\", provider.Name)\n\t\tassert.Equal(t, \"anthropic\", string(provider.Type))\n\t\tassert.Equal(t, \"$ANTHROPIC_API_KEY\", provider.APIKey)\n\t\tassert.Equal(t, \"https://api.anthropic.com/v1\", provider.APIEndpoint)\n\t})\n\n\tt.Run(\"creates provider with default models\", func(t *testing.T) {\n\t\tprovider := AnthropicProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.NotEmpty(t, provider.Models)\n\t\tassert.Equal(t, \"claude-opus-4-5-20251101\", provider.DefaultLargeModelID)\n\t\tassert.Equal(t, \"claude-haiku-4-5-20241022\", provider.DefaultSmallModelID)\n\t})\n\n\tt.Run(\"does not create if already exists\", func(t *testing.T) {\n\t\texistingProvider := catwalk.Provider{ID: \"anthropic\"}\n\t\tprovider := AnthropicProvider([]catwalk.Provider{existingProvider})\n\n\t\tassert.Equal(t, \"\", string(provider.ID))\n\t})\n\n\tt.Run(\"has claude-opus-4-5 model\", func(t *testing.T) {\n\t\tprovider := AnthropicProvider([]catwalk.Provider{})\n\n\t\tvar opusModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"claude-opus-4-5-20251101\" {\n\t\t\t\topusModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, opusModel)\n\t\tassert.Equal(t, \"Claude Opus 4.5\", opusModel.Name)\n\t\tassert.Equal(t, 5.0, opusModel.CostPer1MIn)\n\t\tassert.Equal(t, 25.0, opusModel.CostPer1MOut)\n\t\tassert.True(t, opusModel.SupportsImages)\n\t\tassert.True(t, opusModel.CanReason)\n\t})\n\n\tt.Run(\"has claude-sonnet-4-5 model\", func(t *testing.T) {\n\t\tprovider := AnthropicProvider([]catwalk.Provider{})\n\n\t\tvar sonnetModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"claude-sonnet-4-5-20250929\" {\n\t\t\t\tsonnetModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, sonnetModel)\n\t\tassert.Equal(t, \"Claude Sonnet 4.5\", sonnetModel.Name)\n\t\tassert.Equal(t, 3.0, sonnetModel.CostPer1MIn)\n\t\tassert.Equal(t, 15.0, sonnetModel.CostPer1MOut)\n\t})\n\n\tt.Run(\"has claude-haiku-4-5 model\", func(t *testing.T) {\n\t\tprovider := AnthropicProvider([]catwalk.Provider{})\n\n\t\tvar haikuModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"claude-haiku-4-5-20241022\" {\n\t\t\t\thaikuModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, haikuModel)\n\t\tassert.Equal(t, \"Claude Haiku 4.5\", haikuModel.Name)\n\t\tassert.Equal(t, 1.0, haikuModel.CostPer1MIn)\n\t\tassert.Equal(t, 5.0, haikuModel.CostPer1MOut)\n\t\tassert.False(t, haikuModel.CanReason)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

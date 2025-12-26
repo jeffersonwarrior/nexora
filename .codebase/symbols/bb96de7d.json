@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_per_path_zero.py",
+  "file_hash": "92d21be04dbebad7b9efa0cdea0edbd08fc670e5",
+  "updated_at": "2025-12-26T17:34:21.046999",
+  "symbols": {
+    "function_test_per_path_zero_is_echoed_and_respected_in_args_7": {
+      "name": "test_per_path_zero_is_echoed_and_respected_in_args",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 13,
+      "content_hash": "845a379b2177cc9ab5cf7b9a57b9728fb9a5a21e",
+      "content": "async def test_per_path_zero_is_echoed_and_respected_in_args():\n    from scripts.mcp_indexer_server import repo_search\n\n    res = await repo_search(query=\"anything\", limit=3, per_path=0)\n    assert isinstance(res, dict)\n    args = res.get(\"args\") or {}\n    assert args.get(\"per_path\") == 0, f\"expected per_path echoed as 0, got {args.get('per_path')}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_compact_string_false_is_normalized_in_args_17": {
+      "name": "test_compact_string_false_is_normalized_in_args",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 24,
+      "content_hash": "e00d223dd96a0e2fcde6daa68625f175b80a4f16",
+      "content": "async def test_compact_string_false_is_normalized_in_args():\n    from scripts.mcp_indexer_server import repo_search\n\n    # Passing compact as a string \"false\" should normalize to False in echoed args\n    res = await repo_search(query=\"anything\", limit=1, compact=\"false\")\n    assert isinstance(res, dict)\n    args = res.get(\"args\") or {}\n    assert args.get(\"compact\") is False, f\"expected compact False, got {args.get('compact')}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

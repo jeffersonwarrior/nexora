@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/protocol/custom_serde/vector_serde.rs",
+  "file_hash": "8ead8f505ab79d74aa03406cda1fc1a082114eba",
+  "updated_at": "2025-12-26T17:34:23.916859",
+  "symbols": {
+    "struct_OptionPropertiesMapDeSeed_9": {
+      "name": "OptionPropertiesMapDeSeed",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 12,
+      "content_hash": "900f7c0eb80379f667f35e396232005a8d243920",
+      "content": "struct OptionPropertiesMapDeSeed<'arena> {\n    arena: &'arena bumpalo::Bump,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_DeserializeSeed_13": {
+      "name": "DeserializeSeed",
+      "type": "impl",
+      "start_line": 13,
+      "end_line": 19,
+      "content_hash": "4d68ffc9937fb23ce383dd0418e1eb5981c0f536",
+      "content": "impl<'de, 'arena> DeserializeSeed<'de> for OptionPropertiesMapDeSeed<'arena> {\n    type Value = Option<ImmutablePropertiesMap<'arena>>;\n\n    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n    where\n        D: serde::Deserializer<'de>,\n    {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_OptVisitor_20": {
+      "name": "OptVisitor",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 23,
+      "content_hash": "5cbe9ae43526fdaae3da35333fe652eae66cba52",
+      "content": "        struct OptVisitor<'arena> {\n            arena: &'arena bumpalo::Bump,\n        }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Visitor_24": {
+      "name": "Visitor",
+      "type": "impl",
+      "start_line": 24,
+      "end_line": 26,
+      "content_hash": "c72304f14a968219ac8981d0d8d9401278d10f50",
+      "content": "        impl<'de, 'arena> Visitor<'de> for OptVisitor<'arena> {\n            type Value = Option<ImmutablePropertiesMap<'arena>>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_expecting_27": {
+      "name": "expecting",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 52,
+      "content_hash": "185103e290c9773c1f8e378dbb8c324e4601b3c9",
+      "content": "            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n                formatter.write_str(\"Option<ImmutablePropertiesMap>\")\n            }\n\n            fn visit_none<E>(self) -> Result<Self::Value, E>\n            where\n                E: serde::de::Error,\n            {\n                Ok(None)\n            }\n\n            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n            where\n                D: serde::Deserializer<'de>,\n            {\n                ImmutablePropertiesMapDeSeed { arena: self.arena }\n                    .deserialize(deserializer)\n                    .map(Some)\n            }\n        }\n\n        deserializer.deserialize_option(OptVisitor { arena: self.arena })\n    }\n}\n\n/// DeserializeSeed for Node that allocates label and properties into the arena",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_VectorDeSeed_53": {
+      "name": "VectorDeSeed",
+      "type": "struct",
+      "start_line": 53,
+      "end_line": 58,
+      "content_hash": "3c51a6a51e8d9f5681132306030efad647d1c174",
+      "content": "pub struct VectorDeSeed<'txn, 'arena> {\n    pub arena: &'arena bumpalo::Bump,\n    pub raw_vector_data: &'txn [u8],\n    pub id: u128,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_serde::de::DeserializeSeed_59": {
+      "name": "serde::de::DeserializeSeed",
+      "type": "impl",
+      "start_line": 59,
+      "end_line": 65,
+      "content_hash": "7a8675ff504bc93aecff5d5d5a9fb9067d9e6945",
+      "content": "impl<'de, 'txn, 'arena> serde::de::DeserializeSeed<'de> for VectorDeSeed<'txn, 'arena> {\n    type Value = HVector<'arena>;\n\n    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n    where\n        D: serde::de::Deserializer<'de>,\n    {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_VectorVisitor_66": {
+      "name": "VectorVisitor",
+      "type": "struct",
+      "start_line": 66,
+      "end_line": 71,
+      "content_hash": "b06ad1651c3e28724c3f7aa68a77cb828973ec59",
+      "content": "        struct VectorVisitor<'txn, 'arena> {\n            arena: &'arena bumpalo::Bump,\n            raw_vector_data: &'txn [u8],\n            id: u128,\n        }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_serde::de::Visitor_72": {
+      "name": "serde::de::Visitor",
+      "type": "impl",
+      "start_line": 72,
+      "end_line": 74,
+      "content_hash": "4752061062505d9de570ac47104e36c91725e840",
+      "content": "        impl<'de, 'txn, 'arena> serde::de::Visitor<'de> for VectorVisitor<'txn, 'arena> {\n            type Value = HVector<'arena>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_expecting_75": {
+      "name": "expecting",
+      "type": "method",
+      "start_line": 75,
+      "end_line": 124,
+      "content_hash": "bc27a80e37610d225b65baef2899e2df741d1707",
+      "content": "            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n                formatter.write_str(\"struct HVector\")\n            }\n\n            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>\n            where\n                A: serde::de::SeqAccess<'de>,\n            {\n                let label_string: &'de str = seq\n                    .next_element()?\n                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;\n                let label = self.arena.alloc_str(label_string);\n\n                let version: u8 = seq.next_element()?.unwrap_or(0);\n\n                let deleted: bool = seq.next_element()?.unwrap_or(false);\n\n                // Use our custom DeserializeSeed that handles the Option wrapper\n                let properties: Option<ImmutablePropertiesMap<'arena>> = seq\n                    .next_element_seed(OptionPropertiesMapDeSeed { arena: self.arena })?\n                    .ok_or_else(|| serde::de::Error::custom(\"Expected properties field\"))?;\n\n                let data = HVector::cast_raw_vector_data(self.arena, self.raw_vector_data);\n\n                Ok(HVector {\n                    id: self.id,\n                    label,\n                    deleted,\n                    version,\n                    level: 0,\n                    distance: None,\n                    data,\n                    properties,\n                })\n            }\n        }\n\n        deserializer.deserialize_struct(\n            \"HVector\",\n            &[\"label\", \"version\", \"deleted\", \"properties\"],\n            VectorVisitor {\n                arena: self.arena,\n                raw_vector_data: self.raw_vector_data,\n                id: self.id,\n            },\n        )\n    }\n}\n\n/// DeserializeSeed for Node that allocates label and properties into the arena",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_VectoWithoutDataDeSeed_125": {
+      "name": "VectoWithoutDataDeSeed",
+      "type": "struct",
+      "start_line": 125,
+      "end_line": 129,
+      "content_hash": "6875e0ea4a51d1728c6090645cf4493e53b6a779",
+      "content": "pub struct VectoWithoutDataDeSeed<'arena> {\n    pub arena: &'arena bumpalo::Bump,\n    pub id: u128,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_serde::de::DeserializeSeed_130": {
+      "name": "serde::de::DeserializeSeed",
+      "type": "impl",
+      "start_line": 130,
+      "end_line": 136,
+      "content_hash": "bc25a432170b3280b114d4cba2f81b3d8dc27bc3",
+      "content": "impl<'de, 'arena> serde::de::DeserializeSeed<'de> for VectoWithoutDataDeSeed<'arena> {\n    type Value = VectorWithoutData<'arena>;\n\n    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n    where\n        D: serde::de::Deserializer<'de>,\n    {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_VectorVisitor_137": {
+      "name": "VectorVisitor",
+      "type": "struct",
+      "start_line": 137,
+      "end_line": 141,
+      "content_hash": "7175f83d419e3ed47f49d0321868cca64f6c7405",
+      "content": "        struct VectorVisitor<'arena> {\n            arena: &'arena bumpalo::Bump,\n            id: u128,\n        }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_serde::de::Visitor_142": {
+      "name": "serde::de::Visitor",
+      "type": "impl",
+      "start_line": 142,
+      "end_line": 144,
+      "content_hash": "7561bf54d45fa30de2ea8e84e176d8f8a338d768",
+      "content": "        impl<'de, 'arena> serde::de::Visitor<'de> for VectorVisitor<'arena> {\n            type Value = VectorWithoutData<'arena>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_expecting_145": {
+      "name": "expecting",
+      "type": "method",
+      "start_line": 145,
+      "end_line": 187,
+      "content_hash": "46def1c891833902f5389749a0cdc38673e7ab40",
+      "content": "            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n                formatter.write_str(\"struct VectorWithoutData\")\n            }\n\n            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>\n            where\n                A: serde::de::SeqAccess<'de>,\n            {\n                let label_string: &'de str = seq\n                    .next_element()?\n                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;\n                let label = self.arena.alloc_str(label_string);\n\n                let version: u8 = seq.next_element()?.unwrap_or(0);\n\n                let deleted: bool = seq.next_element()?.unwrap_or(false);\n\n                // Use our custom DeserializeSeed that handles the Option wrapper\n                let properties: Option<ImmutablePropertiesMap<'arena>> = seq\n                    .next_element_seed(OptionPropertiesMapDeSeed { arena: self.arena })?\n                    .ok_or_else(|| serde::de::Error::custom(\"Expected properties field\"))?;\n\n                Ok(VectorWithoutData {\n                    id: self.id,\n                    label,\n                    version,\n                    deleted,\n                    level: 0,\n                    properties,\n                })\n            }\n        }\n\n        deserializer.deserialize_struct(\n            \"VectorWithoutData\",\n            &[\"label\", \"version\", \"deleted\", \"properties\"],\n            VectorVisitor {\n                arena: self.arena,\n                id: self.id,\n            },\n        )\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

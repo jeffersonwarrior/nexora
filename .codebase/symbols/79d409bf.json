@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/stringext/string_test.go",
+  "file_hash": "cb024acb57ee078d849edae5567a55fdd2e3d627",
+  "updated_at": "2025-12-26T17:34:20.596538",
+  "symbols": {
+    "function_TestCapitalize_7": {
+      "name": "TestCapitalize",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 119,
+      "content_hash": "af6f0d7d1ebf7e0ace7fda135414990982df3dc7",
+      "content": "func TestCapitalize(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected string\n\t}{\n\t\t{\n\t\t\tname:     \"lowercase word\",\n\t\t\tinput:    \"hello\",\n\t\t\texpected: \"Hello\",\n\t\t},\n\t\t{\n\t\t\tname:     \"uppercase word\",\n\t\t\tinput:    \"HELLO\",\n\t\t\texpected: \"Hello\",\n\t\t},\n\t\t{\n\t\t\tname:     \"mixed case word\",\n\t\t\tinput:    \"hElLo\",\n\t\t\texpected: \"Hello\",\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple words\",\n\t\t\tinput:    \"hello world\",\n\t\t\texpected: \"Hello World\",\n\t\t},\n\t\t{\n\t\t\tname:     \"sentence with punctuation\",\n\t\t\tinput:    \"hello, world!\",\n\t\t\texpected: \"Hello, World!\",\n\t\t},\n\t\t{\n\t\t\tname:     \"empty string\",\n\t\t\tinput:    \"\",\n\t\t\texpected: \"\",\n\t\t},\n\t\t{\n\t\t\tname:     \"single character lowercase\",\n\t\t\tinput:    \"a\",\n\t\t\texpected: \"A\",\n\t\t},\n\t\t{\n\t\t\tname:     \"single character uppercase\",\n\t\t\tinput:    \"A\",\n\t\t\texpected: \"A\",\n\t\t},\n\t\t{\n\t\t\tname:     \"numbers\",\n\t\t\tinput:    \"123 test\",\n\t\t\texpected: \"123 Test\",\n\t\t},\n\t\t{\n\t\t\tname:     \"all caps sentence\",\n\t\t\tinput:    \"THIS IS A TEST\",\n\t\t\texpected: \"This Is A Test\",\n\t\t},\n\t\t{\n\t\t\tname:     \"camelCase\",\n\t\t\tinput:    \"camelCaseString\",\n\t\t\texpected: \"Camelcasestring\",\n\t\t},\n\t\t{\n\t\t\tname:     \"snake_case\",\n\t\t\tinput:    \"snake_case_string\",\n\t\t\texpected: \"Snake_case_string\",\n\t\t},\n\t\t{\n\t\t\tname:     \"kebab-case\",\n\t\t\tinput:    \"kebab-case-string\",\n\t\t\texpected: \"Kebab-Case-String\",\n\t\t},\n\t\t{\n\t\t\tname:     \"leading whitespace\",\n\t\t\tinput:    \"  hello\",\n\t\t\texpected: \"  Hello\",\n\t\t},\n\t\t{\n\t\t\tname:     \"trailing whitespace\",\n\t\t\tinput:    \"hello  \",\n\t\t\texpected: \"Hello  \",\n\t\t},\n\t\t{\n\t\t\tname:     \"unicode characters\",\n\t\t\tinput:    \"caf\u00e9 r\u00e9sum\u00e9\",\n\t\t\texpected: \"Caf\u00e9 R\u00e9sum\u00e9\",\n\t\t},\n\t\t{\n\t\t\tname:     \"mixed unicode and ascii\",\n\t\t\tinput:    \"hello \u4e16\u754c\",\n\t\t\texpected: \"Hello \u4e16\u754c\",\n\t\t},\n\t\t{\n\t\t\tname:     \"apostrophes\",\n\t\t\tinput:    \"it's a beautiful day\",\n\t\t\texpected: \"It's A Beautiful Day\",\n\t\t},\n\t\t{\n\t\t\tname:     \"acronyms\",\n\t\t\tinput:    \"http api endpoint\",\n\t\t\texpected: \"Http Api Endpoint\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := Capitalize(tt.input)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"Capitalize(%q) = %q, want %q\", tt.input, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestContainsAny_120": {
+      "name": "TestContainsAny",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 259,
+      "content_hash": "16c12e142a04ff4fb13a67f6b099e56ce7bce6ff",
+      "content": "func TestContainsAny(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tstr      string\n\t\targs     []string\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname:     \"contains first arg\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"hello\", \"goodbye\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"contains second arg\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"goodbye\", \"world\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"contains all args\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"hello\", \"world\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"contains none\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"foo\", \"bar\"},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"empty string\",\n\t\t\tstr:      \"\",\n\t\t\targs:     []string{\"hello\"},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"empty args\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"single arg matches\",\n\t\t\tstr:      \"hello\",\n\t\t\targs:     []string{\"hello\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"single arg doesn't match\",\n\t\t\tstr:      \"hello\",\n\t\t\targs:     []string{\"world\"},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"substring match\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"llo wo\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"case sensitive - no match\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"HELLO\", \"WORLD\"},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"partial match in middle\",\n\t\t\tstr:      \"hello world\",\n\t\t\targs:     []string{\"o w\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"empty string in args\",\n\t\t\tstr:      \"hello\",\n\t\t\targs:     []string{\"\"},\n\t\t\texpected: true, // empty string is contained in any string\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple empty strings in args\",\n\t\t\tstr:      \"hello\",\n\t\t\targs:     []string{\"\", \"\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"unicode characters\",\n\t\t\tstr:      \"hello \u4e16\u754c\",\n\t\t\targs:     []string{\"\u4e16\u754c\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"special characters\",\n\t\t\tstr:      \"hello, world!\",\n\t\t\targs:     []string{\", \"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"newline in string\",\n\t\t\tstr:      \"hello\\nworld\",\n\t\t\targs:     []string{\"\\n\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"tab in string\",\n\t\t\tstr:      \"hello\\tworld\",\n\t\t\targs:     []string{\"\\t\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"exact match\",\n\t\t\tstr:      \"hello\",\n\t\t\targs:     []string{\"hello\"},\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple args, none match\",\n\t\t\tstr:      \"test string\",\n\t\t\targs:     []string{\"foo\", \"bar\", \"baz\"},\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple args, last one matches\",\n\t\t\tstr:      \"test string\",\n\t\t\targs:     []string{\"foo\", \"bar\", \"string\"},\n\t\t\texpected: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := ContainsAny(tt.str, tt.args...)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"ContainsAny(%q, %v) = %v, want %v\", tt.str, tt.args, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n\n// TestContainsAnyPerformance ensures the function short-circuits on first match",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestContainsAnyPerformance_260": {
+      "name": "TestContainsAnyPerformance",
+      "type": "function",
+      "start_line": 260,
+      "end_line": 283,
+      "content_hash": "6015906774ea9cce25cfe7ee403cd6f7a9dee7aa",
+      "content": "func TestContainsAnyPerformance(t *testing.T) {\n\t// If the function doesn't short-circuit, this would take longer\n\tlargeArgs := make([]string, 10000)\n\tfor i := range largeArgs {\n\t\tlargeArgs[i] = \"nonexistent\"\n\t}\n\t// Put a match at the beginning\n\tlargeArgs[0] = \"match\"\n\n\tresult := ContainsAny(\"this string contains a match\", largeArgs...)\n\tif !result {\n\t\tt.Error(\"Expected to find match\")\n\t}\n\n\t// Now test with match at the end\n\tlargeArgs[0] = \"nonexistent\"\n\tlargeArgs[9999] = \"match\"\n\tresult = ContainsAny(\"this string contains a match\", largeArgs...)\n\tif !result {\n\t\tt.Error(\"Expected to find match at end\")\n\t}\n}\n\n// BenchmarkCapitalize tests performance of Capitalize",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkCapitalize_284": {
+      "name": "BenchmarkCapitalize",
+      "type": "function",
+      "start_line": 284,
+      "end_line": 304,
+      "content_hash": "ee3a13de514ce9a69a8157b5463959206bfce2ab",
+      "content": "func BenchmarkCapitalize(b *testing.B) {\n\ttestCases := []struct {\n\t\tname  string\n\t\tinput string\n\t}{\n\t\t{\"short\", \"hello\"},\n\t\t{\"medium\", \"hello world this is a test\"},\n\t\t{\"long\", \"the quick brown fox jumps over the lazy dog multiple times in this longer sentence\"},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tb.Run(tc.name, func(b *testing.B) {\n\t\t\tb.ResetTimer()\n\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\tCapitalize(tc.input)\n\t\t\t}\n\t\t})\n\t}\n}\n\n// BenchmarkContainsAny tests performance of ContainsAny",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkContainsAny_305": {
+      "name": "BenchmarkContainsAny",
+      "type": "function",
+      "start_line": 305,
+      "end_line": 324,
+      "content_hash": "cdcfe01d5f7f6a33880988abd79c02540c3f7b2f",
+      "content": "func BenchmarkContainsAny(b *testing.B) {\n\ttestCases := []struct {\n\t\tname string\n\t\tstr  string\n\t\targs []string\n\t}{\n\t\t{\"match_first\", \"hello world\", []string{\"hello\", \"foo\", \"bar\"}},\n\t\t{\"match_last\", \"hello world\", []string{\"foo\", \"bar\", \"world\"}},\n\t\t{\"no_match\", \"hello world\", []string{\"foo\", \"bar\", \"baz\"}},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tb.Run(tc.name, func(b *testing.B) {\n\t\t\tb.ResetTimer()\n\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\tContainsAny(tc.str, tc.args...)\n\t\t\t}\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

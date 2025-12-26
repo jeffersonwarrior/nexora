@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/import-memories.ts",
+  "file_hash": "581704a0245fbf137c943cdfe965319953e2d4c6",
+  "updated_at": "2025-12-26T17:34:25.042579",
+  "symbols": {
+    "function_importMemories_15": {
+      "name": "importMemories",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 78,
+      "content_hash": "084895292838bb778ad5ae21fa54be35ddf2f4b1",
+      "content": "async function importMemories(inputFile: string) {\n  if (!existsSync(inputFile)) {\n    console.error(`\u274c Input file not found: ${inputFile}`);\n    process.exit(1);\n  }\n\n  // Read and parse export file\n  const exportData = JSON.parse(readFileSync(inputFile, 'utf-8'));\n\n  console.log(`\ud83d\udce6 Import file: ${inputFile}`);\n  console.log(`\ud83d\udcc5 Exported: ${exportData.exportedAt}`);\n  console.log(`\ud83d\udd0d Query: \"${exportData.query}\"`);\n  console.log(`\ud83d\udcca Contains:`);\n  console.log(`   \u2022 ${exportData.totalObservations} observations`);\n  console.log(`   \u2022 ${exportData.totalSessions} sessions`);\n  console.log(`   \u2022 ${exportData.totalSummaries} summaries`);\n  console.log(`   \u2022 ${exportData.totalPrompts} prompts`);\n  console.log('');\n\n  // Check if worker is running\n  try {\n    const healthCheck = await fetch(`${WORKER_URL}/api/stats`);\n    if (!healthCheck.ok) {\n      throw new Error('Worker not responding');\n    }\n  } catch (error) {\n    console.error(`\u274c Worker not running at ${WORKER_URL}`);\n    console.error('   Please ensure the claude-mem worker is running.');\n    process.exit(1);\n  }\n\n  console.log('\ud83d\udd04 Importing via worker API...');\n\n  // Send import request to worker\n  const response = await fetch(`${WORKER_URL}/api/import`, {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json'\n    },\n    body: JSON.stringify({\n      sessions: exportData.sessions || [],\n      summaries: exportData.summaries || [],\n      observations: exportData.observations || [],\n      prompts: exportData.prompts || []\n    })\n  });\n\n  if (!response.ok) {\n    const errorText = await response.text();\n    console.error(`\u274c Import failed: ${response.status} ${response.statusText}`);\n    console.error(`   ${errorText}`);\n    process.exit(1);\n  }\n\n  const result = await response.json();\n  const stats = result.stats;\n\n  console.log('\\n\u2705 Import complete!');\n  console.log('\ud83d\udcca Summary:');\n  console.log(`   Sessions:     ${stats.sessionsImported} imported, ${stats.sessionsSkipped} skipped`);\n  console.log(`   Summaries:    ${stats.summariesImported} imported, ${stats.summariesSkipped} skipped`);\n  console.log(`   Observations: ${stats.observationsImported} imported, ${stats.observationsSkipped} skipped`);\n  console.log(`   Prompts:      ${stats.promptsImported} imported, ${stats.promptsSkipped} skipped`);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

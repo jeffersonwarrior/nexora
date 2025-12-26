@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/config/crush_test.go",
+  "file_hash": "bbbd9f9c02de87f00280a55eb29747b45156b22f",
+  "updated_at": "2025-12-26T17:34:23.130483",
+  "symbols": {
+    "function_TestNoCrushReferences_13": {
+      "name": "TestNoCrushReferences",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 37,
+      "content_hash": "7a82189bf71900d8eb73734cda633df1c76eded4",
+      "content": "func TestNoCrushReferences(t *testing.T) {\n\tt.Parallel()\n\n\t// Check defaultContextPaths doesn't contain CRUSH\n\tfor _, path := range defaultContextPaths {\n\t\trequire.NotContains(t, strings.ToUpper(path), \"CRUSH\",\n\t\t\t\"defaultContextPaths should not contain CRUSH references, found: %s\", path)\n\t}\n\n\t// Check project root for CRUSH.md files\n\troot := filepath.Join(\"..\", \"..\")\n\tentries, err := os.ReadDir(root)\n\trequire.NoError(t, err)\n\n\tfor _, entry := range entries {\n\t\tif !entry.IsDir() {\n\t\t\tname := entry.Name()\n\t\t\tif strings.Contains(strings.ToUpper(name), \"CRUSH\") && strings.HasSuffix(name, \".md\") {\n\t\t\t\tt.Errorf(\"Found CRUSH markdown file in project root: %s (should use NEXORA.md or AGENTS.md)\", name)\n\t\t\t}\n\t\t}\n\t}\n}\n\n// TestConfigSchemaUsesNexora ensures JSON schema examples use NEXORA.md not CRUSH.md",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfigSchemaUsesNexora_38": {
+      "name": "TestConfigSchemaUsesNexora",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 57,
+      "content_hash": "7dc9e940275fa6c98487518590f23fad686ebb8a",
+      "content": "func TestConfigSchemaUsesNexora(t *testing.T) {\n\tt.Parallel()\n\n\t// Read the config.go file\n\tconfigPath := \"config.go\"\n\tcontent, err := os.ReadFile(configPath)\n\trequire.NoError(t, err)\n\n\tlines := strings.Split(string(content), \"\\n\")\n\n\tfor i, line := range lines {\n\t\t// Check jsonschema tags and comments\n\t\tif (strings.Contains(line, \"jsonschema\") || strings.Contains(line, \"example=\")) &&\n\t\t\tstrings.Contains(strings.ToUpper(line), \"CRUSH\") {\n\t\t\tt.Errorf(\"Line %d contains CRUSH in schema/example: %s\\nShould use NEXORA.md instead\", i+1, strings.TrimSpace(line))\n\t\t}\n\t}\n}\n\n// TestAgentsMarkdownUsesNexora checks AGENTS.md doesn't reference CRUSH.md",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAgentsMarkdownUsesNexora_58": {
+      "name": "TestAgentsMarkdownUsesNexora",
+      "type": "function",
+      "start_line": 58,
+      "end_line": 82,
+      "content_hash": "fb086d32ddda83acd389fc2fc309d27469670912",
+      "content": "func TestAgentsMarkdownUsesNexora(t *testing.T) {\n\tt.Parallel()\n\n\tagentsPath := filepath.Join(\"..\", \"..\", \"AGENTS.md\")\n\n\t// Skip if AGENTS.md doesn't exist\n\tif _, err := os.Stat(agentsPath); os.IsNotExist(err) {\n\t\tt.Skip(\"AGENTS.md not found, skipping\")\n\t\treturn\n\t}\n\n\tcontent, err := os.ReadFile(agentsPath)\n\trequire.NoError(t, err)\n\n\tlines := strings.Split(string(content), \"\\n\")\n\n\tfor i, line := range lines {\n\t\tif strings.Contains(strings.ToUpper(line), \"CRUSH.MD\") {\n\t\t\tt.Errorf(\"AGENTS.md line %d references CRUSH.md: %s\\nShould use NEXORA.md instead\",\n\t\t\t\ti+1, strings.TrimSpace(line))\n\t\t}\n\t}\n}\n\n// TestTaskfileUsesNexora checks Taskfile.yaml doesn't use CRUSH_PROFILE",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskfileUsesNexora_83": {
+      "name": "TestTaskfileUsesNexora",
+      "type": "function",
+      "start_line": 83,
+      "end_line": 100,
+      "content_hash": "4b1f7e64c79bdb550a18b5ce4fdfcdfbf5eb2374",
+      "content": "func TestTaskfileUsesNexora(t *testing.T) {\n\tt.Parallel()\n\n\ttaskfilePath := filepath.Join(\"..\", \"..\", \"Taskfile.yaml\")\n\n\t// Skip if Taskfile.yaml doesn't exist\n\tif _, err := os.Stat(taskfilePath); os.IsNotExist(err) {\n\t\tt.Skip(\"Taskfile.yaml not found, skipping\")\n\t\treturn\n\t}\n\n\tcontent, err := os.ReadFile(taskfilePath)\n\trequire.NoError(t, err)\n\n\tif strings.Contains(string(content), \"CRUSH_PROFILE\") {\n\t\tt.Error(\"Taskfile.yaml contains CRUSH_PROFILE, should use NEXORA_PROFILE instead\")\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/vscode-extension/context-engine-uploader/logs_terminal.js",
+  "file_hash": "4a8775d174019347083814072607ac2d709f5cac",
+  "updated_at": "2025-12-26T17:34:20.734740",
+  "symbols": {
+    "function_createLogsTerminalManager_1": {
+      "name": "createLogsTerminalManager",
+      "type": "function",
+      "start_line": 1,
+      "end_line": 56,
+      "content_hash": "41002b716b96a3fc059628bf4540580e7c0f67bd",
+      "content": "function createLogsTerminalManager(deps) {\n  const vscode = deps.vscode;\n  const fs = deps.fs;\n  const log = deps.log;\n\n  const getEffectiveConfig = deps.getEffectiveConfig;\n  const getWorkspaceFolderPath = deps.getWorkspaceFolderPath;\n\n  let logsTerminal;\n  let logTailActive = false;\n\n  function open() {\n    try {\n      const cfg = getEffectiveConfig();\n      const wsPath = getWorkspaceFolderPath() || (cfg.get('targetPath') || '');\n      const cwd = (wsPath && typeof wsPath === 'string' && fs.existsSync(wsPath)) ? wsPath : undefined;\n      if (logsTerminal && logsTerminal.exitStatus) {\n        logsTerminal = undefined;\n        logTailActive = false;\n      }\n      if (!logsTerminal) {\n        logsTerminal = vscode.window.createTerminal({ name: 'Context Engine Upload Service Logs (Docker)', cwd: cwd ? vscode.Uri.file(cwd) : undefined });\n        logTailActive = false;\n      }\n      logsTerminal.show(true);\n      if (!logTailActive) {\n        logsTerminal.sendText('docker compose logs -f upload_service', true);\n        logTailActive = true;\n      }\n    } catch (e) {\n      log(`Unable to open logs terminal: ${e && e.message ? e.message : String(e)}`);\n    }\n  }\n\n  function handleDidCloseTerminal(term) {\n    if (term === logsTerminal) {\n      logsTerminal = undefined;\n      logTailActive = false;\n    }\n  }\n\n  function dispose() {\n    try {\n      logTailActive = false;\n      logsTerminal = undefined;\n    } catch (_) {\n      // ignore\n    }\n  }\n\n  return {\n    open,\n    handleDidCloseTerminal,\n    dispose,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_open_12": {
+      "name": "open",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 33,
+      "content_hash": "25c322a702178d18eeeedb6978a9d74c34152eba",
+      "content": "  function open() {\n    try {\n      const cfg = getEffectiveConfig();\n      const wsPath = getWorkspaceFolderPath() || (cfg.get('targetPath') || '');\n      const cwd = (wsPath && typeof wsPath === 'string' && fs.existsSync(wsPath)) ? wsPath : undefined;\n      if (logsTerminal && logsTerminal.exitStatus) {\n        logsTerminal = undefined;\n        logTailActive = false;\n      }\n      if (!logsTerminal) {\n        logsTerminal = vscode.window.createTerminal({ name: 'Context Engine Upload Service Logs (Docker)', cwd: cwd ? vscode.Uri.file(cwd) : undefined });\n        logTailActive = false;\n      }\n      logsTerminal.show(true);\n      if (!logTailActive) {\n        logsTerminal.sendText('docker compose logs -f upload_service', true);\n        logTailActive = true;\n      }\n    } catch (e) {\n      log(`Unable to open logs terminal: ${e && e.message ? e.message : String(e)}`);\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_handleDidCloseTerminal_35": {
+      "name": "handleDidCloseTerminal",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 40,
+      "content_hash": "4b4d29e15e1bb369ada773aa018f7a1ba04b37f0",
+      "content": "  function handleDidCloseTerminal(term) {\n    if (term === logsTerminal) {\n      logsTerminal = undefined;\n      logTailActive = false;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_dispose_42": {
+      "name": "dispose",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 49,
+      "content_hash": "d9c12cba69985fb0b65ef121a94c01e3706b65c1",
+      "content": "  function dispose() {\n    try {\n      logTailActive = false;\n      logsTerminal = undefined;\n    } catch (_) {\n      // ignore\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

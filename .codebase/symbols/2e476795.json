@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/agent/tools/smart_edit.go",
+  "file_hash": "b77c4079149b4842b5b853717960ce60a6e51d6b",
+  "updated_at": "2025-12-26T17:34:20.938625",
+  "symbols": {
+    "struct_SmartEditParams_17": {
+      "name": "SmartEditParams",
+      "type": "struct",
+      "start_line": 17,
+      "end_line": 28,
+      "content_hash": "257d620070d0ed2058f4f104b2062cd89203392e",
+      "content": "type SmartEditParams struct {\n\tFilePath  string `json:\"file_path\" description:\"The absolute path to the file to modify\"`\n\tStartLine int    `json:\"start_line\" description:\"The starting line number (1-indexed) to replace\"`\n\tEndLine   int    `json:\"end_line\" description:\"The ending line number (1-indexed) to replace (inclusive)\"`\n\tNewString string `json:\"new_string\" description:\"The replacement text\"`\n}\n\nconst SmartEditToolName = \"smart_edit\"\n\n//go:embed smart_edit.md\nvar smartEditDescription []byte\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_smartEditContext_29": {
+      "name": "smartEditContext",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 36,
+      "content_hash": "b2e9e08adbca21e180261a3977cdb8349ebdd38c",
+      "content": "type smartEditContext struct {\n\tctx         context.Context\n\tpermissions permission.Service\n\tfiles       history.Service\n\tworkingDir  string\n}\n\n// NewSmartEditTool creates a line-number based edit tool that never fails due to whitespace",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSmartEditTool_37": {
+      "name": "NewSmartEditTool",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 59,
+      "content_hash": "59c014e03c545d2f6d4096b76028dd6eab615d71",
+      "content": "func NewSmartEditTool(permissions permission.Service, files history.Service, workingDir string) fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\tSmartEditToolName,\n\t\tstring(smartEditDescription),\n\t\tfunc(ctx context.Context, params SmartEditParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tslog.Info(\"SMART_EDIT TOOL INVOKED\",\n\t\t\t\t\"file\", params.FilePath,\n\t\t\t\t\"start_line\", params.StartLine,\n\t\t\t\t\"end_line\", params.EndLine,\n\t\t\t\t\"new_string_length\", len(params.NewString))\n\n\t\t\teditCtx := smartEditContext{\n\t\t\t\tctx:         ctx,\n\t\t\t\tpermissions: permissions,\n\t\t\t\tfiles:       files,\n\t\t\t\tworkingDir:  workingDir,\n\t\t\t}\n\n\t\t\treturn executeSmartEdit(editCtx, params)\n\t\t},\n\t)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_executeSmartEdit_60": {
+      "name": "executeSmartEdit",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 134,
+      "content_hash": "53b45ad6a1f16e00ead784a37007c299660a3513",
+      "content": "func executeSmartEdit(edit smartEditContext, params SmartEditParams) (fantasy.ToolResponse, error) {\n\t// Validate parameters\n\tif params.StartLine < 1 {\n\t\treturn fantasy.NewTextErrorResponse(\"start_line must be >= 1\"), nil\n\t}\n\tif params.EndLine < params.StartLine {\n\t\treturn fantasy.NewTextErrorResponse(\"end_line must be >= start_line\"), nil\n\t}\n\n\t// Read file\n\tcontent, err := os.ReadFile(params.FilePath)\n\tif err != nil {\n\t\tif os.IsNotExist(err) {\n\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"file not found: %s\", params.FilePath)), nil\n\t\t}\n\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to read file: %w\", err)\n\t}\n\n\toldContent := string(content)\n\tlines := strings.Split(oldContent, \"\\n\")\n\n\t// Validate line numbers\n\tif params.StartLine > len(lines) {\n\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"start_line %d exceeds file length (%d lines)\", params.StartLine, len(lines))), nil\n\t}\n\tif params.EndLine > len(lines) {\n\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"end_line %d exceeds file length (%d lines)\", params.EndLine, len(lines))), nil\n\t}\n\n\t// Extract the lines to be replaced\n\toldString := strings.Join(lines[params.StartLine-1:params.EndLine], \"\\n\")\n\n\t// Build new content\n\tvar newLines []string\n\tnewLines = append(newLines, lines[:params.StartLine-1]...)\n\n\t// Add new content (split into lines if multi-line)\n\tif params.NewString != \"\" {\n\t\tnewContentLines := strings.Split(params.NewString, \"\\n\")\n\t\tnewLines = append(newLines, newContentLines...)\n\t}\n\n\t// Add remaining lines after the replaced section\n\tif params.EndLine < len(lines) {\n\t\tnewLines = append(newLines, lines[params.EndLine:]...)\n\t}\n\n\tnewContent := strings.Join(newLines, \"\\n\")\n\n\t// Write back\n\terr = os.WriteFile(params.FilePath, []byte(newContent), 0o644)\n\tif err != nil {\n\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to write file: %w\", err)\n\t}\n\n\t// Calculate stats\n\tlinesReplaced := params.EndLine - params.StartLine + 1\n\tnewLinesAdded := len(strings.Split(params.NewString, \"\\n\"))\n\n\tslog.Info(\"smart_edit completed\",\n\t\t\"file\", params.FilePath,\n\t\t\"lines_replaced\", linesReplaced,\n\t\t\"new_lines\", newLinesAdded)\n\n\treturn fantasy.WithResponseMetadata(\n\t\tfantasy.NewTextResponse(fmt.Sprintf(\"\u2713 Edited %s (lines %d-%d replaced with %d new lines)\",\n\t\t\tparams.FilePath, params.StartLine, params.EndLine, newLinesAdded)),\n\t\tmap[string]any{\n\t\t\t\"lines_replaced\": linesReplaced,\n\t\t\t\"new_lines\":      newLinesAdded,\n\t\t\t\"old_content\":    oldString,\n\t\t\t\"new_content\":    params.NewString,\n\t\t},\n\t), nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

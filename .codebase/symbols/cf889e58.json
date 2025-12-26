@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/keys.go",
+  "file_hash": "c144080ccac0196a48cb50e4acdf0017d532879f",
+  "updated_at": "2025-12-26T17:34:22.446499",
+  "symbols": {
+    "struct_KeyMap_8": {
+      "name": "KeyMap",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 11,
+      "content_hash": "ab2afa3009d9d81213306550d7dd999ff130c1ae",
+      "content": "type KeyMap struct {\n\tClose key.Binding\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultKeyMap_12": {
+      "name": "DefaultKeyMap",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 20,
+      "content_hash": "bab2411b9d99531fb4a6cc47b6c542e1e6fd7352",
+      "content": "func DefaultKeyMap() KeyMap {\n\treturn KeyMap{\n\t\tClose: key.NewBinding(\n\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t),\n\t}\n}\n\n// KeyBindings implements layout.KeyMapProvider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KeyBindings_21": {
+      "name": "KeyBindings",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 27,
+      "content_hash": "28d9753729036c32541136060cd013492b4ccf19",
+      "content": "func (k KeyMap) KeyBindings() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Close,\n\t}\n}\n\n// FullHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FullHelp_28": {
+      "name": "FullHelp",
+      "type": "method",
+      "start_line": 28,
+      "end_line": 38,
+      "content_hash": "d025b1da137e7ad2cbb1026b62ee4f3831299acb",
+      "content": "func (k KeyMap) FullHelp() [][]key.Binding {\n\tm := [][]key.Binding{}\n\tslice := k.KeyBindings()\n\tfor i := 0; i < len(slice); i += 4 {\n\t\tend := min(i+4, len(slice))\n\t\tm = append(m, slice[i:end])\n\t}\n\treturn m\n}\n\n// ShortHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShortHelp_39": {
+      "name": "ShortHelp",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 43,
+      "content_hash": "c80a39db0b5454bd9c061a2b46a8ddd1ea3311db",
+      "content": "func (k KeyMap) ShortHelp() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Close,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

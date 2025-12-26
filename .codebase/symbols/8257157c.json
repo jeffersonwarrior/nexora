@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/context-engine/tests/test_change_history_for_path.py",
+  "file_hash": "d2b4c42b358faa819eb87701dc089c23600ff7b5",
+  "updated_at": "2025-12-26T17:34:22.436788",
+  "symbols": {
+    "class__FastMCP_11": {
+      "name": "_FastMCP",
+      "type": "class",
+      "start_line": 11,
+      "end_line": 17,
+      "content_hash": "092d7e5f884ac2e94a3100f74d886ec430d1b20d",
+      "content": "class _FastMCP:\n    def __init__(self, *args, **kwargs):\n        pass\n    def tool(self, *args, **kwargs):\n        def _decorator(fn):\n            return fn\n        return _decorator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___12": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 12,
+      "end_line": 13,
+      "content_hash": "a02ce2e47f3ef754e7eb937c1ba5ea7d4fb0d73a",
+      "content": "    def __init__(self, *args, **kwargs):\n        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tool_14": {
+      "name": "tool",
+      "type": "method",
+      "start_line": 14,
+      "end_line": 17,
+      "content_hash": "f113c9f9316a12abe1bab7d1b0be745fa703293f",
+      "content": "    def tool(self, *args, **kwargs):\n        def _decorator(fn):\n            return fn\n        return _decorator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__decorator_15": {
+      "name": "_decorator",
+      "type": "method",
+      "start_line": 15,
+      "end_line": 16,
+      "content_hash": "9aad9d8b5cd6dcec490fc32a4d07e326f515cea8",
+      "content": "        def _decorator(fn):\n            return fn",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__Context_19": {
+      "name": "_Context",
+      "type": "class",
+      "start_line": 19,
+      "end_line": 22,
+      "content_hash": "8ae8fc47206ddedae98f8640577b2c8596d77ce9",
+      "content": "class _Context:\n    def __init__(self, *args, **kwargs):\n        # Tests only access .session when present; keep permissive defaults\n        self.session = kwargs.get(\"session\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___20": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 20,
+      "end_line": 22,
+      "content_hash": "1a0cd05c06fcad52c1bdb96a1c46f2e467550d8f",
+      "content": "    def __init__(self, *args, **kwargs):\n        # Tests only access .session when present; keep permissive defaults\n        self.session = kwargs.get(\"session\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakePoint_33": {
+      "name": "FakePoint",
+      "type": "class",
+      "start_line": 33,
+      "end_line": 35,
+      "content_hash": "5724338d800370dd99b98f5c2f37feb1ea44ddd7",
+      "content": "class FakePoint:\n    def __init__(self, payload):\n        self.payload = payload",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___34": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 35,
+      "content_hash": "64984cdf29c8d8d5eb05ca5ef2985dc22975986a",
+      "content": "    def __init__(self, payload):\n        self.payload = payload",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakeQdrant_38": {
+      "name": "FakeQdrant",
+      "type": "class",
+      "start_line": 38,
+      "end_line": 50,
+      "content_hash": "7003abcd37fd72556af0d1ddf670b12c2221ec4b",
+      "content": "class FakeQdrant:\n    def __init__(self, pages):\n        # pages: list[list[FakePoint]] to simulate pagination\n        self._pages = pages\n        self._i = 0\n\n    def scroll(self, **kwargs):\n        if self._i >= len(self._pages):\n            return ([], None)\n        page = self._pages[self._i]\n        self._i += 1\n        # Return next_page offset as None to stop after last page\n        return (page, None if self._i >= len(self._pages) else object())",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___39": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 42,
+      "content_hash": "8d9cdeca700d9e1eed57c99cf66e1e1a7dba87af",
+      "content": "    def __init__(self, pages):\n        # pages: list[list[FakePoint]] to simulate pagination\n        self._pages = pages\n        self._i = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_scroll_44": {
+      "name": "scroll",
+      "type": "method",
+      "start_line": 44,
+      "end_line": 50,
+      "content_hash": "ad97c76f6d7e8f2f98deac1892c14734ec6e8071",
+      "content": "    def scroll(self, **kwargs):\n        if self._i >= len(self._pages):\n            return ([], None)\n        page = self._pages[self._i]\n        self._i += 1\n        # Return next_page offset as None to stop after last page\n        return (page, None if self._i >= len(self._pages) else object())",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_change_history_strict_match_under_work_55": {
+      "name": "test_change_history_strict_match_under_work",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 100,
+      "content_hash": "70fe15156d2b79e3e10509c0989d4b96ca85c15c",
+      "content": "async def test_change_history_strict_match_under_work(monkeypatch):\n    import qdrant_client\n\n    pts = [\n        FakePoint({\n            \"metadata\": {\n                \"path\": \"/work/a.py\",\n                \"file_hash\": \"h1\",\n                \"last_modified_at\": 100,\n                \"ingested_at\": 90,\n                \"churn_count\": 2,\n            }\n        }),\n        FakePoint({\n            \"metadata\": {\n                \"path\": \"/work/a.py\",\n                \"file_hash\": \"h2\",\n                \"last_modified_at\": 120,\n                \"ingested_at\": 110,\n                \"churn_count\": 3,\n            }\n        }),\n        FakePoint({\n            \"metadata\": {\n                \"path\": \"/work/a.py\",\n                \"file_hash\": \"h1\",\n                \"last_modified_at\": 130,\n                \"ingested_at\": 115,\n                \"churn_count\": 5,\n            }\n        }),\n    ]\n\n    monkeypatch.setattr(qdrant_client, \"QdrantClient\", lambda *a, **k: FakeQdrant([pts]))\n\n    res = await srv.change_history_for_path(path=\"/work/a.py\", max_points=100)\n    assert res.get(\"ok\") is True\n    summary = res.get(\"summary\") or {}\n    assert summary.get(\"path\") == \"/work/a.py\"\n    assert summary.get(\"points_scanned\") == 3\n    assert summary.get(\"distinct_hashes\") == 2  # h1,h2\n    assert summary.get(\"last_modified_min\") == 100\n    assert summary.get(\"last_modified_max\") == 130\n    assert summary.get(\"ingested_min\") == 90\n    assert summary.get(\"ingested_max\") == 115\n    assert summary.get(\"churn_count_max\") == 5",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

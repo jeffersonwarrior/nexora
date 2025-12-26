@@ -1,0 +1,249 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_glm_model_config.py",
+  "file_hash": "b220d9a7eb0c17345f43e83411f0fd2202242491",
+  "updated_at": "2025-12-26T17:34:22.714806",
+  "symbols": {
+    "class_TestGLMModelConfig_6": {
+      "name": "TestGLMModelConfig",
+      "type": "class",
+      "start_line": 6,
+      "end_line": 78,
+      "content_hash": "be20dc0732aab163e8ee0845a91dcc8afbffd801",
+      "content": "class TestGLMModelConfig:\n    \"\"\"Test GLM model version detection and configuration.\"\"\"\n\n    def test_get_model_config_exact_match(self):\n        \"\"\"Test exact model name matching.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        assert get_model_config(\"glm-4.7\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"glm-4.6\") == GLM_MODEL_CONFIGS[\"glm-4.6\"]\n        assert get_model_config(\"glm-4.5\") == GLM_MODEL_CONFIGS[\"glm-4.5\"]\n\n    def test_get_model_config_case_insensitive(self):\n        \"\"\"Test case-insensitive model matching.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        assert get_model_config(\"GLM-4.7\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"Glm-4.6\") == GLM_MODEL_CONFIGS[\"glm-4.6\"]\n\n    def test_get_model_config_variant_matching(self):\n        \"\"\"Test model variant matching (e.g., glm-4.7-air).\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        # Model variants should match base version\n        assert get_model_config(\"glm-4.7-air\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"glm-4.6-flash\") == GLM_MODEL_CONFIGS[\"glm-4.6\"]\n        assert get_model_config(\"glm-4.5-fast\") == GLM_MODEL_CONFIGS[\"glm-4.5\"]\n\n    def test_get_model_config_future_versions(self):\n        \"\"\"Test that future versions (4.8+) use GLM-4.7 config.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        # Future versions should use 4.7 config\n        assert get_model_config(\"glm-4.8\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"glm-4.9\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n\n    def test_get_model_config_unknown_model(self):\n        \"\"\"Test fallback for unknown models.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_DEFAULT_CONFIG\n        \n        assert get_model_config(\"unknown-model\") == GLM_DEFAULT_CONFIG\n        assert get_model_config(\"gpt-4\") == GLM_DEFAULT_CONFIG\n\n    def test_glm47_config_values(self):\n        \"\"\"Test GLM-4.7 has correct configuration values.\"\"\"\n        from scripts.refrag_glm import GLM_MODEL_CONFIGS\n        \n        config = GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert config[\"temperature\"] == 1.0\n        assert config[\"top_p\"] == 0.95\n        assert config[\"max_output_tokens\"] == 131072  # 128K\n        assert config[\"max_context_tokens\"] == 204800  # 200K\n        assert config[\"supports_thinking\"] is True\n        assert config[\"supports_tool_stream\"] is True\n\n    def test_glm46_config_values(self):\n        \"\"\"Test GLM-4.6 has correct configuration values.\"\"\"\n        from scripts.refrag_glm import GLM_MODEL_CONFIGS\n        \n        config = GLM_MODEL_CONFIGS[\"glm-4.6\"]\n        assert config[\"temperature\"] == 1.0\n        assert config[\"top_p\"] == 0.95\n        assert config[\"supports_thinking\"] is True\n        assert config[\"supports_tool_stream\"] is False\n\n    def test_glm45_config_values(self):\n        \"\"\"Test GLM-4.5 has correct configuration values.\"\"\"\n        from scripts.refrag_glm import GLM_MODEL_CONFIGS\n\n        config = GLM_MODEL_CONFIGS[\"glm-4.5\"]\n        assert config[\"temperature\"] == 1.0\n        assert config[\"top_p\"] == 0.95\n        assert config[\"supports_thinking\"] is True  # GLM-4.5 supports thinking control\n        assert config[\"supports_tool_stream\"] is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_model_config_exact_match_9": {
+      "name": "test_get_model_config_exact_match",
+      "type": "method",
+      "start_line": 9,
+      "end_line": 15,
+      "content_hash": "c0496b5d8614050b984e8b233036a5d3afb279fb",
+      "content": "    def test_get_model_config_exact_match(self):\n        \"\"\"Test exact model name matching.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        assert get_model_config(\"glm-4.7\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"glm-4.6\") == GLM_MODEL_CONFIGS[\"glm-4.6\"]\n        assert get_model_config(\"glm-4.5\") == GLM_MODEL_CONFIGS[\"glm-4.5\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_model_config_case_insensitive_17": {
+      "name": "test_get_model_config_case_insensitive",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 22,
+      "content_hash": "4b6c2bac963f0b10fa476e3edcc46f465dd2c7a9",
+      "content": "    def test_get_model_config_case_insensitive(self):\n        \"\"\"Test case-insensitive model matching.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        assert get_model_config(\"GLM-4.7\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"Glm-4.6\") == GLM_MODEL_CONFIGS[\"glm-4.6\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_model_config_variant_matching_24": {
+      "name": "test_get_model_config_variant_matching",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 31,
+      "content_hash": "068d6aa622e79fdf3152d436289aa6f1b83391f4",
+      "content": "    def test_get_model_config_variant_matching(self):\n        \"\"\"Test model variant matching (e.g., glm-4.7-air).\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        # Model variants should match base version\n        assert get_model_config(\"glm-4.7-air\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"glm-4.6-flash\") == GLM_MODEL_CONFIGS[\"glm-4.6\"]\n        assert get_model_config(\"glm-4.5-fast\") == GLM_MODEL_CONFIGS[\"glm-4.5\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_model_config_future_versions_33": {
+      "name": "test_get_model_config_future_versions",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 39,
+      "content_hash": "36390a6d9f073d2e4f8b92841c51fc4c56a59b1a",
+      "content": "    def test_get_model_config_future_versions(self):\n        \"\"\"Test that future versions (4.8+) use GLM-4.7 config.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_MODEL_CONFIGS\n        \n        # Future versions should use 4.7 config\n        assert get_model_config(\"glm-4.8\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert get_model_config(\"glm-4.9\") == GLM_MODEL_CONFIGS[\"glm-4.7\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_get_model_config_unknown_model_41": {
+      "name": "test_get_model_config_unknown_model",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 46,
+      "content_hash": "a9f971508b6d1105abd0d7ff8508d8343f1ca27e",
+      "content": "    def test_get_model_config_unknown_model(self):\n        \"\"\"Test fallback for unknown models.\"\"\"\n        from scripts.refrag_glm import get_model_config, GLM_DEFAULT_CONFIG\n        \n        assert get_model_config(\"unknown-model\") == GLM_DEFAULT_CONFIG\n        assert get_model_config(\"gpt-4\") == GLM_DEFAULT_CONFIG",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_glm47_config_values_48": {
+      "name": "test_glm47_config_values",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 58,
+      "content_hash": "c5ef823aa69bff20cb672c2c4cb26b26f8902a9b",
+      "content": "    def test_glm47_config_values(self):\n        \"\"\"Test GLM-4.7 has correct configuration values.\"\"\"\n        from scripts.refrag_glm import GLM_MODEL_CONFIGS\n        \n        config = GLM_MODEL_CONFIGS[\"glm-4.7\"]\n        assert config[\"temperature\"] == 1.0\n        assert config[\"top_p\"] == 0.95\n        assert config[\"max_output_tokens\"] == 131072  # 128K\n        assert config[\"max_context_tokens\"] == 204800  # 200K\n        assert config[\"supports_thinking\"] is True\n        assert config[\"supports_tool_stream\"] is True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_glm46_config_values_60": {
+      "name": "test_glm46_config_values",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 68,
+      "content_hash": "edc3ba9988025cb9927aea75edf5526c75abf82e",
+      "content": "    def test_glm46_config_values(self):\n        \"\"\"Test GLM-4.6 has correct configuration values.\"\"\"\n        from scripts.refrag_glm import GLM_MODEL_CONFIGS\n        \n        config = GLM_MODEL_CONFIGS[\"glm-4.6\"]\n        assert config[\"temperature\"] == 1.0\n        assert config[\"top_p\"] == 0.95\n        assert config[\"supports_thinking\"] is True\n        assert config[\"supports_tool_stream\"] is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_glm45_config_values_70": {
+      "name": "test_glm45_config_values",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 78,
+      "content_hash": "68308e5b844d278e142012dd6ca8b2e2e3186920",
+      "content": "    def test_glm45_config_values(self):\n        \"\"\"Test GLM-4.5 has correct configuration values.\"\"\"\n        from scripts.refrag_glm import GLM_MODEL_CONFIGS\n\n        config = GLM_MODEL_CONFIGS[\"glm-4.5\"]\n        assert config[\"temperature\"] == 1.0\n        assert config[\"top_p\"] == 0.95\n        assert config[\"supports_thinking\"] is True  # GLM-4.5 supports thinking control\n        assert config[\"supports_tool_stream\"] is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestGLMRefragClientModelSelection_81": {
+      "name": "TestGLMRefragClientModelSelection",
+      "type": "class",
+      "start_line": 81,
+      "end_line": 142,
+      "content_hash": "6e2bb59ce8aeb72da94812a4fc5ae71bba9c238f",
+      "content": "class TestGLMRefragClientModelSelection:\n    \"\"\"Test GLMRefragClient model selection logic.\"\"\"\n\n    @patch(\"openai.OpenAI\")\n    def test_default_model_is_glm46(self, mock_openai_class):\n        \"\"\"Test that default model is glm-4.6.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        # Remove GLM_MODEL from env to test default, keep GLM_API_KEY\n        env_copy = os.environ.copy()\n        env_copy.pop(\"GLM_MODEL\", None)\n        env_copy[\"GLM_API_KEY\"] = \"test-key\"\n        \n        with patch.dict(os.environ, env_copy, clear=True):\n            client = GLMRefragClient()\n            client.generate_with_soft_embeddings(\"test prompt\")\n            \n            call_kwargs = mock_client.chat.completions.create.call_args[1]\n            # Default should be glm-4.6 when GLM_MODEL not set\n            assert call_kwargs[\"model\"] == \"glm-4.6\"\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.6\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_env_model_override(self, mock_openai_class):\n        \"\"\"Test that GLM_MODEL env var overrides default.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\")\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"model\"] == \"glm-4.6\"\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL_FAST\": \"glm-4.5\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_fast_model_with_disable_thinking(self, mock_openai_class):\n        \"\"\"Test that disable_thinking uses GLM_MODEL_FAST.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\", disable_thinking=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"model\"] == \"glm-4.5\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_default_model_is_glm46_85": {
+      "name": "test_default_model_is_glm46",
+      "type": "method",
+      "start_line": 85,
+      "end_line": 106,
+      "content_hash": "9a8ce7773c68b6be3f09a791271005533de28b11",
+      "content": "    def test_default_model_is_glm46(self, mock_openai_class):\n        \"\"\"Test that default model is glm-4.6.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        # Remove GLM_MODEL from env to test default, keep GLM_API_KEY\n        env_copy = os.environ.copy()\n        env_copy.pop(\"GLM_MODEL\", None)\n        env_copy[\"GLM_API_KEY\"] = \"test-key\"\n        \n        with patch.dict(os.environ, env_copy, clear=True):\n            client = GLMRefragClient()\n            client.generate_with_soft_embeddings(\"test prompt\")\n            \n            call_kwargs = mock_client.chat.completions.create.call_args[1]\n            # Default should be glm-4.6 when GLM_MODEL not set\n            assert call_kwargs[\"model\"] == \"glm-4.6\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_env_model_override_110": {
+      "name": "test_env_model_override",
+      "type": "method",
+      "start_line": 110,
+      "end_line": 124,
+      "content_hash": "5958236180acf00f53fa5621e1be6636d0e5b9d5",
+      "content": "    def test_env_model_override(self, mock_openai_class):\n        \"\"\"Test that GLM_MODEL env var overrides default.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\")\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"model\"] == \"glm-4.6\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_fast_model_with_disable_thinking_128": {
+      "name": "test_fast_model_with_disable_thinking",
+      "type": "method",
+      "start_line": 128,
+      "end_line": 142,
+      "content_hash": "55df99ca62a24b4280d899e7ac25ee0a3674100e",
+      "content": "    def test_fast_model_with_disable_thinking(self, mock_openai_class):\n        \"\"\"Test that disable_thinking uses GLM_MODEL_FAST.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\", disable_thinking=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"model\"] == \"glm-4.5\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestGLMToolStreamSupport_145": {
+      "name": "TestGLMToolStreamSupport",
+      "type": "class",
+      "start_line": 145,
+      "end_line": 187,
+      "content_hash": "85a71b128603c5109b4b855fc40a254d74bfb05c",
+      "content": "class TestGLMToolStreamSupport:\n    \"\"\"Test GLM-4.7 tool_stream feature support.\"\"\"\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.7\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_tool_stream_enabled_for_glm47(self, mock_openai_class):\n        \"\"\"Test that tool_stream is enabled for GLM-4.7 when requested.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        tools = [{\"type\": \"function\", \"function\": {\"name\": \"test\", \"parameters\": {}}}]\n        client.generate_with_soft_embeddings(\"test prompt\", tools=tools, tool_stream=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs.get(\"tools\") == tools\n        assert call_kwargs.get(\"extra_body\", {}).get(\"tool_stream\") is True\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.6\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_tool_stream_not_enabled_for_glm46(self, mock_openai_class):\n        \"\"\"Test that tool_stream is NOT enabled for GLM-4.6.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        tools = [{\"type\": \"function\", \"function\": {\"name\": \"test\", \"parameters\": {}}}]\n        client.generate_with_soft_embeddings(\"test prompt\", tools=tools, tool_stream=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        # tool_stream should not be set for 4.6; if present, must be False\n        extra_body = call_kwargs.get(\"extra_body\", {})\n        assert \"tool_stream\" not in extra_body or extra_body[\"tool_stream\"] is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_tool_stream_enabled_for_glm47_150": {
+      "name": "test_tool_stream_enabled_for_glm47",
+      "type": "method",
+      "start_line": 150,
+      "end_line": 166,
+      "content_hash": "4b4e45491c741f9b10f2849ef736195503961a3f",
+      "content": "    def test_tool_stream_enabled_for_glm47(self, mock_openai_class):\n        \"\"\"Test that tool_stream is enabled for GLM-4.7 when requested.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        tools = [{\"type\": \"function\", \"function\": {\"name\": \"test\", \"parameters\": {}}}]\n        client.generate_with_soft_embeddings(\"test prompt\", tools=tools, tool_stream=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs.get(\"tools\") == tools\n        assert call_kwargs.get(\"extra_body\", {}).get(\"tool_stream\") is True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_tool_stream_not_enabled_for_glm46_170": {
+      "name": "test_tool_stream_not_enabled_for_glm46",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 187,
+      "content_hash": "476314632477a4342839d8ce59f8ec1cd21e5770",
+      "content": "    def test_tool_stream_not_enabled_for_glm46(self, mock_openai_class):\n        \"\"\"Test that tool_stream is NOT enabled for GLM-4.6.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        tools = [{\"type\": \"function\", \"function\": {\"name\": \"test\", \"parameters\": {}}}]\n        client.generate_with_soft_embeddings(\"test prompt\", tools=tools, tool_stream=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        # tool_stream should not be set for 4.6; if present, must be False\n        extra_body = call_kwargs.get(\"extra_body\", {})\n        assert \"tool_stream\" not in extra_body or extra_body[\"tool_stream\"] is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestGLMThinkingSupport_190": {
+      "name": "TestGLMThinkingSupport",
+      "type": "class",
+      "start_line": 190,
+      "end_line": 230,
+      "content_hash": "8c6f2d6b0b377d39314a3ba96d0dec49edb4a989",
+      "content": "class TestGLMThinkingSupport:\n    \"\"\"Test GLM thinking/reasoning support.\"\"\"\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.7\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_enable_thinking_for_glm47(self, mock_openai_class):\n        \"\"\"Test that thinking can be explicitly enabled for GLM-4.7.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\", enable_thinking=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs.get(\"extra_body\", {}).get(\"thinking\") == {\"type\": \"enabled\"}\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.5\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_thinking_not_set_for_glm45(self, mock_openai_class):\n        \"\"\"Test that thinking is NOT set for GLM-4.5 (no thinking support).\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\", enable_thinking=True)\n\n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        # GLM-4.5 now supports thinking control (can be enabled/disabled)\n        extra_body = call_kwargs.get(\"extra_body\", {})\n        assert \"thinking\" in extra_body\n        assert extra_body[\"thinking\"][\"type\"] == \"enabled\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_enable_thinking_for_glm47_195": {
+      "name": "test_enable_thinking_for_glm47",
+      "type": "method",
+      "start_line": 195,
+      "end_line": 209,
+      "content_hash": "29f84287c01dcb481232ebdc428ae1160bf0de51",
+      "content": "    def test_enable_thinking_for_glm47(self, mock_openai_class):\n        \"\"\"Test that thinking can be explicitly enabled for GLM-4.7.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\", enable_thinking=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs.get(\"extra_body\", {}).get(\"thinking\") == {\"type\": \"enabled\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_thinking_not_set_for_glm45_213": {
+      "name": "test_thinking_not_set_for_glm45",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 230,
+      "content_hash": "6a604db2ed643839ce69b438b67c11a44507d4ea",
+      "content": "    def test_thinking_not_set_for_glm45(self, mock_openai_class):\n        \"\"\"Test that thinking is NOT set for GLM-4.5 (no thinking support).\"\"\"\n        from scripts.refrag_glm import GLMRefragClient\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        client.generate_with_soft_embeddings(\"test prompt\", enable_thinking=True)\n\n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        # GLM-4.5 now supports thinking control (can be enabled/disabled)\n        extra_body = call_kwargs.get(\"extra_body\", {})\n        assert \"thinking\" in extra_body\n        assert extra_body[\"thinking\"][\"type\"] == \"enabled\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestGLMMaxTokensLimit_233": {
+      "name": "TestGLMMaxTokensLimit",
+      "type": "class",
+      "start_line": 233,
+      "end_line": 272,
+      "content_hash": "9a14d7688cfdee150bc3b0cbd93cd659c888443d",
+      "content": "class TestGLMMaxTokensLimit:\n    \"\"\"Test max_tokens limiting based on model capabilities.\"\"\"\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.7\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_max_tokens_capped_to_model_limit(self, mock_openai_class):\n        \"\"\"Test that max_tokens is capped to model's max_output_tokens.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient, GLM_MODEL_CONFIGS\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        # Request more than GLM-4.7 can output (131072)\n        client.generate_with_soft_embeddings(\"test prompt\", max_tokens=200000)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"max_tokens\"] <= GLM_MODEL_CONFIGS[\"glm-4.7\"][\"max_output_tokens\"]\n\n    @patch.dict(os.environ, {\"GLM_API_KEY\": \"test-key\", \"GLM_MODEL\": \"glm-4.5\"}, clear=False)\n    @patch(\"openai.OpenAI\")\n    def test_max_tokens_uses_smaller_limit_for_glm45(self, mock_openai_class):\n        \"\"\"Test that GLM-4.5 uses its smaller max_output limit.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient, GLM_MODEL_CONFIGS\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        # Request more than GLM-4.5 can output (8192)\n        client.generate_with_soft_embeddings(\"test prompt\", max_tokens=50000, disable_thinking=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"max_tokens\"] <= GLM_MODEL_CONFIGS[\"glm-4.5\"][\"max_output_tokens\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_max_tokens_capped_to_model_limit_238": {
+      "name": "test_max_tokens_capped_to_model_limit",
+      "type": "method",
+      "start_line": 238,
+      "end_line": 253,
+      "content_hash": "80f13b9cd7e0cc941d0e22ed00533a4dea51057c",
+      "content": "    def test_max_tokens_capped_to_model_limit(self, mock_openai_class):\n        \"\"\"Test that max_tokens is capped to model's max_output_tokens.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient, GLM_MODEL_CONFIGS\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        # Request more than GLM-4.7 can output (131072)\n        client.generate_with_soft_embeddings(\"test prompt\", max_tokens=200000)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"max_tokens\"] <= GLM_MODEL_CONFIGS[\"glm-4.7\"][\"max_output_tokens\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_max_tokens_uses_smaller_limit_for_glm45_257": {
+      "name": "test_max_tokens_uses_smaller_limit_for_glm45",
+      "type": "method",
+      "start_line": 257,
+      "end_line": 272,
+      "content_hash": "9cde05e7566bb2a6943d56e0096c658efcf5c908",
+      "content": "    def test_max_tokens_uses_smaller_limit_for_glm45(self, mock_openai_class):\n        \"\"\"Test that GLM-4.5 uses its smaller max_output limit.\"\"\"\n        from scripts.refrag_glm import GLMRefragClient, GLM_MODEL_CONFIGS\n        \n        mock_client = MagicMock()\n        mock_response = MagicMock()\n        mock_response.choices = [MagicMock(message=MagicMock(content=\"test response\"))]\n        mock_client.chat.completions.create.return_value = mock_response\n        mock_openai_class.return_value = mock_client\n        \n        client = GLMRefragClient()\n        # Request more than GLM-4.5 can output (8192)\n        client.generate_with_soft_embeddings(\"test prompt\", max_tokens=50000, disable_thinking=True)\n        \n        call_kwargs = mock_client.chat.completions.create.call_args[1]\n        assert call_kwargs[\"max_tokens\"] <= GLM_MODEL_CONFIGS[\"glm-4.5\"][\"max_output_tokens\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

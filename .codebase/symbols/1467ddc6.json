@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/internal/shell/background.go",
+  "file_hash": "23b9ddfaed1bf4219d329e8b2e65c01458b28d7f",
+  "updated_at": "2025-12-26T17:34:20.853777",
+  "symbols": {
+    "struct_syncWriter_15": {
+      "name": "syncWriter",
+      "type": "struct",
+      "start_line": 15,
+      "end_line": 19,
+      "content_hash": "56a9880eb2f37ffa7693009bc1586ead88efdc18",
+      "content": "type syncWriter struct {\n\tbuf *bytes.Buffer\n\tmu  *sync.RWMutex\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Write_20": {
+      "name": "Write",
+      "type": "method",
+      "start_line": 20,
+      "end_line": 25,
+      "content_hash": "aa56a120cff35f9f0e05c1cfe86483ccf03e9b65",
+      "content": "func (sw *syncWriter) Write(p []byte) (n int, err error) {\n\tsw.mu.Lock()\n\tdefer sw.mu.Unlock()\n\treturn sw.buf.Write(p)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_String_26": {
+      "name": "String",
+      "type": "method",
+      "start_line": 26,
+      "end_line": 39,
+      "content_hash": "437754c7ad92818b38e6c16b1c1f14a12f0a288e",
+      "content": "func (sw *syncWriter) String() string {\n\tsw.mu.RLock()\n\tdefer sw.mu.RUnlock()\n\treturn sw.buf.String()\n}\n\nconst (\n\t// MaxBackgroundJobs is the maximum number of concurrent background jobs allowed\n\tMaxBackgroundJobs = 50\n\t// CompletedJobRetentionMinutes is how long to keep completed jobs before auto-cleanup (8 hours)\n\tCompletedJobRetentionMinutes = 8 * 60\n)\n\n// BackgroundShell represents a shell running in the background.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_BackgroundShell_40": {
+      "name": "BackgroundShell",
+      "type": "struct",
+      "start_line": 40,
+      "end_line": 55,
+      "content_hash": "983349d9669aa50e9f65798397011d19c723258b",
+      "content": "type BackgroundShell struct {\n\tID          string\n\tCommand     string\n\tDescription string\n\tShell       *Shell\n\tWorkingDir  string\n\tctx         context.Context\n\tcancel      context.CancelFunc\n\tstdout      *syncWriter // thread-safe output buffer\n\tstderr      *syncWriter // thread-safe output buffer\n\tdone        chan struct{}\n\texitErr     error\n\tcompletedAt int64 // Unix timestamp when job completed (0 if still running)\n}\n\n// BackgroundShellManager manages background shell instances.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_BackgroundShellManager_56": {
+      "name": "BackgroundShellManager",
+      "type": "struct",
+      "start_line": 56,
+      "end_line": 66,
+      "content_hash": "57416634b0d99b70b31f129d153491d9a53c0c8a",
+      "content": "type BackgroundShellManager struct {\n\tshells *csync.Map[string, *BackgroundShell]\n}\n\nvar (\n\tbackgroundManager     *BackgroundShellManager\n\tbackgroundManagerOnce sync.Once\n\tidCounter             atomic.Uint64\n)\n\n// GetBackgroundShellManager returns the singleton background shell manager.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetBackgroundShellManager_67": {
+      "name": "GetBackgroundShellManager",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 76,
+      "content_hash": "fb032cca93f5bde9f79e963ebdbb82f9144d6d93",
+      "content": "func GetBackgroundShellManager() *BackgroundShellManager {\n\tbackgroundManagerOnce.Do(func() {\n\t\tbackgroundManager = &BackgroundShellManager{\n\t\t\tshells: csync.NewMap[string, *BackgroundShell](),\n\t\t}\n\t})\n\treturn backgroundManager\n}\n\n// Start creates and starts a new background shell with the given command.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Start_77": {
+      "name": "Start",
+      "type": "method",
+      "start_line": 77,
+      "end_line": 122,
+      "content_hash": "c73b9dd4174164c27513ea6dab0f150d30969e42",
+      "content": "func (m *BackgroundShellManager) Start(ctx context.Context, workingDir string, blockFuncs []BlockFunc, command string, description string) (*BackgroundShell, error) {\n\t// Check job limit\n\tif m.shells.Len() >= MaxBackgroundJobs {\n\t\treturn nil, fmt.Errorf(\"maximum number of background jobs (%d) reached. Please terminate or wait for some jobs to complete\", MaxBackgroundJobs)\n\t}\n\n\tid := fmt.Sprintf(\"%03X\", idCounter.Add(1))\n\n\tshell := NewShell(&Options{\n\t\tWorkingDir: workingDir,\n\t\tBlockFuncs: blockFuncs,\n\t})\n\n\tshellCtx, cancel := context.WithCancel(ctx)\n\n\t// Create shared mutex for thread-safe buffer access\n\tvar bufMu sync.RWMutex\n\n\tbgShell := &BackgroundShell{\n\t\tID:          id,\n\t\tCommand:     command,\n\t\tDescription: description,\n\t\tWorkingDir:  workingDir,\n\t\tShell:       shell,\n\t\tctx:         shellCtx,\n\t\tcancel:      cancel,\n\t\tstdout:      &syncWriter{buf: &bytes.Buffer{}, mu: &bufMu},\n\t\tstderr:      &syncWriter{buf: &bytes.Buffer{}, mu: &bufMu},\n\t\tdone:        make(chan struct{}),\n\t}\n\n\tm.shells.Set(id, bgShell)\n\n\tgo func() {\n\t\tdefer close(bgShell.done)\n\n\t\terr := shell.ExecStream(shellCtx, command, bgShell.stdout, bgShell.stderr)\n\n\t\tbgShell.exitErr = err\n\t\tatomic.StoreInt64(&bgShell.completedAt, time.Now().Unix())\n\t}()\n\n\treturn bgShell, nil\n}\n\n// Get retrieves a background shell by ID.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_123": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 128,
+      "content_hash": "7d78cfaaedc280b32044ba893cec800ab142881d",
+      "content": "func (m *BackgroundShellManager) Get(id string) (*BackgroundShell, bool) {\n\treturn m.shells.Get(id)\n}\n\n// Remove removes a background shell from the manager without terminating it.\n// This is useful when a shell has already completed and you just want to clean up tracking.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Remove_129": {
+      "name": "Remove",
+      "type": "method",
+      "start_line": 129,
+      "end_line": 137,
+      "content_hash": "3bb892afdecfb3765f1ab144e95774ca96d682b5",
+      "content": "func (m *BackgroundShellManager) Remove(id string) error {\n\t_, ok := m.shells.Take(id)\n\tif !ok {\n\t\treturn fmt.Errorf(\"background shell not found: %s\", id)\n\t}\n\treturn nil\n}\n\n// Kill terminates a background shell by ID.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Kill_138": {
+      "name": "Kill",
+      "type": "method",
+      "start_line": 138,
+      "end_line": 149,
+      "content_hash": "8de19210627fe7e32655025596700d8c80d60cad",
+      "content": "func (m *BackgroundShellManager) Kill(id string) error {\n\tshell, ok := m.shells.Take(id)\n\tif !ok {\n\t\treturn fmt.Errorf(\"background shell not found: %s\", id)\n\t}\n\n\tshell.cancel()\n\t<-shell.done\n\treturn nil\n}\n\n// BackgroundShellInfo contains information about a background shell.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_BackgroundShellInfo_150": {
+      "name": "BackgroundShellInfo",
+      "type": "struct",
+      "start_line": 150,
+      "end_line": 156,
+      "content_hash": "7483dd1157df536fbb4adb8778fbda6796aebb60",
+      "content": "type BackgroundShellInfo struct {\n\tID          string\n\tCommand     string\n\tDescription string\n}\n\n// List returns all background shell IDs.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_List_157": {
+      "name": "List",
+      "type": "method",
+      "start_line": 157,
+      "end_line": 165,
+      "content_hash": "d6822a11f96036f13dd62b26aa663680b2904bca",
+      "content": "func (m *BackgroundShellManager) List() []string {\n\tids := make([]string, 0, m.shells.Len())\n\tfor id := range m.shells.Seq2() {\n\t\tids = append(ids, id)\n\t}\n\treturn ids\n}\n\n// Cleanup removes completed jobs that have been finished for more than the retention period",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cleanup_166": {
+      "name": "Cleanup",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 185,
+      "content_hash": "1e2331e9f117a68966bc1231fcf999182b49e2a7",
+      "content": "func (m *BackgroundShellManager) Cleanup() int {\n\tnow := time.Now().Unix()\n\tretentionSeconds := int64(CompletedJobRetentionMinutes * 60)\n\n\tvar toRemove []string\n\tfor shell := range m.shells.Seq() {\n\t\tcompletedAt := atomic.LoadInt64(&shell.completedAt)\n\t\tif completedAt > 0 && now-completedAt > retentionSeconds {\n\t\t\ttoRemove = append(toRemove, shell.ID)\n\t\t}\n\t}\n\n\tfor _, id := range toRemove {\n\t\tm.Remove(id)\n\t}\n\n\treturn len(toRemove)\n}\n\n// KillAll terminates all background shells.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KillAll_186": {
+      "name": "KillAll",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 199,
+      "content_hash": "af808158d238c2822b65cc050ee9a4524283edf1",
+      "content": "func (m *BackgroundShellManager) KillAll() {\n\tshells := make([]*BackgroundShell, 0, m.shells.Len())\n\tfor shell := range m.shells.Seq() {\n\t\tshells = append(shells, shell)\n\t}\n\tm.shells.Reset(map[string]*BackgroundShell{})\n\n\tfor _, shell := range shells {\n\t\tshell.cancel()\n\t\t<-shell.done\n\t}\n}\n\n// GetOutput returns the current output of a background shell.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetOutput_200": {
+      "name": "GetOutput",
+      "type": "method",
+      "start_line": 200,
+      "end_line": 209,
+      "content_hash": "d40d405fd94d7acca220c99f3f611a4804efad08",
+      "content": "func (bs *BackgroundShell) GetOutput() (stdout string, stderr string, done bool, err error) {\n\tselect {\n\tcase <-bs.done:\n\t\treturn bs.stdout.String(), bs.stderr.String(), true, bs.exitErr\n\tdefault:\n\t\treturn bs.stdout.String(), bs.stderr.String(), false, nil\n\t}\n}\n\n// IsDone checks if the background shell has finished execution.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsDone_210": {
+      "name": "IsDone",
+      "type": "method",
+      "start_line": 210,
+      "end_line": 219,
+      "content_hash": "4b9bd440a61624c13581284650c9d9b8f4c9eb69",
+      "content": "func (bs *BackgroundShell) IsDone() bool {\n\tselect {\n\tcase <-bs.done:\n\t\treturn true\n\tdefault:\n\t\treturn false\n\t}\n}\n\n// Wait blocks until the background shell completes.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Wait_220": {
+      "name": "Wait",
+      "type": "method",
+      "start_line": 220,
+      "end_line": 222,
+      "content_hash": "25d2ffb977df3e12513320dbcfb8723e6c6769ac",
+      "content": "func (bs *BackgroundShell) Wait() {\n\t<-bs.done\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

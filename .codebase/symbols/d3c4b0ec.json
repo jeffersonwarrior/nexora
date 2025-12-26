@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_gateway/embedding_providers/mod.rs",
+  "file_hash": "16a17a80e5fd44ee97c7460d2cfac41ba0b7aacf",
+  "updated_at": "2025-12-26T17:34:21.315748",
+  "symbols": {
+    "trait_EmbeddingModel_10": {
+      "name": "EmbeddingModel",
+      "type": "trait",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "f6b3a1b892958aca9ad14cf143b1a8118469e298",
+      "content": "pub trait EmbeddingModel {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fetch_embedding_11": {
+      "name": "fetch_embedding",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 15,
+      "content_hash": "15e0e3b313a88bdfe1df2d4196dec7165ddb0099",
+      "content": "    fn fetch_embedding(&self, text: &str) -> Result<Vec<f64>, GraphError>;\n    async fn fetch_embedding_async(&self, text: &str) -> Result<Vec<f64>, GraphError>;\n}\n\n#[derive(Debug, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_EmbeddingProvider_16": {
+      "name": "EmbeddingProvider",
+      "type": "enum",
+      "start_line": 16,
+      "end_line": 22,
+      "content_hash": "2a4b48eefac7bd9e70adaec12c2f6f1febbf5c21",
+      "content": "pub enum EmbeddingProvider {\n    OpenAI,\n    Gemini { task_type: String },\n    AzureOpenAI { resource_name: String, deployment_id: String },\n    Local,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EmbeddingModelImpl_23": {
+      "name": "EmbeddingModelImpl",
+      "type": "struct",
+      "start_line": 23,
+      "end_line": 30,
+      "content_hash": "45b7991eff48c44cdeb0e6fd8a2b9ce28daebe38",
+      "content": "pub struct EmbeddingModelImpl {\n    pub(crate) provider: EmbeddingProvider,\n    api_key: Option<String>,\n    client: Client,\n    pub(crate) model: String,\n    pub(crate) url: Option<String>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_EmbeddingModelImpl_31": {
+      "name": "EmbeddingModelImpl",
+      "type": "impl",
+      "start_line": 31,
+      "end_line": 31,
+      "content_hash": "6a68e70ced1c3b3aef585e10665ed0df88bad2cf",
+      "content": "impl EmbeddingModelImpl {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_32": {
+      "name": "new",
+      "type": "method",
+      "start_line": 32,
+      "end_line": 137,
+      "content_hash": "db1c4bbe5587c59b277b2ca077e287e04f49c624",
+      "content": "    pub fn new(\n        api_key: Option<&str>,\n        model: Option<&str>,\n        _url: Option<&str>,\n    ) -> Result<Self, GraphError> {\n        let (provider, model_name) = Self::parse_provider_and_model(model)?;\n        let api_key = match &provider {\n            EmbeddingProvider::OpenAI => {\n                let key = api_key\n                    .map(String::from)\n                    .or_else(|| env::var(\"OPENAI_API_KEY\").ok())\n                    .ok_or_else(|| GraphError::from(\"OPENAI_API_KEY not set\"))?;\n                Some(key)\n            }\n            EmbeddingProvider::Gemini { .. } => {\n                let key = api_key\n                    .map(String::from)\n                    .or_else(|| env::var(\"GEMINI_API_KEY\").ok())\n                    .ok_or_else(|| GraphError::from(\"GEMINI_API_KEY not set\"))?;\n                Some(key)\n            }\n            EmbeddingProvider::AzureOpenAI { .. } => {\n                let key = api_key\n                    .map(String::from)\n                    .or_else(|| env::var(\"AZURE_OPENAI_API_KEY\").ok())\n                    .ok_or_else(|| GraphError::from(\"AZURE_OPENAI_API_KEY not set\"))?;\n                Some(key)\n            }\n            EmbeddingProvider::Local => None,\n        };\n\n        let url = match &provider {\n            EmbeddingProvider::Local => {\n                let url_str = _url.unwrap_or(\"http://localhost:8699/embed\");\n                Url::parse(url_str).map_err(|e| GraphError::from(format!(\"Invalid URL: {e}\")))?;\n                Some(url_str.to_string())\n            }\n            _ => None,\n        };\n\n        Ok(EmbeddingModelImpl {\n            provider,\n            api_key,\n            client: Client::new(),\n            model: model_name,\n            url\n        })\n    }\n\n    pub(crate) fn parse_provider_and_model(\n        model: Option<&str>,\n    ) -> Result<(EmbeddingProvider, String), GraphError> {\n        match model {\n            Some(m) if m.starts_with(\"gemini:\") => {\n                let parts: Vec<&str> = m.splitn(2, ':').collect();\n                let model_and_task = parts.get(1).unwrap_or(&\"gemini-embedding-001\");\n                let (model_name, task_type) = if model_and_task.contains(':') {\n                    let task_parts: Vec<&str> = model_and_task.splitn(2, ':').collect();\n                    (\n                        task_parts[0].to_string(),\n                        task_parts\n                            .get(1)\n                            .unwrap_or(&\"RETRIEVAL_DOCUMENT\")\n                            .to_string(),\n                    )\n                } else {\n                    (model_and_task.to_string(), \"RETRIEVAL_DOCUMENT\".to_string())\n                };\n\n                Ok((EmbeddingProvider::Gemini { task_type }, model_name))\n            }\n            Some(m) if m.starts_with(\"openai:\") => {\n                let model_name = m\n                    .strip_prefix(\"openai:\")\n                    .unwrap_or(\"text-embedding-ada-002\");\n                Ok((EmbeddingProvider::OpenAI, model_name.to_string()))\n            }\n            Some(m) if m.starts_with(\"azure_openai:\") => {\n                let model_name = m\n                    .strip_prefix(\"azure_openai:\")\n                    .unwrap_or(\"text-embedding-3-small\");\n                \n                // Get Azure-specific configuration from environment\n                let resource_name = env::var(\"AZURE_OPENAI_RESOURCE_NAME\")\n                    .map_err(|_| GraphError::from(\"AZURE_OPENAI_RESOURCE_NAME not set\"))?;\n                \n                // deployment_id comes from the model_name\n                let deployment_id = if model_name.is_empty() {\n                    return Err(GraphError::from(\"Azure OpenAI deployment ID not specified\"));\n                } else {\n                    model_name.to_string()\n                };\n                \n                Ok((EmbeddingProvider::AzureOpenAI { resource_name, deployment_id }, model_name.to_string()))\n            }\n            Some(\"local\") => Ok((EmbeddingProvider::Local, \"local\".to_string())),\n\n            Some(_) => Ok((\n                EmbeddingProvider::OpenAI,\n                \"text-embedding-ada-002\".to_string(),\n            )),\n            None => Err(GraphError::from(\"No embedding provider available\")),\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_EmbeddingModel_138": {
+      "name": "EmbeddingModel",
+      "type": "impl",
+      "start_line": 138,
+      "end_line": 139,
+      "content_hash": "41206c6f19a766b62de99c97e478410ae646b8ad",
+      "content": "impl EmbeddingModel for EmbeddingModelImpl {\n    /// Must be called with an active tokio context",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fetch_embedding_140": {
+      "name": "fetch_embedding",
+      "type": "method",
+      "start_line": 140,
+      "end_line": 318,
+      "content_hash": "762aea0e20b17569a6ea1c8c2805cec59558e118",
+      "content": "    fn fetch_embedding(&self, text: &str) -> Result<Vec<f64>, GraphError> {\n        let handle = tokio::runtime::Handle::current();\n        handle.block_on(self.fetch_embedding_async(text))\n    }\n\n    async fn fetch_embedding_async(&self, text: &str) -> Result<Vec<f64>, GraphError> {\n        match &self.provider {\n            EmbeddingProvider::OpenAI => {\n                let api_key = self\n                    .api_key\n                    .as_ref()\n                    .ok_or_else(|| GraphError::from(\"OpenAI API key not set\"))?;\n\n                let response = self\n                    .client\n                    .post(\"https://api.openai.com/v1/embeddings\")\n                    .header(\"Authorization\", format!(\"Bearer {api_key}\"))\n                    .json(&json!({\n                        \"input\": text,\n                        \"model\": &self.model,\n                    }))\n                    .send()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to send request: {e}\")))?;\n\n                let text_response = response\n                    .text()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                let response = sonic_rs::from_str::<sonic_rs::Value>(&text_response)\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                let embedding = response[\"data\"][0][\"embedding\"]\n                    .as_array()\n                    .ok_or_else(|| GraphError::from(\"Invalid embedding format\"))?\n                    .iter()\n                    .map(|v| {\n                        v.as_f64()\n                            .ok_or_else(|| GraphError::from(\"Invalid float value\"))\n                    })\n                    .collect::<Result<Vec<f64>, GraphError>>()?;\n\n                Ok(embedding)\n            }\n            EmbeddingProvider::AzureOpenAI { resource_name, deployment_id } => {\n                let api_key = self\n                    .api_key\n                    .as_ref()\n                    .ok_or_else(|| GraphError::from(\"AzureOpenAI API key not set\"))?;\n\n                let url = format!(\n                    \"https://{}.openai.azure.com/openai/deployments/{}/embeddings?api-version=2024-10-21\",\n                    resource_name,\n                    deployment_id\n                );\n                let response = self\n                    .client\n                    .post(&url)\n                    .header(\"api-key\", api_key)\n                    .header(\"Content-Type\", \"application/json\")\n                    .json(&json!({\n                        \"input\": text\n                    }))\n                    .send()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to send request: {e}\")))?;\n\n                let text_response = response\n                    .text()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                let response = sonic_rs::from_str::<sonic_rs::Value>(&text_response)\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                // Azure OpenAI uses the same response format as OpenAI\n                let embedding = response[\"data\"][0][\"embedding\"]\n                    .as_array()\n                    .ok_or_else(|| GraphError::from(\"Invalid embedding format from Azure OpenAI API\"))?\n                    .iter()\n                    .map(|v| {\n                        v.as_f64()\n                            .ok_or_else(|| GraphError::from(\"Invalid float value\"))\n                    })\n                    .collect::<Result<Vec<f64>, GraphError>>()?;\n                Ok(embedding)\n            }\n\n            EmbeddingProvider::Gemini { task_type } => {\n                let api_key = self\n                    .api_key\n                    .as_ref()\n                    .ok_or_else(|| GraphError::from(\"Gemini API key not set\"))?;\n\n                let url = format!(\n                    \"https://generativelanguage.googleapis.com/v1beta/models/{}:embedContent\",\n                    self.model\n                );\n\n                let response = self\n                    .client\n                    .post(&url)\n                    .header(\"x-goog-api-key\", api_key)\n                    .header(\"Content-Type\", \"application/json\")\n                    .json(&json!({\n                        \"content\": {\n                            \"parts\": [{\"text\": text}]\n                        },\n                        \"taskType\": task_type\n                    }))\n                    .send()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to send request: {e}\")))?;\n\n                let text_response = response\n                    .text()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                let response = sonic_rs::from_str::<sonic_rs::Value>(&text_response)\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                let embedding = response[\"embedding\"][\"values\"]\n                    .as_array()\n                    .ok_or_else(|| GraphError::from(\"Invalid embedding format from Gemini API\"))?\n                    .iter()\n                    .map(|v| {\n                        v.as_f64()\n                            .ok_or_else(|| GraphError::from(\"Invalid float value\"))\n                    })\n                    .collect::<Result<Vec<f64>, GraphError>>()?;\n\n                Ok(embedding)\n            }\n\n            EmbeddingProvider::Local => {\n                let url = self\n                    .url\n                    .as_ref()\n                    .ok_or_else(|| GraphError::from(\"Local URL not set\"))?;\n\n                let response = self\n                    .client\n                    .post(url)\n                    .json(&json!({\n                        \"text\": text,\n                        \"chunk_style\": \"recursive\",\n                        \"chunk_size\": 100\n                    }))\n                    .send()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Request failed: {e}\")))?;\n\n                let text_response = response\n                    .text()\n                    .await\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse response: {e}\")))?;\n\n                let response = sonic_rs::from_str::<sonic_rs::Value>(&text_response)\n                    .map_err(|e| GraphError::from(format!(\"Failed to parse JSON response: {e}\")))?;\n\n                let embedding = response[\"embedding\"]\n                    .as_array()\n                    .ok_or_else(|| GraphError::from(\"Invalid embedding format\"))?\n                    .iter()\n                    .map(|v| {\n                        v.as_f64()\n                            .ok_or_else(|| GraphError::from(\"Invalid float value\"))\n                    })\n                    .collect::<Result<Vec<f64>, GraphError>>()?;\n\n                Ok(embedding)\n            }\n        }\n    }\n}\n\n/// Creates embedding based on provider.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_embedding_model_319": {
+      "name": "get_embedding_model",
+      "type": "method",
+      "start_line": 319,
+      "end_line": 383,
+      "content_hash": "7cfab6492d5b0b32e83c5b0a0dc40a4b1bb28deb",
+      "content": "pub fn get_embedding_model(\n    api_key: Option<&str>,\n    model: Option<&str>,\n    url: Option<&str>,\n) -> Result<EmbeddingModelImpl, GraphError> {\n    EmbeddingModelImpl::new(api_key, model, url)\n}\n\n#[macro_export]\n/// Fetches an embedding from the embedding model.\n///\n/// If no model or url is provided, it will use the default model and url.\n///\n/// This must be called on a sync worker, but with a tokio context, and in a place that returns a Result\n///\n/// ## Example Use\n/// ```rust\n/// use helix_db::embed;\n/// let query = embed!(\"Hello, world!\");\n/// let embedding = embed!(\"Hello, world!\", \"text-embedding-ada-002\");\n/// let embedding = embed!(\"Hello, world!\", \"gemini:gemini-embedding-001:SEMANTIC_SIMILARITY\");\n/// let embedding = embed!(\"Hello, world!\", \"text-embedding-ada-002\", \"http://localhost:8699/embed\");\n/// ```\nmacro_rules! embed {\n    ($db:expr, $query:expr) => {{\n        let embedding_model =\n            get_embedding_model(None, $db.storage_config.embedding_model.as_deref(), None);\n        embedding_model.fetch_embedding($query)?\n    }};\n    ($db:expr, $query:expr, $provider:expr) => {{\n        let embedding_model = get_embedding_model(None, Some($provider), None);\n        embedding_model.fetch_embedding($query)?\n    }};\n    ($db:expr, $query:expr, $provider:expr, $url:expr) => {{\n        let embedding_model = get_embedding_model(None, Some($provider), Some($url));\n        embedding_model.fetch_embedding($query)?\n    }};\n}\n\n#[macro_export]\n/// Fetches an embedding from the embedding model.\n///\n/// If no model or url is provided, it will use the default model and url.\n///\nmacro_rules! embed_async {\n    (INNER_MODEL: $model:expr, $query:expr) => {\n        match $model {\n            Ok(m) => m.fetch_embedding_async($query).await,\n            Err(e) => Err(e),\n        }\n    };\n    ($db:expr, $query:expr) => {{\n        let embedding_model =\n            get_embedding_model(None, $db.storage_config.embedding_model.as_deref(), None);\n        embed_async!(INNER_MODEL: embedding_model, $query)\n    }};\n    ($db:expr, $query:expr, $provider:expr) => {{\n        let embedding_model = get_embedding_model(None, Some($provider), None);\n        embed_async!(INNER_MODEL: embedding_model, $query)\n    }};\n    ($db:expr, $query:expr, $provider:expr, $url:expr) => {{\n        let embedding_model = get_embedding_model(None, Some($provider), Some($url));\n        embed_async!(INNER_MODEL: embedding_model, $query)\n    }};\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

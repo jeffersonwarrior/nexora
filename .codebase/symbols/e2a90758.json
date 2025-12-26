@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/context-engine/scripts/rerank_recursive/confidence.py",
+  "file_hash": "55056ed98e19e1d1ac982108299817400effedbd",
+  "updated_at": "2025-12-26T17:34:19.966698",
+  "symbols": {
+    "class_ConfidenceEstimator_11": {
+      "name": "ConfidenceEstimator",
+      "type": "class",
+      "start_line": 11,
+      "end_line": 54,
+      "content_hash": "1fdc4893bad7f5f740306bff92e1607c85823d25",
+      "content": "class ConfidenceEstimator:\n    \"\"\"\n    Estimates confidence to enable early stopping.\n\n    Uses patience to avoid stopping on noisy single-step improvements.\n    \"\"\"\n\n    def __init__(self, patience: int = 1, min_improvement: float = 0.01):\n        self.patience = patience\n        self.min_improvement = min_improvement\n        self._stable_count = 0\n\n    def reset(self):\n        \"\"\"Reset state for a new query.\"\"\"\n        self._stable_count = 0\n\n    def should_stop(self, state: RefinementState) -> bool:\n        \"\"\"Check if we should stop refining based on score stability.\"\"\"\n        if len(state.score_history) < 2:\n            return False\n\n        prev_scores = state.score_history[-2]\n        curr_scores = state.scores\n\n        prev_order = np.argsort(-prev_scores)\n        curr_order = np.argsort(-curr_scores)\n\n        is_stable = False\n        k = min(5, len(prev_order))\n        if np.array_equal(prev_order[:k], curr_order[:k]):\n            is_stable = True\n\n        improvement = np.abs(curr_scores - prev_scores).mean()\n        if improvement < self.min_improvement:\n            is_stable = True\n\n        if is_stable:\n            self._stable_count += 1\n            if self._stable_count >= self.patience:\n                return True\n        else:\n            self._stable_count = 0\n\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___18": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 18,
+      "end_line": 21,
+      "content_hash": "53293dfa5c8b57a15aadddd43f4f289178f067ae",
+      "content": "    def __init__(self, patience: int = 1, min_improvement: float = 0.01):\n        self.patience = patience\n        self.min_improvement = min_improvement\n        self._stable_count = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_reset_23": {
+      "name": "reset",
+      "type": "method",
+      "start_line": 23,
+      "end_line": 25,
+      "content_hash": "d6dbc39db48b89ec2d4197acf59577b61c0431d4",
+      "content": "    def reset(self):\n        \"\"\"Reset state for a new query.\"\"\"\n        self._stable_count = 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_should_stop_27": {
+      "name": "should_stop",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 54,
+      "content_hash": "8f80c5f6945ea747357fced7c67dac45d78bfaab",
+      "content": "    def should_stop(self, state: RefinementState) -> bool:\n        \"\"\"Check if we should stop refining based on score stability.\"\"\"\n        if len(state.score_history) < 2:\n            return False\n\n        prev_scores = state.score_history[-2]\n        curr_scores = state.scores\n\n        prev_order = np.argsort(-prev_scores)\n        curr_order = np.argsort(-curr_scores)\n\n        is_stable = False\n        k = min(5, len(prev_order))\n        if np.array_equal(prev_order[:k], curr_order[:k]):\n            is_stable = True\n\n        improvement = np.abs(curr_scores - prev_scores).mean()\n        if improvement < self.min_improvement:\n            is_stable = True\n\n        if is_stable:\n            self._stable_count += 1\n            if self._stable_count >= self.patience:\n                return True\n        else:\n            self._stable_count = 0\n\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

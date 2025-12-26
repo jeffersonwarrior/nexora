@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/storage/agent.go",
+  "file_hash": "c3b670892e60cd4cdb8b6306dbc56f4109c9ea87",
+  "updated_at": "2025-12-26T17:34:24.440193",
+  "symbols": {
+    "struct_Agent_12": {
+      "name": "Agent",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 22,
+      "content_hash": "4b59e43d62be586f31cb8d5fc1909dc39103c161",
+      "content": "type Agent struct {\n\tID           string    `json:\"id\"`\n\tName         string    `json:\"name\"`\n\tCapabilities []string  `json:\"capabilities\"`\n\tConfig       string    `json:\"config\"`\n\tStatus       string    `json:\"status\"`\n\tCreatedAt    time.Time `json:\"created_at\"`\n\tUpdatedAt    time.Time `json:\"updated_at\"`\n}\n\n// AgentRepository handles agent database operations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_AgentRepository_23": {
+      "name": "AgentRepository",
+      "type": "struct",
+      "start_line": 23,
+      "end_line": 27,
+      "content_hash": "e2bfcab9b5ba8ac4837522b57d47eba229ca1025",
+      "content": "type AgentRepository struct {\n\tdb *sql.DB\n}\n\n// NewAgentRepository creates a new agent repository",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAgentRepository_28": {
+      "name": "NewAgentRepository",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 32,
+      "content_hash": "7cfd80ab29a348d5d0c7ec7ef4df82f12de0929e",
+      "content": "func NewAgentRepository(db *sql.DB) *AgentRepository {\n\treturn &AgentRepository{db: db}\n}\n\n// Create creates a new agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Create_33": {
+      "name": "Create",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 50,
+      "content_hash": "edc6eb46bb28c0ee66a1bdf14b45c7955ceeb97f",
+      "content": "func (r *AgentRepository) Create(ctx context.Context, agent *Agent) error {\n\tcapabilitiesJSON, _ := json.Marshal(agent.Capabilities)\n\n\tquery := `\n\t\tINSERT INTO agents (id, name, capabilities, config, status)\n\t\tVALUES (?, ?, ?, ?, ?)\n\t`\n\n\t_, err := r.db.ExecContext(ctx, query,\n\t\tagent.ID, agent.Name, capabilitiesJSON, agent.Config, agent.Status)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create agent: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// Get retrieves an agent by ID",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_51": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 79,
+      "content_hash": "b00c2f717a651f4267fb65712a0fed43ae4a31cf",
+      "content": "func (r *AgentRepository) Get(ctx context.Context, id string) (*Agent, error) {\n\tquery := `\n\t\tSELECT id, name, capabilities, config, status, created_at, updated_at\n\t\tFROM agents WHERE id = ?\n\t`\n\n\tagent := &Agent{}\n\tvar capabilitiesJSON []byte\n\n\terr := r.db.QueryRowContext(ctx, query, id).Scan(\n\t\t&agent.ID, &agent.Name, &capabilitiesJSON, &agent.Config,\n\t\t&agent.Status, &agent.CreatedAt, &agent.UpdatedAt)\n\tif err != nil {\n\t\tif err == sql.ErrNoRows {\n\t\t\treturn nil, fmt.Errorf(\"agent not found: %s\", id)\n\t\t}\n\t\treturn nil, fmt.Errorf(\"failed to get agent: %w\", err)\n\t}\n\n\tif len(capabilitiesJSON) > 0 {\n\t\tif err := json.Unmarshal(capabilitiesJSON, &agent.Capabilities); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal capabilities: %w\", err)\n\t\t}\n\t}\n\n\treturn agent, nil\n}\n\n// Update updates an agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_80": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 80,
+      "end_line": 107,
+      "content_hash": "7f8af5e0646fdceb302d9d228f13462d16853ba0",
+      "content": "func (r *AgentRepository) Update(ctx context.Context, agent *Agent) error {\n\tcapabilitiesJSON, _ := json.Marshal(agent.Capabilities)\n\n\tquery := `\n\t\tUPDATE agents \n\t\tSET name = ?, capabilities = ?, config = ?, status = ?, updated_at = CURRENT_TIMESTAMP\n\t\tWHERE id = ?\n\t`\n\n\tresult, err := r.db.ExecContext(ctx, query,\n\t\tagent.Name, capabilitiesJSON, agent.Config, agent.Status, agent.ID)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to update agent: %w\", err)\n\t}\n\n\trowsAffected, err := result.RowsAffected()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get rows affected: %w\", err)\n\t}\n\n\tif rowsAffected == 0 {\n\t\treturn fmt.Errorf(\"agent not found: %s\", agent.ID)\n\t}\n\n\treturn nil\n}\n\n// Delete deletes an agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Delete_108": {
+      "name": "Delete",
+      "type": "method",
+      "start_line": 108,
+      "end_line": 128,
+      "content_hash": "c9f03255cdd6d915755ac05e20dedb1bb6d362af",
+      "content": "func (r *AgentRepository) Delete(ctx context.Context, id string) error {\n\tquery := \"DELETE FROM agents WHERE id = ?\"\n\n\tresult, err := r.db.ExecContext(ctx, query, id)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to delete agent: %w\", err)\n\t}\n\n\trowsAffected, err := result.RowsAffected()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get rows affected: %w\", err)\n\t}\n\n\tif rowsAffected == 0 {\n\t\treturn fmt.Errorf(\"agent not found: %s\", id)\n\t}\n\n\treturn nil\n}\n\n// List retrieves all agents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_List_129": {
+      "name": "List",
+      "type": "method",
+      "start_line": 129,
+      "end_line": 165,
+      "content_hash": "6ff7c7445ee3d2e20bf882121f5ea1e45aa39a72",
+      "content": "func (r *AgentRepository) List(ctx context.Context) ([]*Agent, error) {\n\tquery := `\n\t\tSELECT id, name, capabilities, config, status, created_at, updated_at\n\t\tFROM agents ORDER BY created_at DESC\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list agents: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar agents []*Agent\n\tfor rows.Next() {\n\t\tagent := &Agent{}\n\t\tvar capabilitiesJSON []byte\n\n\t\terr := rows.Scan(\n\t\t\t&agent.ID, &agent.Name, &capabilitiesJSON, &agent.Config,\n\t\t\t&agent.Status, &agent.CreatedAt, &agent.UpdatedAt)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan agent row: %w\", err)\n\t\t}\n\n\t\tif len(capabilitiesJSON) > 0 {\n\t\t\tif err := json.Unmarshal(capabilitiesJSON, &agent.Capabilities); err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal capabilities: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\tagents = append(agents, agent)\n\t}\n\n\treturn agents, nil\n}\n\n// UpdateStatus updates an agent's status",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_UpdateStatus_166": {
+      "name": "UpdateStatus",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 186,
+      "content_hash": "7c8b254abd039092798735f74b1873f0739c1607",
+      "content": "func (r *AgentRepository) UpdateStatus(ctx context.Context, id, status string) error {\n\tquery := \"UPDATE agents SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?\"\n\n\tresult, err := r.db.ExecContext(ctx, query, status, id)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to update agent status: %w\", err)\n\t}\n\n\trowsAffected, err := result.RowsAffected()\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to get rows affected: %w\", err)\n\t}\n\n\tif rowsAffected == 0 {\n\t\treturn fmt.Errorf(\"agent not found: %s\", id)\n\t}\n\n\treturn nil\n}\n\n// ListByStatus retrieves agents by status",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListByStatus_187": {
+      "name": "ListByStatus",
+      "type": "method",
+      "start_line": 187,
+      "end_line": 223,
+      "content_hash": "cdf191ed37e1a77f9014974e76290bc97fd89144",
+      "content": "func (r *AgentRepository) ListByStatus(ctx context.Context, status string) ([]*Agent, error) {\n\tquery := `\n\t\tSELECT id, name, capabilities, config, status, created_at, updated_at\n\t\tFROM agents WHERE status = ? ORDER BY created_at DESC\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query, status)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list agents by status: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar agents []*Agent\n\tfor rows.Next() {\n\t\tagent := &Agent{}\n\t\tvar capabilitiesJSON []byte\n\n\t\terr := rows.Scan(\n\t\t\t&agent.ID, &agent.Name, &capabilitiesJSON, &agent.Config,\n\t\t\t&agent.Status, &agent.CreatedAt, &agent.UpdatedAt)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan agent row: %w\", err)\n\t\t}\n\n\t\tif len(capabilitiesJSON) > 0 {\n\t\t\tif err := json.Unmarshal(capabilitiesJSON, &agent.Capabilities); err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal capabilities: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\tagents = append(agents, agent)\n\t}\n\n\treturn agents, nil\n}\n\n// ListActive retrieves active agents (includes active and idle agents)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListActive_224": {
+      "name": "ListActive",
+      "type": "method",
+      "start_line": 224,
+      "end_line": 263,
+      "content_hash": "cb5432c94793c51c69a38776cd814778d4f5d1e5",
+      "content": "func (r *AgentRepository) ListActive(ctx context.Context, limit, offset int) ([]*Agent, error) {\n\tquery := `\n\t\tSELECT id, name, capabilities, config, status, created_at, updated_at\n\t\tFROM agents \n\t\tWHERE status IN ('active', 'idle')\n\t\tORDER BY created_at DESC\n\t\tLIMIT ? OFFSET ?\n\t`\n\n\trows, err := r.db.QueryContext(ctx, query, limit, offset)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list active agents: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar agents []*Agent\n\tfor rows.Next() {\n\t\tagent := &Agent{}\n\t\tvar capabilitiesJSON []byte\n\n\t\terr := rows.Scan(\n\t\t\t&agent.ID, &agent.Name, &capabilitiesJSON, &agent.Config,\n\t\t\t&agent.Status, &agent.CreatedAt, &agent.UpdatedAt)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan agent row: %w\", err)\n\t\t}\n\n\t\tif len(capabilitiesJSON) > 0 {\n\t\t\tif err := json.Unmarshal(capabilitiesJSON, &agent.Capabilities); err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to unmarshal capabilities: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\tagents = append(agents, agent)\n\t}\n\n\treturn agents, nil\n}\n\n// SetActive marks all agents as inactive and activates specific agents (zero-state on startup)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetActive_264": {
+      "name": "SetActive",
+      "type": "method",
+      "start_line": 264,
+      "end_line": 291,
+      "content_hash": "94aa01e4cf99715d53cf10f4e0bea8a0ef0d6e54",
+      "content": "func (r *AgentRepository) SetActive(ctx context.Context, activeIDs []string) error {\n\t// First, set all agents to inactive\n\tif _, err := r.db.ExecContext(ctx, \"UPDATE agents SET status = 'inactive'\"); err != nil {\n\t\treturn fmt.Errorf(\"failed to deactivate all agents: %w\", err)\n\t}\n\n\t// Then activate the specified agents\n\tif len(activeIDs) == 0 {\n\t\treturn nil // No agents to activate\n\t}\n\n\t// Build placeholder query for activation\n\tquery := \"UPDATE agents SET status = 'active' WHERE id = ?\"\n\tfor i := 1; i < len(activeIDs); i++ {\n\t\tquery += \" OR id = ?\"\n\t}\n\n\targs := make([]interface{}, len(activeIDs))\n\tfor i, id := range activeIDs {\n\t\targs[i] = id\n\t}\n\n\tif _, err := r.db.ExecContext(ctx, query, args...); err != nil {\n\t\treturn fmt.Errorf(\"failed to activate agents: %w\", err)\n\t}\n\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/workflow.go",
+  "file_hash": "abdb1c4bec19a56a8ea18f539e5be1d2c883adbd",
+  "updated_at": "2025-12-26T17:34:21.995230",
+  "symbols": {
+    "interface_WorkflowStep_11": {
+      "name": "WorkflowStep",
+      "type": "interface",
+      "start_line": 11,
+      "end_line": 16,
+      "content_hash": "58875ee4e9ab3d4553eb117c15fe29cd8f77a177",
+      "content": "type WorkflowStep interface {\n\tExecute(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error)\n\tName() string\n}\n\n// WorkflowStatus represents the execution status of a workflow step",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_WorkflowStatus_17": {
+      "name": "WorkflowStatus",
+      "type": "struct",
+      "start_line": 17,
+      "end_line": 27,
+      "content_hash": "e5a4c9766e6604fd752cf0f91dda70ac8fbeee91",
+      "content": "type WorkflowStatus struct {\n\tExecuted  bool\n\tStartTime time.Time\n\tEndTime   time.Time\n\tError     error\n\tInput     map[string]interface{}\n\tOutput    map[string]interface{}\n\tDuration  time.Duration\n}\n\n// Workflow represents a DAG-based workflow engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Workflow_28": {
+      "name": "Workflow",
+      "type": "struct",
+      "start_line": 28,
+      "end_line": 36,
+      "content_hash": "939f63fb9b1d6c2fc39cce8ed83ff97b896830f3",
+      "content": "type Workflow struct {\n\tname         string\n\tsteps        map[string]WorkflowStep\n\tdependencies map[string][]string // step -> list of dependencies\n\tmu           sync.RWMutex\n\tstatus       map[string]*WorkflowStatus\n}\n\n// NewWorkflow creates a new workflow instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewWorkflow_37": {
+      "name": "NewWorkflow",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 46,
+      "content_hash": "1d702048e0babe96938c7a1c25079f3d657caf00",
+      "content": "func NewWorkflow(name string) *Workflow {\n\treturn &Workflow{\n\t\tname:         name,\n\t\tsteps:        make(map[string]WorkflowStep),\n\t\tdependencies: make(map[string][]string),\n\t\tstatus:       make(map[string]*WorkflowStatus),\n\t}\n}\n\n// Name returns the workflow name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Name_47": {
+      "name": "Name",
+      "type": "method",
+      "start_line": 47,
+      "end_line": 51,
+      "content_hash": "80a2b5715a562c2f934b305d37d8a0b3bedcdc3c",
+      "content": "func (w *Workflow) Name() string {\n\treturn w.name\n}\n\n// AddStep adds a step to the workflow",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddStep_52": {
+      "name": "AddStep",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 59,
+      "content_hash": "408ff23dc627bd8570398286d335e7a71a423d97",
+      "content": "func (w *Workflow) AddStep(step WorkflowStep) {\n\tw.mu.Lock()\n\tdefer w.mu.Unlock()\n\n\tw.steps[step.Name()] = step\n}\n\n// AddDependency creates a dependency between two steps",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddDependency_60": {
+      "name": "AddDependency",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 70,
+      "content_hash": "224582ffbde962e8327d38043e7a4d733f0fd4d1",
+      "content": "func (w *Workflow) AddDependency(step, dependsOn string) {\n\tw.mu.Lock()\n\tdefer w.mu.Unlock()\n\n\tif w.dependencies[step] == nil {\n\t\tw.dependencies[step] = make([]string, 0)\n\t}\n\tw.dependencies[step] = append(w.dependencies[step], dependsOn)\n}\n\n// Execute runs the workflow with the given input",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Execute_71": {
+      "name": "Execute",
+      "type": "method",
+      "start_line": 71,
+      "end_line": 157,
+      "content_hash": "4563744b73a47cecd24e226189d4954baf0f4569",
+      "content": "func (w *Workflow) Execute(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\tw.mu.Lock()\n\tdefer w.mu.Unlock()\n\n\t// Clear previous status\n\tw.status = make(map[string]*WorkflowStatus)\n\n\t// Check for circular dependencies\n\tif err := w.detectCircularDependencies(); err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Create execution plan\n\texecutionPlan := w.createExecutionPlan()\n\n\t// Execute steps according to plan\n\tresults := make(map[string]interface{})\n\n\tfor _, stepNames := range executionPlan {\n\t\t// Execute steps in parallel within the same level\n\t\tvar wg sync.WaitGroup\n\t\tvar mu sync.Mutex\n\t\tlevelResults := make(map[string]interface{})\n\t\tvar levelErrors []error\n\n\t\tfor _, stepName := range stepNames {\n\t\t\twg.Add(1)\n\t\t\tgo func(name string) {\n\t\t\t\tdefer wg.Done()\n\n\t\t\t\tstep := w.steps[name]\n\t\t\t\tstepInput := w.prepareStepInput(name, input, results)\n\n\t\t\t\tstatus := &WorkflowStatus{\n\t\t\t\t\tStartTime: time.Now(),\n\t\t\t\t\tInput:     stepInput,\n\t\t\t\t\tExecuted:  false,\n\t\t\t\t}\n\n\t\t\t\t// Lock status update\n\t\t\t\tmu.Lock()\n\t\t\t\tw.status[name] = status\n\t\t\t\tmu.Unlock()\n\n\t\t\t\toutput, err := w.executeStep(ctx, step, stepInput)\n\t\t\t\tstatus.EndTime = time.Now()\n\t\t\t\tstatus.Duration = status.EndTime.Sub(status.StartTime)\n\t\t\t\tstatus.Output = output\n\t\t\t\tstatus.Error = err\n\n\t\t\t\tmu.Lock()\n\t\t\t\tif err != nil {\n\t\t\t\t\tlevelErrors = append(levelErrors, fmt.Errorf(\"step %s failed: %w\", name, err))\n\t\t\t\t} else {\n\t\t\t\t\tstatus.Executed = true\n\t\t\t\t\tlevelResults[name] = output\n\t\t\t\t}\n\t\t\t\tmu.Unlock()\n\t\t\t}(stepName)\n\t\t}\n\n\t\t// Wait for all steps in this level to complete\n\t\twg.Wait()\n\n\t\t// If any step failed, return error\n\t\tif len(levelErrors) > 0 {\n\t\t\treturn nil, levelErrors[0]\n\t\t}\n\n\t\t// Merge level results\n\t\tfor name, result := range levelResults {\n\t\t\t// result is already a map[string]interface{} from step execution\n\t\t\tif resultMap, ok := result.(map[string]interface{}); ok {\n\t\t\t\tfor k, v := range resultMap {\n\t\t\t\t\tresults[fmt.Sprintf(\"%s_%s\", name, k)] = v\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\t// If it's not a map, store it directly\n\t\t\t\tresults[name] = result\n\t\t\t}\n\t\t}\n\t}\n\n\treturn results, nil\n}\n\n// executeStep executes a single step with timeout handling",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_executeStep_158": {
+      "name": "executeStep",
+      "type": "method",
+      "start_line": 158,
+      "end_line": 171,
+      "content_hash": "a003618dc87fa1cd7975c42606ccb20860fb38af",
+      "content": "func (w *Workflow) executeStep(ctx context.Context, step WorkflowStep, input map[string]interface{}) (map[string]interface{}, error) {\n\t// Create a sub-context with timeout if needed\n\tstepCtx := ctx\n\n\t// Execute the step\n\toutput, err := step.Execute(stepCtx, input)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn output, nil\n}\n\n// prepareStepInput prepares input for a step by merging workflow input and dependent step outputs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_prepareStepInput_172": {
+      "name": "prepareStepInput",
+      "type": "method",
+      "start_line": 172,
+      "end_line": 202,
+      "content_hash": "8bd468972fea2e6c19404a1b402a7ce0d57929d5",
+      "content": "func (w *Workflow) prepareStepInput(stepName string, workflowInput map[string]interface{}, results map[string]interface{}) map[string]interface{} {\n\tinput := make(map[string]interface{})\n\n\t// Copy workflow input\n\tfor k, v := range workflowInput {\n\t\tinput[k] = v\n\t}\n\n\t// Add outputs from dependencies\n\tdependencies := w.dependencies[stepName]\n\tfor _, dep := range dependencies {\n\t\tfor key, value := range results {\n\t\t\t// Look for results that contain the dependency name\n\t\t\tif key == dep || fmt.Sprintf(\"%s_result\", dep) == key {\n\t\t\t\t// If it's a map (from dependent step), merge it\n\t\t\t\tif depMap, ok := value.(map[string]interface{}); ok {\n\t\t\t\t\tfor k, v := range depMap {\n\t\t\t\t\t\tinput[fmt.Sprintf(\"%s_%s\", dep, k)] = v\n\t\t\t\t\t}\n\t\t\t\t} else {\n\t\t\t\t\t// Otherwise add the value directly\n\t\t\t\t\tinput[dep] = value\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\treturn input\n}\n\n// createExecutionPlan creates a level-based execution plan from the DAG",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_createExecutionPlan_203": {
+      "name": "createExecutionPlan",
+      "type": "method",
+      "start_line": 203,
+      "end_line": 263,
+      "content_hash": "c18ccaf430a80f4092ab5438d28731f3844cbd15",
+      "content": "func (w *Workflow) createExecutionPlan() [][]string {\n\t// Create execution levels\n\tinDegree := make(map[string]int)\n\n\t// Calculate in-degrees\n\tfor name := range w.steps {\n\t\tinDegree[name] = 0\n\t}\n\n\t// Count dependencies for each step\n\tfor step, deps := range w.dependencies {\n\t\tfor range deps {\n\t\t\tinDegree[step]++\n\t\t}\n\t}\n\n\t// Create levels using topological sort\n\tvar plan [][]string\n\tremaining := make(map[string]bool)\n\n\t// Initialize with all steps\n\tfor name := range w.steps {\n\t\tremaining[name] = true\n\t}\n\n\tfor len(remaining) > 0 {\n\t\tvar currentLevel []string\n\n\t\t// Find steps with no remaining dependencies\n\t\tfor name := range remaining {\n\t\t\tif inDegree[name] == 0 {\n\t\t\t\tcurrentLevel = append(currentLevel, name)\n\t\t\t}\n\t\t}\n\n\t\tif len(currentLevel) == 0 {\n\t\t\t// This should not happen if circular dependency check passed\n\t\t\tbreak\n\t\t}\n\n\t\t// Remove current level from remaining and update degrees\n\t\tfor _, name := range currentLevel {\n\t\t\tdelete(remaining, name)\n\n\t\t\t// Decrease in-degree of steps that depend on this one\n\t\t\tfor stepName, stepDeps := range w.dependencies {\n\t\t\t\tfor _, stepDep := range stepDeps {\n\t\t\t\t\tif stepDep == name && remaining[stepName] {\n\t\t\t\t\t\tinDegree[stepName]--\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tplan = append(plan, currentLevel)\n\t}\n\n\treturn plan\n}\n\n// detectCircularDependencies checks for circular dependencies using DFS",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_detectCircularDependencies_264": {
+      "name": "detectCircularDependencies",
+      "type": "method",
+      "start_line": 264,
+      "end_line": 304,
+      "content_hash": "923ba3a66618c3260ad24f92bf2047bf7ca019c2",
+      "content": "func (w *Workflow) detectCircularDependencies() error {\n\tvisited := make(map[string]bool)\n\trecursionStack := make(map[string]bool)\n\n\tvar dfs func(string) error\n\tdfs = func(node string) error {\n\t\tif recursionStack[node] {\n\t\t\treturn fmt.Errorf(\"circular dependency detected involving step: %s\", node)\n\t\t}\n\n\t\tif visited[node] {\n\t\t\treturn nil\n\t\t}\n\n\t\tvisited[node] = true\n\t\trecursionStack[node] = true\n\n\t\t// Visit all steps that this node depends on\n\t\tfor _, dep := range w.dependencies[node] {\n\t\t\tif err := dfs(dep); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\trecursionStack[node] = false\n\t\treturn nil\n\t}\n\n\t// Check each step\n\tfor stepName := range w.steps {\n\t\tif !visited[stepName] {\n\t\t\tif err := dfs(stepName); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// GetExecutionStatus returns the execution status of all steps",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetExecutionStatus_305": {
+      "name": "GetExecutionStatus",
+      "type": "method",
+      "start_line": 305,
+      "end_line": 315,
+      "content_hash": "2d8ec6d1fc01177888afc48bb791fc662ac71328",
+      "content": "func (w *Workflow) GetExecutionStatus() map[string]*WorkflowStatus {\n\tw.mu.RLock()\n\tdefer w.mu.RUnlock()\n\n\tstatusCopy := make(map[string]*WorkflowStatus)\n\tfor k, v := range w.status {\n\t\tstatusCopy[k] = v\n\t}\n\n\treturn statusCopy\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

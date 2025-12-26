@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/external-deps/helix-db/.github/workflows/clippy_check.yml",
+  "file_hash": "6146f937f5641ea0e95c06c4b62d2ac09d30358b",
+  "updated_at": "2025-12-26T17:34:21.525258",
+  "symbols": {
+    "key_name_1": {
+      "name": "name",
+      "type": "key",
+      "start_line": 1,
+      "end_line": 1,
+      "content_hash": "43a1be279c99c8a86d5c2c4e100e000016665777",
+      "content": "name: Core Clippy Check",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on_3": {
+      "name": "on",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 5,
+      "content_hash": "22b64ac8d8fe4fc20abe3a8280450250073a55f0",
+      "content": "on:\n  pull_request:\n    branches: [ main, dev ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.pull_request_4": {
+      "name": "on.pull_request",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 5,
+      "content_hash": "ee52f94f2d4c98ae16765eef4471363766b935f4",
+      "content": "  pull_request:\n    branches: [ main, dev ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.pull_request.branches_5": {
+      "name": "on.pull_request.branches",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "a83e67c79a7af0cde56ae898634fbfda80d4a704",
+      "content": "    branches: [ main, dev ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs_7": {
+      "name": "jobs",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 37,
+      "content_hash": "d00e0eba999d1fa23a233f64e3de4c492a3f476a",
+      "content": "jobs:\n  test:\n    name: Run clippy check\n    runs-on: ${{ matrix.os }}\n    strategy:\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]\n        \n    steps:\n    - uses: actions/checkout@v4\n    \n    - name: Setup Rust\n      uses: dtolnay/rust-toolchain@stable\n      \n    - name: Cache cargo dependencies\n      uses: actions/cache@v4\n      continue-on-error: true\n      with:\n        path: |\n          ~/.cargo/registry\n          ~/.cargo/git\n          target\n        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') || 'fallback' }}\n        restore-keys: |\n          ${{ runner.os }}-cargo-\n          \n    - name: Run clippy check\n      run: | \n        rustup component add clippy\n        sh clippy_check.sh\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test_8": {
+      "name": "jobs.test",
+      "type": "key",
+      "start_line": 8,
+      "end_line": 37,
+      "content_hash": "01b2566abd0c8499b077bbf6c046ba7838282b87",
+      "content": "  test:\n    name: Run clippy check\n    runs-on: ${{ matrix.os }}\n    strategy:\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]\n        \n    steps:\n    - uses: actions/checkout@v4\n    \n    - name: Setup Rust\n      uses: dtolnay/rust-toolchain@stable\n      \n    - name: Cache cargo dependencies\n      uses: actions/cache@v4\n      continue-on-error: true\n      with:\n        path: |\n          ~/.cargo/registry\n          ~/.cargo/git\n          target\n        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') || 'fallback' }}\n        restore-keys: |\n          ${{ runner.os }}-cargo-\n          \n    - name: Run clippy check\n      run: | \n        rustup component add clippy\n        sh clippy_check.sh\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.name_9": {
+      "name": "jobs.test.name",
+      "type": "key",
+      "start_line": 9,
+      "end_line": 9,
+      "content_hash": "788f98d2b5bfe8be3bd68ef39e5feb7544cd1d2d",
+      "content": "    name: Run clippy check",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.runs-on_10": {
+      "name": "jobs.test.runs-on",
+      "type": "key",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "962d61e232b41cf15e35466d50a43c4869b96f2d",
+      "content": "    runs-on: ${{ matrix.os }}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.strategy_11": {
+      "name": "jobs.test.strategy",
+      "type": "key",
+      "start_line": 11,
+      "end_line": 13,
+      "content_hash": "452559edec934324c3d23e20d8c291c320346e6a",
+      "content": "    strategy:\n      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.strategy.matrix_12": {
+      "name": "jobs.test.strategy.matrix",
+      "type": "key",
+      "start_line": 12,
+      "end_line": 13,
+      "content_hash": "b37090746d1d2eb71ec6aab7489517dbca414cfa",
+      "content": "      matrix:\n        os: [ubuntu-latest, windows-latest, macos-latest]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.strategy.matrix.os_13": {
+      "name": "jobs.test.strategy.matrix.os",
+      "type": "key",
+      "start_line": 13,
+      "end_line": 13,
+      "content_hash": "1555ebf381b37f527dc13d181fa3a8f68fb77fd8",
+      "content": "        os: [ubuntu-latest, windows-latest, macos-latest]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps_15": {
+      "name": "jobs.test.steps",
+      "type": "key",
+      "start_line": 15,
+      "end_line": 37,
+      "content_hash": "6a4886505ea9c7e1013c4b244ef2488374ce2eb4",
+      "content": "    steps:\n    - uses: actions/checkout@v4\n    \n    - name: Setup Rust\n      uses: dtolnay/rust-toolchain@stable\n      \n    - name: Cache cargo dependencies\n      uses: actions/cache@v4\n      continue-on-error: true\n      with:\n        path: |\n          ~/.cargo/registry\n          ~/.cargo/git\n          target\n        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') || 'fallback' }}\n        restore-keys: |\n          ${{ runner.os }}-cargo-\n          \n    - name: Run clippy check\n      run: | \n        rustup component add clippy\n        sh clippy_check.sh\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.uses_16": {
+      "name": "jobs.test.steps.uses",
+      "type": "key",
+      "start_line": 16,
+      "end_line": 16,
+      "content_hash": "0be78ad9d20585293471153fcb24afae4f40062e",
+      "content": "    - uses: actions/checkout@v4",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.name_18": {
+      "name": "jobs.test.steps.name",
+      "type": "key",
+      "start_line": 18,
+      "end_line": 18,
+      "content_hash": "719e4876d28466ca26d881b532dc94ab603ec212",
+      "content": "    - name: Setup Rust",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.uses_19": {
+      "name": "jobs.test.steps.uses",
+      "type": "key",
+      "start_line": 19,
+      "end_line": 19,
+      "content_hash": "a8550d6497b9469c50a309c5d899e3ecd87b06c4",
+      "content": "      uses: dtolnay/rust-toolchain@stable",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.name_21": {
+      "name": "jobs.test.steps.name",
+      "type": "key",
+      "start_line": 21,
+      "end_line": 21,
+      "content_hash": "bb0db8baf816facc4e2299f1414805100cee06a0",
+      "content": "    - name: Cache cargo dependencies",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.uses_22": {
+      "name": "jobs.test.steps.uses",
+      "type": "key",
+      "start_line": 22,
+      "end_line": 22,
+      "content_hash": "263796436b1ad6dd6e0746b6b35c930d032a89ef",
+      "content": "      uses: actions/cache@v4",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.continue-on-error_23": {
+      "name": "jobs.test.steps.continue-on-error",
+      "type": "key",
+      "start_line": 23,
+      "end_line": 23,
+      "content_hash": "8b0e65b40e2038783e2f8d5e1a18c6269bac5bce",
+      "content": "      continue-on-error: true",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.with_24": {
+      "name": "jobs.test.steps.with",
+      "type": "key",
+      "start_line": 24,
+      "end_line": 31,
+      "content_hash": "a96ce8851f3dae0c11593635895af8170ac8001e",
+      "content": "      with:\n        path: |\n          ~/.cargo/registry\n          ~/.cargo/git\n          target\n        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') || 'fallback' }}\n        restore-keys: |\n          ${{ runner.os }}-cargo-",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.with.path_25": {
+      "name": "jobs.test.steps.with.path",
+      "type": "key",
+      "start_line": 25,
+      "end_line": 28,
+      "content_hash": "7d609e7b2c1dd0a105f630d9202661e3a0f6e2cc",
+      "content": "        path: |\n          ~/.cargo/registry\n          ~/.cargo/git\n          target",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.with.key_29": {
+      "name": "jobs.test.steps.with.key",
+      "type": "key",
+      "start_line": 29,
+      "end_line": 29,
+      "content_hash": "ddfa20256db46ed9855b9baef92ad4fecd9e1244",
+      "content": "        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') || 'fallback' }}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.with.restore-keys_30": {
+      "name": "jobs.test.steps.with.restore-keys",
+      "type": "key",
+      "start_line": 30,
+      "end_line": 31,
+      "content_hash": "c3d2ccf10bc73bf0ffdb5400c00088f06247448e",
+      "content": "        restore-keys: |\n          ${{ runner.os }}-cargo-",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.name_33": {
+      "name": "jobs.test.steps.name",
+      "type": "key",
+      "start_line": 33,
+      "end_line": 33,
+      "content_hash": "02aba6016641efe8a24724e6c1462e05a8ca3f17",
+      "content": "    - name: Run clippy check",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.test.steps.run_34": {
+      "name": "jobs.test.steps.run",
+      "type": "key",
+      "start_line": 34,
+      "end_line": 37,
+      "content_hash": "17956a5a1c7d9612443791c6abb21aea2802ea06",
+      "content": "      run: | \n        rustup component add clippy\n        sh clippy_check.sh\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/vectors/search.rs",
+  "file_hash": "8460e38730386d5e450f5feb7be42d68d11ebf5b",
+  "updated_at": "2025-12-26T17:34:23.017215",
+  "symbols": {
+    "trait_SearchVAdapter_10": {
+      "name": "SearchVAdapter",
+      "type": "trait",
+      "start_line": 10,
+      "end_line": 22,
+      "content_hash": "9a5b8400cc7654b894d2b736e726062d5a22e31e",
+      "content": "pub trait SearchVAdapter<'db, 'arena, 'txn>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    fn search_v<F, K>(\n        self,\n        query: &'arena [f64],\n        k: K,\n        label: &'arena str,\n        filter: Option<&'arena [F]>,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_23": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 23,
+      "end_line": 43,
+      "content_hash": "30438daf020a3a6f3b463603a249108adfe4df41",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >\n    where\n        F: Fn(&HVector, &RoTxn) -> bool,\n        K: TryInto<usize>,\n        K::Error: std::fmt::Debug;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    SearchVAdapter<'db, 'arena, 'txn> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    fn search_v<F, K>(\n        self,\n        query: &'arena [f64],\n        k: K,\n        label: &'arena str,\n        filter: Option<&'arena [F]>,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_44": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 44,
+      "end_line": 107,
+      "content_hash": "61d8b41a16a55f30d4e806c47d183ca8bfc4ba17",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >\n    where\n        F: Fn(&HVector, &RoTxn) -> bool,\n        K: TryInto<usize>,\n        K::Error: std::fmt::Debug,\n    {\n        let vectors = self.storage.vectors.search(\n            self.txn,\n            query,\n            k.try_into().unwrap(),\n            label,\n            filter,\n            false,\n            self.arena,\n        );\n\n        let iter = match vectors {\n            Ok(vectors) => vectors\n                .into_iter()\n                .map(|vector| Ok::<TraversalValue, GraphError>(TraversalValue::Vector(vector)))\n                .collect::<Vec<_>>()\n                .into_iter(),\n            Err(VectorError::VectorNotFound(id)) => {\n                let error = GraphError::VectorError(format!(\"vector not found for id {id}\"));\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            Err(VectorError::InvalidVectorData) => {\n                let error = GraphError::VectorError(\"invalid vector data\".to_string());\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            Err(VectorError::EntryPointNotFound) => {\n                let error =\n                    GraphError::VectorError(\"no entry point found for hnsw index\".to_string());\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            Err(VectorError::ConversionError(e)) => {\n                let error = GraphError::VectorError(format!(\"conversion error: {e}\"));\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            Err(VectorError::VectorCoreError(e)) => {\n                let error = GraphError::VectorError(format!(\"vector core error: {e}\"));\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            Err(VectorError::InvalidVectorLength) => {\n                let error = GraphError::VectorError(\"invalid vector dimensions!\".to_string());\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            Err(id) => {\n                let error = GraphError::VectorError(format!(\"vector already deleted for id {id}\"));\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n            .collect::<Vec<_>>()\n            .into_iter(),\n        };\n\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: iter,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

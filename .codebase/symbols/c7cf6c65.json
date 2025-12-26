@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_memory_server.py",
+  "file_hash": "36bb9e710903476e649404ba6c96d38c20d800b7",
+  "updated_at": "2025-12-26T17:34:20.760551",
+  "symbols": {
+    "function__get_embedding_model_73": {
+      "name": "_get_embedding_model",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 99,
+      "content_hash": "47f224ece048223ad540c43d481ba152722e2a45",
+      "content": "def _get_embedding_model():\n    \"\"\"Lazily load and cache the embedding model to avoid startup I/O.\n\n    Uses the centralized embedder factory if available, with fallback\n    to direct fastembed initialization for backwards compatibility.\n    \"\"\"\n    # Try centralized embedder factory first (supports Qwen3 feature flag)\n    try:\n        from scripts.embedder import get_embedding_model\n        return get_embedding_model(EMBEDDING_MODEL)\n    except ImportError:\n        pass\n\n    # Fallback to original implementation\n    from fastembed import TextEmbedding\n    m = _EMBED_MODEL_CACHE.get(EMBEDDING_MODEL)\n    if m is None:\n        with _EMBED_MODEL_LOCK:\n            m = _EMBED_MODEL_CACHE.get(EMBEDDING_MODEL)\n            if m is None:\n                m = TextEmbedding(model_name=EMBEDDING_MODEL)\n                try:\n                    _ = next(m.embed([\"warmup\"]))\n                except Exception:\n                    pass\n                _EMBED_MODEL_CACHE[EMBEDDING_MODEL] = m\n    return m",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ensure_once_105": {
+      "name": "_ensure_once",
+      "type": "function",
+      "start_line": 105,
+      "end_line": 114,
+      "content_hash": "c2e88278cb5058d5e1828b3f4148f4e120db43b0",
+      "content": "def _ensure_once(name: str) -> bool:\n    \"\"\"Ensure collection exists, but only once per process (cached result).\"\"\"\n    if name in _ENSURED:\n        return True\n    try:\n        _ensure_collection(name)\n        _ENSURED.add(name)\n        return True\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__tool_capture_wrapper_149": {
+      "name": "_tool_capture_wrapper",
+      "type": "function",
+      "start_line": 149,
+      "end_line": 160,
+      "content_hash": "65895ded5fba283a573b3a3e33bbc6ba054d73a0",
+      "content": "    def _tool_capture_wrapper(*dargs, **dkwargs):\n        orig_deco = _orig_tool(*dargs, **dkwargs)\n        def _inner(fn):\n            try:\n                _TOOLS_REGISTRY.append({\n                    \"name\": dkwargs.get(\"name\") or getattr(fn, \"__name__\", \"\"),\n                    \"description\": (getattr(fn, \"__doc__\", None) or \"\").strip(),\n                })\n            except Exception:\n                pass\n            return orig_deco(fn)\n        return _inner",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__inner_151": {
+      "name": "_inner",
+      "type": "function",
+      "start_line": 151,
+      "end_line": 159,
+      "content_hash": "416e3828e2c489dad933166d6fc28872dc6987e8",
+      "content": "        def _inner(fn):\n            try:\n                _TOOLS_REGISTRY.append({\n                    \"name\": dkwargs.get(\"name\") or getattr(fn, \"__name__\", \"\"),\n                    \"description\": (getattr(fn, \"__doc__\", None) or \"\").strip(),\n                })\n            except Exception:\n                pass\n            return orig_deco(fn)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__start_readyz_server_184": {
+      "name": "_start_readyz_server",
+      "type": "function",
+      "start_line": 184,
+      "end_line": 221,
+      "content_hash": "3550665a63245fb857bfa50f82fa1e9b671c3d0c",
+      "content": "def _start_readyz_server():\n    try:\n        from http.server import BaseHTTPRequestHandler, HTTPServer\n\n        class H(BaseHTTPRequestHandler):\n            def do_GET(self):\n                try:\n                    if self.path == \"/readyz\":\n                        self.send_response(200)\n                        self.send_header(\"Content-Type\", \"application/json\")\n                        self.end_headers()\n                        payload = {\"ok\": True, \"app\": \"memory-server\"}\n                        self.wfile.write((json.dumps(payload)).encode(\"utf-8\"))\n                    elif self.path == \"/tools\":\n                        self.send_response(200)\n                        self.send_header(\"Content-Type\", \"application/json\")\n                        self.end_headers()\n                        payload = {\"ok\": True, \"tools\": _TOOLS_REGISTRY}\n                        self.wfile.write((json.dumps(payload)).encode(\"utf-8\"))\n                    else:\n                        self.send_response(404)\n                        self.end_headers()\n                except Exception:\n                    try:\n                        self.send_response(500)\n                        self.end_headers()\n                    except Exception:\n                        pass\n\n            def log_message(self, *args, **kwargs):\n                return\n\n        srv = HTTPServer((HOST, HEALTH_PORT), H)\n        th = threading.Thread(target=srv.serve_forever, daemon=True)\n        th.start()\n        return True\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_H_188": {
+      "name": "H",
+      "type": "class",
+      "start_line": 188,
+      "end_line": 214,
+      "content_hash": "9271505efcbba9526af181aefaf94a8d72075be8",
+      "content": "        class H(BaseHTTPRequestHandler):\n            def do_GET(self):\n                try:\n                    if self.path == \"/readyz\":\n                        self.send_response(200)\n                        self.send_header(\"Content-Type\", \"application/json\")\n                        self.end_headers()\n                        payload = {\"ok\": True, \"app\": \"memory-server\"}\n                        self.wfile.write((json.dumps(payload)).encode(\"utf-8\"))\n                    elif self.path == \"/tools\":\n                        self.send_response(200)\n                        self.send_header(\"Content-Type\", \"application/json\")\n                        self.end_headers()\n                        payload = {\"ok\": True, \"tools\": _TOOLS_REGISTRY}\n                        self.wfile.write((json.dumps(payload)).encode(\"utf-8\"))\n                    else:\n                        self.send_response(404)\n                        self.end_headers()\n                except Exception:\n                    try:\n                        self.send_response(500)\n                        self.end_headers()\n                    except Exception:\n                        pass\n\n            def log_message(self, *args, **kwargs):\n                return",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_do_GET_189": {
+      "name": "do_GET",
+      "type": "method",
+      "start_line": 189,
+      "end_line": 211,
+      "content_hash": "b3a8dd1c163a0407820b6ab0ca1460f7dcd04efc",
+      "content": "            def do_GET(self):\n                try:\n                    if self.path == \"/readyz\":\n                        self.send_response(200)\n                        self.send_header(\"Content-Type\", \"application/json\")\n                        self.end_headers()\n                        payload = {\"ok\": True, \"app\": \"memory-server\"}\n                        self.wfile.write((json.dumps(payload)).encode(\"utf-8\"))\n                    elif self.path == \"/tools\":\n                        self.send_response(200)\n                        self.send_header(\"Content-Type\", \"application/json\")\n                        self.end_headers()\n                        payload = {\"ok\": True, \"tools\": _TOOLS_REGISTRY}\n                        self.wfile.write((json.dumps(payload)).encode(\"utf-8\"))\n                    else:\n                        self.send_response(404)\n                        self.end_headers()\n                except Exception:\n                    try:\n                        self.send_response(500)\n                        self.end_headers()\n                    except Exception:\n                        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_log_message_213": {
+      "name": "log_message",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 214,
+      "content_hash": "d8a6226b0df9a7fabb3c6bf28e6a6770a6490c09",
+      "content": "            def log_message(self, *args, **kwargs):\n                return",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ensure_collection_229": {
+      "name": "_ensure_collection",
+      "type": "function",
+      "start_line": 229,
+      "end_line": 297,
+      "content_hash": "7bc988caa316cd8df07f1b41bbf62b901f0e78a3",
+      "content": "def _ensure_collection(name: str):\n    \"\"\"Create collection if missing.\n\n    Default behavior mirrors the original implementation for PR compatibility:\n    - Probe the embedding model to detect the dense vector dimension (MEMORY_PROBE_EMBED_DIM=1)\n    - Eager ensure on startup (MEMORY_ENSURE_ON_START=1)\n\n    For slow storage backends (e.g., Ceph + HDD), set the following in your env:\n    - MEMORY_PROBE_EMBED_DIM=0  -> skip model probing; use MEMORY_VECTOR_DIM/EMBED_DIM\n    - MEMORY_ENSURE_ON_START=0  -> ensure lazily on first tool call\n    \"\"\"\n    try:\n        client.get_collection(name)\n        return True\n    except Exception:\n        pass\n\n    # Choose dense dimension based on config: probe (default) vs env-configured\n    if MEMORY_PROBE_EMBED_DIM:\n        try:\n            # Probe dimension without populating the shared model cache.\n            # This preserves the \"cache loads on first tool call\" behavior and\n            # keeps MEMORY_COLD_SKIP_DENSE semantics unchanged.\n            from fastembed import TextEmbedding\n            _model_probe = TextEmbedding(model_name=EMBEDDING_MODEL)\n            _dense_vec = next(_model_probe.embed([\"probe\"]))\n            if hasattr(_dense_vec, \"tolist\"):\n                dense_dim = len(_dense_vec.tolist())\n            else:\n                try:\n                    dense_dim = len(_dense_vec)\n                except Exception:\n                    dense_dim = int(os.environ.get(\"MEMORY_VECTOR_DIM\") or os.environ.get(\"EMBED_DIM\") or \"768\")\n        except Exception:\n            # Fallback to env-configured dimension if probing fails\n            try:\n                dense_dim = int(os.environ.get(\"MEMORY_VECTOR_DIM\") or os.environ.get(\"EMBED_DIM\") or \"768\")\n            except Exception:\n                dense_dim = 768\n    else:\n        dense_dim = int(MEMORY_VECTOR_DIM or 768)\n\n    vectors_cfg = {\n        VECTOR_NAME: models.VectorParams(size=int(dense_dim or 768), distance=models.Distance.COSINE),\n        LEX_VECTOR_NAME: models.VectorParams(size=LEX_VECTOR_DIM, distance=models.Distance.COSINE),\n    }\n\n    # Add mini vector for ReFRAG mode (same logic as ingest_code.py)\n    try:\n        if os.environ.get(\"REFRAG_MODE\", \"\").strip().lower() in {\n            \"1\", \"true\", \"yes\", \"on\"\n        }:\n            mini_vector_name = os.environ.get(\"MINI_VECTOR_NAME\", \"mini\")\n            mini_vec_dim = int(os.environ.get(\"MINI_VEC_DIM\", \"64\"))\n            vectors_cfg[mini_vector_name] = models.VectorParams(\n                size=mini_vec_dim,\n                distance=models.Distance.COSINE,\n            )\n    except Exception:\n        pass\n\n    client.create_collection(\n        collection_name=name,\n        vectors_config=vectors_cfg,\n        hnsw_config=models.HnswConfigDiff(m=16, ef_construct=256),\n    )\n    vector_names = list(vectors_cfg.keys())\n    print(f\"[MEMORY_SERVER] Created collection '{name}' with vectors: {vector_names}\")\n    return True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_set_session_defaults_309": {
+      "name": "set_session_defaults",
+      "type": "function",
+      "start_line": 309,
+      "end_line": 376,
+      "content_hash": "a7be49b4c48ed9cbf97bb1327eaeabacddddb74f",
+      "content": "def set_session_defaults(\n    collection: Optional[str] = None,\n    session: Optional[str] = None,\n    ctx: Context = None,\n    **kwargs: Any,\n) -> Dict[str, Any]:\n    \"\"\"Set defaults (e.g., collection) for subsequent calls.\n\n    Behavior:\n    - If a request Context is provided (normal with FastMCP), store defaults per-connection\n      so subsequent calls on the same MCP session automatically use them (no token needed).\n    - Optionally, also supports a lightweight token for clients that prefer cross-connection reuse.\n\n    Precedence everywhere: explicit collection > per-connection defaults > token defaults > env default.\n    \"\"\"\n    try:\n        _extra = kwargs or {}\n        if isinstance(_extra, dict) and \"kwargs\" in _extra:\n            inner = _extra.get(\"kwargs\")\n            if isinstance(inner, dict):\n                _extra = inner\n            elif isinstance(inner, str):\n                try:\n                    _extra = json.loads(inner)\n                except Exception:\n                    _extra = {}\n        if (not collection) and isinstance(_extra, dict) and _extra.get(\"collection\") is not None:\n            collection = _extra.get(\"collection\")\n        if (not session) and isinstance(_extra, dict) and _extra.get(\"session\") is not None:\n            session = _extra.get(\"session\")\n    except Exception:\n        pass\n\n    # Prepare defaults payload\n    defaults: Dict[str, Any] = {}\n    if isinstance(collection, str) and collection.strip():\n        defaults[\"collection\"] = collection.strip()\n\n    # Store per-connection (preferred, no token required)\n    try:\n        if ctx is not None and getattr(ctx, \"session\", None) is not None and defaults:\n            with _SESSION_CTX_LOCK:\n                existing = SESSION_DEFAULTS_BY_SESSION.get(ctx.session) or {}\n                existing.update(defaults)\n                SESSION_DEFAULTS_BY_SESSION[ctx.session] = existing\n    except Exception:\n        pass\n\n    # Optional: also support legacy token\n    sid = (str(session).strip() if session is not None else \"\") or None\n    if not sid:\n        import uuid as _uuid\n        sid = _uuid.uuid4().hex[:12]\n    try:\n        if defaults:\n            with _SESSION_LOCK:\n                existing = SESSION_DEFAULTS.get(sid) or {}\n                existing.update(defaults)\n                SESSION_DEFAULTS[sid] = existing\n    except Exception:\n        pass\n\n    return {\n        \"ok\": True,\n        \"session\": sid,\n        \"defaults\": (SESSION_DEFAULTS.get(sid, {}) if sid else {}),\n        \"applied\": (\"connection\" if (ctx is not None and getattr(ctx, \"session\", None) is not None) else \"token\"),\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_store_380": {
+      "name": "store",
+      "type": "function",
+      "start_line": 380,
+      "end_line": 410,
+      "content_hash": "82972117c5b58bbdc179c07d1bad245228117202",
+      "content": "def store(\n    information: str,\n    metadata: Optional[Dict[str, Any]] = None,\n    collection: Optional[str] = None,\n    session: Optional[str] = None,\n    ctx: Context = None,\n    **kwargs: Any,\n) -> Dict[str, Any]:\n    \"\"\"Store a memory entry into Qdrant (dual vectors consistent with indexer).\n\n    First call may be slower because the embedding model loads lazily.\n    \"\"\"\n    sess = _require_auth_session(session)\n    coll = _resolve_collection(collection, session=session, ctx=ctx, extra_kwargs=kwargs)\n    _require_collection_access((sess or {}).get(\"user_id\"), coll, \"write\")\n    _ensure_once(coll)\n    model = _get_embedding_model()\n    dense = next(model.embed([str(information)])).tolist()\n    lex = _lex_hash_vector_text(str(information), LEX_VECTOR_DIM)\n    # Use UUID to avoid point ID collisions under concurrent load\n    import uuid\n    pid = uuid.uuid4().hex\n    payload = {\n        \"information\": str(information),\n        \"metadata\": metadata or {\"kind\": \"memory\", \"source\": \"memory\"},\n    }\n    point = models.PointStruct(\n        id=pid, vector={VECTOR_NAME: dense, LEX_VECTOR_NAME: lex}, payload=payload\n    )\n    client.upsert(collection_name=coll, points=[point], wait=True)\n    return {\"ok\": True, \"id\": pid, \"collection\": coll, \"vector\": VECTOR_NAME}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_find_414": {
+      "name": "find",
+      "type": "function",
+      "start_line": 414,
+      "end_line": 524,
+      "content_hash": "8ec42327938009fff44ef277da4458ddc51511c0",
+      "content": "def find(\n    query: str,\n    limit: Optional[int] = None,\n    collection: Optional[str] = None,\n    top_k: Optional[int] = None,\n    session: Optional[str] = None,\n    ctx: Context = None,\n    **kwargs: Any,\n) -> Dict[str, Any]:\n    \"\"\"Find memory-like entries by vector similarity (dense + lexical fusion).\n\n    Cold-start option: set MEMORY_COLD_SKIP_DENSE=1 to skip dense embedding until the\n    model is cached (useful on slow storage).\n    \"\"\"\n    sess = _require_auth_session(session)\n    coll = _resolve_collection(collection, session=session, ctx=ctx, extra_kwargs=kwargs)\n    _require_collection_access((sess or {}).get(\"user_id\") if sess else None, coll, \"read\")\n    _ensure_once(coll)\n\n    use_dense = True\n    if MEMORY_COLD_SKIP_DENSE and EMBEDDING_MODEL not in _EMBED_MODEL_CACHE:\n        use_dense = False\n    if use_dense:\n        model = _get_embedding_model()\n        dense = next(model.embed([str(query)])).tolist()\n    else:\n        dense = None\n    lex = _lex_hash_vector_text(str(query), LEX_VECTOR_DIM)\n\n    # Harmonize alias: top_k -> limit\n    lim = int(limit if limit is not None else (top_k if top_k is not None else 5))\n\n    # Two searches (prefer query_points) then simple RRF-like merge\n    if use_dense:\n        try:\n            qp_dense = client.query_points(\n                collection_name=coll,\n                query=dense,\n                using=VECTOR_NAME,\n                limit=max(10, lim),\n                with_payload=True,\n            )\n            res_dense = getattr(qp_dense, \"points\", qp_dense)\n        except AttributeError:\n            res_dense = client.search(\n                collection_name=coll,\n                query_vector=(VECTOR_NAME, dense),\n                limit=max(10, lim),\n                with_payload=True,\n            )\n    else:\n        res_dense = []\n\n    try:\n        qp_lex = client.query_points(\n            collection_name=coll,\n            query=lex,\n            using=LEX_VECTOR_NAME,\n            limit=max(10, lim),\n            with_payload=True,\n        )\n        res_lex = getattr(qp_lex, \"points\", qp_lex)\n    except AttributeError:\n        res_lex = client.search(\n            collection_name=coll,\n            query_vector=(LEX_VECTOR_NAME, lex),\n            limit=max(10, lim),\n            with_payload=True,\n        )\n\n    def is_memory_like(payload: Dict[str, Any]) -> bool:\n        md = (payload or {}).get(\"metadata\") or {}\n        path = md.get(\"path\")\n        kind = (md.get(\"kind\") or \"\").lower()\n        source = (md.get(\"source\") or \"\").lower()\n        return (\n            (not path)\n            or (kind in {\"memory\", \"preference\", \"note\", \"policy\", \"chat\"})\n            or (source in {\"memory\", \"chat\"})\n        )\n\n    scores: Dict[str, float] = {}\n    items: Dict[str, Dict[str, Any]] = {}\n\n    def add_hits(hits, weight: float):\n        for r in hits:\n            pid = str(getattr(r, \"id\", None))\n            if not pid:\n                continue\n            pl = getattr(r, \"payload\", {}) or {}\n            if not is_memory_like(pl):\n                continue\n            scores[pid] = scores.get(pid, 0.0) + weight / (\n                1.0 + getattr(r, \"score\", 0.0)\n            )\n            items[pid] = {\n                \"id\": getattr(r, \"id\", None),\n                \"score\": getattr(r, \"score\", None),\n                \"information\": pl.get(\"information\")\n                or pl.get(\"content\")\n                or pl.get(\"text\"),\n                \"metadata\": pl.get(\"metadata\") or {},\n            }\n\n    add_hits(res_dense, 1.0)\n    add_hits(res_lex, 0.9)\n\n    ordered = sorted(\n        items.values(), key=lambda x: scores.get(str(x[\"id\"]), 0.0), reverse=True\n    )[:lim]\n    return {\"ok\": True, \"results\": ordered, \"count\": len(ordered)}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_is_memory_like_484": {
+      "name": "is_memory_like",
+      "type": "function",
+      "start_line": 484,
+      "end_line": 493,
+      "content_hash": "6d4ada8a186d59664e52ad0bce5b41bc1d0bd89e",
+      "content": "    def is_memory_like(payload: Dict[str, Any]) -> bool:\n        md = (payload or {}).get(\"metadata\") or {}\n        path = md.get(\"path\")\n        kind = (md.get(\"kind\") or \"\").lower()\n        source = (md.get(\"source\") or \"\").lower()\n        return (\n            (not path)\n            or (kind in {\"memory\", \"preference\", \"note\", \"policy\", \"chat\"})\n            or (source in {\"memory\", \"chat\"})\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_add_hits_498": {
+      "name": "add_hits",
+      "type": "function",
+      "start_line": 498,
+      "end_line": 516,
+      "content_hash": "58712321c37db898f8a1aacbcb4b3edc22977b27",
+      "content": "    def add_hits(hits, weight: float):\n        for r in hits:\n            pid = str(getattr(r, \"id\", None))\n            if not pid:\n                continue\n            pl = getattr(r, \"payload\", {}) or {}\n            if not is_memory_like(pl):\n                continue\n            scores[pid] = scores.get(pid, 0.0) + weight / (\n                1.0 + getattr(r, \"score\", 0.0)\n            )\n            items[pid] = {\n                \"id\": getattr(r, \"id\", None),\n                \"score\": getattr(r, \"score\", None),\n                \"information\": pl.get(\"information\")\n                or pl.get(\"content\")\n                or pl.get(\"text\"),\n                \"metadata\": pl.get(\"metadata\") or {},\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__resolve_collection_527": {
+      "name": "_resolve_collection",
+      "type": "function",
+      "start_line": 527,
+      "end_line": 583,
+      "content_hash": "bbf7182bdeb151dbc3cb9b9a1c48b35e5376a405",
+      "content": "def _resolve_collection(\n    collection: Optional[str],\n    session: Optional[str] = None,\n    ctx: Context = None,\n    extra_kwargs: Any = None,\n) -> str:\n    \"\"\"Resolve the collection name honoring explicit args, session defaults, and env fallbacks.\"\"\"\n    coll = (collection or \"\").strip()\n    sid: Optional[str] = None\n\n    # Extract overrides from nested kwargs payloads some clients send\n    try:\n        payload = extra_kwargs or {}\n        if isinstance(payload, dict) and \"kwargs\" in payload:\n            payload = payload.get(\"kwargs\")\n            if isinstance(payload, str):\n                try:\n                    payload = json.loads(payload)\n                except Exception:\n                    payload = {}\n        if not coll and isinstance(payload, dict) and payload.get(\"collection\") is not None:\n            coll = str(payload.get(\"collection\")).strip()\n        if isinstance(payload, dict) and payload.get(\"session\") is not None:\n            sid = str(payload.get(\"session\")).strip()\n    except Exception:\n        pass\n\n    # Explicit session parameter wins over payload session\n    try:\n        if session is not None and str(session).strip():\n            sid = str(session).strip()\n    except Exception:\n        pass\n\n    # Per-connection defaults via Context session\n    if not coll and ctx is not None and getattr(ctx, \"session\", None) is not None:\n        try:\n            with _SESSION_CTX_LOCK:\n                defaults = SESSION_DEFAULTS_BY_SESSION.get(ctx.session) or {}\n                candidate = str(defaults.get(\"collection\") or \"\").strip()\n                if candidate:\n                    coll = candidate\n        except Exception:\n            pass\n\n    # Legacy token-based session defaults\n    if not coll and sid:\n        try:\n            with _SESSION_LOCK:\n                defaults = SESSION_DEFAULTS.get(sid) or {}\n                candidate = str(defaults.get(\"collection\") or \"\").strip()\n                if candidate:\n                    coll = candidate\n        except Exception:\n            pass\n\n    return coll or DEFAULT_COLLECTION",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

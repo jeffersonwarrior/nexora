@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/hooks/new-hook.ts",
+  "file_hash": "85831489ede40f59d51042df1eeeb76312374eff",
+  "updated_at": "2025-12-26T17:34:21.275247",
+  "symbols": {
+    "function_newHook_16": {
+      "name": "newHook",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 75,
+      "content_hash": "74fbd3b91b87c7b789b6daf13f344b7d9fdd5e63",
+      "content": "async function newHook(input?: UserPromptSubmitInput): Promise<void> {\n  // Ensure worker is running before any other logic\n  await ensureWorkerRunning();\n\n  if (!input) {\n    throw new Error('newHook requires input');\n  }\n\n  const { session_id, cwd, prompt } = input;\n  const project = getProjectName(cwd);\n\n  const port = getWorkerPort();\n\n  // Initialize session via HTTP - handles DB operations and privacy checks\n  const initResponse = await fetch(`http://127.0.0.1:${port}/api/sessions/init`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      claudeSessionId: session_id,\n      project,\n      prompt\n    }),\n    signal: AbortSignal.timeout(5000)\n  });\n\n  if (!initResponse.ok) {\n    throw new Error(`Session initialization failed: ${initResponse.status}`);\n  }\n\n  const initResult = await initResponse.json();\n  const sessionDbId = initResult.sessionDbId;\n  const promptNumber = initResult.promptNumber;\n\n  // Check if prompt was entirely private (worker performs privacy check)\n  if (initResult.skipped && initResult.reason === 'private') {\n    console.error(`[new-hook] Session ${sessionDbId}, prompt #${promptNumber} (fully private - skipped)`);\n    console.log(STANDARD_HOOK_RESPONSE);\n    return;\n  }\n\n  console.error(`[new-hook] Session ${sessionDbId}, prompt #${promptNumber}`);\n\n  // Strip leading slash from commands for memory agent\n  // /review 101 \u2192 review 101 (more semantic for observations)\n  const cleanedPrompt = prompt.startsWith('/') ? prompt.substring(1) : prompt;\n\n  // Initialize SDK agent session via HTTP (starts the agent!)\n  const response = await fetch(`http://127.0.0.1:${port}/sessions/${sessionDbId}/init`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ userPrompt: cleanedPrompt, promptNumber }),\n    signal: AbortSignal.timeout(5000)\n  });\n\n  if (!response.ok) {\n    throw new Error(`SDK agent start failed: ${response.status}`);\n  }\n\n  console.log(STANDARD_HOOK_RESPONSE);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

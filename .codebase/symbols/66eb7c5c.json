@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/tui/components/mcp/mcp.go",
+  "file_hash": "92f9b67a8fd0c4154ecb9d0f8fef3adce3fa8b6b",
+  "updated_at": "2025-12-26T17:34:20.688552",
+  "symbols": {
+    "struct_RenderOptions_16": {
+      "name": "RenderOptions",
+      "type": "struct",
+      "start_line": 16,
+      "end_line": 23,
+      "content_hash": "ba4edcdc252c45b2e52bc79bbdbc242e420c7df3",
+      "content": "type RenderOptions struct {\n\tMaxWidth    int\n\tMaxItems    int\n\tShowSection bool\n\tSectionName string\n}\n\n// RenderMCPList renders a list of MCP status items with the given options.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RenderMCPList_24": {
+      "name": "RenderMCPList",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 105,
+      "content_hash": "5c0588f71b39ab8c5b5140f15190365216e60cdf",
+      "content": "func RenderMCPList(opts RenderOptions) []string {\n\tt := styles.CurrentTheme()\n\tmcpList := []string{}\n\n\tif opts.ShowSection {\n\t\tsectionName := opts.SectionName\n\t\tif sectionName == \"\" {\n\t\t\tsectionName = \"MCPs\"\n\t\t}\n\t\tsection := t.S().Subtle.Render(sectionName)\n\t\tmcpList = append(mcpList, section, \"\")\n\t}\n\n\tmcps := config.Get().MCP.Sorted()\n\tif len(mcps) == 0 {\n\t\tmcpList = append(mcpList, t.S().Base.Foreground(t.Border).Render(\"None\"))\n\t\treturn mcpList\n\t}\n\n\t// Get MCP states\n\tmcpStates := mcp.GetStates()\n\n\t// Determine how many items to show\n\tmaxItems := len(mcps)\n\tif opts.MaxItems > 0 {\n\t\tmaxItems = min(opts.MaxItems, len(mcps))\n\t}\n\n\tfor i, l := range mcps {\n\t\tif i >= maxItems {\n\t\t\tbreak\n\t\t}\n\n\t\t// Determine icon and color based on state\n\t\ticon := t.ItemOfflineIcon\n\t\tdescription := \"\"\n\t\textraContent := []string{}\n\n\t\tif state, exists := mcpStates[l.Name]; exists {\n\t\t\tswitch state.State {\n\t\t\tcase mcp.StateDisabled:\n\t\t\t\tdescription = t.S().Subtle.Render(\"disabled\")\n\t\t\tcase mcp.StateStarting:\n\t\t\t\ticon = t.ItemBusyIcon\n\t\t\t\tdescription = t.S().Subtle.Render(\"starting...\")\n\t\t\tcase mcp.StateConnected:\n\t\t\t\ticon = t.ItemOnlineIcon\n\t\t\t\tif count := state.Counts.Tools; count > 0 {\n\t\t\t\t\textraContent = append(extraContent, t.S().Subtle.Render(fmt.Sprintf(\"%d tools\", count)))\n\t\t\t\t}\n\t\t\t\tif count := state.Counts.Prompts; count > 0 {\n\t\t\t\t\textraContent = append(extraContent, t.S().Subtle.Render(fmt.Sprintf(\"%d prompts\", count)))\n\t\t\t\t}\n\t\t\tcase mcp.StateError:\n\t\t\t\ticon = t.ItemErrorIcon\n\t\t\t\tif state.Error != nil {\n\t\t\t\t\tdescription = t.S().Subtle.Render(fmt.Sprintf(\"error: %s\", state.Error.Error()))\n\t\t\t\t} else {\n\t\t\t\t\tdescription = t.S().Subtle.Render(\"error\")\n\t\t\t\t}\n\t\t\t}\n\t\t} else if l.MCP.Disabled {\n\t\t\tdescription = t.S().Subtle.Render(\"disabled\")\n\t\t}\n\n\t\tmcpList = append(mcpList,\n\t\t\tcore.Status(\n\t\t\t\tcore.StatusOpts{\n\t\t\t\t\tIcon:         icon.String(),\n\t\t\t\t\tTitle:        l.Name,\n\t\t\t\t\tDescription:  description,\n\t\t\t\t\tExtraContent: strings.Join(extraContent, \" \"),\n\t\t\t\t},\n\t\t\t\topts.MaxWidth,\n\t\t\t),\n\t\t)\n\t}\n\n\treturn mcpList\n}\n\n// RenderMCPBlock renders a complete MCP block with optional truncation indicator.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RenderMCPBlock_106": {
+      "name": "RenderMCPBlock",
+      "type": "function",
+      "start_line": 106,
+      "end_line": 130,
+      "content_hash": "9e20dda9640d8fdb1008cc9e217560573ee94bef",
+      "content": "func RenderMCPBlock(opts RenderOptions, showTruncationIndicator bool) string {\n\tt := styles.CurrentTheme()\n\tmcpList := RenderMCPList(opts)\n\n\t// Add truncation indicator if needed\n\tif showTruncationIndicator && opts.MaxItems > 0 {\n\t\tmcps := config.Get().MCP.Sorted()\n\t\tif len(mcps) > opts.MaxItems {\n\t\t\tremaining := len(mcps) - opts.MaxItems\n\t\t\tif remaining == 1 {\n\t\t\t\tmcpList = append(mcpList, t.S().Base.Foreground(t.FgMuted).Render(\"\u2026\"))\n\t\t\t} else {\n\t\t\t\tmcpList = append(mcpList,\n\t\t\t\t\tt.S().Base.Foreground(t.FgSubtle).Render(fmt.Sprintf(\"\u2026and %d more\", remaining)),\n\t\t\t\t)\n\t\t\t}\n\t\t}\n\t}\n\n\tcontent := lipgloss.JoinVertical(lipgloss.Left, mcpList...)\n\tif opts.MaxWidth > 0 {\n\t\treturn lipgloss.NewStyle().Width(opts.MaxWidth).Render(content)\n\t}\n\treturn content\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

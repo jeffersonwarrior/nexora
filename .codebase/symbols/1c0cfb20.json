@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/mcp/prompts.go",
+  "file_hash": "4fd5669a437287158c7c7c1577ff0f27a3f2f5c1",
+  "updated_at": "2025-12-26T17:34:23.451194",
+  "symbols": {
+    "function_Prompts_17": {
+      "name": "Prompts",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 21,
+      "content_hash": "5c7bb3d4b92fc5e71269ab5225503571f6b25c1f",
+      "content": "func Prompts() iter.Seq2[string, []*Prompt] {\n\treturn allPrompts.Seq2()\n}\n\n// GetPromptMessages retrieves the content of an MCP prompt with the given arguments.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetPromptMessages_22": {
+      "name": "GetPromptMessages",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 48,
+      "content_hash": "a750e0202f7d2db5a33221a411e5003e49acc4ba",
+      "content": "func GetPromptMessages(ctx context.Context, clientName, promptName string, args map[string]string) ([]string, error) {\n\tc, err := getOrRenewClient(ctx, clientName)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tresult, err := c.GetPrompt(ctx, &mcp.GetPromptParams{\n\t\tName:      promptName,\n\t\tArguments: args,\n\t})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tvar messages []string\n\tfor _, msg := range result.Messages {\n\t\tif msg.Role != \"user\" {\n\t\t\tcontinue\n\t\t}\n\t\tif textContent, ok := msg.Content.(*mcp.TextContent); ok {\n\t\t\tmessages = append(messages, textContent.Text)\n\t\t}\n\t}\n\treturn messages, nil\n}\n\n// RefreshPrompts gets the updated list of prompts from the MCP and updates the\n// global state.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RefreshPrompts_49": {
+      "name": "RefreshPrompts",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 68,
+      "content_hash": "d3775843c478141cf978c71749428012c7bacff2",
+      "content": "func RefreshPrompts(ctx context.Context, name string) {\n\tsession, ok := sessions.Get(name)\n\tif !ok {\n\t\tslog.Warn(\"refresh prompts: no session\", \"name\", name)\n\t\treturn\n\t}\n\n\tprompts, err := getPrompts(ctx, session)\n\tif err != nil {\n\t\tupdateState(name, StateError, err, nil, Counts{})\n\t\treturn\n\t}\n\n\tupdatePrompts(name, prompts)\n\n\tprev, _ := states.Get(name)\n\tprev.Counts.Prompts = len(prompts)\n\tupdateState(name, StateConnected, nil, session, prev.Counts)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getPrompts_69": {
+      "name": "getPrompts",
+      "type": "function",
+      "start_line": 69,
+      "end_line": 80,
+      "content_hash": "c3555fcbd24d0913ef808af72a780bc521b9da19",
+      "content": "func getPrompts(ctx context.Context, c *mcp.ClientSession) ([]*Prompt, error) {\n\tif c.InitializeResult().Capabilities.Prompts == nil {\n\t\treturn nil, nil\n\t}\n\tresult, err := c.ListPrompts(ctx, &mcp.ListPromptsParams{})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn result.Prompts, nil\n}\n\n// updatePrompts updates the global mcpPrompts and mcpClient2Prompts maps",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_updatePrompts_81": {
+      "name": "updatePrompts",
+      "type": "function",
+      "start_line": 81,
+      "end_line": 87,
+      "content_hash": "ffc5d23ccd10a3ba0dfff4c54243da3dd3b7ed5c",
+      "content": "func updatePrompts(mcpName string, prompts []*Prompt) {\n\tif len(prompts) == 0 {\n\t\tallPrompts.Del(mcpName)\n\t\treturn\n\t}\n\tallPrompts.Set(mcpName, prompts)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

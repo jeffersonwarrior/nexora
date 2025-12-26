@@ -1,0 +1,260 @@
+{
+  "file_path": "/work/sdk/mistral/chat.go",
+  "file_hash": "9399d6de060358cde307abe7329135d3ca9149d4",
+  "updated_at": "2025-12-26T17:34:20.736104",
+  "symbols": {
+    "method_CreateChatCompletion_12": {
+      "name": "CreateChatCompletion",
+      "type": "method",
+      "start_line": 12,
+      "end_line": 28,
+      "content_hash": "0ed6745dca6be9f58a076122e30e99cd91bbd203",
+      "content": "func (c *Client) CreateChatCompletion(ctx context.Context, req *ChatCompletionRequest) (*ChatCompletionResponse, error) {\n\tif req.Stream != nil && *req.Stream {\n\t\treturn nil, fmt.Errorf(\"use CreateChatCompletionStream for streaming requests\")\n\t}\n\n\tstream := false\n\treq.Stream = &stream\n\n\tvar resp ChatCompletionResponse\n\tif err := c.doRequest(ctx, \"POST\", \"/chat/completions\", req, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n\n// CreateChatCompletionStream creates a streaming chat completion",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateChatCompletionStream_29": {
+      "name": "CreateChatCompletionStream",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 73,
+      "content_hash": "fe2cd5b729bb41db612d6c92cbe5b3629da6b560",
+      "content": "func (c *Client) CreateChatCompletionStream(ctx context.Context, req *ChatCompletionRequest) (<-chan *CompletionChunk, error) {\n\tstream := true\n\treq.Stream = &stream\n\n\tresp, err := c.doRawRequest(ctx, \"POST\", \"/chat/completions\", req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tch := make(chan *CompletionChunk)\n\tgo func() {\n\t\tdefer resp.Body.Close()\n\t\tdefer close(ch)\n\n\t\tscanner := bufio.NewScanner(resp.Body)\n\t\tfor scanner.Scan() {\n\t\t\tline := scanner.Text()\n\n\t\t\t// Skip empty lines and SSE format prefixes\n\t\t\tif line == \"\" || !strings.HasPrefix(line, \"data: \") {\n\t\t\t\tcontinue\n\t\t\t}\n\n\t\t\t// Remove \"data: \" prefix\n\t\t\tdata := strings.TrimPrefix(line, \"data: \")\n\n\t\t\t// Check for [DONE] marker\n\t\t\tif data == \"[DONE]\" {\n\t\t\t\tbreak\n\t\t\t}\n\n\t\t\tvar chunk CompletionEvent\n\t\t\tif err := json.Unmarshal([]byte(data), &chunk); err != nil {\n\t\t\t\tfmt.Printf(\"Error parsing chunk: %v\\n\", err)\n\t\t\t\tcontinue\n\t\t\t}\n\n\t\t\tch <- &chunk.Data\n\t\t}\n\t}()\n\n\treturn ch, nil\n}\n\n// ValidateChatCompletionRequest validates a chat completion request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ValidateChatCompletionRequest_74": {
+      "name": "ValidateChatCompletionRequest",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 142,
+      "content_hash": "b1cfaea3b52ba8b7d2f1847f9c0ddd18498e261a",
+      "content": "func ValidateChatCompletionRequest(req *ChatCompletionRequest) error {\n\tif req.Model == \"\" {\n\t\treturn fmt.Errorf(\"model is required\")\n\t}\n\n\tif len(req.Messages) == 0 {\n\t\treturn fmt.Errorf(\"at least one message is required\")\n\t}\n\n\tif req.MaxTokens != nil && *req.MaxTokens < 0 {\n\t\treturn fmt.Errorf(\"max_tokens must be non-negative\")\n\t}\n\n\tif req.MinTokens != nil && *req.MinTokens < 0 {\n\t\treturn fmt.Errorf(\"min_tokens must be non-negative\")\n\t}\n\n\tif req.Temperature != nil {\n\t\tif *req.Temperature < 0 || *req.Temperature > 1.5 {\n\t\t\treturn fmt.Errorf(\"temperature must be between 0 and 1.5\")\n\t\t}\n\t}\n\n\tif req.TopP != nil {\n\t\tif *req.TopP < 0 || *req.TopP > 1 {\n\t\t\treturn fmt.Errorf(\"top_p must be between 0 and 1\")\n\t\t}\n\t}\n\n\tif req.RandomSeed != nil && *req.RandomSeed < 0 {\n\t\treturn fmt.Errorf(\"random_seed must be non-negative\")\n\t}\n\n\t// Validate messages\n\tfor i, msg := range req.Messages {\n\t\tswitch m := msg.(type) {\n\t\tcase string:\n\t\t\tcontinue\n\t\tcase map[string]interface{}:\n\t\t\tvar role string\n\t\t\tif r, ok := m[\"role\"].(string); !ok {\n\t\t\t\treturn fmt.Errorf(\"message %d: role is required\", i)\n\t\t\t} else {\n\t\t\t\trole = r\n\t\t\t}\n\n\t\t\tif role != \"system\" && role != \"user\" && role != \"assistant\" && role != \"tool\" {\n\t\t\t\treturn fmt.Errorf(\"message %d: invalid role: %s\", i, role)\n\t\t\t}\n\n\t\t\tif _, ok := m[\"content\"]; !ok {\n\t\t\t\treturn fmt.Errorf(\"message %d: content is required\", i)\n\t\t\t}\n\n\t\t\t// Tool messages must have tool_call_id\n\t\t\tif role == \"tool\" {\n\t\t\t\tif _, ok := m[\"tool_call_id\"]; !ok {\n\t\t\t\t\treturn fmt.Errorf(\"message %d: tool messages must have tool_call_id\", i)\n\t\t\t\t}\n\t\t\t}\n\t\tdefault:\n\t\t\treturn fmt.Errorf(\"message %d: invalid message type\", i)\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// CreateChatCompletionRequestWithDefaults creates a new chat completion request with sensible defaults",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CreateChatCompletionRequestWithDefaults_143": {
+      "name": "CreateChatCompletionRequestWithDefaults",
+      "type": "function",
+      "start_line": 143,
+      "end_line": 159,
+      "content_hash": "e82bd8618dfe77754b464704a279d410e46515c2",
+      "content": "func CreateChatCompletionRequestWithDefaults(model string, messages []interface{}) *ChatCompletionRequest {\n\ttemperature := 0.7\n\ttopP := 1.0\n\tstream := false\n\tsafePrompt := false\n\n\treturn &ChatCompletionRequest{\n\t\tModel:       model,\n\t\tMessages:    messages,\n\t\tTemperature: &temperature,\n\t\tTopP:        &topP,\n\t\tStream:      &stream,\n\t\tSafePrompt:  &safePrompt,\n\t}\n}\n\n// AddSystemMessage adds a system message to the request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddSystemMessage_160": {
+      "name": "AddSystemMessage",
+      "type": "method",
+      "start_line": 160,
+      "end_line": 168,
+      "content_hash": "027bef8afc275e25cfd4432c5a0d870b380fb450",
+      "content": "func (req *ChatCompletionRequest) AddSystemMessage(content string) {\n\tmsg := SystemMessage{\n\t\tContent: content,\n\t\tRole:    \"system\",\n\t}\n\treq.Messages = append(req.Messages, msg)\n}\n\n// AddUserMessage adds a user message to the request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddUserMessage_169": {
+      "name": "AddUserMessage",
+      "type": "method",
+      "start_line": 169,
+      "end_line": 177,
+      "content_hash": "b90f901294c0325f2b482127e68cf494d6d0a9b7",
+      "content": "func (req *ChatCompletionRequest) AddUserMessage(content string) {\n\tmsg := UserMessage{\n\t\tContent: content,\n\t\tRole:    \"user\",\n\t}\n\treq.Messages = append(req.Messages, msg)\n}\n\n// AddAssistantMessage adds an assistant message to the request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddAssistantMessage_178": {
+      "name": "AddAssistantMessage",
+      "type": "method",
+      "start_line": 178,
+      "end_line": 187,
+      "content_hash": "01ea48932681a980e7a4743848a79a31462d922c",
+      "content": "func (req *ChatCompletionRequest) AddAssistantMessage(content string) {\n\tmsg := AssistantMessage{\n\t\tContent: &content,\n\t\tRole:    \"assistant\",\n\t\tPrefix:  false,\n\t}\n\treq.Messages = append(req.Messages, msg)\n}\n\n// AddToolMessage adds a tool message to the request",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddToolMessage_188": {
+      "name": "AddToolMessage",
+      "type": "method",
+      "start_line": 188,
+      "end_line": 197,
+      "content_hash": "a31399d21bcdaf1694a5a3673498e2e4596e1adb",
+      "content": "func (req *ChatCompletionRequest) AddToolMessage(content, toolCallID string) {\n\tmsg := ToolMessage{\n\t\tContent:    content,\n\t\tToolCallID: &toolCallID,\n\t\tRole:       \"tool\",\n\t}\n\treq.Messages = append(req.Messages, msg)\n}\n\n// EnableJSONMode enables JSON output mode",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_EnableJSONMode_198": {
+      "name": "EnableJSONMode",
+      "type": "method",
+      "start_line": 198,
+      "end_line": 206,
+      "content_hash": "fdccda3d71039b75d0e5db8d193b854429032c4f",
+      "content": "func (req *ChatCompletionRequest) EnableJSONMode() {\n\ttextFormat := \"text\"\n\tresponseFormat := ResponseFormat{\n\t\tType: textFormat,\n\t}\n\treq.ResponseFormat = &responseFormat\n}\n\n// EnableJSONSchemaMode enables JSON schema mode",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_EnableJSONSchemaMode_207": {
+      "name": "EnableJSONSchemaMode",
+      "type": "method",
+      "start_line": 207,
+      "end_line": 219,
+      "content_hash": "e5f5be2628596e50e1d657b00b7ef0b2d5a83b92",
+      "content": "func (req *ChatCompletionRequest) EnableJSONSchemaMode(name string, description string, schema map[string]interface{}, strict bool) {\n\tresponseFormat := ResponseFormat{\n\t\tType: \"json_schema\",\n\t\tJSONSchema: &JSONSchema{\n\t\t\tName:        name,\n\t\t\tDescription: description,\n\t\t\tSchema:      schema,\n\t\t\tStrict:      strict,\n\t\t},\n\t}\n\treq.ResponseFormat = &responseFormat\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setMaxTokens_220": {
+      "name": "setMaxTokens",
+      "type": "method",
+      "start_line": 220,
+      "end_line": 223,
+      "content_hash": "21131e61d6a1d3c6944b290a4700257967b982d3",
+      "content": "func (req *ChatCompletionRequest) setMaxTokens(max int) {\n\treq.MaxTokens = &max\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setMinTokens_224": {
+      "name": "setMinTokens",
+      "type": "method",
+      "start_line": 224,
+      "end_line": 227,
+      "content_hash": "48fd68c840f840bf180c997d19faddbd14674d8b",
+      "content": "func (req *ChatCompletionRequest) setMinTokens(min int) {\n\treq.MinTokens = &min\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setTemperature_228": {
+      "name": "setTemperature",
+      "type": "method",
+      "start_line": 228,
+      "end_line": 231,
+      "content_hash": "0d6d575fc6c04bec2a251a474b3c01c8f7615cd0",
+      "content": "func (req *ChatCompletionRequest) setTemperature(temp float64) {\n\treq.Temperature = &temp\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setTopP_232": {
+      "name": "setTopP",
+      "type": "method",
+      "start_line": 232,
+      "end_line": 235,
+      "content_hash": "aaa70663dc7b1223ef8668b094c7053fc84637a2",
+      "content": "func (req *ChatCompletionRequest) setTopP(p float64) {\n\treq.TopP = &p\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_enableStream_236": {
+      "name": "enableStream",
+      "type": "method",
+      "start_line": 236,
+      "end_line": 240,
+      "content_hash": "0db10d8398c6ab116a1f2351ef9f5493362b1a3d",
+      "content": "func (req *ChatCompletionRequest) enableStream() {\n\tstream := true\n\treq.Stream = &stream\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setSafePrompt_241": {
+      "name": "setSafePrompt",
+      "type": "method",
+      "start_line": 241,
+      "end_line": 244,
+      "content_hash": "ce47ca59b9d79d83b9a7811683bdfbdf105c420a",
+      "content": "func (req *ChatCompletionRequest) setSafePrompt(enable bool) {\n\treq.SafePrompt = &enable\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setRandomSeed_245": {
+      "name": "setRandomSeed",
+      "type": "method",
+      "start_line": 245,
+      "end_line": 248,
+      "content_hash": "e811cfbf153b96ccb2e56109466c21d68cc6368b",
+      "content": "func (req *ChatCompletionRequest) setRandomSeed(seed int) {\n\treq.RandomSeed = &seed\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setStop_249": {
+      "name": "setStop",
+      "type": "method",
+      "start_line": 249,
+      "end_line": 252,
+      "content_hash": "aaf5a6ec14ba9593c4d9e2431d1f62d6631ce9fb",
+      "content": "func (req *ChatCompletionRequest) setStop(stop []string) {\n\treq.Stop = stop\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_addTool_253": {
+      "name": "addTool",
+      "type": "method",
+      "start_line": 253,
+      "end_line": 259,
+      "content_hash": "88dbecd59cd3683be5e416e063b966dd64648a7e",
+      "content": "func (req *ChatCompletionRequest) addTool(tool Tool) {\n\tif req.Tools == nil {\n\t\treq.Tools = []Tool{}\n\t}\n\treq.Tools = append(req.Tools, tool)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setToolChoice_260": {
+      "name": "setToolChoice",
+      "type": "method",
+      "start_line": 260,
+      "end_line": 263,
+      "content_hash": "7ff9c36a93e55542fd731a2b5c645259808e6c36",
+      "content": "func (req *ChatCompletionRequest) setToolChoice(choice interface{}) {\n\treq.ToolChoice = choice\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setPresencePenalty_264": {
+      "name": "setPresencePenalty",
+      "type": "method",
+      "start_line": 264,
+      "end_line": 267,
+      "content_hash": "a014332b27dacc5b5920aaaf104513015df5557a",
+      "content": "func (req *ChatCompletionRequest) setPresencePenalty(penalty float64) {\n\treq.PresencePenalty = &penalty\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setFrequencyPenalty_268": {
+      "name": "setFrequencyPenalty",
+      "type": "method",
+      "start_line": 268,
+      "end_line": 271,
+      "content_hash": "46873cfd327cf4ba4e8af3807328a6534d86ca13",
+      "content": "func (req *ChatCompletionRequest) setFrequencyPenalty(penalty float64) {\n\treq.FrequencyPenalty = &penalty\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setN_272": {
+      "name": "setN",
+      "type": "method",
+      "start_line": 272,
+      "end_line": 274,
+      "content_hash": "f27f46f5bdd6da5e3fd7f003121e419960c9e4f8",
+      "content": "func (req *ChatCompletionRequest) setN(n int) {\n\treq.N = &n\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

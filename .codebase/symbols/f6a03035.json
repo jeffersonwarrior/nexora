@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/context-engine/scripts/hybrid/config.py",
+  "file_hash": "8bdd9ae5591c9b0fad2f0dbdf1c6f167bda5421b",
+  "updated_at": "2025-12-26T17:34:21.501426",
+  "symbols": {
+    "function__safe_int_33": {
+      "name": "_safe_int",
+      "type": "function",
+      "start_line": 33,
+      "end_line": 40,
+      "content_hash": "7e820903c34e0524c9ffcf2f97c66e663d13a204",
+      "content": "def _safe_int(val: Any, default: int) -> int:\n    \"\"\"Safely parse an integer from a value, returning default on failure.\"\"\"\n    try:\n        if val is None or (isinstance(val, str) and val.strip() == \"\"):\n            return default\n        return int(val)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__safe_float_43": {
+      "name": "_safe_float",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 50,
+      "content_hash": "28cc47896e21bc3e5f82d73fcc3a7f6d7078a779",
+      "content": "def _safe_float(val: Any, default: float) -> float:\n    \"\"\"Safely parse a float from a value, returning default on failure.\"\"\"\n    try:\n        if val is None or (isinstance(val, str) and val.strip() == \"\"):\n            return default\n        return float(val)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__env_truthy_53": {
+      "name": "_env_truthy",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 57,
+      "content_hash": "0717aaa69d9d8d1a1386e5079a23e5e4c3b54041",
+      "content": "def _env_truthy(val: str | None, default: bool) -> bool:\n    \"\"\"Check if an environment variable value is truthy.\"\"\"\n    if val is None:\n        return default\n    return val.strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_micro_defaults_135": {
+      "name": "_get_micro_defaults",
+      "type": "function",
+      "start_line": 135,
+      "end_line": 155,
+      "content_hash": "751f47659b754e148b2ecb2dc9a46f2d5c7461e6",
+      "content": "def _get_micro_defaults() -> tuple[int, int, int, int]:\n    \"\"\"Return (max_spans, merge_lines, budget_tokens, tokens_per_line) based on runtime and micro chunk mode.\n\n    Budget tokens floor is 5000 to ensure context_answer has enough context for quality answers.\n    \"\"\"\n    micro_enabled = os.environ.get(\"INDEX_MICRO_CHUNKS\", \"1\").strip().lower() in {\"1\", \"true\", \"yes\", \"on\"}\n\n    try:\n        from scripts.refrag_glm import detect_glm_runtime\n        is_glm = detect_glm_runtime()\n    except ImportError:\n        is_glm = False\n\n    if is_glm:\n        if micro_enabled:\n            return (24, 6, 8192, 32)\n        else:\n            return (12, 4, 6000, 32)\n    else:\n        # Non-GLM: still need reasonable budget for quality context_answer\n        return (8, 4, 5000, 32)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__collection_178": {
+      "name": "_collection",
+      "type": "function",
+      "start_line": 178,
+      "end_line": 201,
+      "content_hash": "ffe58000891b9c876a3844b0212a50c5e0ae552c",
+      "content": "def _collection(collection_name: str | None = None) -> str:\n    \"\"\"Determine collection name with priority: CLI arg > env > workspace state > default.\"\"\"\n    if collection_name and collection_name.strip():\n        return collection_name.strip()\n\n    env_coll = os.environ.get(\"COLLECTION_NAME\", \"\").strip()\n    if env_coll:\n        return env_coll\n\n    try:\n        import json\n        workspace_root = Path(os.environ.get(\"WORKSPACE_PATH\") or os.environ.get(\"WATCH_ROOT\") or \"/work\")\n        state_file = workspace_root / \".codebase\" / \"state.json\"\n        if state_file.exists():\n            with open(state_file, \"r\", encoding=\"utf-8\") as f:\n                state = json.load(f)\n            if isinstance(state, dict):\n                coll = state.get(\"qdrant_collection\")\n                if isinstance(coll, str) and coll.strip():\n                    return coll.strip()\n    except Exception:\n        pass\n\n    return \"codebase\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/hybrid/qdrant.py",
+  "file_hash": "7e03dd4d504ec5fa555cd32e8333e5f8f58b5906",
+  "updated_at": "2025-12-26T17:34:24.412343",
+  "symbols": {
+    "function__safe_int_45": {
+      "name": "_safe_int",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 51,
+      "content_hash": "421338f8f5a7d4ee0ad4a57abcf6c27eabc6780f",
+      "content": "def _safe_int(val: Any, default: int) -> int:\n    try:\n        if val is None or (isinstance(val, str) and val.strip() == \"\"):\n            return default\n        return int(val)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__safe_float_54": {
+      "name": "_safe_float",
+      "type": "function",
+      "start_line": 54,
+      "end_line": 60,
+      "content_hash": "c6194722f9add608e9717824ee4532406090d6fb",
+      "content": "def _safe_float(val: Any, default: float) -> float:\n    try:\n        if val is None or (isinstance(val, str) and val.strip() == \"\"):\n            return default\n        return float(val)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_qdrant_client_87": {
+      "name": "get_qdrant_client",
+      "type": "function",
+      "start_line": 87,
+      "end_line": 96,
+      "content_hash": "3143e6768a89016db4f343eebda7834476f78316",
+      "content": "    def get_qdrant_client(url=None, api_key=None, force_new=False, use_pool=True):\n        \"\"\"Fallback client creation when pooling is unavailable.\"\"\"\n        if QdrantClient is None:\n            raise ImportError(\n                \"qdrant_client is not installed. Install with: pip install qdrant-client\"\n            )\n        return QdrantClient(\n            url=url or os.environ.get(\"QDRANT_URL\", \"http://localhost:6333\"),\n            api_key=api_key or os.environ.get(\"QDRANT_API_KEY\")\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_return_qdrant_client_98": {
+      "name": "return_qdrant_client",
+      "type": "function",
+      "start_line": 98,
+      "end_line": 100,
+      "content_hash": "fe5c6eb5c31f0ff63a60630e6c3b1629cc1f4714",
+      "content": "    def return_qdrant_client(client):\n        \"\"\"No-op when pooling is unavailable.\"\"\"\n        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_pooled_qdrant_client_102": {
+      "name": "pooled_qdrant_client",
+      "type": "class",
+      "start_line": 102,
+      "end_line": 114,
+      "content_hash": "6acdb84365151da5509b3ccbb0962dbc970ecbef",
+      "content": "    class pooled_qdrant_client:\n        \"\"\"Fallback context manager when pooling is unavailable.\"\"\"\n        def __init__(self, url=None, api_key=None):\n            self.url = url\n            self.api_key = api_key\n            self.client = None\n\n        def __enter__(self):\n            self.client = get_qdrant_client(self.url, self.api_key)\n            return self.client\n\n        def __exit__(self, exc_type, exc_val, exc_tb):\n            return_qdrant_client(self.client)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___104": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 107,
+      "content_hash": "55c0333614948da95e1a056d9e05957c17d6a51a",
+      "content": "        def __init__(self, url=None, api_key=None):\n            self.url = url\n            self.api_key = api_key\n            self.client = None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___enter___109": {
+      "name": "__enter__",
+      "type": "method",
+      "start_line": 109,
+      "end_line": 111,
+      "content_hash": "9437025c154576c38b4683f9bca769af7c1b2bff",
+      "content": "        def __enter__(self):\n            self.client = get_qdrant_client(self.url, self.api_key)\n            return self.client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___exit___113": {
+      "name": "__exit__",
+      "type": "method",
+      "start_line": 113,
+      "end_line": 114,
+      "content_hash": "a02b6b1f509a403b9bc68944a02f0e1aeffaef46",
+      "content": "        def __exit__(self, exc_type, exc_val, exc_tb):\n            return_qdrant_client(self.client)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_query_executor_125": {
+      "name": "_get_query_executor",
+      "type": "function",
+      "start_line": 125,
+      "end_line": 132,
+      "content_hash": "3d06cbf86c14baff1317c784380693fc237d44c3",
+      "content": "def _get_query_executor(max_workers: int = 4) -> ThreadPoolExecutor:\n    \"\"\"Get or create a shared ThreadPoolExecutor for parallel queries.\"\"\"\n    global _QUERY_EXECUTOR\n    if _QUERY_EXECUTOR is None:\n        with _EXECUTOR_LOCK:\n            if _QUERY_EXECUTOR is None:\n                _QUERY_EXECUTOR = ThreadPoolExecutor(max_workers=max_workers)\n    return _QUERY_EXECUTOR",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__coerce_points_139": {
+      "name": "_coerce_points",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 148,
+      "content_hash": "9aa3a2c5419492830df2b220e89f387d9c8252b1",
+      "content": "def _coerce_points(result: Any) -> List[Any]:\n    \"\"\"Normalize Qdrant responses to a list of points.\"\"\"\n    if result is None:\n        return []\n    if isinstance(result, list):\n        return result\n    try:\n        return list(result)\n    except TypeError:\n        return [result]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__legacy_vector_search_155": {
+      "name": "_legacy_vector_search",
+      "type": "function",
+      "start_line": 155,
+      "end_line": 174,
+      "content_hash": "be3d9eb8322ca6a872ab7412a8017cb7679bc348",
+      "content": "def _legacy_vector_search(\n    client,\n    collection: str,\n    vec_name: str,\n    vector: List[float],\n    per_query: int,\n    flt,\n) -> List[Any]:\n    \"\"\"Fallback to legacy client.search when query_points is unavailable.\"\"\"\n    try:\n        result = client.search(\n            collection_name=collection,\n            query_vector={\"name\": vec_name, \"vector\": vector},\n            limit=per_query,\n            with_payload=True,\n            query_filter=flt,\n        )\n        return _coerce_points(getattr(result, \"points\", result))\n    except Exception:\n        return []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_client_endpoint_184": {
+      "name": "_get_client_endpoint",
+      "type": "function",
+      "start_line": 184,
+      "end_line": 193,
+      "content_hash": "d544e3a0b42a111fc826428e1173d0835add2c53",
+      "content": "def _get_client_endpoint(client) -> str:\n    \"\"\"Extract endpoint identifier from Qdrant client for cache scoping.\"\"\"\n    try:\n        if hasattr(client, '_client') and hasattr(client._client, '_host'):\n            return f\"{client._client._host}:{getattr(client._client, '_port', 6333)}\"\n        if hasattr(client, 'rest_uri'):\n            return client.rest_uri\n        return os.environ.get(\"QDRANT_URL\", \"localhost:6333\")\n    except Exception:\n        return os.environ.get(\"QDRANT_URL\", \"localhost:6333\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ensure_collection_196": {
+      "name": "_ensure_collection",
+      "type": "function",
+      "start_line": 196,
+      "end_line": 209,
+      "content_hash": "b200728dd626f5f0869b4527b0825a0a5255004d",
+      "content": "def _ensure_collection(client, collection: str, dim: int, vec_name: str):\n    \"\"\"Cached wrapper for ensure_collection - only calls once per (endpoint, collection, vec_name) pair.\"\"\"\n    endpoint = _get_client_endpoint(client)\n    cache_key = f\"{endpoint}:{collection}:{vec_name}:{dim}\"\n    if cache_key in _ENSURED_COLLECTIONS:\n        return\n\n    try:\n        from scripts.ingest_code import ensure_collection as _ensure_collection_raw\n        _ensure_collection_raw(client, collection, dim, vec_name)\n    except ImportError:\n        pass\n\n    _ENSURED_COLLECTIONS.add(cache_key)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_clear_ensured_collections_212": {
+      "name": "clear_ensured_collections",
+      "type": "function",
+      "start_line": 212,
+      "end_line": 215,
+      "content_hash": "1087562708e7803b5ed8b9d47af3d9f2182db9d3",
+      "content": "def clear_ensured_collections():\n    \"\"\"Clear the collection cache (useful for testing).\"\"\"\n    global _ENSURED_COLLECTIONS\n    _ENSURED_COLLECTIONS = set()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__collection_222": {
+      "name": "_collection",
+      "type": "function",
+      "start_line": 222,
+      "end_line": 245,
+      "content_hash": "ffe58000891b9c876a3844b0212a50c5e0ae552c",
+      "content": "def _collection(collection_name: str | None = None) -> str:\n    \"\"\"Determine collection name with priority: CLI arg > env > workspace state > default.\"\"\"\n    if collection_name and collection_name.strip():\n        return collection_name.strip()\n\n    env_coll = os.environ.get(\"COLLECTION_NAME\", \"\").strip()\n    if env_coll:\n        return env_coll\n\n    try:\n        import json\n        workspace_root = Path(os.environ.get(\"WORKSPACE_PATH\") or os.environ.get(\"WATCH_ROOT\") or \"/work\")\n        state_file = workspace_root / \".codebase\" / \"state.json\"\n        if state_file.exists():\n            with open(state_file, \"r\", encoding=\"utf-8\") as f:\n                state = json.load(f)\n            if isinstance(state, dict):\n                coll = state.get(\"qdrant_collection\")\n                if isinstance(coll, str) and coll.strip():\n                    return coll.strip()\n    except Exception:\n        pass\n\n    return \"codebase\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__sanitize_filter_obj_257": {
+      "name": "_sanitize_filter_obj",
+      "type": "function",
+      "start_line": 257,
+      "end_line": 295,
+      "content_hash": "05f898e6d7690ecbfb8ebb0ecc1a1cf0ca51ae21",
+      "content": "def _sanitize_filter_obj(flt):\n    \"\"\"Sanitize Qdrant filter objects so we never send an empty filter {}.\n    \n    Qdrant returns 400 if filter has no conditions; return None in that case.\n    Uses caching for repeated filter patterns to avoid redundant validation.\n    \"\"\"\n    if flt is None:\n        return None\n\n    cache_key = id(flt)\n    with _FILTER_CACHE_LOCK:\n        if cache_key in _FILTER_CACHE:\n            return _FILTER_CACHE[cache_key]\n\n    try:\n        must = getattr(flt, \"must\", None)\n        should = getattr(flt, \"should\", None)\n        must_not = getattr(flt, \"must_not\", None)\n        if must is None and should is None and must_not is None:\n            if isinstance(flt, dict):\n                m = [c for c in (flt.get(\"must\") or []) if c is not None]\n                s = [c for c in (flt.get(\"should\") or []) if c is not None]\n                mn = [c for c in (flt.get(\"must_not\") or []) if c is not None]\n                result = None if (not m and not s and not mn) else flt\n            else:\n                result = None\n        else:\n            m = [c for c in (must or []) if c is not None]\n            s = [c for c in (should or []) if c is not None]\n            mn = [c for c in (must_not or []) if c is not None]\n            result = None if (not m and not s and not mn) else flt\n    except Exception:\n        result = None\n\n    with _FILTER_CACHE_LOCK:\n        if len(_FILTER_CACHE) < _FILTER_CACHE_MAX:\n            _FILTER_CACHE[cache_key] = result\n\n    return result",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__split_ident_lex_308": {
+      "name": "_split_ident_lex",
+      "type": "function",
+      "start_line": 308,
+      "end_line": 317,
+      "content_hash": "1d8a335c7773458403ba8e22ddf2898e95acd850",
+      "content": "def _split_ident_lex(s: str) -> List[str]:\n    \"\"\"Split identifier into tokens (snake_case and camelCase aware).\"\"\"\n    parts = re.split(r\"[^A-Za-z0-9]+\", s)\n    out: List[str] = []\n    for p in parts:\n        if not p:\n            continue\n        segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n        out.extend([x for x in segs if x])\n    return [x.lower() for x in out if x and x.lower() not in _STOP]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_hash_vector_320": {
+      "name": "lex_hash_vector",
+      "type": "function",
+      "start_line": 320,
+      "end_line": 328,
+      "content_hash": "888030852822a6faa8555867656e9d07f216d80b",
+      "content": "def lex_hash_vector(phrases: List[str], dim: int | None = None) -> List[float]:\n    \"\"\"Generate dense lexical hash vector for query phrases.\"\"\"\n    if dim is None:\n        dim = LEX_VECTOR_DIM\n    try:\n        from scripts.utils import lex_hash_vector_queries as _lex_hash_vector_queries\n        return _lex_hash_vector_queries(phrases, dim)\n    except ImportError:\n        return _fallback_lex_hash_vector(phrases, dim)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__fallback_lex_hash_vector_331": {
+      "name": "_fallback_lex_hash_vector",
+      "type": "function",
+      "start_line": 331,
+      "end_line": 343,
+      "content_hash": "33e40995aeff03599b8b86591b62f047a310680e",
+      "content": "def _fallback_lex_hash_vector(phrases: List[str], dim: int) -> List[float]:\n    \"\"\"Fallback implementation when utils is unavailable.\"\"\"\n    import hashlib\n    vec = [0.0] * dim\n    for phrase in phrases:\n        for tok in _split_ident_lex(phrase):\n            h = int(hashlib.md5(tok.encode()).hexdigest(), 16)\n            idx = h % dim\n            vec[idx] += 1.0\n    norm = sum(v * v for v in vec) ** 0.5\n    if norm > 0:\n        vec = [v / norm for v in vec]\n    return vec",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_sparse_vector_346": {
+      "name": "lex_sparse_vector",
+      "type": "function",
+      "start_line": 346,
+      "end_line": 352,
+      "content_hash": "5fae009ce35ec04ca4a1a0ae053c9fc573a8b71b",
+      "content": "def lex_sparse_vector(phrases: List[str]) -> Dict[str, Any]:\n    \"\"\"Generate sparse vector for query phrases (lossless exact matching).\"\"\"\n    try:\n        from scripts.utils import lex_sparse_vector_queries as _lex_sparse_vector_queries\n        return _lex_sparse_vector_queries(phrases)\n    except ImportError:\n        return _fallback_lex_sparse_vector(phrases)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__fallback_lex_sparse_vector_355": {
+      "name": "_fallback_lex_sparse_vector",
+      "type": "function",
+      "start_line": 355,
+      "end_line": 368,
+      "content_hash": "02f88a7300779771d984966f43762b659d729cf2",
+      "content": "def _fallback_lex_sparse_vector(phrases: List[str]) -> Dict[str, Any]:\n    \"\"\"Fallback implementation when utils is unavailable.\"\"\"\n    import hashlib\n    indices = []\n    values = []\n    seen = set()\n    for phrase in phrases:\n        for tok in _split_ident_lex(phrase):\n            h = int(hashlib.md5(tok.encode()).hexdigest(), 16) % (2**31)\n            if h not in seen:\n                indices.append(h)\n                values.append(1.0)\n                seen.add(h)\n    return {\"indices\": indices, \"values\": values}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_query_375": {
+      "name": "lex_query",
+      "type": "function",
+      "start_line": 375,
+      "end_line": 447,
+      "content_hash": "39e927fe8168bbb6e7af6adaa6d7838500eabc71",
+      "content": "def lex_query(\n    client,\n    v: List[float],\n    flt,\n    per_query: int,\n    collection_name: str | None = None\n) -> List[Any]:\n    \"\"\"Query using dense lexical hash vector.\"\"\"\n    ef = max(EF_SEARCH, 32 + 4 * int(per_query))\n    flt = _sanitize_filter_obj(flt)\n    collection = _collection(collection_name)\n\n    try:\n        qp = client.query_points(\n            collection_name=collection,\n            query=v,\n            using=LEX_VECTOR_NAME,\n            query_filter=flt,\n            search_params=models.SearchParams(hnsw_ef=ef),\n            limit=per_query,\n            with_payload=True,\n        )\n        return _coerce_points(getattr(qp, \"points\", qp))\n    except TypeError:\n        if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n            logger.debug(\"QP_FILTER_KWARG_SWITCH\", extra={\"using\": LEX_VECTOR_NAME})\n        qp = client.query_points(\n            collection_name=collection,\n            query=v,\n            using=LEX_VECTOR_NAME,\n            filter=flt,\n            search_params=models.SearchParams(hnsw_ef=ef),\n            limit=per_query,\n            with_payload=True,\n        )\n        return _coerce_points(getattr(qp, \"points\", qp))\n    except AttributeError:\n        return _legacy_vector_search(client, collection, LEX_VECTOR_NAME, v, per_query, flt)\n    except Exception as e:\n        if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n            try:\n                logger.debug(\"QP_FILTER_DROP\", extra={\"using\": LEX_VECTOR_NAME, \"reason\": str(e)[:200]})\n            except Exception:\n                pass\n        try:\n            qp = client.query_points(\n                collection_name=collection,\n                query=v,\n                using=LEX_VECTOR_NAME,\n                query_filter=None,\n                search_params=models.SearchParams(hnsw_ef=ef),\n                limit=per_query,\n                with_payload=True,\n            )\n            return _coerce_points(getattr(qp, \"points\", qp))\n        except TypeError:\n            qp = client.query_points(\n                collection_name=collection,\n                query=v,\n                using=LEX_VECTOR_NAME,\n                filter=None,\n                search_params=models.SearchParams(hnsw_ef=ef),\n                limit=per_query,\n                with_payload=True,\n            )\n            return _coerce_points(getattr(qp, \"points\", qp))\n        except Exception as e2:\n            if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n                try:\n                    logger.debug(\"QP_FILTER_DROP_FAILED\", extra={\"using\": LEX_VECTOR_NAME, \"reason\": str(e2)[:200]})\n                except Exception:\n                    pass\n        return _legacy_vector_search(client, collection, LEX_VECTOR_NAME, v, per_query, flt)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sparse_lex_query_450": {
+      "name": "sparse_lex_query",
+      "type": "function",
+      "start_line": 450,
+      "end_line": 496,
+      "content_hash": "3f2838dcc9ca9f29a2af379c20d723cd820d016d",
+      "content": "def sparse_lex_query(\n    client,\n    sparse_vec: Dict[str, Any],\n    flt,\n    per_query: int,\n    collection_name: str | None = None\n) -> List[Any]:\n    \"\"\"Query using sparse lexical vector for lossless exact matching.\"\"\"\n    flt = _sanitize_filter_obj(flt)\n    collection = _collection(collection_name)\n\n    if not sparse_vec.get(\"indices\"):\n        return []\n\n    try:\n        qp = client.query_points(\n            collection_name=collection,\n            query=models.SparseVector(\n                indices=sparse_vec[\"indices\"],\n                values=sparse_vec[\"values\"],\n            ),\n            using=LEX_SPARSE_NAME,\n            query_filter=flt,\n            limit=per_query,\n            with_payload=True,\n        )\n        return _coerce_points(getattr(qp, \"points\", qp))\n    except TypeError:\n        try:\n            qp = client.query_points(\n                collection_name=collection,\n                query=models.SparseVector(\n                    indices=sparse_vec[\"indices\"],\n                    values=sparse_vec[\"values\"],\n                ),\n                using=LEX_SPARSE_NAME,\n                filter=flt,\n                limit=per_query,\n                with_payload=True,\n            )\n            return _coerce_points(getattr(qp, \"points\", qp))\n        except Exception:\n            return []\n    except Exception as e:\n        if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n            logger.debug(\"SPARSE_LEX_QUERY_ERROR\", extra={\"error\": str(e)[:200]})\n        return []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_dense_query_499": {
+      "name": "dense_query",
+      "type": "function",
+      "start_line": 499,
+      "end_line": 589,
+      "content_hash": "ec4211851948e4b5e4970a53df9c173b45b4994f",
+      "content": "def dense_query(\n    client,\n    vec_name: str,\n    v: List[float],\n    flt,\n    per_query: int,\n    collection_name: str | None = None,\n    query_text: str | None = None\n) -> List[Any]:\n    \"\"\"Query using dense embedding vector.\"\"\"\n    ef = max(EF_SEARCH, 32 + 4 * int(per_query))\n\n    # Apply dynamic EF optimization if query text provided\n    try:\n        from scripts.query_optimizer import optimize_query\n        if query_text and os.environ.get(\"QUERY_OPTIMIZER_ADAPTIVE\", \"1\") == \"1\":\n            result = optimize_query(query_text)\n            ef = result[\"recommended_ef\"]\n            if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n                logger.debug(f\"Dynamic EF: {ef} (complexity={result['complexity']}, type={result['query_type']})\")\n    except ImportError:\n        pass\n    except Exception as e:\n        if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n            logger.debug(f\"Query optimizer failed, using default EF: {e}\")\n\n    flt = _sanitize_filter_obj(flt)\n    collection = _collection(collection_name)\n\n    try:\n        qp = client.query_points(\n            collection_name=collection,\n            query=v,\n            using=vec_name,\n            query_filter=flt,\n            search_params=models.SearchParams(hnsw_ef=ef),\n            limit=per_query,\n            with_payload=True,\n        )\n        return _coerce_points(getattr(qp, \"points\", qp))\n    except TypeError:\n        if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n            logger.debug(\"QP_FILTER_KWARG_SWITCH\", extra={\"using\": vec_name})\n        qp = client.query_points(\n            collection_name=collection,\n            query=v,\n            using=vec_name,\n            filter=flt,\n            search_params=models.SearchParams(hnsw_ef=ef),\n            limit=per_query,\n            with_payload=True,\n        )\n        return _coerce_points(getattr(qp, \"points\", qp))\n    except Exception as e:\n        if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n            try:\n                logger.debug(\"QP_FILTER_DROP\", extra={\"using\": vec_name, \"reason\": str(e)[:200]})\n            except Exception:\n                pass\n        if not collection:\n            return _legacy_vector_search(client, _collection(), vec_name, v, per_query, flt)\n        try:\n            qp = client.query_points(\n                collection_name=collection,\n                query=v,\n                using=vec_name,\n                query_filter=None,\n                search_params=models.SearchParams(hnsw_ef=ef),\n                limit=per_query,\n                with_payload=True,\n            )\n            return _coerce_points(getattr(qp, \"points\", qp))\n        except TypeError:\n            try:\n                qp = client.query_points(\n                    collection_name=collection,\n                    query=v,\n                    using=vec_name,\n                    filter=None,\n                    search_params=models.SearchParams(hnsw_ef=ef),\n                    limit=per_query,\n                    with_payload=True,\n                )\n                return _coerce_points(getattr(qp, \"points\", qp))\n            except Exception as e2:\n                if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n                    try:\n                        logger.debug(\"QP_FILTER_DROP_FAILED\", extra={\"using\": vec_name, \"reason\": str(e2)[:200]})\n                    except Exception:\n                        pass\n        return _legacy_vector_search(client, collection, vec_name, v, per_query, flt)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/analyzer/methods/infer_expr_type.rs",
+  "file_hash": "3b3b6b3f4d8e07a53d0c5aae3abe14f064079095",
+  "updated_at": "2025-12-26T17:34:21.020296",
+  "symbols": {
+    "function_test_add_node_valid_1637": {
+      "name": "test_add_node_valid",
+      "type": "function",
+      "start_line": 1637,
+      "end_line": 1655,
+      "content_hash": "cbeb30925c13a1119a21655aefa1d5c0602466d9",
+      "content": "    fn test_add_node_valid() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY test(personName: String, personAge: U32) =>\n                person <- AddN<Person>({name: personName, age: personAge})\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.is_empty());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_node_undeclared_type_1656": {
+      "name": "test_add_node_undeclared_type",
+      "type": "function",
+      "start_line": 1656,
+      "end_line": 1678,
+      "content_hash": "2246686a25a7bcdce3658699bea28739deb52663",
+      "content": "    fn test_add_node_undeclared_type() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY test() =>\n                company <- AddN<Company>({name: \"Acme\"})\n                RETURN company\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E101));\n    }\n\n    // ============================================================================\n    // AddEdge Expression Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_edge_valid_1679": {
+      "name": "test_add_edge_valid",
+      "type": "function",
+      "start_line": 1679,
+      "end_line": 1700,
+      "content_hash": "458552899e431b9bf8dcfd0e69ec819e9901ea1a",
+      "content": "    fn test_add_edge_valid() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person }\n\n            QUERY test(id1: ID, id2: ID) =>\n                person1 <- N<Person>(id1)\n                person2 <- N<Person>(id2)\n                edge <- AddE<Knows>::From(person1)::To(person2)\n                RETURN edge\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.is_empty());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_edge_undeclared_type_1701": {
+      "name": "test_add_edge_undeclared_type",
+      "type": "function",
+      "start_line": 1701,
+      "end_line": 1723,
+      "content_hash": "7217d94ea11e3d910c96d6c1d61c426a5a82f339",
+      "content": "    fn test_add_edge_undeclared_type() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY test(id1: ID, id2: ID) =>\n                edge <- AddE<UndeclaredEdge>::From(id1)::To(id2)\n                RETURN edge\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E102));\n    }\n\n    // ============================================================================\n    // Array Literal Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_array_literal_homogeneous_1724": {
+      "name": "test_array_literal_homogeneous",
+      "type": "function",
+      "start_line": 1724,
+      "end_line": 1742,
+      "content_hash": "427b54c2ecd2a4f98e65a6d316aa2953b8a2c084",
+      "content": "    fn test_array_literal_homogeneous() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY test() =>\n                names <- [\"Alice\", \"Bob\", \"Charlie\"]\n                RETURN names\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.is_empty());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_array_literal_mixed_types_1743": {
+      "name": "test_array_literal_mixed_types",
+      "type": "function",
+      "start_line": 1743,
+      "end_line": 1765,
+      "content_hash": "e19b751cfeca9acffcbbb90f7f43ade55994f158",
+      "content": "    fn test_array_literal_mixed_types() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY test() =>\n                mixed <- [\"string\", 123]\n                RETURN mixed\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E306));\n    }\n\n    // ============================================================================\n    // Identifier Scope Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_identifier_in_scope_1766": {
+      "name": "test_identifier_in_scope",
+      "type": "function",
+      "start_line": 1766,
+      "end_line": 1785,
+      "content_hash": "1ccff2e2a920dded90766ff627dfcc04ec96c8b5",
+      "content": "    fn test_identifier_in_scope() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY test() =>\n                person <- N<Person>\n                samePerson <- person\n                RETURN samePerson\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.is_empty());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_identifier_out_of_scope_1786": {
+      "name": "test_identifier_out_of_scope",
+      "type": "function",
+      "start_line": 1786,
+      "end_line": 1808,
+      "content_hash": "b84a932c368159c46b653f1ab8433d26a4f5eedd",
+      "content": "    fn test_identifier_out_of_scope() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY test() =>\n                person <- unknownVariable\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E301));\n    }\n\n    // ============================================================================\n    // Creation with Type Mismatch Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_node_type_mismatch_1809": {
+      "name": "test_add_node_type_mismatch",
+      "type": "function",
+      "start_line": 1809,
+      "end_line": 1831,
+      "content_hash": "9e1b0d4c42becc74fb1ee279041fe9841ef59138",
+      "content": "    fn test_add_node_type_mismatch() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY test() =>\n                person <- AddN<Person>({name: \"Alice\", age: \"not a number\"})\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E205));\n    }\n\n    // ============================================================================\n    // Invalid Field Name Tests (E202)\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_node_invalid_field_name_1832": {
+      "name": "test_add_node_invalid_field_name",
+      "type": "function",
+      "start_line": 1832,
+      "end_line": 1850,
+      "content_hash": "07acc119002b99531ebe5e95cdb62164ce019740",
+      "content": "    fn test_add_node_invalid_field_name() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY test() =>\n                person <- AddN<Person>({name: \"Alice\", invalidField: 42})\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E202));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_node_invalid_field_with_identifier_1851": {
+      "name": "test_add_node_invalid_field_with_identifier",
+      "type": "function",
+      "start_line": 1851,
+      "end_line": 1869,
+      "content_hash": "4e4529811982b2f470e712ccf6cf6229d21cbec3",
+      "content": "    fn test_add_node_invalid_field_with_identifier() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY test(value: U32) =>\n                person <- AddN<Person>({name: \"Alice\", wrongField: value})\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E202));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_edge_invalid_field_name_1870": {
+      "name": "test_add_edge_invalid_field_name",
+      "type": "function",
+      "start_line": 1870,
+      "end_line": 1891,
+      "content_hash": "fbd5d809360063721f8476c264c50e3a78deca4b",
+      "content": "    fn test_add_edge_invalid_field_name() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person, Properties: { since: U32 } }\n\n            QUERY test(id1: ID, id2: ID) =>\n                person1 <- N<Person>(id1)\n                person2 <- N<Person>(id2)\n                edge <- AddE<Knows>({since: 2020, badField: 123})::From(person1)::To(person2)\n                RETURN edge\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E202));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_edge_invalid_field_with_identifier_1892": {
+      "name": "test_add_edge_invalid_field_with_identifier",
+      "type": "function",
+      "start_line": 1892,
+      "end_line": 1913,
+      "content_hash": "eed4281699f3057725a99c3c96cfbb9cb1642d20",
+      "content": "    fn test_add_edge_invalid_field_with_identifier() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person, Properties: { since: U32 } }\n\n            QUERY test(id1: ID, id2: ID, year: U32) =>\n                person1 <- N<Person>(id1)\n                person2 <- N<Person>(id2)\n                edge <- AddE<Knows>({invalidField: year})::From(person1)::To(person2)\n                RETURN edge\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E202));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_vector_invalid_field_name_1914": {
+      "name": "test_add_vector_invalid_field_name",
+      "type": "function",
+      "start_line": 1914,
+      "end_line": 1932,
+      "content_hash": "be7145d6915f0d8041632240ac5f56814f57c239",
+      "content": "    fn test_add_vector_invalid_field_name() {\n        let source = r#\"\n            V::Document { content: String, embedding: [F32] }\n\n            QUERY test(vec: [F32]) =>\n                doc <- AddV<Document>(vec, {content: \"test\", wrongField: \"bad\"})\n                RETURN doc\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E202));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_add_vector_invalid_field_with_identifier_1933": {
+      "name": "test_add_vector_invalid_field_with_identifier",
+      "type": "function",
+      "start_line": 1933,
+      "end_line": 1950,
+      "content_hash": "6ee52593ba543ba6e0e5ff1ba9a96c8e14b73d98",
+      "content": "    fn test_add_vector_invalid_field_with_identifier() {\n        let source = r#\"\n            V::Document { content: String, embedding: [F32] }\n\n            QUERY test(vec: [F32], text: String) =>\n                doc <- AddV<Document>(vec, {content: text, badField: \"invalid\"})\n                RETURN doc\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let parsed = HelixParser::parse_source(&content).unwrap();\n        let result = crate::helixc::analyzer::analyze(&parsed);\n\n        assert!(result.is_ok());\n        let (diagnostics, _) = result.unwrap();\n        assert!(diagnostics.iter().any(|d| d.error_code == ErrorCode::E202));\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

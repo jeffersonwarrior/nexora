@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/resources/monitor.go",
+  "file_hash": "ba123fa88c04e098ec40890d767c79e48a2c89df",
+  "updated_at": "2025-12-26T17:34:23.705737",
+  "symbols": {
+    "struct_Monitor_18": {
+      "name": "Monitor",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 40,
+      "content_hash": "c9626873ae21bfeada554193b79167d597ea1d56",
+      "content": "type Monitor struct {\n\tmu sync.RWMutex\n\n\t// Configuration\n\tconfig Config\n\n\t// State\n\trunning      bool\n\tcancel       context.CancelFunc\n\tviolations   []Violation\n\tlastSnapshot ResourceSnapshot\n\n\t// Callbacks\n\tonCPUHigh   func(usage float64)\n\tonMemHigh   func(usage uint64)\n\tonDiskLow   func(free uint64)\n\tonViolation func(v Violation)\n\n\t// State machine integration (optional)\n\tstateMachine *state.StateMachine\n}\n\n// Config defines resource monitoring configuration.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Config_41": {
+      "name": "Config",
+      "type": "struct",
+      "start_line": 41,
+      "end_line": 53,
+      "content_hash": "06131f22cd2b032f593b9b0a1b0dc25fe6ea6cad",
+      "content": "type Config struct {\n\t// Thresholds\n\tCPUThreshold  float64       // CPU usage percentage (0-100), default 80\n\tMemThreshold  float64       // Memory usage percentage (0-100), default 85\n\tDiskMinFree   uint64        // Minimum free disk space in bytes, default 5GB\n\tCheckInterval time.Duration // Check interval, default 5s\n\n\t// Actions\n\tEnableAutoPause bool // Pause agent on resource violation\n\tMaxViolations   int  // Max violations before halting, default 3\n}\n\n// DefaultConfig returns default monitoring configuration.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultConfig_54": {
+      "name": "DefaultConfig",
+      "type": "function",
+      "start_line": 54,
+      "end_line": 65,
+      "content_hash": "e87ce3233e156f074df94dbaa00c13c88e5822e4",
+      "content": "func DefaultConfig() Config {\n\treturn Config{\n\t\tCPUThreshold:    80.0,\n\t\tMemThreshold:    85.0,\n\t\tDiskMinFree:     5 * 1024 * 1024 * 1024, // 5GB\n\t\tCheckInterval:   5 * time.Second,\n\t\tEnableAutoPause: true,\n\t\tMaxViolations:   3,\n\t}\n}\n\n// NewMonitor creates a new resource monitor.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewMonitor_66": {
+      "name": "NewMonitor",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 89,
+      "content_hash": "5a5c0371385cabd17eade89af1bf45f94888d332",
+      "content": "func NewMonitor(config Config) *Monitor {\n\tif config.CheckInterval == 0 {\n\t\tconfig.CheckInterval = 5 * time.Second\n\t}\n\tif config.CPUThreshold == 0 {\n\t\tconfig.CPUThreshold = 80.0\n\t}\n\tif config.MemThreshold == 0 {\n\t\tconfig.MemThreshold = 85.0\n\t}\n\tif config.DiskMinFree == 0 {\n\t\tconfig.DiskMinFree = 5 * 1024 * 1024 * 1024\n\t}\n\tif config.MaxViolations == 0 {\n\t\tconfig.MaxViolations = 3\n\t}\n\n\treturn &Monitor{\n\t\tconfig:     config,\n\t\tviolations: make([]Violation, 0),\n\t}\n}\n\n// SetStateMachine sets the state machine for integration.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetStateMachine_90": {
+      "name": "SetStateMachine",
+      "type": "method",
+      "start_line": 90,
+      "end_line": 96,
+      "content_hash": "54a63d3226bc2d6b316c9e06cd07abbb8d129706",
+      "content": "func (m *Monitor) SetStateMachine(sm *state.StateMachine) {\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\tm.stateMachine = sm\n}\n\n// SetCallbacks sets resource violation callbacks.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetCallbacks_97": {
+      "name": "SetCallbacks",
+      "type": "method",
+      "start_line": 97,
+      "end_line": 112,
+      "content_hash": "847a565323c2ed3e1ce127feed26b04b004028a4",
+      "content": "func (m *Monitor) SetCallbacks(\n\tonCPUHigh func(float64),\n\tonMemHigh func(uint64),\n\tonDiskLow func(uint64),\n\tonViolation func(Violation),\n) {\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\tm.onCPUHigh = onCPUHigh\n\tm.onMemHigh = onMemHigh\n\tm.onDiskLow = onDiskLow\n\tm.onViolation = onViolation\n}\n\n// Start begins resource monitoring.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Start_113": {
+      "name": "Start",
+      "type": "method",
+      "start_line": 113,
+      "end_line": 137,
+      "content_hash": "8dd1ecd67ea2e3ea1d5aeeff7ef1e3ec9f4a5e4c",
+      "content": "func (m *Monitor) Start(ctx context.Context) error {\n\tm.mu.Lock()\n\tif m.running {\n\t\tm.mu.Unlock()\n\t\treturn nil\n\t}\n\n\tmonitorCtx, cancel := context.WithCancel(ctx)\n\tm.cancel = cancel\n\tm.running = true\n\tm.mu.Unlock()\n\n\tgo m.monitorLoop(monitorCtx)\n\n\tslog.Info(\"resource monitor started\",\n\t\t\"cpu_threshold\", m.config.CPUThreshold,\n\t\t\"mem_threshold\", m.config.MemThreshold,\n\t\t\"disk_min_free_gb\", float64(m.config.DiskMinFree)/(1024*1024*1024),\n\t\t\"check_interval\", m.config.CheckInterval,\n\t)\n\n\treturn nil\n}\n\n// Stop stops resource monitoring.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Stop_138": {
+      "name": "Stop",
+      "type": "method",
+      "start_line": 138,
+      "end_line": 154,
+      "content_hash": "c26061a8e8311d9fe9053345d5ff3b64bd448f6a",
+      "content": "func (m *Monitor) Stop() {\n\tm.mu.Lock()\n\tdefer m.mu.Unlock()\n\n\tif !m.running {\n\t\treturn\n\t}\n\n\tif m.cancel != nil {\n\t\tm.cancel()\n\t}\n\n\tm.running = false\n\tslog.Info(\"resource monitor stopped\")\n}\n\n// monitorLoop runs the monitoring loop.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_monitorLoop_155": {
+      "name": "monitorLoop",
+      "type": "method",
+      "start_line": 155,
+      "end_line": 169,
+      "content_hash": "63d18cffeaa06553212115c9e23246cfdfabe23b",
+      "content": "func (m *Monitor) monitorLoop(ctx context.Context) {\n\tticker := time.NewTicker(m.config.CheckInterval)\n\tdefer ticker.Stop()\n\n\tfor {\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\treturn\n\t\tcase <-ticker.C:\n\t\t\tm.check()\n\t\t}\n\t}\n}\n\n// check performs a resource check.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_check_170": {
+      "name": "check",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 209,
+      "content_hash": "5e54feb1778e019bd385b689295233f55a5ad408",
+      "content": "func (m *Monitor) check() {\n\tsnapshot := m.collectSnapshot()\n\n\tm.mu.Lock()\n\tm.lastSnapshot = snapshot\n\tm.mu.Unlock()\n\n\t// Check for violations\n\tif snapshot.CPUPercent > m.config.CPUThreshold {\n\t\tm.handleViolation(Violation{\n\t\t\tType:      ViolationTypeCPU,\n\t\t\tTimestamp: time.Now(),\n\t\t\tValue:     snapshot.CPUPercent,\n\t\t\tThreshold: m.config.CPUThreshold,\n\t\t\tMessage:   fmt.Sprintf(\"CPU usage %.1f%% exceeds threshold %.1f%%\", snapshot.CPUPercent, m.config.CPUThreshold),\n\t\t})\n\t}\n\n\tif snapshot.MemPercent > m.config.MemThreshold {\n\t\tm.handleViolation(Violation{\n\t\t\tType:      ViolationTypeMem,\n\t\t\tTimestamp: time.Now(),\n\t\t\tValue:     snapshot.MemPercent,\n\t\t\tThreshold: m.config.MemThreshold,\n\t\t\tMessage:   fmt.Sprintf(\"Memory usage %.1f%% exceeds threshold %.1f%%\", snapshot.MemPercent, m.config.MemThreshold),\n\t\t})\n\t}\n\n\tif snapshot.DiskFree < m.config.DiskMinFree {\n\t\tm.handleViolation(Violation{\n\t\t\tType:      ViolationTypeDisk,\n\t\t\tTimestamp: time.Now(),\n\t\t\tValue:     float64(snapshot.DiskFree),\n\t\t\tThreshold: float64(m.config.DiskMinFree),\n\t\t\tMessage:   fmt.Sprintf(\"Disk free %.2fGB below threshold %.2fGB\", float64(snapshot.DiskFree)/(1024*1024*1024), float64(m.config.DiskMinFree)/(1024*1024*1024)),\n\t\t})\n\t}\n}\n\n// collectSnapshot collects current resource usage.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_collectSnapshot_210": {
+      "name": "collectSnapshot",
+      "type": "method",
+      "start_line": 210,
+      "end_line": 238,
+      "content_hash": "8d2532e4b589122a433c60fb26050ccab0c6bda1",
+      "content": "func (m *Monitor) collectSnapshot() ResourceSnapshot {\n\tsnapshot := ResourceSnapshot{\n\t\tTimestamp: time.Now(),\n\t}\n\n\t// CPU usage\n\tif cpuPercents, err := cpu.Percent(0, false); err == nil && len(cpuPercents) > 0 {\n\t\tsnapshot.CPUPercent = cpuPercents[0]\n\t}\n\n\t// Memory usage\n\tif vmem, err := mem.VirtualMemory(); err == nil {\n\t\tsnapshot.MemUsed = vmem.Used\n\t\tsnapshot.MemTotal = vmem.Total\n\t\tsnapshot.MemPercent = vmem.UsedPercent\n\t}\n\n\t// Disk usage (current directory)\n\tif usage, err := disk.Usage(\".\"); err == nil {\n\t\tsnapshot.DiskUsed = usage.Used\n\t\tsnapshot.DiskTotal = usage.Total\n\t\tsnapshot.DiskFree = usage.Free\n\t\tsnapshot.DiskPercent = usage.UsedPercent\n\t}\n\n\treturn snapshot\n}\n\n// handleViolation processes a resource violation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_handleViolation_239": {
+      "name": "handleViolation",
+      "type": "method",
+      "start_line": 239,
+      "end_line": 290,
+      "content_hash": "a47bbab5c55156e319efc00e3977f08ba5b83006",
+      "content": "func (m *Monitor) handleViolation(v Violation) {\n\tm.mu.Lock()\n\tm.violations = append(m.violations, v)\n\tif len(m.violations) > 20 {\n\t\tm.violations = m.violations[1:]\n\t}\n\tviolationCount := len(m.violations)\n\tm.mu.Unlock()\n\n\tslog.Warn(\"resource violation\",\n\t\t\"type\", v.Type,\n\t\t\"value\", v.Value,\n\t\t\"threshold\", v.Threshold,\n\t\t\"message\", v.Message,\n\t\t\"total_violations\", violationCount,\n\t)\n\n\t// Call type-specific callbacks\n\tswitch v.Type {\n\tcase ViolationTypeCPU:\n\t\tif m.onCPUHigh != nil {\n\t\t\tm.onCPUHigh(v.Value)\n\t\t}\n\tcase ViolationTypeMem:\n\t\tif m.onMemHigh != nil {\n\t\t\tm.onMemHigh(uint64(v.Value))\n\t\t}\n\tcase ViolationTypeDisk:\n\t\tif m.onDiskLow != nil {\n\t\t\tm.onDiskLow(uint64(v.Value))\n\t\t}\n\t}\n\n\t// Call general violation callback\n\tif m.onViolation != nil {\n\t\tm.onViolation(v)\n\t}\n\n\t// Auto-pause on max violations\n\tif m.config.EnableAutoPause && violationCount >= m.config.MaxViolations {\n\t\tif m.stateMachine != nil {\n\t\t\tslog.Error(\"max resource violations reached - pausing agent\",\n\t\t\t\t\"violations\", violationCount,\n\t\t\t\t\"max\", m.config.MaxViolations,\n\t\t\t)\n\t\t\t// Transition to resource paused state\n\t\t\t_ = m.stateMachine.TransitionTo(state.StateResourcePaused)\n\t\t}\n\t}\n}\n\n// CurrentSnapshot returns the most recent resource snapshot.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CurrentSnapshot_291": {
+      "name": "CurrentSnapshot",
+      "type": "method",
+      "start_line": 291,
+      "end_line": 297,
+      "content_hash": "64eb91ce1de5a044fdb3506ad09ef6fe15024609",
+      "content": "func (m *Monitor) CurrentSnapshot() ResourceSnapshot {\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\treturn m.lastSnapshot\n}\n\n// GetViolations returns recent violations.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetViolations_298": {
+      "name": "GetViolations",
+      "type": "method",
+      "start_line": 298,
+      "end_line": 313,
+      "content_hash": "463dce2507cd1a42cb7dcdc013769220c11de2fe",
+      "content": "func (m *Monitor) GetViolations(limit int) []Violation {\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\n\tif limit <= 0 || limit > len(m.violations) {\n\t\tlimit = len(m.violations)\n\t}\n\n\tstart := len(m.violations) - limit\n\tresult := make([]Violation, limit)\n\tcopy(result, m.violations[start:])\n\n\treturn result\n}\n\n// IsRunning returns true if the monitor is active.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsRunning_314": {
+      "name": "IsRunning",
+      "type": "method",
+      "start_line": 314,
+      "end_line": 318,
+      "content_hash": "89a0b9a135204bbc1c2398897c91d255e1cab498",
+      "content": "func (m *Monitor) IsRunning() bool {\n\tm.mu.RLock()\n\tdefer m.mu.RUnlock()\n\treturn m.running\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

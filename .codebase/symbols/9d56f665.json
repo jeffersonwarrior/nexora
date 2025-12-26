@@ -1,0 +1,249 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/config.rs",
+  "file_hash": "a7c50a15cad3cd1b8c95f7be4f4a8b4b2ec05567",
+  "updated_at": "2025-12-26T17:34:21.180738",
+  "symbols": {
+    "struct_VectorConfig_6": {
+      "name": "VectorConfig",
+      "type": "struct",
+      "start_line": 6,
+      "end_line": 11,
+      "content_hash": "5d9219a264e5b9311434835468e4a6b904693a97",
+      "content": "pub struct VectorConfig {\n    pub m: Option<usize>,\n    pub ef_construction: Option<usize>,\n    pub ef_search: Option<usize>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Default_12": {
+      "name": "Default",
+      "type": "impl",
+      "start_line": 12,
+      "end_line": 12,
+      "content_hash": "53b5cb7d51b5fd6bfb46519671dc3e0570ba7449",
+      "content": "impl Default for VectorConfig {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_default_13": {
+      "name": "default",
+      "type": "method",
+      "start_line": 13,
+      "end_line": 22,
+      "content_hash": "0cff9e8162923daff5fea15d7ec987a07b735777",
+      "content": "    fn default() -> Self {\n        Self {\n            m: Some(16),\n            ef_construction: Some(128),\n            ef_search: Some(768),\n        }\n    }\n}\n\n#[derive(Serialize, Deserialize, Debug, Clone, Default)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GraphConfig_23": {
+      "name": "GraphConfig",
+      "type": "struct",
+      "start_line": 23,
+      "end_line": 27,
+      "content_hash": "c4dc541058d98d011b688279f355aa182346e841",
+      "content": "pub struct GraphConfig {\n    pub secondary_indices: Option<Vec<String>>,\n}\n\n#[derive(Serialize, Deserialize, Debug, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Config_28": {
+      "name": "Config",
+      "type": "struct",
+      "start_line": 28,
+      "end_line": 38,
+      "content_hash": "4fe956239a7e7c6156c372c5f8d5e8b9e32be963",
+      "content": "pub struct Config {\n    pub vector_config: Option<VectorConfig>,\n    pub graph_config: Option<GraphConfig>,\n    pub db_max_size_gb: Option<usize>,\n    pub mcp: Option<bool>,\n    pub bm25: Option<bool>,\n    pub schema: Option<String>,\n    pub embedding_model: Option<String>,\n    pub graphvis_node_label: Option<String>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Config_39": {
+      "name": "Config",
+      "type": "impl",
+      "start_line": 39,
+      "end_line": 39,
+      "content_hash": "d06ee2192ef9c5ae29367a967d01dc5647d00d9e",
+      "content": "impl Config {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_40": {
+      "name": "new",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 68,
+      "content_hash": "0226dfa46f641e69fe39a2312ab20bcc9edfe67e",
+      "content": "    pub fn new(\n        m: usize,\n        ef_construction: usize,\n        ef_search: usize,\n        db_max_size_gb: usize,\n        mcp: bool,\n        bm25: bool,\n        schema: Option<String>,\n        embedding_model: Option<String>,\n        graphvis_node_label: Option<String>,\n    ) -> Self {\n        Self {\n            vector_config: Some(VectorConfig {\n                m: Some(m),\n                ef_construction: Some(ef_construction),\n                ef_search: Some(ef_search),\n            }),\n            graph_config: Some(GraphConfig {\n                secondary_indices: None,\n            }),\n            db_max_size_gb: Some(db_max_size_gb),\n            mcp: Some(mcp),\n            bm25: Some(bm25),\n            schema,\n            embedding_model,\n            graphvis_node_label,\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_files_69": {
+      "name": "from_files",
+      "type": "method",
+      "start_line": 69,
+      "end_line": 87,
+      "content_hash": "10dc9cde237dd7c5db7aa501b7fdc1c128b36fd2",
+      "content": "    pub fn from_files(config_path: PathBuf, schema_path: PathBuf) -> Result<Self, GraphError> {\n        if !config_path.exists() {\n            println!(\"no config path!\");\n            return Err(GraphError::ConfigFileNotFound);\n        }\n\n        let config = std::fs::read_to_string(config_path)?;\n        let mut config = sonic_rs::from_str::<Config>(&config)?;\n\n        if schema_path.exists() {\n            let schema_string = std::fs::read_to_string(schema_path)?;\n            config.schema = Some(schema_string);\n        } else {\n            config.schema = None;\n        }\n\n        Ok(config)\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_file_88": {
+      "name": "from_file",
+      "type": "method",
+      "start_line": 88,
+      "end_line": 102,
+      "content_hash": "7f031d92775ca1bac341aeebbb5ff11726361069",
+      "content": "    pub fn from_file(config_path: PathBuf) -> Result<Self, GraphError> {\n        if !config_path.exists() {\n            println!(\"no config path!\");\n            return Err(GraphError::ConfigFileNotFound);\n        }\n\n        let config = std::fs::read_to_string(config_path)?;\n        let mut config = sonic_rs::from_str::<Config>(&config)?;\n        \n        // Schema will be populated from INTROSPECTION_DATA during code generation\n        config.schema = None;\n\n        Ok(config)\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_init_config_103": {
+      "name": "init_config",
+      "type": "method",
+      "start_line": 103,
+      "end_line": 124,
+      "content_hash": "fb4b5f0b4808ebaa344f5449d009393d3e469664",
+      "content": "    pub fn init_config() -> String {\n        r#\"\n{\n\t\"vector_config\": {\n\t\t\"m\": 16,\n\t\t\"ef_construction\": 128,\n\t\t\"ef_search\": 768\n\t},\n\t\"graph_config\": {\n\t\t\"secondary_indices\": []\n\t},\n\t\"db_max_size_gb\": 10,\n\t\"mcp\": true,\n\t\"bm25\": true,\n\t\"embedding_model\": \"text-embedding-ada-002\",\n\t\"graphvis_node_label\": \"\"\n}\n        \"#\n        .trim()\n        .to_string()\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_to_json_125": {
+      "name": "to_json",
+      "type": "method",
+      "start_line": 125,
+      "end_line": 128,
+      "content_hash": "0546f9a22604a45c261558c8ae3d9d84af964025",
+      "content": "    pub fn to_json(&self) -> String {\n        sonic_rs::to_string_pretty(self).unwrap()\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_vector_config_129": {
+      "name": "get_vector_config",
+      "type": "method",
+      "start_line": 129,
+      "end_line": 132,
+      "content_hash": "be0a4bfe0222a85773356e6de58c4c554be7ded7",
+      "content": "    pub fn get_vector_config(&self) -> VectorConfig {\n        self.vector_config.clone().unwrap_or_default()\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_graph_config_133": {
+      "name": "get_graph_config",
+      "type": "method",
+      "start_line": 133,
+      "end_line": 136,
+      "content_hash": "74cc171ae508506efca3d2800eb6fd19633006dd",
+      "content": "    pub fn get_graph_config(&self) -> GraphConfig {\n        self.graph_config.clone().unwrap_or_default()\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_db_max_size_gb_137": {
+      "name": "get_db_max_size_gb",
+      "type": "method",
+      "start_line": 137,
+      "end_line": 140,
+      "content_hash": "2898c3bd6dd023fa77709db71c30b3b07c2b9986",
+      "content": "    pub fn get_db_max_size_gb(&self) -> usize {\n        self.db_max_size_gb.unwrap_or(10)\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_mcp_141": {
+      "name": "get_mcp",
+      "type": "method",
+      "start_line": 141,
+      "end_line": 144,
+      "content_hash": "70f503ec7ea5804c23517d7a17ad3441c1e0745f",
+      "content": "    pub fn get_mcp(&self) -> bool {\n        self.mcp.unwrap_or(true)\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_bm25_145": {
+      "name": "get_bm25",
+      "type": "method",
+      "start_line": 145,
+      "end_line": 148,
+      "content_hash": "5f5dd133f2a79230ae859105b2663cff6fb37a70",
+      "content": "    pub fn get_bm25(&self) -> bool {\n        self.bm25.unwrap_or(true)\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_schema_149": {
+      "name": "get_schema",
+      "type": "method",
+      "start_line": 149,
+      "end_line": 154,
+      "content_hash": "d4c26104ba5eb338912884c07918613ec1db70b3",
+      "content": "    pub fn get_schema(&self) -> Option<String> {\n        self.schema.clone()\n    }\n\n    /// Format the config with the provided introspection data and secondary indices.\n    /// This method is used during code generation to embed schema metadata.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fmt_with_schema_155": {
+      "name": "fmt_with_schema",
+      "type": "method",
+      "start_line": 155,
+      "end_line": 245,
+      "content_hash": "95dd14764930de9de152643790d6cc0e4af4f30e",
+      "content": "    pub fn fmt_with_schema(\n        &self,\n        f: &mut fmt::Formatter,\n        introspection_data: Option<&IntrospectionData>,\n        secondary_indices: &[String],\n    ) -> fmt::Result {\n        writeln!(f, \"pub fn config() -> Option<Config> {{\")?;\n        writeln!(f, \"return Some(Config {{\")?;\n        writeln!(f, \"vector_config: Some(VectorConfig {{\")?;\n        writeln!(\n            f,\n            \"m: Some({}),\",\n            self.vector_config\n                .as_ref()\n                .unwrap_or(&VectorConfig::default())\n                .m\n                .unwrap_or(16)\n        )?;\n        writeln!(\n            f,\n            \"ef_construction: Some({}),\",\n            self.vector_config\n                .as_ref()\n                .unwrap_or(&VectorConfig::default())\n                .ef_construction\n                .unwrap_or(128)\n        )?;\n        writeln!(\n            f,\n            \"ef_search: Some({}),\",\n            self.vector_config\n                .as_ref()\n                .unwrap_or(&VectorConfig::default())\n                .ef_search\n                .unwrap_or(768)\n        )?;\n        writeln!(f, \"}}),\")?;\n        writeln!(f, \"graph_config: Some(GraphConfig {{\")?;\n        writeln!(\n            f,\n            \"secondary_indices: {},\",\n            if secondary_indices.is_empty() {\n                \"None\".to_string()\n            } else {\n                format!(\n                    \"Some(vec![{}])\",\n                    secondary_indices\n                        .iter()\n                        .map(|i| format!(\"\\\"{i}\\\".to_string()\"))\n                        .collect::<Vec<_>>()\n                        .join(\", \")\n                )\n            }\n        )?;\n        writeln!(f, \"}}),\")?;\n        writeln!(\n            f,\n            \"db_max_size_gb: Some({}),\",\n            self.db_max_size_gb.unwrap_or(10)\n        )?;\n        writeln!(f, \"mcp: Some({}),\", self.mcp.unwrap_or(true))?;\n        writeln!(f, \"bm25: Some({}),\", self.bm25.unwrap_or(true))?;\n        if let Some(data) = introspection_data\n            && let Ok(stringified) = sonic_rs::to_string_pretty(data)\n        {\n            writeln!(f, \"schema: Some(r#\\\"{stringified}\\\"#.to_string()),\")?;\n        } else {\n            writeln!(f, \"schema: None,\")?;\n        }\n        writeln!(\n            f,\n            \"embedding_model: {},\",\n            match &self.embedding_model {\n                Some(model) => format!(\"Some(\\\"{model}\\\".to_string())\"),\n                None => \"None\".to_string(),\n            }\n        )?;\n        writeln!(\n            f,\n            \"graphvis_node_label: {},\",\n            match &self.graphvis_node_label {\n                Some(label) => format!(\"Some(\\\"{label}\\\".to_string())\"),\n                None => \"None\".to_string(),\n            }\n        )?;\n        writeln!(f, \"}})\")?;\n        writeln!(f, \"}}\")?;\n        Ok(())\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Default_246": {
+      "name": "Default",
+      "type": "impl",
+      "start_line": 246,
+      "end_line": 246,
+      "content_hash": "5de46758f12f07b9ec5818874fd7e84ada75e581",
+      "content": "impl Default for Config {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_default_247": {
+      "name": "default",
+      "type": "method",
+      "start_line": 247,
+      "end_line": 266,
+      "content_hash": "efbaa869e6f2ba43c4debcad3d1bf4369b61fba3",
+      "content": "    fn default() -> Self {\n        Self {\n            vector_config: Some(VectorConfig {\n                m: Some(16),\n                ef_construction: Some(128),\n                ef_search: Some(768),\n            }),\n            graph_config: Some(GraphConfig {\n                secondary_indices: None,\n            }),\n            db_max_size_gb: Some(10),\n            mcp: Some(true),\n            bm25: Some(true),\n            schema: None,\n            embedding_model: Some(\"text-embedding-ada-002\".to_string()),\n            graphvis_node_label: None,\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_fmt::Display_267": {
+      "name": "fmt::Display",
+      "type": "impl",
+      "start_line": 267,
+      "end_line": 267,
+      "content_hash": "4bfe1b4699ab8cf2a113b7947ad587b18ac517f2",
+      "content": "impl fmt::Display for Config {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fmt_268": {
+      "name": "fmt",
+      "type": "method",
+      "start_line": 268,
+      "end_line": 274,
+      "content_hash": "f67787c190845a0dbd1c3efe3fda492af241036c",
+      "content": "    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {\n        // For backward compatibility, delegate to fmt_with_schema with empty values.\n        // The actual introspection data and secondary indices should be provided\n        // via fmt_with_schema when generating code from Source.\n        self.fmt_with_schema(f, None, &[])\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

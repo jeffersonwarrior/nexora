@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/tui/components/chat/windows_switcher.go",
+  "file_hash": "dc57f7cf0ead4b9c3439a785b880fa649b7f3907",
+  "updated_at": "2025-12-26T17:34:25.047225",
+  "symbols": {
+    "struct_WindowsSwitcher_18": {
+      "name": "WindowsSwitcher",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 24,
+      "content_hash": "7fc0fec1230bab86596283287e8c17c96f36505d",
+      "content": "type WindowsSwitcher struct {\n\tlist        list.List[agent.SessionWindow]\n\tshowing     bool\n\tcoordinator *agent.MultiSessionCoordinator\n\tonSwitch    func(string)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewWindowsSwitcher_25": {
+      "name": "NewWindowsSwitcher",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 31,
+      "content_hash": "44606ebc284b2fbde7d05f2a3fa6fdce092cc01a",
+      "content": "func NewWindowsSwitcher(coordinator *agent.MultiSessionCoordinator, onSwitch func(string)) *WindowsSwitcher {\n\treturn &WindowsSwitcher{\n\t\tcoordinator: coordinator,\n\t\tonSwitch:    onSwitch,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Show_32": {
+      "name": "Show",
+      "type": "method",
+      "start_line": 32,
+      "end_line": 36,
+      "content_hash": "899ef2ff3cbe9d60c6ed4cef0073a7218bf4b2df",
+      "content": "func (w *WindowsSwitcher) Show() {\n\tw.showing = true\n\tw.updateList()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Hide_37": {
+      "name": "Hide",
+      "type": "method",
+      "start_line": 37,
+      "end_line": 40,
+      "content_hash": "17023e28781c9f1917314139caed8f5b23c91380",
+      "content": "func (w *WindowsSwitcher) Hide() {\n\tw.showing = false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_updateList_41": {
+      "name": "updateList",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 49,
+      "content_hash": "8878c27d6d70bb6a7967d7e4acde5ad01ffaddb3",
+      "content": "func (w *WindowsSwitcher) updateList() {\n\twindows := w.coordinator.ListWindows()\n\titems := make([]list.Item, len(windows))\n\tfor i, win := range windows {\n\t\titems[i] = listItemFromWindow(win)\n\t}\n\tw.list.SetItems(items)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_50": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 76,
+      "content_hash": "e6eccaf02b8be1050eeb076f7869e4c4777c42ad",
+      "content": "func (w *WindowsSwitcher) Update(msg tea.Msg) (tea.Model, tea.Cmd) {\n\tvar cmd tea.Cmd\n\tw.list, cmd = w.list.Update(msg)\n\n\tswitch msg := msg.(type) {\n\tcase tea.KeyMsg:\n\t\tswitch msg.String() {\n\t\tcase \"enter\":\n\t\t\tif item := w.list.SelectedItem(); item != nil {\n\t\t\t\twin := item.(listItem)\n\t\t\t\tw.onSwitch(win.ID)\n\t\t\t\tw.Hide()\n\t\t\t\treturn w, nil\n\t\t\t}\n\t\tcase \"esc\", \"ctrl+c\":\n\t\t\tw.Hide()\n\t\tcase \"ctrl+tab\":\n\t\t\tw.list.Next()\n\t\tcase \"ctrl+shift+tab\":\n\t\t\tw.list.Prev()\n\t\t}\n\t}\n\treturn w, cmd\n}\n\ntype listItem listItemImpl\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_listItemImpl_77": {
+      "name": "listItemImpl",
+      "type": "struct",
+      "start_line": 77,
+      "end_line": 80,
+      "content_hash": "3757f0c71f3f486e68bfcf61b4526c98b8ae770d",
+      "content": "type listItemImpl struct {\n\tagent.SessionWindow\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FilterValue_81": {
+      "name": "FilterValue",
+      "type": "method",
+      "start_line": 81,
+      "end_line": 84,
+      "content_hash": "2ae4c3fcfc2de8b2c418cfcba826952333f8f5e1",
+      "content": "func (i listItemImpl) FilterValue() string {\n\treturn i.Title\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_listItemFromWindow_85": {
+      "name": "listItemFromWindow",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 88,
+      "content_hash": "728f6fb4439b4b774bdfce23cc68283be30b74c9",
+      "content": "func listItemFromWindow(w agent.SessionWindow) list.Item {\n\treturn listItemImpl{w}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Title_89": {
+      "name": "Title",
+      "type": "method",
+      "start_line": 89,
+      "end_line": 92,
+      "content_hash": "8cd7c6d3e60b72be200aa2429de6acf8560dc354",
+      "content": "func (i listItemImpl) Title() string {\n\treturn i.Title\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Description_93": {
+      "name": "Description",
+      "type": "method",
+      "start_line": 93,
+      "end_line": 99,
+      "content_hash": "d2829f1ffae37cf531990606eef441ced3566f5a",
+      "content": "func (i listItemImpl) Description() string {\n\tstatus := \"idle\"\n\tif i.IsActive {\n\t\tstatus = \"ACTIVE\"\n\t}\n\treturn fmt.Sprintf(\"%s (%d msgs)\", status, len(i.History))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

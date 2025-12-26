@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/parser/errors.rs",
+  "file_hash": "9ac68195a6119b61cce8cca5c2205bde7fa8aca3",
+  "updated_at": "2025-12-26T17:34:24.413326",
+  "symbols": {
+    "enum_ParserError_5": {
+      "name": "ParserError",
+      "type": "enum",
+      "start_line": 5,
+      "end_line": 10,
+      "content_hash": "8204f5d8f7774ad1dc89d10ce233394e80735c90",
+      "content": "pub enum ParserError {\n    ParseError(String),\n    LexError(String),\n    ParamDoesNotMatchSchema(String),\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Display_11": {
+      "name": "Display",
+      "type": "impl",
+      "start_line": 11,
+      "end_line": 11,
+      "content_hash": "299704154fe4d988dc05cb7723648db7949ee597",
+      "content": "impl Display for ParserError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fmt_12": {
+      "name": "fmt",
+      "type": "method",
+      "start_line": 12,
+      "end_line": 22,
+      "content_hash": "500b48b6b9c88ab13861c1b396a7f8386f331333",
+      "content": "    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {\n        match self {\n            ParserError::ParseError(e) => write!(f, \"Parse error: {e}\"),\n            ParserError::LexError(e) => write!(f, \"Lex error: {e}\"),\n            ParserError::ParamDoesNotMatchSchema(p) => {\n                write!(f, \"Parameter with name: {p} does not exist in the schema\")\n            }\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_From_23": {
+      "name": "From",
+      "type": "impl",
+      "start_line": 23,
+      "end_line": 23,
+      "content_hash": "0d3d9aaac42d9b24ad4eb580c0762f997c5f426d",
+      "content": "impl From<pest::error::Error<Rule>> for ParserError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_24": {
+      "name": "from",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 28,
+      "content_hash": "90f398620339afd4137d3598d9cf6bb9a2e71c25",
+      "content": "    fn from(e: pest::error::Error<Rule>) -> Self {\n        ParserError::ParseError(e.to_string())\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_From_29": {
+      "name": "From",
+      "type": "impl",
+      "start_line": 29,
+      "end_line": 29,
+      "content_hash": "a1a85a4fc6b0f9e4470684ef6557165b2d996620",
+      "content": "impl From<String> for ParserError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_30": {
+      "name": "from",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 34,
+      "content_hash": "0ce77d6c2209071b1fa58bfcf095eb917c71fa14",
+      "content": "    fn from(e: String) -> Self {\n        ParserError::LexError(e)\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_From_35": {
+      "name": "From",
+      "type": "impl",
+      "start_line": 35,
+      "end_line": 35,
+      "content_hash": "fb61dc1dbceb93d09a317fd7b799299a639eff10",
+      "content": "impl From<&'static str> for ParserError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_from_36": {
+      "name": "from",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 40,
+      "content_hash": "e6140421bb8df1a285c19128b11b43906e1b4035",
+      "content": "    fn from(e: &'static str) -> Self {\n        ParserError::LexError(e.to_string())\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_std::fmt::Debug_41": {
+      "name": "std::fmt::Debug",
+      "type": "impl",
+      "start_line": 41,
+      "end_line": 41,
+      "content_hash": "4746817c49f594f464c83fefcac90e0820d16286",
+      "content": "impl std::fmt::Debug for ParserError {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fmt_42": {
+      "name": "fmt",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 51,
+      "content_hash": "d74bf7f35be46596da40fd6678614f6629c6f716",
+      "content": "    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {\n        match self {\n            ParserError::ParseError(e) => write!(f, \"Parse error: {e}\"),\n            ParserError::LexError(e) => write!(f, \"Lex error: {e}\"),\n            ParserError::ParamDoesNotMatchSchema(p) => {\n                write!(f, \"Parameter with name: {p} does not exist in the schema\")\n            }\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

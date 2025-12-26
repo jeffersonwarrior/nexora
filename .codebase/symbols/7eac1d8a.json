@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/utils/label_hash.rs",
+  "file_hash": "ce0d49d7b57bbd76f6d0d554d3dcb113c55681c5",
+  "updated_at": "2025-12-26T17:34:24.241616",
+  "symbols": {
+    "function_hash_label_9": {
+      "name": "hash_label",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 20,
+      "content_hash": "8cc76e730b1d97713269cfc333a862b3bbb56488",
+      "content": "pub fn hash_label(label: &str, seed: Option<u32>) -> [u8; 4] {\n    let mut hash = twox_hash::XxHash32::with_seed(seed.unwrap_or(0));\n    hash.write(label.as_bytes());\n    hash.finish_32().to_be_bytes()\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use std::collections::HashSet;\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_consistency_21": {
+      "name": "test_hash_label_consistency",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 29,
+      "content_hash": "20c5d8aa4da6ab8c3b17f6e27a422266d85fc5db",
+      "content": "    fn test_hash_label_consistency() {\n        let label = \"person\";\n        let hash1 = hash_label(label, None);\n        let hash2 = hash_label(label, None);\n\n        assert_eq!(hash1, hash2, \"Hash must be deterministic\");\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_different_labels_30": {
+      "name": "test_hash_label_different_labels",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 37,
+      "content_hash": "fe6bdbf2d963ed750056f792c667d40478f0e338",
+      "content": "    fn test_hash_label_different_labels() {\n        let hash_person = hash_label(\"person\", None);\n        let hash_company = hash_label(\"company\", None);\n\n        assert_ne!(hash_person, hash_company, \"Different labels should produce different hashes\");\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_with_seed_38": {
+      "name": "test_hash_label_with_seed",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 51,
+      "content_hash": "82030098bb0a6d050f4d5e2de6f42a2a693dc2ca",
+      "content": "    fn test_hash_label_with_seed() {\n        let label = \"person\";\n        let hash_no_seed = hash_label(label, None);\n        let hash_seed_0 = hash_label(label, Some(0));\n        let hash_seed_42 = hash_label(label, Some(42));\n\n        // Same label with no seed vs seed 0 should be same\n        assert_eq!(hash_no_seed, hash_seed_0, \"No seed should be equivalent to seed 0\");\n\n        // Different seed should produce different hash\n        assert_ne!(hash_no_seed, hash_seed_42, \"Different seeds should produce different hashes\");\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_collision_rate_52": {
+      "name": "test_hash_label_collision_rate",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 72,
+      "content_hash": "9aa24a82c7e911b996d7f8d16ca1919a4d83b943",
+      "content": "    fn test_hash_label_collision_rate() {\n        // Test collision rate with 10,000 labels\n        let labels: Vec<String> = (0..10_000)\n            .map(|i| format!(\"label_{}\", i))\n            .collect();\n\n        let hashes: HashSet<[u8; 4]> = labels.iter()\n            .map(|l| hash_label(l, None))\n            .collect();\n\n        let collision_rate = 1.0 - (hashes.len() as f64 / labels.len() as f64);\n\n        // Collision rate should be very low (< 1%)\n        assert!(\n            collision_rate < 0.01,\n            \"Collision rate too high: {:.2}%\",\n            collision_rate * 100.0\n        );\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_empty_string_73": {
+      "name": "test_hash_label_empty_string",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 84,
+      "content_hash": "a407c236ed0d7b119f9b5ae4359930287c0349e6",
+      "content": "    fn test_hash_label_empty_string() {\n        let hash = hash_label(\"\", None);\n\n        // Empty string should still produce a valid hash\n        assert_eq!(hash.len(), 4);\n\n        // Should be consistent\n        let hash2 = hash_label(\"\", None);\n        assert_eq!(hash, hash2);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_utf8_85": {
+      "name": "test_hash_label_utf8",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 116,
+      "content_hash": "7331cb7e391bd45587a5e3c4c294792a2293f1f1",
+      "content": "    fn test_hash_label_utf8() {\n        // Test with UTF-8 characters\n        let labels = vec![\n            \"person\",\n            \"\u4eba\",           // Chinese character\n            \"\ud83d\ude80\",          // Emoji\n            \"\u00d1o\u00f1o\",        // Spanish with tildes\n            \"\u041f\u0440\u0438\u0432\u0435\u0442\",      // Russian\n            \"\u0645\u0631\u062d\u0628\u0627\",       // Arabic\n        ];\n\n        let hashes: Vec<[u8; 4]> = labels.iter()\n            .map(|l| hash_label(l, None))\n            .collect();\n\n        // All should be different\n        let unique_hashes: HashSet<_> = hashes.iter().collect();\n        assert_eq!(\n            unique_hashes.len(),\n            hashes.len(),\n            \"All UTF-8 labels should produce unique hashes\"\n        );\n\n        // Each should be consistent\n        for label in &labels {\n            let hash1 = hash_label(label, None);\n            let hash2 = hash_label(label, None);\n            assert_eq!(hash1, hash2, \"Hash for '{}' should be consistent\", label);\n        }\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_case_sensitivity_117": {
+      "name": "test_hash_label_case_sensitivity",
+      "type": "function",
+      "start_line": 117,
+      "end_line": 128,
+      "content_hash": "35c5958bbfd2a910105f051afff01dd468ff3355",
+      "content": "    fn test_hash_label_case_sensitivity() {\n        let hash_lower = hash_label(\"person\", None);\n        let hash_upper = hash_label(\"Person\", None);\n        let hash_all_upper = hash_label(\"PERSON\", None);\n\n        // Hash should be case-sensitive\n        assert_ne!(hash_lower, hash_upper);\n        assert_ne!(hash_lower, hash_all_upper);\n        assert_ne!(hash_upper, hash_all_upper);\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_long_strings_129": {
+      "name": "test_hash_label_long_strings",
+      "type": "function",
+      "start_line": 129,
+      "end_line": 149,
+      "content_hash": "1904eeb0cd52c1e36416963381facc5665bc6bd5",
+      "content": "    fn test_hash_label_long_strings() {\n        // Test with very long label names\n        let short_label = \"person\";\n        let long_label = \"a\".repeat(1000);\n        let very_long_label = \"b\".repeat(10_000);\n\n        let hash_short = hash_label(short_label, None);\n        let hash_long = hash_label(&long_label, None);\n        let hash_very_long = hash_label(&very_long_label, None);\n\n        // All should produce different hashes\n        assert_ne!(hash_short, hash_long);\n        assert_ne!(hash_short, hash_very_long);\n        assert_ne!(hash_long, hash_very_long);\n\n        // Should be consistent\n        assert_eq!(hash_long, hash_label(&long_label, None));\n        assert_eq!(hash_very_long, hash_label(&very_long_label, None));\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_similar_strings_150": {
+      "name": "test_hash_label_similar_strings",
+      "type": "function",
+      "start_line": 150,
+      "end_line": 173,
+      "content_hash": "b04956d4221941158348381935e5a2cce51d3966",
+      "content": "    fn test_hash_label_similar_strings() {\n        // Test labels that differ by only one character\n        let labels = vec![\n            \"person\",\n            \"persons\",\n            \"person1\",\n            \"person_\",\n            \"Person\",\n        ];\n\n        let hashes: Vec<[u8; 4]> = labels.iter()\n            .map(|l| hash_label(l, None))\n            .collect();\n\n        // All should be different\n        let unique_hashes: HashSet<_> = hashes.iter().collect();\n        assert_eq!(\n            unique_hashes.len(),\n            hashes.len(),\n            \"Similar labels should produce unique hashes\"\n        );\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_output_format_174": {
+      "name": "test_hash_label_output_format",
+      "type": "function",
+      "start_line": 174,
+      "end_line": 185,
+      "content_hash": "ff18b3e9563496ed80a10cd49da83c5b3a2b0774",
+      "content": "    fn test_hash_label_output_format() {\n        let hash = hash_label(\"person\", None);\n\n        // Output should be exactly 4 bytes\n        assert_eq!(hash.len(), 4);\n\n        // Should be big-endian bytes (we can convert back)\n        let value = u32::from_be_bytes(hash);\n        assert!(value > 0, \"Hash value should be non-zero for non-empty string\");\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_performance_186": {
+      "name": "test_hash_label_performance",
+      "type": "function",
+      "start_line": 186,
+      "end_line": 205,
+      "content_hash": "acf3c490b0e386dfd050c859ac72342cd20d9d75",
+      "content": "    fn test_hash_label_performance() {\n        // Hash 100k labels and ensure it completes quickly\n        let start = std::time::Instant::now();\n\n        for i in 0..100_000 {\n            let label = format!(\"label_{}\", i);\n            let _ = hash_label(&label, None);\n        }\n\n        let elapsed = start.elapsed();\n\n        // Should complete in less than 1 second\n        assert!(\n            elapsed.as_secs() < 1,\n            \"Label hashing too slow: {:?}\",\n            elapsed\n        );\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_hash_label_common_patterns_206": {
+      "name": "test_hash_label_common_patterns",
+      "type": "function",
+      "start_line": 206,
+      "end_line": 232,
+      "content_hash": "2e19d5d776fdc0d2ed7f8daef8eb07058c9023b4",
+      "content": "    fn test_hash_label_common_patterns() {\n        // Test common label patterns used in graphs\n        let common_labels = vec![\n            \"node\",\n            \"edge\",\n            \"person\",\n            \"company\",\n            \"knows\",\n            \"works_at\",\n            \"friend\",\n            \"follows\",\n            \"likes\",\n            \"created_by\",\n        ];\n\n        let hashes: HashSet<[u8; 4]> = common_labels.iter()\n            .map(|l| hash_label(l, None))\n            .collect();\n\n        // All common labels should hash uniquely\n        assert_eq!(\n            hashes.len(),\n            common_labels.len(),\n            \"Common graph labels should all hash uniquely\"\n        );\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

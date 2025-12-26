@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/kimi.go",
+  "file_hash": "ca028c533c1cb2e8e21f44be2ebe0688d981899b",
+  "updated_at": "2025-12-26T17:34:22.347235",
+  "symbols": {
+    "function_KimiProvider_11": {
+      "name": "KimiProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 81,
+      "content_hash": "ba1bc4ea99e9f1b2463870e8e3c0aaf94ff3eefb",
+      "content": "func KimiProvider(providers []catwalk.Provider) catwalk.Provider {\n\t// Check if kimi already exists\n\tfor _, provider := range providers {\n\t\tif provider.ID == \"kimi\" {\n\t\t\treturn catwalk.Provider{}\n\t\t}\n\t}\n\n\tkimiProvider := catwalk.Provider{\n\t\tName:                \"Kimi\",\n\t\tID:                  \"kimi\",\n\t\tAPIKey:              \"$KIMI_API_KEY\",\n\t\tAPIEndpoint:         cmp.Or(os.Getenv(\"KIMI_API_ENDPOINT\"), \"https://api.kimi.com/coding/\"),\n\t\tType:                \"openai-compat\",\n\t\tDefaultLargeModelID: \"kimi-k2\",\n\t\tDefaultSmallModelID: \"kimi-k2-turbo\",\n\t\tModels: []catwalk.Model{\n\t\t\t// Kimi K2 - Latest flagship\n\t\t\t{\n\t\t\t\tID:               \"kimi-k2\",\n\t\t\t\tName:             \"Kimi K2\",\n\t\t\t\tCostPer1MIn:      0.15,\n\t\t\t\tCostPer1MOut:     2.5,\n\t\t\t\tContextWindow:    1000000,\n\t\t\t\tDefaultMaxTokens: 32000,\n\t\t\t\tCanReason:        false,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Kimi K2 Thinking - With reasoning capability\n\t\t\t{\n\t\t\t\tID:               \"kimi-k2-thinking\",\n\t\t\t\tName:             \"Kimi K2 (Thinking)\",\n\t\t\t\tCostPer1MIn:      0.6,\n\t\t\t\tCostPer1MOut:     2.5,\n\t\t\t\tContextWindow:    1000000,\n\t\t\t\tDefaultMaxTokens: 32000,\n\t\t\t\tCanReason:        true,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Kimi K2 Turbo - Fast and affordable\n\t\t\t{\n\t\t\t\tID:               \"kimi-k2-turbo\",\n\t\t\t\tName:             \"Kimi K2 Turbo\",\n\t\t\t\tCostPer1MIn:      0.05,\n\t\t\t\tCostPer1MOut:     1.5,\n\t\t\t\tContextWindow:    1000000,\n\t\t\t\tDefaultMaxTokens: 16000,\n\t\t\t\tCanReason:        false,\n\t\t\t\tSupportsImages:   false,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Kimi K2 Vision - Optimized for images\n\t\t\t{\n\t\t\t\tID:               \"kimi-k2-vision\",\n\t\t\t\tName:             \"Kimi K2 Vision\",\n\t\t\t\tCostPer1MIn:      0.2,\n\t\t\t\tCostPer1MOut:     2.5,\n\t\t\t\tContextWindow:    500000,\n\t\t\t\tDefaultMaxTokens: 16000,\n\t\t\t\tCanReason:        false,\n\t\t\t\tSupportsImages:   true,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t},\n\t\tDefaultHeaders: map[string]string{},\n\t}\n\n\treturn kimiProvider\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

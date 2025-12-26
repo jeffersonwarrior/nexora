@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/tui/exp/list/keys.go",
+  "file_hash": "db916ff644c40a24c72098b94522662f0bc344d8",
+  "updated_at": "2025-12-26T17:34:22.615485",
+  "symbols": {
+    "struct_KeyMap_7": {
+      "name": "KeyMap",
+      "type": "struct",
+      "start_line": 7,
+      "end_line": 19,
+      "content_hash": "a59d8325ea1e1bf66193fc921c79dd11c6669a9c",
+      "content": "type KeyMap struct {\n\tDown,\n\tUp,\n\tDownOneItem,\n\tUpOneItem,\n\tPageDown,\n\tPageUp,\n\tHalfPageDown,\n\tHalfPageUp,\n\tHome,\n\tEnd key.Binding\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultKeyMap_20": {
+      "name": "DefaultKeyMap",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 64,
+      "content_hash": "3e74b87f4d06acd2a02df5af4b6d2c7b11d0ca50",
+      "content": "func DefaultKeyMap() KeyMap {\n\treturn KeyMap{\n\t\tDown: key.NewBinding(\n\t\t\tkey.WithKeys(\"down\", \"ctrl+j\", \"ctrl+n\", \"j\"),\n\t\t\tkey.WithHelp(\"\u2193\", \"down\"),\n\t\t),\n\t\tUp: key.NewBinding(\n\t\t\tkey.WithKeys(\"up\", \"ctrl+k\", \"ctrl+p\", \"k\"),\n\t\t\tkey.WithHelp(\"\u2191\", \"up\"),\n\t\t),\n\t\tUpOneItem: key.NewBinding(\n\t\t\tkey.WithKeys(\"shift+up\", \"K\"),\n\t\t\tkey.WithHelp(\"shift+\u2191\", \"up one item\"),\n\t\t),\n\t\tDownOneItem: key.NewBinding(\n\t\t\tkey.WithKeys(\"shift+down\", \"J\"),\n\t\t\tkey.WithHelp(\"shift+\u2193\", \"down one item\"),\n\t\t),\n\t\tHalfPageDown: key.NewBinding(\n\t\t\tkey.WithKeys(\"d\"),\n\t\t\tkey.WithHelp(\"d\", \"half page down\"),\n\t\t),\n\t\tPageDown: key.NewBinding(\n\t\t\tkey.WithKeys(\"pgdown\", \" \", \"f\"),\n\t\t\tkey.WithHelp(\"f/pgdn\", \"page down\"),\n\t\t),\n\t\tPageUp: key.NewBinding(\n\t\t\tkey.WithKeys(\"pgup\", \"b\"),\n\t\t\tkey.WithHelp(\"b/pgup\", \"page up\"),\n\t\t),\n\t\tHalfPageUp: key.NewBinding(\n\t\t\tkey.WithKeys(\"u\"),\n\t\t\tkey.WithHelp(\"u\", \"half page up\"),\n\t\t),\n\t\tHome: key.NewBinding(\n\t\t\tkey.WithKeys(\"g\", \"home\"),\n\t\t\tkey.WithHelp(\"g\", \"home\"),\n\t\t),\n\t\tEnd: key.NewBinding(\n\t\t\tkey.WithKeys(\"G\", \"end\"),\n\t\t\tkey.WithHelp(\"G\", \"end\"),\n\t\t),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KeyBindings_65": {
+      "name": "KeyBindings",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 76,
+      "content_hash": "d89ff2e4d6bb4565658e8842af709e62c2deb56f",
+      "content": "func (k KeyMap) KeyBindings() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Down,\n\t\tk.Up,\n\t\tk.DownOneItem,\n\t\tk.UpOneItem,\n\t\tk.HalfPageDown,\n\t\tk.HalfPageUp,\n\t\tk.Home,\n\t\tk.End,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

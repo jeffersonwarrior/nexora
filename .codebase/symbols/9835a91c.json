@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/reranker/models/cross_encoder.rs",
+  "file_hash": "776836c23f353becba89e480efd77205d20bbbba",
+  "updated_at": "2025-12-26T17:34:20.475214",
+  "symbols": {
+    "struct_CrossEncoderConfig_21": {
+      "name": "CrossEncoderConfig",
+      "type": "struct",
+      "start_line": 21,
+      "end_line": 37,
+      "content_hash": "a6efb0602f15dc66b1d46bdfb27b962800f48946",
+      "content": "pub struct CrossEncoderConfig {\n    /// Model identifier (e.g., \"bge-reranker-base\")\n    pub model_name: String,\n\n    /// Batch size for processing\n    pub batch_size: usize,\n\n    /// Maximum sequence length\n    pub max_length: usize,\n\n    /// API endpoint for external models (optional)\n    pub api_endpoint: Option<String>,\n\n    /// API key for external models (optional)\n    pub api_key: Option<String>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_CrossEncoderConfig_38": {
+      "name": "CrossEncoderConfig",
+      "type": "impl",
+      "start_line": 38,
+      "end_line": 38,
+      "content_hash": "12b7b72cb297b80e7761d86ac540255c7843cfc8",
+      "content": "impl CrossEncoderConfig {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_39": {
+      "name": "new",
+      "type": "method",
+      "start_line": 39,
+      "end_line": 48,
+      "content_hash": "6e3613f206fc9470daf6c1e438d11a2cccc63560",
+      "content": "    pub fn new(model_name: impl Into<String>) -> Self {\n        Self {\n            model_name: model_name.into(),\n            batch_size: 32,\n            max_length: 512,\n            api_endpoint: None,\n            api_key: None,\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_with_batch_size_49": {
+      "name": "with_batch_size",
+      "type": "method",
+      "start_line": 49,
+      "end_line": 53,
+      "content_hash": "15910f108a5e515ab501f6818450e441672b745b",
+      "content": "    pub fn with_batch_size(mut self, batch_size: usize) -> Self {\n        self.batch_size = batch_size;\n        self\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_with_max_length_54": {
+      "name": "with_max_length",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 58,
+      "content_hash": "b1faf33a9996ff21d5d6a3ee4714f43e7ea1f082",
+      "content": "    pub fn with_max_length(mut self, max_length: usize) -> Self {\n        self.max_length = max_length;\n        self\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_with_api_59": {
+      "name": "with_api",
+      "type": "method",
+      "start_line": 59,
+      "end_line": 72,
+      "content_hash": "be3e3f0411dce0c49cf6db1b5d2ccda0d23583be",
+      "content": "    pub fn with_api(mut self, endpoint: String, api_key: Option<String>) -> Self {\n        self.api_endpoint = Some(endpoint);\n        self.api_key = api_key;\n        self\n    }\n}\n\n/// Cross-encoder reranker (base implementation).\n///\n/// This struct provides the framework for cross-encoder reranking.\n/// Concrete implementations will be added for:\n/// - Local models (ONNX, Candle)\n/// - External APIs (Cohere, Voyage, etc.)\n#[derive(Debug)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CrossEncoderReranker_73": {
+      "name": "CrossEncoderReranker",
+      "type": "struct",
+      "start_line": 73,
+      "end_line": 76,
+      "content_hash": "6ca8413a222ed3f2455dbc2ca4c6d25d2c68a336",
+      "content": "pub struct CrossEncoderReranker {\n    pub config: CrossEncoderConfig,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_CrossEncoderReranker_77": {
+      "name": "CrossEncoderReranker",
+      "type": "impl",
+      "start_line": 77,
+      "end_line": 77,
+      "content_hash": "3602e41112af63bac1c97685b37f38224ca7a2f6",
+      "content": "impl CrossEncoderReranker {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_78": {
+      "name": "new",
+      "type": "method",
+      "start_line": 78,
+      "end_line": 85,
+      "content_hash": "65c071ff8e51ddf5312553691342fe9e8dc367c8",
+      "content": "    pub fn new(_config: CrossEncoderConfig) -> Self {\n        todo!();\n    }\n\n    /// Extract text from a TraversalValue for reranking.\n    ///\n    /// This tries to extract meaningful text from the item's properties.\n    /// Common property names like \"text\", \"content\", \"description\" are checked.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_extract_text_86": {
+      "name": "extract_text",
+      "type": "method",
+      "start_line": 86,
+      "end_line": 127,
+      "content_hash": "520e2a14d116830b6376381c8f3288d23c312c67",
+      "content": "    fn extract_text(&self, item: &TraversalValue) -> RerankerResult<String> {\n        let properties = match item {\n            TraversalValue::Node(n) => n.properties,\n            TraversalValue::Edge(e) => e.properties,\n            TraversalValue::Vector(v) => v.properties,\n            TraversalValue::VectorNodeWithoutVectorData(v) => v.properties,\n            TraversalValue::NodeWithScore { node, .. } => node.properties,\n            _ => None,\n        };\n\n        if let Some(props) = properties {\n            // Try common text field names\n            for field in &[\"text\", \"content\", \"description\", \"body\", \"title\"] {\n                if let Some(value) = props.get(field)\n                    && let crate::protocol::value::Value::String(text) = value\n                {\n                    return Ok(text.to_string());\n                }\n            }\n\n            // If no standard field found, try to concatenate all string values\n            let mut texts = Vec::new();\n            for (_, value) in props.iter() {\n                if let crate::protocol::value::Value::String(text) = value {\n                    texts.push(text.as_str());\n                }\n            }\n\n            if !texts.is_empty() {\n                return Ok(texts.join(\" \"));\n            }\n        }\n\n        Err(RerankerError::TextExtractionError(\n            \"No text fields found in item properties\".to_string(),\n        ))\n    }\n\n    /// Score a query-document pair using the cross-encoder model.\n    ///\n    /// This is a placeholder for actual model inference.\n    /// TODO: Implement actual model loading and inference.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_score_pair_128": {
+      "name": "score_pair",
+      "type": "method",
+      "start_line": 128,
+      "end_line": 132,
+      "content_hash": "71b077e5d1623ae7e402e76f019214fa2d6ea703",
+      "content": "    fn score_pair(&self, _query: &str, _document: &str) -> RerankerResult<f64> {\n        todo!();\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Reranker_133": {
+      "name": "Reranker",
+      "type": "impl",
+      "start_line": 133,
+      "end_line": 163,
+      "content_hash": "988791f1a946c46839e7883475d5d5f73d3cd94f",
+      "content": "impl Reranker for CrossEncoderReranker {\n    fn rerank<'arena, I>(&self, items: I, query: Option<&str>) -> RerankerResult<Vec<TraversalValue<'arena>>>\n    where\n        I: Iterator<Item = TraversalValue<'arena>>,\n    {\n        let query_text = query.ok_or_else(|| {\n            RerankerError::InvalidParameter(\"Cross-encoder reranking requires a query\".to_string())\n        })?;\n\n        let items_vec: Vec<_> = items.collect();\n\n        if items_vec.is_empty() {\n            return Err(RerankerError::EmptyInput);\n        }\n\n        let mut scored_items = Vec::with_capacity(items_vec.len());\n\n        // Extract texts and score in batches\n        for mut item in items_vec {\n            let text = self.extract_text(&item)?;\n            let score = self.score_pair(query_text, &text)?;\n            update_score(&mut item, score)?;\n            scored_items.push((score, item));\n        }\n\n        // Sort by score (descending)\n        scored_items.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));\n\n        Ok(scored_items.into_iter().map(|(_, item)| item).collect())\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_name_164": {
+      "name": "name",
+      "type": "method",
+      "start_line": 164,
+      "end_line": 181,
+      "content_hash": "034ba3acf0a8c2041936f997a849431b5ef12a6c",
+      "content": "    fn name(&self) -> &str {\n        \"CrossEncoder\"\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use crate::helix_engine::vector_core::vector::HVector;\n    use bumpalo::Bump;\n\n    fn alloc_vector<'a>(arena: &'a Bump, data: &[f64]) -> HVector<'a> {\n        let slice = arena.alloc_slice_copy(data);\n        HVector::from_slice(\"test_vector\", 0, slice)\n    }\n\n    #[ignore]\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_cross_encoder_config_182": {
+      "name": "test_cross_encoder_config",
+      "type": "method",
+      "start_line": 182,
+      "end_line": 193,
+      "content_hash": "870e61081576896656ecbd2090acf41d8d954107",
+      "content": "    fn test_cross_encoder_config() {\n        let config = CrossEncoderConfig::new(\"test-model\")\n            .with_batch_size(16)\n            .with_max_length(256);\n\n        assert_eq!(config.model_name, \"test-model\");\n        assert_eq!(config.batch_size, 16);\n        assert_eq!(config.max_length, 256);\n    }\n\n    #[ignore]\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_text_extraction_194": {
+      "name": "test_text_extraction",
+      "type": "method",
+      "start_line": 194,
+      "end_line": 205,
+      "content_hash": "37521597c242fec9f3bed259af7425855047d163",
+      "content": "    fn test_text_extraction() {\n        let _arena = Bump::new();\n        let _reranker = CrossEncoderReranker::new(CrossEncoderConfig::new(\"test\"));\n\n        // Note: This test is ignored because CrossEncoderReranker::new uses todo!()\n        // and creating ImmutablePropertiesMap requires arena-allocated data structures.\n        // When the actual implementation is ready, this test should be updated to properly\n        // create a vector with properties using the arena.\n    }\n\n    #[ignore]\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_text_extraction_no_text_206": {
+      "name": "test_text_extraction_no_text",
+      "type": "method",
+      "start_line": 206,
+      "end_line": 218,
+      "content_hash": "42dce6ca32aed74ac62ea7d6e36d04cc1a406312",
+      "content": "    fn test_text_extraction_no_text() {\n        let arena = Bump::new();\n        let reranker = CrossEncoderReranker::new(CrossEncoderConfig::new(\"test\"));\n\n        let v = alloc_vector(&arena, &[1.0, 2.0]);\n        let item = TraversalValue::Vector(v);\n\n        let result = reranker.extract_text(&item);\n        assert!(result.is_err());\n    }\n    \n    #[ignore]\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_rerank_without_query_219": {
+      "name": "test_rerank_without_query",
+      "type": "method",
+      "start_line": 219,
+      "end_line": 229,
+      "content_hash": "e9932564a916881d36400ff1179addf5f30fd07b",
+      "content": "    fn test_rerank_without_query() {\n        let arena = Bump::new();\n        let config = CrossEncoderConfig::new(\"test-model\");\n        let reranker = CrossEncoderReranker::new(config);\n\n        let vectors: Vec<TraversalValue> = vec![TraversalValue::Vector(alloc_vector(&arena, &[1.0]))];\n\n        let result = reranker.rerank(vectors.into_iter(), None);\n        assert!(result.is_err());\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

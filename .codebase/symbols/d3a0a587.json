@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/tests/traversal_tests/range_tests.rs",
+  "file_hash": "0a979046692b54517e64e39a98cad5e1c97a7835",
+  "updated_at": "2025-12-26T17:34:22.046633",
+  "symbols": {
+    "function_setup_test_db_25": {
+      "name": "setup_test_db",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 37,
+      "content_hash": "08bb0f06064d2277b5cf43aecf3c82469d11003e",
+      "content": "fn setup_test_db() -> (TempDir, Arc<HelixGraphStorage>) {\n    let temp_dir = TempDir::new().unwrap();\n    let db_path = temp_dir.path().to_str().unwrap();\n    let storage = HelixGraphStorage::new(\n        db_path,\n        crate::helix_engine::traversal_core::config::Config::default(),\n        Default::default(),\n    )\n    .unwrap();\n    (temp_dir, Arc::new(storage))\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_range_subset_38": {
+      "name": "test_range_subset",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 64,
+      "content_hash": "eb6d65af684d7c7de8694e38f351310b7a064e51",
+      "content": "fn test_range_subset() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Create multiple nodes\n    let _: Vec<_> = (0..5)\n        .map(|_| {\n            G::new_mut(&storage, &arena, &mut txn)\n                .add_n(\"person\", None, None)\n                .collect::<Result<Vec<_>,_>>().unwrap()\n                .first()\n                .unwrap();\n        })\n        .collect();\n\n    txn.commit().unwrap();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let count = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\") // Get all nodes\n        .range(1, 3) // Take nodes at index 1 and 2\n        .count();\n\n    assert_eq!(count, 2);\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_range_chaining_65": {
+      "name": "test_range_chaining",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 115,
+      "content_hash": "37c65dba6cd0545176ebc7fffeb2dbda21533c2c",
+      "content": "fn test_range_chaining() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Create graph: (p1)-[knows]->(p2)-[knows]->(p3)-[knows]->(p4)-[knows]->(p5)\n    let nodes: Vec<_> = (0..5)\n        .map(|i| {\n            G::new_mut(&storage, &arena, &mut txn)\n                .add_n(\"person\", props_option(&arena, props! { \"name\" => i }), None)\n                .collect::<Result<Vec<_>,_>>().unwrap()\n                .first()\n                .unwrap()\n                .clone()\n        })\n        .collect();\n\n    // Create edges connecting nodes sequentially\n    for i in 0..4 {\n        G::new_mut(&storage, &arena, &mut txn)\n            .add_edge(\n                \"knows\",\n                None,\n                nodes[i].id(),\n                nodes[i + 1].id(),\n                false,\n            )\n            .collect::<Result<Vec<_>,_>>().unwrap();\n    }\n\n    G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            None,\n            nodes[4].id(),\n            nodes[0].id(),\n            false,\n        )\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    txn.commit().unwrap();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let count = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\") // Get all nodes\n        .range(0, 3) // Take first 3 nodes\n        .out_node(\"knows\") // Get their outgoing nodes\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(count.len(), 3);\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_range_empty_116": {
+      "name": "test_range_empty",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 127,
+      "content_hash": "a06cb6601349df94839b1e9d091cf9c23549d6d6",
+      "content": "fn test_range_empty() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let count = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\") // Get all nodes\n        .range(0, 0) // Take first 3 nodes\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(count.len(), 0);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

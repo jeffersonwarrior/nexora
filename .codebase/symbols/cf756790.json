@@ -1,0 +1,183 @@
+{
+  "file_path": "/work/internal/aiops/client.go",
+  "file_hash": "54fe9c2d1137c7733695e695191bac1db74d2f83",
+  "updated_at": "2025-12-26T17:34:20.718739",
+  "symbols": {
+    "struct_Client_18": {
+      "name": "Client",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 24,
+      "content_hash": "1a1314afa0e08c291e53befb8425daaad2139bfc",
+      "content": "type Client struct {\n\tendpoint string\n\tclient   *http.Client\n\tenabled  bool\n}\n\n// NewClient creates a new AIOPS client.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewClient_25": {
+      "name": "NewClient",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 44,
+      "content_hash": "b342bece62f09878a8b3af43da387f4567bc608a",
+      "content": "func NewClient(cfg Config) *Client {\n\tif !cfg.Enabled || cfg.Endpoint == \"\" {\n\t\treturn &Client{enabled: false}\n\t}\n\n\ttimeout := cfg.Timeout\n\tif timeout == 0 {\n\t\ttimeout = 5 * time.Second\n\t}\n\n\treturn &Client{\n\t\tendpoint: cfg.Endpoint,\n\t\tenabled:  true,\n\t\tclient: &http.Client{\n\t\t\tTimeout: timeout,\n\t\t},\n\t}\n}\n\n// Available returns true if the AIOPS service is reachable.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Available_45": {
+      "name": "Available",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 67,
+      "content_hash": "9f5a95347dd9a8c9191e2685efaa5a548aff778c",
+      "content": "func (c *Client) Available() bool {\n\tif !c.enabled {\n\t\treturn false\n\t}\n\n\tctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)\n\tdefer cancel()\n\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", c.endpoint+\"/health\", nil)\n\tif err != nil {\n\t\treturn false\n\t}\n\n\tresp, err := c.client.Do(req)\n\tif err != nil {\n\t\treturn false\n\t}\n\tdefer resp.Body.Close()\n\n\treturn resp.StatusCode == http.StatusOK\n}\n\n// ModelInfo returns information about the remote model.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ModelInfo_68": {
+      "name": "ModelInfo",
+      "type": "method",
+      "start_line": 68,
+      "end_line": 95,
+      "content_hash": "1b498dcf626f97051c369513130cbc639b53afa7",
+      "content": "func (c *Client) ModelInfo() ModelInfo {\n\tif !c.enabled {\n\t\treturn ModelInfo{Available: false}\n\t}\n\n\tctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)\n\tdefer cancel()\n\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", c.endpoint+\"/info\", nil)\n\tif err != nil {\n\t\treturn ModelInfo{Available: false}\n\t}\n\n\tresp, err := c.client.Do(req)\n\tif err != nil {\n\t\treturn ModelInfo{Available: false}\n\t}\n\tdefer resp.Body.Close()\n\n\tvar info ModelInfo\n\tif err := json.NewDecoder(resp.Body).Decode(&info); err != nil {\n\t\treturn ModelInfo{Available: false}\n\t}\n\n\treturn info\n}\n\n// ResolveEdit resolves a fuzzy old_string to an exact match.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ResolveEdit_96": {
+      "name": "ResolveEdit",
+      "type": "method",
+      "start_line": 96,
+      "end_line": 115,
+      "content_hash": "236add84b6329573758f83d053bdefbe125c29f5",
+      "content": "func (c *Client) ResolveEdit(ctx context.Context, fileContent, oldString, newString string) (*EditResolution, error) {\n\tif !c.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\treq := ResolveEditRequest{\n\t\tFileContent: fileContent,\n\t\tOldString:   oldString,\n\t\tNewString:   newString,\n\t}\n\n\tvar resp EditResolution\n\tif err := c.post(ctx, \"/resolve-edit\", req, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n\n// DetectLoop analyzes recent tool calls for loop patterns.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DetectLoop_116": {
+      "name": "DetectLoop",
+      "type": "method",
+      "start_line": 116,
+      "end_line": 131,
+      "content_hash": "643af27ba2e0577c9c5087777bfd92bd394134a6",
+      "content": "func (c *Client) DetectLoop(ctx context.Context, calls []ToolCall) (*LoopDetection, error) {\n\tif !c.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\treq := DetectLoopRequest{Calls: calls}\n\n\tvar resp LoopDetection\n\tif err := c.post(ctx, \"/detect-loop\", req, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n\n// DetectDrift checks if recent actions have drifted from the original task.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DetectDrift_132": {
+      "name": "DetectDrift",
+      "type": "method",
+      "start_line": 132,
+      "end_line": 150,
+      "content_hash": "df59a20b48d6527058b1ce5ae727f5162a0956f5",
+      "content": "func (c *Client) DetectDrift(ctx context.Context, task string, recentActions []Action) (*DriftDetection, error) {\n\tif !c.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\treq := DetectDriftRequest{\n\t\tTask:          task,\n\t\tRecentActions: recentActions,\n\t}\n\n\tvar resp DriftDetection\n\tif err := c.post(ctx, \"/detect-drift\", req, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n\n// Compress summarizes content to fit within token budget.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Compress_151": {
+      "name": "Compress",
+      "type": "method",
+      "start_line": 151,
+      "end_line": 169,
+      "content_hash": "8b40cebd29fd169a02fc208ba94039ff36f11172",
+      "content": "func (c *Client) Compress(ctx context.Context, content string, maxTokens int) (string, error) {\n\tif !c.enabled {\n\t\treturn \"\", ErrNotEnabled\n\t}\n\n\treq := CompressRequest{\n\t\tContent:   content,\n\t\tMaxTokens: maxTokens,\n\t}\n\n\tvar resp CompressResponse\n\tif err := c.post(ctx, \"/compress\", req, &resp); err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn resp.Compressed, nil\n}\n\n// ValidateToolCall validates and optionally fixes tool call parameters.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ValidateToolCall_170": {
+      "name": "ValidateToolCall",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 188,
+      "content_hash": "f1b91060d6fc0dbd4b2a2c9cbcc282ed3edfc436",
+      "content": "func (c *Client) ValidateToolCall(ctx context.Context, tool string, params map[string]any) (*ValidationResult, error) {\n\tif !c.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\treq := ValidateToolCallRequest{\n\t\tTool:   tool,\n\t\tParams: params,\n\t}\n\n\tvar resp ValidationResult\n\tif err := c.post(ctx, \"/validate-tool\", req, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n\n// Scriptor returns a scriptor client for batch operations.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Scriptor_189": {
+      "name": "Scriptor",
+      "type": "method",
+      "start_line": 189,
+      "end_line": 192,
+      "content_hash": "8cdde56eb7ed4bad0705f0234b2a78d8071b46c5",
+      "content": "func (c *Client) Scriptor() Scriptor {\n\treturn &scriptorClient{client: c}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_post_193": {
+      "name": "post",
+      "type": "method",
+      "start_line": 193,
+      "end_line": 226,
+      "content_hash": "369551f761ea2d31377fab49a521e8754643f30b",
+      "content": "func (c *Client) post(ctx context.Context, path string, reqBody, respBody any) error {\n\tbody, err := json.Marshal(reqBody)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"marshal request: %w\", err)\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, \"POST\", c.endpoint+path, bytes.NewReader(body))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"create request: %w\", err)\n\t}\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\n\tresp, err := c.client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"send request: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\tvar errResp ErrorResponse\n\t\tif err := json.NewDecoder(resp.Body).Decode(&errResp); err == nil && errResp.Error != \"\" {\n\t\t\treturn fmt.Errorf(\"aiops error: %s\", errResp.Error)\n\t\t}\n\t\treturn fmt.Errorf(\"aiops returned status %d\", resp.StatusCode)\n\t}\n\n\tif err := json.NewDecoder(resp.Body).Decode(respBody); err != nil {\n\t\treturn fmt.Errorf(\"decode response: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// scriptorClient implements Scriptor over HTTP.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_scriptorClient_227": {
+      "name": "scriptorClient",
+      "type": "struct",
+      "start_line": 227,
+      "end_line": 230,
+      "content_hash": "5819f7df9b3103abf481de5d01fe075b67e205a9",
+      "content": "type scriptorClient struct {\n\tclient *Client\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DetectPattern_231": {
+      "name": "DetectPattern",
+      "type": "method",
+      "start_line": 231,
+      "end_line": 245,
+      "content_hash": "31be77802448b76a3ac54ab912a41228f0c95dc4",
+      "content": "func (s *scriptorClient) DetectPattern(ctx context.Context, calls []ToolCall) (*ScriptPlan, error) {\n\tif !s.client.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\treq := DetectPatternRequest{Calls: calls}\n\n\tvar resp ScriptPlan\n\tif err := s.client.post(ctx, \"/scriptor/detect-pattern\", req, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Compile_246": {
+      "name": "Compile",
+      "type": "method",
+      "start_line": 246,
+      "end_line": 258,
+      "content_hash": "04325f682a9b29310194a2edaf64a5837d4cfc23",
+      "content": "func (s *scriptorClient) Compile(ctx context.Context, plan *ScriptPlan) (*Script, error) {\n\tif !s.client.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\tvar resp Script\n\tif err := s.client.post(ctx, \"/scriptor/compile\", plan, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Execute_259": {
+      "name": "Execute",
+      "type": "method",
+      "start_line": 259,
+      "end_line": 271,
+      "content_hash": "430e51e0abcbfd3fee854ad4e32339e9e0b16119",
+      "content": "func (s *scriptorClient) Execute(ctx context.Context, script *Script) (*ScriptResult, error) {\n\tif !s.client.enabled {\n\t\treturn nil, ErrNotEnabled\n\t}\n\n\tvar resp ScriptResult\n\tif err := s.client.post(ctx, \"/scriptor/execute\", script, &resp); err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn &resp, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Report_272": {
+      "name": "Report",
+      "type": "method",
+      "start_line": 272,
+      "end_line": 281,
+      "content_hash": "f58c704d1d3d2bc368f2a004839a9941ea3ad5f4",
+      "content": "func (s *scriptorClient) Report(result *ScriptResult) string {\n\tif result == nil {\n\t\treturn \"\"\n\t}\n\n\tif result.Success {\n\t\treturn fmt.Sprintf(\"Script executed successfully (%dms):\\n%s\", result.Duration, result.Output)\n\t}\n\treturn fmt.Sprintf(\"Script failed (exit %d):\\n%s\\n%s\", result.ExitCode, result.Output, result.Error)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

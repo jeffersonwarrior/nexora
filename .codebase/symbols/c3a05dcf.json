@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/agent/tools/web_search_test.go",
+  "file_hash": "d825283a8073f581ff6fd22fc1bdc3aaa2d1073d",
+  "updated_at": "2025-12-26T17:34:20.348650",
+  "symbols": {
+    "function_TestNewWebSearchTool_11": {
+      "name": "TestNewWebSearchTool",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 27,
+      "content_hash": "efab5ae09d3d5fe3b9d6e1a09fab8c4e80508ff5",
+      "content": "func TestNewWebSearchTool(t *testing.T) {\n\ttool := NewWebSearchTool(nil)\n\n\tif tool == nil {\n\t\tt.Fatal(\"Expected non-nil tool\")\n\t}\n\n\tinfo := tool.Info()\n\tif info.Name != WebSearchToolName {\n\t\tt.Errorf(\"Expected tool name %s, got %s\", WebSearchToolName, info.Name)\n\t}\n\n\tif info.Description == \"\" {\n\t\tt.Error(\"Expected non-empty description\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWebSearchTool_MissingQuery_28": {
+      "name": "TestWebSearchTool_MissingQuery",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 49,
+      "content_hash": "3ecb5b60759b01416249a8c473ba032b078e4c2b",
+      "content": "func TestWebSearchTool_MissingQuery(t *testing.T) {\n\ttool := NewWebSearchTool(nil)\n\n\tctx := context.Background()\n\tparams := WebSearchParams{Query: \"\"}\n\tparamsJSON, _ := json.Marshal(params)\n\tcall := fantasy.ToolCall{\n\t\tID:    \"test-call\",\n\t\tName:  WebSearchToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, call)\n\tif err != nil {\n\t\tt.Fatalf(\"Run failed: %v\", err)\n\t}\n\n\tif !resp.IsError {\n\t\tt.Error(\"Expected error for empty query\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWebSearchTool_DefaultMaxResults_50": {
+      "name": "TestWebSearchTool_DefaultMaxResults",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 64,
+      "content_hash": "666a42815873f004e5017686f7018a0dd42762a6",
+      "content": "func TestWebSearchTool_DefaultMaxResults(t *testing.T) {\n\t// This test just verifies the maxResults logic without actually searching\n\tmaxResults := 0\n\tif maxResults <= 0 {\n\t\tmaxResults = 10\n\t}\n\tif maxResults > 20 {\n\t\tmaxResults = 20\n\t}\n\n\tif maxResults != 10 {\n\t\tt.Errorf(\"Expected default maxResults 10, got %d\", maxResults)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWebSearchTool_MaxResultsCap_65": {
+      "name": "TestWebSearchTool_MaxResultsCap",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 78,
+      "content_hash": "c6b0544b0a9da0aad43b338099d49cf4590d92d9",
+      "content": "func TestWebSearchTool_MaxResultsCap(t *testing.T) {\n\t// Verify the maxResults cap logic\n\tmaxResults := 50\n\tif maxResults <= 0 {\n\t\tmaxResults = 10\n\t}\n\tif maxResults > 20 {\n\t\tmaxResults = 20\n\t}\n\n\tif maxResults != 20 {\n\t\tt.Errorf(\"Expected capped maxResults 20, got %d\", maxResults)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

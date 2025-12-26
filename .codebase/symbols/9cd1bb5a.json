@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/log/log_test.go",
+  "file_hash": "8e6cd7cfaed6e506568c6d86d1830c83747e5329",
+  "updated_at": "2025-12-26T17:34:23.378327",
+  "symbols": {
+    "function_TestSetup_14": {
+      "name": "TestSetup",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 46,
+      "content_hash": "cd939c853d682d61293224e4559b56aa4657c1c8",
+      "content": "func TestSetup(t *testing.T) {\n\t// Create a temporary directory for logs\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test.log\")\n\n\t// Setup logger\n\tSetup(logFile, false)\n\n\t// Verify initialization\n\tif !Initialized() {\n\t\tt.Fatal(\"Logger should be initialized\")\n\t}\n\n\t// Write a log message to trigger file creation\n\tslog.Info(\"test message\")\n\ttime.Sleep(20 * time.Millisecond) // Give time for file creation\n\n\t// Verify log file was created\n\tif _, err := os.Stat(logFile); os.IsNotExist(err) {\n\t\tt.Error(\"Log file was not created\")\n\t}\n\n\t// Write an error to trigger error log creation\n\terrorLogFile := filepath.Join(tmpDir, \"nexora-errors.log\")\n\tslog.Error(\"test error\")\n\ttime.Sleep(20 * time.Millisecond) // Give time for file creation\n\n\tif _, err := os.Stat(errorLogFile); os.IsNotExist(err) {\n\t\tt.Error(\"Error log file was not created after writing error\")\n\t}\n}\n\n// TestSetupDebugMode verifies debug level logging",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSetupDebugMode_47": {
+      "name": "TestSetupDebugMode",
+      "type": "function",
+      "start_line": 47,
+      "end_line": 64,
+      "content_hash": "d84f891ba6793ab3748ab34e96de7e1ddad57e36",
+      "content": "func TestSetupDebugMode(t *testing.T) {\n\t// Note: Can't test file creation since Setup uses sync.Once\n\t// and previous tests already initialized the logger.\n\t// We verify that calling Setup with debug=true doesn't panic\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test-debug.log\")\n\n\tSetup(logFile, true)\n\n\tif !Initialized() {\n\t\tt.Fatal(\"Logger should be initialized\")\n\t}\n\n\t// Log a debug message (won't use our file due to sync.Once, but shouldn't error)\n\tslog.Debug(\"debug message\")\n}\n\n// TestSetupIdempotent verifies Setup can be called multiple times safely",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSetupIdempotent_65": {
+      "name": "TestSetupIdempotent",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 80,
+      "content_hash": "2af9f1aeb149e738b574ce30def4da0153d271c6",
+      "content": "func TestSetupIdempotent(t *testing.T) {\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test-idempotent.log\")\n\n\t// Call Setup multiple times\n\tSetup(logFile, false)\n\tSetup(logFile, false)\n\tSetup(logFile, false)\n\n\t// Should still be initialized\n\tif !Initialized() {\n\t\tt.Fatal(\"Logger should be initialized after multiple Setup calls\")\n\t}\n}\n\n// TestInitialized verifies the Initialized function",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInitialized_81": {
+      "name": "TestInitialized",
+      "type": "function",
+      "start_line": 81,
+      "end_line": 94,
+      "content_hash": "470798a9ae7f5c06f9d2c2ebd5c4348a4a2fcfc2",
+      "content": "func TestInitialized(t *testing.T) {\n\t// Note: We can't truly test uninitialized state since Setup is called\n\t// by other tests, but we can verify it returns true after initialization\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test-init.log\")\n\n\tSetup(logFile, false)\n\n\tif !Initialized() {\n\t\tt.Error(\"Initialized() should return true after Setup\")\n\t}\n}\n\n// TestMultiHandlerEnabled verifies handler level checking",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMultiHandlerEnabled_95": {
+      "name": "TestMultiHandlerEnabled",
+      "type": "function",
+      "start_line": 95,
+      "end_line": 141,
+      "content_hash": "092d9246bac7990909820017d23870c3b7234362",
+      "content": "func TestMultiHandlerEnabled(t *testing.T) {\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test-handler.log\")\n\terrorLogFile := filepath.Join(tmpDir, \"nexora-errors.log\")\n\n\t// Create handlers\n\tmainHandler := slog.NewJSONHandler(\n\t\t&testWriter{},\n\t\t&slog.HandlerOptions{Level: slog.LevelInfo},\n\t)\n\terrorHandler := slog.NewJSONHandler(\n\t\t&testWriter{},\n\t\t&slog.HandlerOptions{Level: slog.LevelError},\n\t)\n\n\tmh := multiHandler{\n\t\tmain:   mainHandler,\n\t\terrors: errorHandler,\n\t}\n\n\tctx := context.Background()\n\n\t// Test different log levels\n\ttests := []struct {\n\t\tlevel   slog.Level\n\t\tenabled bool\n\t}{\n\t\t{slog.LevelDebug, false}, // Below INFO\n\t\t{slog.LevelInfo, true},\n\t\t{slog.LevelWarn, true},\n\t\t{slog.LevelError, true},\n\t}\n\n\tfor _, tt := range tests {\n\t\tenabled := mh.Enabled(ctx, tt.level)\n\t\tif enabled != tt.enabled {\n\t\t\tt.Errorf(\"Level %v: expected enabled=%v, got %v\",\n\t\t\t\ttt.level, tt.enabled, enabled)\n\t\t}\n\t}\n\n\t// Cleanup\n\tos.Remove(logFile)\n\tos.Remove(errorLogFile)\n}\n\n// TestMultiHandlerHandle verifies correct handler routing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMultiHandlerHandle_142": {
+      "name": "TestMultiHandlerHandle",
+      "type": "function",
+      "start_line": 142,
+      "end_line": 189,
+      "content_hash": "ff42f22d9d41319da3ae92085d49ec5db9cb2a0d",
+      "content": "func TestMultiHandlerHandle(t *testing.T) {\n\tmainWriter := &testWriter{}\n\terrorWriter := &testWriter{}\n\n\tmainHandler := slog.NewJSONHandler(mainWriter, &slog.HandlerOptions{\n\t\tLevel: slog.LevelInfo,\n\t})\n\terrorHandler := slog.NewJSONHandler(errorWriter, &slog.HandlerOptions{\n\t\tLevel: slog.LevelError,\n\t})\n\n\tmh := multiHandler{\n\t\tmain:   mainHandler,\n\t\terrors: errorHandler,\n\t}\n\n\tctx := context.Background()\n\n\t// Test INFO level goes to main\n\tinfoRecord := slog.NewRecord(time.Now(), slog.LevelInfo, \"info message\", 0)\n\tif err := mh.Handle(ctx, infoRecord); err != nil {\n\t\tt.Errorf(\"Failed to handle INFO record: %v\", err)\n\t}\n\n\tif len(mainWriter.data) == 0 {\n\t\tt.Error(\"INFO should write to main handler\")\n\t}\n\n\t// Reset\n\tmainWriter.data = \"\"\n\terrorWriter.data = \"\"\n\n\t// Test ERROR level goes to error handler\n\terrorRecord := slog.NewRecord(time.Now(), slog.LevelError, \"error message\", 0)\n\tif err := mh.Handle(ctx, errorRecord); err != nil {\n\t\tt.Errorf(\"Failed to handle ERROR record: %v\", err)\n\t}\n\n\tif len(errorWriter.data) == 0 {\n\t\tt.Error(\"ERROR should write to error handler\")\n\t}\n\n\tif len(mainWriter.data) > 0 {\n\t\tt.Error(\"ERROR should not write to main handler\")\n\t}\n}\n\n// TestMultiHandlerWithAttrs verifies attribute chaining",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMultiHandlerWithAttrs_190": {
+      "name": "TestMultiHandlerWithAttrs",
+      "type": "function",
+      "start_line": 190,
+      "end_line": 212,
+      "content_hash": "854b77624027aa08b158d1df98df061883c8b3e4",
+      "content": "func TestMultiHandlerWithAttrs(t *testing.T) {\n\tmainHandler := slog.NewJSONHandler(&testWriter{}, &slog.HandlerOptions{})\n\terrorHandler := slog.NewJSONHandler(&testWriter{}, &slog.HandlerOptions{})\n\n\tmh := multiHandler{\n\t\tmain:   mainHandler,\n\t\terrors: errorHandler,\n\t}\n\n\tattrs := []slog.Attr{\n\t\tslog.String(\"key\", \"value\"),\n\t\tslog.Int(\"count\", 42),\n\t}\n\n\tnewHandler := mh.WithAttrs(attrs)\n\n\t// Verify it returns a multiHandler\n\tif _, ok := newHandler.(multiHandler); !ok {\n\t\tt.Error(\"WithAttrs should return a multiHandler\")\n\t}\n}\n\n// TestMultiHandlerWithGroup verifies group chaining",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMultiHandlerWithGroup_213": {
+      "name": "TestMultiHandlerWithGroup",
+      "type": "function",
+      "start_line": 213,
+      "end_line": 230,
+      "content_hash": "d22d1db676bc47685dd9186aeff57bd0be18ed4f",
+      "content": "func TestMultiHandlerWithGroup(t *testing.T) {\n\tmainHandler := slog.NewJSONHandler(&testWriter{}, &slog.HandlerOptions{})\n\terrorHandler := slog.NewJSONHandler(&testWriter{}, &slog.HandlerOptions{})\n\n\tmh := multiHandler{\n\t\tmain:   mainHandler,\n\t\terrors: errorHandler,\n\t}\n\n\tnewHandler := mh.WithGroup(\"test-group\")\n\n\t// Verify it returns a multiHandler\n\tif _, ok := newHandler.(multiHandler); !ok {\n\t\tt.Error(\"WithGroup should return a multiHandler\")\n\t}\n}\n\n// TestRecoverPanic verifies panic recovery and logging",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecoverPanic_231": {
+      "name": "TestRecoverPanic",
+      "type": "function",
+      "start_line": 231,
+      "end_line": 285,
+      "content_hash": "c00394fc0805a4c58b1beac067959a84cc2dfee1",
+      "content": "func TestRecoverPanic(t *testing.T) {\n\t// Test panic recovery\n\tdidPanic := false\n\tcleanupCalled := false\n\n\tfunc() {\n\t\tdefer RecoverPanic(\"test\", func() {\n\t\t\tcleanupCalled = true\n\t\t})\n\t\tdidPanic = true\n\t\tpanic(\"test panic\")\n\t}()\n\n\tif !didPanic {\n\t\tt.Error(\"Panic should have been triggered\")\n\t}\n\n\tif !cleanupCalled {\n\t\tt.Error(\"Cleanup function should have been called\")\n\t}\n\n\t// Verify panic log file was created\n\tfiles, err := filepath.Glob(\"nexora-panic-test-*.log\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to find panic log files: %v\", err)\n\t}\n\n\tif len(files) == 0 {\n\t\tt.Error(\"Panic log file should have been created\")\n\t} else {\n\t\t// Verify file content\n\t\tcontent, err := os.ReadFile(files[0])\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to read panic log: %v\", err)\n\t\t}\n\n\t\tcontentStr := string(content)\n\t\tif !strings.Contains(contentStr, \"Panic in test\") {\n\t\t\tt.Error(\"Panic log should contain panic message\")\n\t\t}\n\t\tif !strings.Contains(contentStr, \"test panic\") {\n\t\t\tt.Error(\"Panic log should contain panic value\")\n\t\t}\n\t\tif !strings.Contains(contentStr, \"Stack Trace:\") {\n\t\t\tt.Error(\"Panic log should contain stack trace\")\n\t\t}\n\n\t\t// Cleanup\n\t\tfor _, f := range files {\n\t\t\tos.Remove(f)\n\t\t}\n\t}\n}\n\n// TestRecoverPanicNoPanic verifies no-op when no panic occurs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecoverPanicNoPanic_286": {
+      "name": "TestRecoverPanicNoPanic",
+      "type": "function",
+      "start_line": 286,
+      "end_line": 316,
+      "content_hash": "ff31f248df46d7b88f6e147f249756c55e4dc2b6",
+      "content": "func TestRecoverPanicNoPanic(t *testing.T) {\n\tcleanupCalled := false\n\n\tfunc() {\n\t\tdefer RecoverPanic(\"test-no-panic\", func() {\n\t\t\tcleanupCalled = true\n\t\t})\n\t\t// No panic\n\t}()\n\n\t// Cleanup should not be called when no panic\n\tif cleanupCalled {\n\t\tt.Error(\"Cleanup should not be called when no panic occurs\")\n\t}\n\n\t// Verify no panic log was created\n\tfiles, err := filepath.Glob(\"nexora-panic-test-no-panic-*.log\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to check for panic logs: %v\", err)\n\t}\n\n\tif len(files) > 0 {\n\t\tt.Error(\"No panic log should be created when no panic occurs\")\n\t\t// Cleanup\n\t\tfor _, f := range files {\n\t\t\tos.Remove(f)\n\t\t}\n\t}\n}\n\n// TestRecoverPanicNilCleanup verifies nil cleanup is handled",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecoverPanicNilCleanup_317": {
+      "name": "TestRecoverPanicNilCleanup",
+      "type": "function",
+      "start_line": 317,
+      "end_line": 337,
+      "content_hash": "2d64fb90ab6d57bba627f09d5c6f426e8ae4aa5c",
+      "content": "func TestRecoverPanicNilCleanup(t *testing.T) {\n\tfunc() {\n\t\tdefer RecoverPanic(\"test-nil-cleanup\", nil)\n\t\tpanic(\"test panic with nil cleanup\")\n\t}()\n\n\t// Should not panic, cleanup is optional\n\tfiles, err := filepath.Glob(\"nexora-panic-test-nil-cleanup-*.log\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to check for panic logs: %v\", err)\n\t}\n\n\tif len(files) > 0 {\n\t\t// Cleanup\n\t\tfor _, f := range files {\n\t\t\tos.Remove(f)\n\t\t}\n\t}\n}\n\n// TestLogRotation verifies log rotation configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLogRotation_338": {
+      "name": "TestLogRotation",
+      "type": "function",
+      "start_line": 338,
+      "end_line": 358,
+      "content_hash": "b5f388e9932b38ab7e8779b44b49a2e12e47c964",
+      "content": "func TestLogRotation(t *testing.T) {\n\t// Note: Can't test file creation since Setup uses sync.Once\n\t// We verify that writing logs doesn't cause errors\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test-rotation.log\")\n\n\tSetup(logFile, false)\n\n\t// Write multiple log entries (won't use our file due to sync.Once, but shouldn't error)\n\tfor i := 0; i < 100; i++ {\n\t\tslog.Info(\"test message\", \"iteration\", i)\n\t}\n\n\t// Give time for writes\n\ttime.Sleep(50 * time.Millisecond)\n\n\t// Note: We can't verify file creation due to sync.Once,\n\t// but we verified the code doesn't panic\n}\n\n// TestErrorLogSeparation verifies errors go to separate file",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestErrorLogSeparation_359": {
+      "name": "TestErrorLogSeparation",
+      "type": "function",
+      "start_line": 359,
+      "end_line": 378,
+      "content_hash": "6519c133fbe6fe15eaee00c02e75c19bbaa974e0",
+      "content": "func TestErrorLogSeparation(t *testing.T) {\n\t// Note: Can't test file creation since Setup uses sync.Once\n\t// We verify that writing different log levels doesn't cause errors\n\ttmpDir := t.TempDir()\n\tlogFile := filepath.Join(tmpDir, \"test-separation.log\")\n\n\tSetup(logFile, false)\n\n\t// Write INFO and ERROR messages (won't use our files due to sync.Once, but shouldn't error)\n\tslog.Info(\"info message\")\n\tslog.Error(\"error message\")\n\n\t// Give time for writes\n\ttime.Sleep(50 * time.Millisecond)\n\n\t// Note: We can't verify file creation due to sync.Once,\n\t// but we verified the code handles different log levels without panicking\n}\n\n// testWriter is a simple writer for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_testWriter_379": {
+      "name": "testWriter",
+      "type": "struct",
+      "start_line": 379,
+      "end_line": 382,
+      "content_hash": "0c9d648bb54db735c65b2178a873e995ea28c861",
+      "content": "type testWriter struct {\n\tdata string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Write_383": {
+      "name": "Write",
+      "type": "method",
+      "start_line": 383,
+      "end_line": 386,
+      "content_hash": "1dd664205855b96ad03409edf0b247930fe4ccb7",
+      "content": "func (tw *testWriter) Write(p []byte) (n int, err error) {\n\ttw.data += string(p)\n\treturn len(p), nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

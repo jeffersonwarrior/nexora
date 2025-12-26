@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/context-engine/scripts/rerank_recursive/projection.py",
+  "file_hash": "8ffa09d3558f5c37c758288066c901926a47e701",
+  "updated_at": "2025-12-26T17:34:24.001605",
+  "symbols": {
+    "class_LearnedProjection_11": {
+      "name": "LearnedProjection",
+      "type": "class",
+      "start_line": 11,
+      "end_line": 161,
+      "content_hash": "1f3790b59941fc25c370e92e1722418b685c5cd6",
+      "content": "class LearnedProjection:\n    \"\"\"\n    Learnable linear projection from embedding dim to working dim.\n\n    Replaces fixed random projection with a learnable layer that adapts\n    to domain-specific semantics.\n    \"\"\"\n\n    WEIGHTS_DIR = os.environ.get(\"RERANKER_WEIGHTS_DIR\", \"/tmp/rerank_weights\")\n    WEIGHTS_RELOAD_INTERVAL = float(os.environ.get(\"RERANKER_WEIGHTS_RELOAD_INTERVAL\", \"60\"))\n\n    def __init__(self, input_dim: int = 768, output_dim: int = 256, lr: float = 0.0005):\n        self.input_dim = input_dim\n        self.output_dim = output_dim\n        self.base_lr = lr\n        self.lr = lr\n        self._collection = \"default\"\n        self._weights_path = self._get_weights_path(\"default\")\n        self._weights_mtime = 0.0\n        self._last_reload_check = 0.0\n        self._weights_loaded = False\n\n        self._update_count = 0\n        self._version = 0\n        self._momentum_W: Optional[np.ndarray] = None\n        self._momentum = 0.9\n\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n                return\n            except Exception as e:\n                from scripts.logger import get_logger\n                get_logger(__name__).warning(f\"LearnedProjection: failed to load {self._weights_path}: {e}\")\n\n        self._init_random_weights()\n\n    @staticmethod\n    def _sanitize_collection(collection: str) -> str:\n        return \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)\n\n    def _get_weights_path(self, collection: str) -> str:\n        safe_name = self._sanitize_collection(collection)\n        return os.path.join(self.WEIGHTS_DIR, f\"projection_{safe_name}.npz\")\n\n    def _init_random_weights(self):\n        scale = np.sqrt(2.0 / (self.input_dim + self.output_dim))\n        rng = np.random.RandomState(44)\n        self.W = (rng.randn(self.input_dim, self.output_dim) * scale).astype(np.float32)\n        self._momentum_W = np.zeros_like(self.W)\n\n    def set_collection(self, collection: str):\n        self._collection = collection\n        self._weights_path = self._get_weights_path(collection)\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n            except Exception:\n                pass\n\n    def maybe_reload_weights(self):\n        now = time.time()\n        if now - self._last_reload_check < self.WEIGHTS_RELOAD_INTERVAL:\n            return\n        self._last_reload_check = now\n        try:\n            if os.path.exists(self._weights_path):\n                mtime = os.path.getmtime(self._weights_path)\n                if mtime > self._weights_mtime:\n                    self._load_weights()\n        except Exception:\n            pass\n\n    def _load_weights(self):\n        import fcntl\n        lock_path = self._weights_path + \".lock\"\n        try:\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)\n                data = np.load(self._weights_path)\n                self.W = data[\"W\"].astype(np.float32)\n                self._version = int(data.get(\"version\", 0))\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n            self._weights_mtime = os.path.getmtime(self._weights_path)\n            self._weights_loaded = True\n            self._momentum_W = np.zeros_like(self.W)\n        except Exception as e:\n            from scripts.logger import get_logger\n            get_logger(__name__).warning(f\"LearnedProjection: load failed: {e}\")\n\n    def _save_weights(self):\n        import fcntl\n        os.makedirs(os.path.dirname(self._weights_path) or \".\", exist_ok=True)\n        lock_path = self._weights_path + \".lock\"\n        base_path = self._weights_path.rsplit(\".npz\", 1)[0]\n        tmp_path = base_path + \".tmp.npz\"\n        try:\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)\n                np.savez(tmp_path, W=self.W, version=self._version)\n                os.replace(tmp_path, self._weights_path)\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n            self._weights_mtime = os.path.getmtime(self._weights_path)\n        except Exception as e:\n            from scripts.logger import get_logger\n            get_logger(__name__).warning(f\"LearnedProjection: save failed: {e}\")\n\n    def forward(self, embeddings: np.ndarray) -> np.ndarray:\n        \"\"\"Project embeddings to output dim (normalized).\"\"\"\n        squeeze = embeddings.ndim == 1\n        if squeeze:\n            embeddings = embeddings.reshape(1, -1)\n        projected = embeddings @ self.W\n        norms = np.linalg.norm(projected, axis=-1, keepdims=True) + 1e-8\n        projected = projected / norms\n        if squeeze:\n            projected = projected[0]\n        return projected\n\n    def forward_with_cache(self, embeddings: np.ndarray) -> Tuple[np.ndarray, Dict[str, Any]]:\n        \"\"\"Forward pass with cache for backprop.\"\"\"\n        squeeze = embeddings.ndim == 1\n        if squeeze:\n            embeddings = embeddings.reshape(1, -1)\n        pre_norm = embeddings @ self.W\n        norms = np.linalg.norm(pre_norm, axis=-1, keepdims=True) + 1e-8\n        projected = pre_norm / norms\n        cache = {\"input\": embeddings, \"pre_norm\": pre_norm, \"norms\": norms, \"projected\": projected}\n        if squeeze:\n            projected = projected[0]\n        return projected, cache\n\n    def backward(self, grad_output: np.ndarray, cache: Dict[str, Any], weight: float = 1.0):\n        \"\"\"Backprop gradient through projection and update weights.\"\"\"\n        if grad_output.ndim == 1:\n            grad_output = grad_output.reshape(1, -1)\n        embeddings = cache[\"input\"]\n        norms = cache[\"norms\"]\n        batch_size = embeddings.shape[0]\n        projected = cache[\"projected\"]\n        dot = np.sum(grad_output * projected, axis=-1, keepdims=True)\n        grad_pre_norm = (grad_output - projected * dot) / norms\n        dW = embeddings.T @ grad_pre_norm / batch_size\n        dW = dW * weight\n        self._momentum_W = self._momentum * self._momentum_W + dW\n        self.W -= self.lr * self._momentum_W\n        self._update_count += 1\n        if self._update_count % 100 == 0:\n            self._version += 1\n            self._save_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___22": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 22,
+      "end_line": 46,
+      "content_hash": "66ae2b3f26de04011e5cda69d89e438a57237999",
+      "content": "    def __init__(self, input_dim: int = 768, output_dim: int = 256, lr: float = 0.0005):\n        self.input_dim = input_dim\n        self.output_dim = output_dim\n        self.base_lr = lr\n        self.lr = lr\n        self._collection = \"default\"\n        self._weights_path = self._get_weights_path(\"default\")\n        self._weights_mtime = 0.0\n        self._last_reload_check = 0.0\n        self._weights_loaded = False\n\n        self._update_count = 0\n        self._version = 0\n        self._momentum_W: Optional[np.ndarray] = None\n        self._momentum = 0.9\n\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n                return\n            except Exception as e:\n                from scripts.logger import get_logger\n                get_logger(__name__).warning(f\"LearnedProjection: failed to load {self._weights_path}: {e}\")\n\n        self._init_random_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__sanitize_collection_49": {
+      "name": "_sanitize_collection",
+      "type": "method",
+      "start_line": 49,
+      "end_line": 50,
+      "content_hash": "cdbd85077085baad363b24f06dafd0ea2c67f8d3",
+      "content": "    def _sanitize_collection(collection: str) -> str:\n        return \"\".join(c if c.isalnum() or c in \"-_\" else \"_\" for c in collection)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__get_weights_path_52": {
+      "name": "_get_weights_path",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 54,
+      "content_hash": "755dee6696c6d5d9b92b323238c7551e386fa1fc",
+      "content": "    def _get_weights_path(self, collection: str) -> str:\n        safe_name = self._sanitize_collection(collection)\n        return os.path.join(self.WEIGHTS_DIR, f\"projection_{safe_name}.npz\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__init_random_weights_56": {
+      "name": "_init_random_weights",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 60,
+      "content_hash": "04e2a83980ddf44a65e29545d3f151595aa11647",
+      "content": "    def _init_random_weights(self):\n        scale = np.sqrt(2.0 / (self.input_dim + self.output_dim))\n        rng = np.random.RandomState(44)\n        self.W = (rng.randn(self.input_dim, self.output_dim) * scale).astype(np.float32)\n        self._momentum_W = np.zeros_like(self.W)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_set_collection_62": {
+      "name": "set_collection",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 69,
+      "content_hash": "5d86e95df72e0d5a0b102dca9bbef687d38ca49a",
+      "content": "    def set_collection(self, collection: str):\n        self._collection = collection\n        self._weights_path = self._get_weights_path(collection)\n        if os.path.exists(self._weights_path):\n            try:\n                self._load_weights()\n            except Exception:\n                pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_maybe_reload_weights_71": {
+      "name": "maybe_reload_weights",
+      "type": "method",
+      "start_line": 71,
+      "end_line": 82,
+      "content_hash": "e4c0acd9659399696b58a17bac9fe420a9c86639",
+      "content": "    def maybe_reload_weights(self):\n        now = time.time()\n        if now - self._last_reload_check < self.WEIGHTS_RELOAD_INTERVAL:\n            return\n        self._last_reload_check = now\n        try:\n            if os.path.exists(self._weights_path):\n                mtime = os.path.getmtime(self._weights_path)\n                if mtime > self._weights_mtime:\n                    self._load_weights()\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__load_weights_84": {
+      "name": "_load_weights",
+      "type": "method",
+      "start_line": 84,
+      "end_line": 100,
+      "content_hash": "b12caeb5fd66916b4b648246274ab98313e8bf43",
+      "content": "    def _load_weights(self):\n        import fcntl\n        lock_path = self._weights_path + \".lock\"\n        try:\n            os.makedirs(os.path.dirname(lock_path) or \".\", exist_ok=True)\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)\n                data = np.load(self._weights_path)\n                self.W = data[\"W\"].astype(np.float32)\n                self._version = int(data.get(\"version\", 0))\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n            self._weights_mtime = os.path.getmtime(self._weights_path)\n            self._weights_loaded = True\n            self._momentum_W = np.zeros_like(self.W)\n        except Exception as e:\n            from scripts.logger import get_logger\n            get_logger(__name__).warning(f\"LearnedProjection: load failed: {e}\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__save_weights_102": {
+      "name": "_save_weights",
+      "type": "method",
+      "start_line": 102,
+      "end_line": 117,
+      "content_hash": "db89ee7e478888be3e7f81cbabe8f9adec2e33f8",
+      "content": "    def _save_weights(self):\n        import fcntl\n        os.makedirs(os.path.dirname(self._weights_path) or \".\", exist_ok=True)\n        lock_path = self._weights_path + \".lock\"\n        base_path = self._weights_path.rsplit(\".npz\", 1)[0]\n        tmp_path = base_path + \".tmp.npz\"\n        try:\n            with open(lock_path, \"w\") as lock_file:\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)\n                np.savez(tmp_path, W=self.W, version=self._version)\n                os.replace(tmp_path, self._weights_path)\n                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)\n            self._weights_mtime = os.path.getmtime(self._weights_path)\n        except Exception as e:\n            from scripts.logger import get_logger\n            get_logger(__name__).warning(f\"LearnedProjection: save failed: {e}\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_forward_119": {
+      "name": "forward",
+      "type": "method",
+      "start_line": 119,
+      "end_line": 129,
+      "content_hash": "2e32dae83aa6ba50658d1dc8653cdc7e82f48cfd",
+      "content": "    def forward(self, embeddings: np.ndarray) -> np.ndarray:\n        \"\"\"Project embeddings to output dim (normalized).\"\"\"\n        squeeze = embeddings.ndim == 1\n        if squeeze:\n            embeddings = embeddings.reshape(1, -1)\n        projected = embeddings @ self.W\n        norms = np.linalg.norm(projected, axis=-1, keepdims=True) + 1e-8\n        projected = projected / norms\n        if squeeze:\n            projected = projected[0]\n        return projected",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_forward_with_cache_131": {
+      "name": "forward_with_cache",
+      "type": "method",
+      "start_line": 131,
+      "end_line": 142,
+      "content_hash": "1548b87bccf2ebe42b0b3ab5c68df3e9fa8333fb",
+      "content": "    def forward_with_cache(self, embeddings: np.ndarray) -> Tuple[np.ndarray, Dict[str, Any]]:\n        \"\"\"Forward pass with cache for backprop.\"\"\"\n        squeeze = embeddings.ndim == 1\n        if squeeze:\n            embeddings = embeddings.reshape(1, -1)\n        pre_norm = embeddings @ self.W\n        norms = np.linalg.norm(pre_norm, axis=-1, keepdims=True) + 1e-8\n        projected = pre_norm / norms\n        cache = {\"input\": embeddings, \"pre_norm\": pre_norm, \"norms\": norms, \"projected\": projected}\n        if squeeze:\n            projected = projected[0]\n        return projected, cache",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_backward_144": {
+      "name": "backward",
+      "type": "method",
+      "start_line": 144,
+      "end_line": 161,
+      "content_hash": "dcb7686767a8dfe3d2b8d6fa7e36f067b5756844",
+      "content": "    def backward(self, grad_output: np.ndarray, cache: Dict[str, Any], weight: float = 1.0):\n        \"\"\"Backprop gradient through projection and update weights.\"\"\"\n        if grad_output.ndim == 1:\n            grad_output = grad_output.reshape(1, -1)\n        embeddings = cache[\"input\"]\n        norms = cache[\"norms\"]\n        batch_size = embeddings.shape[0]\n        projected = cache[\"projected\"]\n        dot = np.sum(grad_output * projected, axis=-1, keepdims=True)\n        grad_pre_norm = (grad_output - projected * dot) / norms\n        dW = embeddings.T @ grad_pre_norm / batch_size\n        dW = dW * weight\n        self._momentum_W = self._momentum * self._momentum_W + dW\n        self.W -= self.lr * self._momentum_W\n        self._update_count += 1\n        if self._update_count % 100 == 0:\n            self._version += 1\n            self._save_weights()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

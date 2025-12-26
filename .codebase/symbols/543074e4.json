@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_auth.py",
+  "file_hash": "f0d1dc95c63664e5f4ae0026463332890206f844",
+  "updated_at": "2025-12-26T17:34:20.678208",
+  "symbols": {
+    "class_ValidationError_8": {
+      "name": "ValidationError",
+      "type": "class",
+      "start_line": 8,
+      "end_line": 9,
+      "content_hash": "1207e92d0042e894f2322de377f6676119423a49",
+      "content": "    class ValidationError(Exception):\n        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__auth_validate_session_28": {
+      "name": "_auth_validate_session",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 33,
+      "content_hash": "cd61eebae71db95fad387a9d1b0f062e763a8ee6",
+      "content": "    def _auth_validate_session(session_id: str):  # type: ignore[no-redef]\n        if AUTH_ENABLED_AUTH:\n            raise ValidationError(\n                f\"Auth backend unavailable (import failed): {_AUTH_BACKEND_IMPORT_ERROR}\"\n            )\n        return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__has_collection_access_35": {
+      "name": "_has_collection_access",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 42,
+      "content_hash": "33d6c5c0cac0939521da004e2766c7ab825dd31f",
+      "content": "    def _has_collection_access(\n        user_id: str, qdrant_collection: str, permission: str = \"read\"\n    ) -> bool:  # type: ignore[no-redef]\n        if AUTH_ENABLED_AUTH:\n            raise ValidationError(\n                f\"Auth backend unavailable (import failed): {_AUTH_BACKEND_IMPORT_ERROR}\"\n            )\n        return True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_require_auth_session_51": {
+      "name": "require_auth_session",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 60,
+      "content_hash": "0d553a49c17a1512f43953a64d1a9fdac17dde10",
+      "content": "def require_auth_session(session: Optional[str]) -> Optional[Dict[str, Any]]:\n    if not AUTH_ENABLED_AUTH:\n        return None\n    sid = (session or \"\").strip()\n    if not sid:\n        raise ValidationError(\"Missing session for authorized operation\")\n    info = _auth_validate_session(sid)\n    if not info:\n        raise ValidationError(\"Invalid or expired session\")\n    return info",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_require_collection_access_63": {
+      "name": "require_collection_access",
+      "type": "function",
+      "start_line": 63,
+      "end_line": 74,
+      "content_hash": "3b982ef3d5b8b84d1ac34bc34dad85b3b9238591",
+      "content": "def require_collection_access(user_id: Optional[str], collection: str, perm: str) -> None:\n    if not ACL_ENFORCE or not AUTH_ENABLED_AUTH:\n        return\n    if ACL_ALLOW_ALL_AUTH:\n        return\n    uid = (user_id or \"\").strip()\n    if not uid:\n        raise ValidationError(\"Not authorized: missing user id\")\n    if not _has_collection_access(uid, collection, perm):\n        raise ValidationError(\n            f\"Forbidden: {perm} access to collection '{collection}' denied\"\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

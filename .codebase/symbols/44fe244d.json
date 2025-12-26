@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/generate-changelog.js",
+  "file_hash": "fea49e11d8ddb4e7698fa46cae7eebcd81d67291",
+  "updated_at": "2025-12-26T17:34:22.357359",
+  "symbols": {
+    "function_exec_12": {
+      "name": "exec",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 20,
+      "content_hash": "4cfbdc02d29458bc9bf9dc162d0100bbf1604288",
+      "content": "function exec(command) {\n  try {\n    return execSync(command, { encoding: 'utf-8' });\n  } catch (error) {\n    console.error(`Error executing command: ${command}`);\n    console.error(error.message);\n    process.exit(1);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getReleases_22": {
+      "name": "getReleases",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 35,
+      "content_hash": "83e96229b76c387bf016630f4ffed9f925f0bce8",
+      "content": "function getReleases() {\n  console.log('\ud83d\udccb Fetching releases from GitHub...');\n  const releasesJson = exec('gh release list --limit 1000 --json tagName,publishedAt,name');\n  const releases = JSON.parse(releasesJson);\n\n  // Fetch body for each release\n  console.log(`\ud83d\udce5 Fetching details for ${releases.length} releases...`);\n  for (const release of releases) {\n    const body = exec(`gh release view ${release.tagName} --json body --jq '.body'`).trim();\n    release.body = body;\n  }\n\n  return releases;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDate_37": {
+      "name": "formatDate",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 40,
+      "content_hash": "a0d055331978500eab81cad423b105dbdb6c5462",
+      "content": "function formatDate(isoDate) {\n  const date = new Date(isoDate);\n  return date.toISOString().split('T')[0]; // YYYY-MM-DD\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanReleaseBody_42": {
+      "name": "cleanReleaseBody",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 48,
+      "content_hash": "2b0d9568e95ebce0c9dc2f8cdd1129b164d53acc",
+      "content": "function cleanReleaseBody(body) {\n  // Remove the \"Generated with Claude Code\" footer\n  return body\n    .replace(/\ud83e\udd16 Generated with \\[Claude Code\\].*$/s, '')\n    .replace(/---\\n*$/s, '')\n    .trim();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractVersion_50": {
+      "name": "extractVersion",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 53,
+      "content_hash": "5bf98407f26ab37d666e08678309c573fe4e56ce",
+      "content": "function extractVersion(tagName) {\n  // Remove 'v' prefix from tag name\n  return tagName.replace(/^v/, '');\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_generateChangelog_55": {
+      "name": "generateChangelog",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 89,
+      "content_hash": "b75296221858a1a3d3ae84091e647e22357445f0",
+      "content": "function generateChangelog(releases) {\n  console.log(`\ud83d\udcdd Generating CHANGELOG.md from ${releases.length} releases...`);\n\n  const lines = [\n    '# Changelog',\n    '',\n    'All notable changes to this project will be documented in this file.',\n    '',\n    'The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).',\n    '',\n  ];\n\n  // Sort releases by date (newest first)\n  releases.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));\n\n  for (const release of releases) {\n    const version = extractVersion(release.tagName);\n    const date = formatDate(release.publishedAt);\n    const body = cleanReleaseBody(release.body);\n\n    // Add version header\n    lines.push(`## [${version}] - ${date}`);\n    lines.push('');\n\n    // Add release body\n    if (body) {\n      // Remove the initial markdown heading if it exists (e.g., \"## v5.5.0 (2025-11-11)\")\n      const bodyWithoutHeader = body.replace(/^##?\\s+v?[\\d.]+.*?\\n\\n?/m, '');\n      lines.push(bodyWithoutHeader);\n      lines.push('');\n    }\n  }\n\n  return lines.join('\\n');\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_91": {
+      "name": "main",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 107,
+      "content_hash": "fc274d2abcaccb088e147a9d671cd3735f7ea136",
+      "content": "function main() {\n  console.log('\ud83d\udd27 Generating CHANGELOG.md from GitHub releases...\\n');\n\n  const releases = getReleases();\n\n  if (releases.length === 0) {\n    console.log('\u26a0\ufe0f  No releases found');\n    return;\n  }\n\n  const changelog = generateChangelog(releases);\n\n  writeFileSync('CHANGELOG.md', changelog, 'utf-8');\n\n  console.log('\\n\u2705 CHANGELOG.md generated successfully!');\n  console.log(`   ${releases.length} releases processed`);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

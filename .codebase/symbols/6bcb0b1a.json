@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/tools_p1_test.go",
+  "file_hash": "b066091fc36a1bc0750744ce9c79337251f78021",
+  "updated_at": "2025-12-26T17:34:23.961038",
+  "symbols": {
+    "function_TestBashToolDualMode_8": {
+      "name": "TestBashToolDualMode",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 15,
+      "content_hash": "451dacfd9d7c363e382c5095601ada1357141033",
+      "content": "func TestBashToolDualMode(t *testing.T) {\n\t// bash.go should support both standard and monitored modes\n\t// Monitored mode: Purpose and CompletionCriteria parameters\n\t// Standard mode: no monitoring parameters\n\tt.Skip(\"Requires bash.go parameter structure verification\")\n}\n\n// TestFetchToolFormatMode verifies fetch tool format parameter",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFetchToolFormatMode_16": {
+      "name": "TestFetchToolFormatMode",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 21,
+      "content_hash": "3d14c979880ed642892a7b53804b51362b8f5a3a",
+      "content": "func TestFetchToolFormatMode(t *testing.T) {\n\t// fetch.go should support Format: text, markdown, html\n\tt.Skip(\"Requires fetch.go parameter structure verification\")\n}\n\n// TestFetchToolModeParameter verifies fetch tool mode parameter",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFetchToolModeParameter_22": {
+      "name": "TestFetchToolModeParameter",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 28,
+      "content_hash": "b7cf3d724f5564efcebdd5de5373ce2cd40c1f04",
+      "content": "func TestFetchToolModeParameter(t *testing.T) {\n\t// fetch.go should support Mode: auto, web_reader, raw\n\t// Auto-fallback: web_reader \u2192 raw on failure\n\tt.Skip(\"Requires fetch.go parameter structure verification\")\n}\n\n// TestDelegateToolActionParameter verifies delegate tool action parameter",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDelegateToolActionParameter_29": {
+      "name": "TestDelegateToolActionParameter",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 39,
+      "content_hash": "df698eec34ae8f4bb28ccd6daa9ff3f06b449f22",
+      "content": "func TestDelegateToolActionParameter(t *testing.T) {\n\t// delegate.go should support Action: spawn, list, status, stop, run, deps, monitor\n\tactions := []string{\"spawn\", \"list\", \"status\", \"stop\", \"run\", \"deps\", \"monitor\"}\n\tfor _, action := range actions {\n\t\tt.Run(action, func(t *testing.T) {\n\t\t\tt.Logf(\"Testing delegate action: %s\", action)\n\t\t})\n\t}\n}\n\n// TestDelegateErrorMessages verifies improved error messages",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDelegateErrorMessages_40": {
+      "name": "TestDelegateErrorMessages",
+      "type": "function",
+      "start_line": 40,
+      "end_line": 61,
+      "content_hash": "62aaee64dfea3d63c1ae5e34e401a7ccdfe40aed",
+      "content": "func TestDelegateErrorMessages(t *testing.T) {\n\t// Error messages should include valid options\n\t// Before: \"invalid agent_type: foo\"\n\t// After: \"invalid agent_type: foo (valid: main, deployment, research, analysis)\"\n\ttests := []struct {\n\t\tinvalidType string\n\t\texpectError bool\n\t}{\n\t\t{\"main\", false},\n\t\t{\"deployment\", false},\n\t\t{\"research\", false},\n\t\t{\"analysis\", false},\n\t\t{\"foo\", true},\n\t\t{\"invalid\", true},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.invalidType, func(t *testing.T) {\n\t\t\tt.Logf(\"Testing agent_type: %s (expect error: %v)\", tt.invalidType, tt.expectError)\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/cmd/dirs.go",
+  "file_hash": "ef15e37dbefe0e97491d57f36d2e2bf77fd50b45",
+  "updated_at": "2025-12-26T17:34:20.421651",
+  "symbols": {
+    "function_init_64": {
+      "name": "init",
+      "type": "function",
+      "start_line": 64,
+      "end_line": 66,
+      "content_hash": "78e51dbef1cfd3acee03079378e40c2b1095694f",
+      "content": "func init() {\n\tdirsCmd.AddCommand(configDirCmd, dataDirCmd)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

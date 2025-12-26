@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/analyzer/diagnostic.rs",
+  "file_hash": "526b6c25a87787c157f5f5227a5ecb5ab9d6c569",
+  "updated_at": "2025-12-26T17:34:24.004894",
+  "symbols": {
+    "struct_Diagnostic_13": {
+      "name": "Diagnostic",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 23,
+      "content_hash": "82d2a30a9c3065bab277276f77b47263211f071d",
+      "content": "pub struct Diagnostic {\n    pub location: Loc,\n    pub error_code: ErrorCode,\n    pub message: String,\n    pub hint: Option<String>,\n    pub filepath: Option<String>,\n    pub severity: DiagnosticSeverity,\n    pub fix: Option<Fix>,\n}\n\n#[derive(Debug, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_DiagnosticSeverity_24": {
+      "name": "DiagnosticSeverity",
+      "type": "enum",
+      "start_line": 24,
+      "end_line": 31,
+      "content_hash": "5acf236b5bd91fc6f8a8dd96f032652ddba4a3d6",
+      "content": "pub enum DiagnosticSeverity {\n    Error,\n    Warning,\n    Info,\n    Hint,\n    Empty,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Diagnostic_32": {
+      "name": "Diagnostic",
+      "type": "impl",
+      "start_line": 32,
+      "end_line": 32,
+      "content_hash": "b9a8c017d707354d45e349d402a3ef329641b686",
+      "content": "impl Diagnostic {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_33": {
+      "name": "new",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 52,
+      "content_hash": "fff562e2209024aef7a04dc09f144db5d79cdf26",
+      "content": "    pub fn new(\n        location: Loc,\n        message: impl Into<String>,\n        severity: DiagnosticSeverity,\n        error_code: ErrorCode,\n        hint: Option<String>,\n        fix: Option<Fix>,\n    ) -> Self {\n        let filepath = location.filepath.clone();\n        Self {\n            location,\n            message: message.into(),\n            error_code,\n            hint,\n            fix,\n            filepath,\n            severity,\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_render_53": {
+      "name": "render",
+      "type": "method",
+      "start_line": 53,
+      "end_line": 58,
+      "content_hash": "d99a42484cb1f7f9be833d8de9806cf2880a3f5e",
+      "content": "    pub fn render(&self, src: &str, filepath: &str) -> String {\n        pretty::render(self, src, filepath)\n    }\n}\n\n#[derive(Debug, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_Something_59": {
+      "name": "Something",
+      "type": "enum",
+      "start_line": 59,
+      "end_line": 59,
+      "content_hash": "db9b625edb7757b8a082a85c1b715bb08654a5e4",
+      "content": "pub enum Something {}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

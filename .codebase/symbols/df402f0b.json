@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/internal/agent/native/tool.go",
+  "file_hash": "510d5fecf232d4ef38f5eaa0e076e9da382418a0",
+  "updated_at": "2025-12-26T17:34:24.418860",
+  "symbols": {
+    "interface_AgentTool_9": {
+      "name": "AgentTool",
+      "type": "interface",
+      "start_line": 9,
+      "end_line": 14,
+      "content_hash": "e24ca9886ddc3e5643a376d1a2acf6d1c4aad2e3",
+      "content": "type AgentTool interface {\n\tInfo() ToolInfo\n\tCall(ctx context.Context, params any) (ToolResponse, error)\n}\n\n// ToolInfo contains metadata about a tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ToolInfo_15": {
+      "name": "ToolInfo",
+      "type": "struct",
+      "start_line": 15,
+      "end_line": 21,
+      "content_hash": "ce3b0b8e7e34fca5ad4666aa78bc63b2c60f0728",
+      "content": "type ToolInfo struct {\n\tName        string `json:\"name\"`\n\tDescription string `json:\"description\"`\n\tParameters  any    `json:\"parameters,omitempty\"`\n}\n\n// ToolResponse represents the response from a tool call",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ToolResponse_22": {
+      "name": "ToolResponse",
+      "type": "struct",
+      "start_line": 22,
+      "end_line": 28,
+      "content_hash": "cda514e7954b1dc527049b88e79fc348e9dbaeb8",
+      "content": "type ToolResponse struct {\n\tContent  string         `json:\"content\"`\n\tIsError  bool           `json:\"is_error,omitempty\"`\n\tMetadata map[string]any `json:\"metadata,omitempty\"`\n}\n\n// NewTextResponse creates a successful text response",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewTextResponse_29": {
+      "name": "NewTextResponse",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 36,
+      "content_hash": "9166f8fcce474f28bbd4b7bb0b2abf7e57c926f0",
+      "content": "func NewTextResponse(content string) ToolResponse {\n\treturn ToolResponse{\n\t\tContent: content,\n\t\tIsError: false,\n\t}\n}\n\n// NewTextErrorResponse creates an error response",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewTextErrorResponse_37": {
+      "name": "NewTextErrorResponse",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 44,
+      "content_hash": "bd8eef0d20e3b9058e6564d1a6df4b528e8d0f39",
+      "content": "func NewTextErrorResponse(content string) ToolResponse {\n\treturn ToolResponse{\n\t\tContent: content,\n\t\tIsError: true,\n\t}\n}\n\n// NewImageResponse creates an image response",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewImageResponse_45": {
+      "name": "NewImageResponse",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 57,
+      "content_hash": "c36d5f21187808e08fb9f9aa17e6adceae7ba529",
+      "content": "func NewImageResponse(data []byte, mimeType string) ToolResponse {\n\tmetadata := map[string]any{\n\t\t\"mime_type\": mimeType,\n\t\t\"size\":      len(data),\n\t}\n\treturn ToolResponse{\n\t\tContent:  string(data), // Store base64 encoded image data as string\n\t\tMetadata: metadata,\n\t\tIsError:  false,\n\t}\n}\n\n// WithResponseMetadata adds metadata to a response",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithResponseMetadata_58": {
+      "name": "WithResponseMetadata",
+      "type": "function",
+      "start_line": 58,
+      "end_line": 68,
+      "content_hash": "c2e5f7167f420e761f34c3694c1a03d51a48a6a3",
+      "content": "func WithResponseMetadata(resp ToolResponse, metadata map[string]any) ToolResponse {\n\tif resp.Metadata == nil {\n\t\tresp.Metadata = make(map[string]any)\n\t}\n\tfor k, v := range metadata {\n\t\tresp.Metadata[k] = v\n\t}\n\treturn resp\n}\n\n// ToolCall represents a tool call from the agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ToolCall_69": {
+      "name": "ToolCall",
+      "type": "struct",
+      "start_line": 69,
+      "end_line": 78,
+      "content_hash": "26aa1527dd5a0b2cf9e89c48229866a172ca486c",
+      "content": "type ToolCall struct {\n\tID        string          `json:\"id\"`\n\tName      string          `json:\"name\"`\n\tArguments json.RawMessage `json:\"arguments,omitempty\"`\n}\n\n// ToolHandler is a function that handles tool execution\ntype ToolHandler func(ctx context.Context, params any, call ToolCall) (ToolResponse, error)\n\n// BasicTool provides a simple implementation of AgentTool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_BasicTool_79": {
+      "name": "BasicTool",
+      "type": "struct",
+      "start_line": 79,
+      "end_line": 84,
+      "content_hash": "2207cc0cf5c87dee084da02b8d28904e7ac5863d",
+      "content": "type BasicTool struct {\n\tinfo    ToolInfo\n\thandler ToolHandler\n}\n\n// NewAgentTool creates a new basic tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAgentTool_85": {
+      "name": "NewAgentTool",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 92,
+      "content_hash": "d26aef3463b5465302d6d2ec9f619aa31c4d9d18",
+      "content": "func NewAgentTool(info ToolInfo, handler ToolHandler) AgentTool {\n\treturn &BasicTool{\n\t\tinfo:    info,\n\t\thandler: handler,\n\t}\n}\n\n// Info returns the tool's metadata",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Info_93": {
+      "name": "Info",
+      "type": "method",
+      "start_line": 93,
+      "end_line": 97,
+      "content_hash": "1e6fc27f2fe25ccf6781223f928c91fdaad7ffc4",
+      "content": "func (t *BasicTool) Info() ToolInfo {\n\treturn t.info\n}\n\n// Call executes the tool with the given parameters",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Call_98": {
+      "name": "Call",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 105,
+      "content_hash": "294145c51d187db4671cbb3b9135061fb4da8f70",
+      "content": "func (t *BasicTool) Call(ctx context.Context, params any) (ToolResponse, error) {\n\tcall := ToolCall{\n\t\tName: t.info.Name,\n\t}\n\treturn t.handler(ctx, params, call)\n}\n\n// ParallelTool is a tool that can run operations in parallel",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ParallelTool_106": {
+      "name": "ParallelTool",
+      "type": "struct",
+      "start_line": 106,
+      "end_line": 110,
+      "content_hash": "2fa8d095e7b95786c783fc1efa12335f7b68e7f2",
+      "content": "type ParallelTool struct {\n\tBasicTool\n}\n\n// NewParallelAgentTool creates a new parallel tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewParallelAgentTool_111": {
+      "name": "NewParallelAgentTool",
+      "type": "function",
+      "start_line": 111,
+      "end_line": 120,
+      "content_hash": "4bf93efb5d3253633fb062f710e1e93eccd07244",
+      "content": "func NewParallelAgentTool(info ToolInfo, handler ToolHandler) AgentTool {\n\treturn &ParallelTool{\n\t\tBasicTool: BasicTool{\n\t\t\tinfo:    info,\n\t\t\thandler: handler,\n\t\t},\n\t}\n}\n\n// ProviderOptions contains options for LLM providers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ProviderOptions_121": {
+      "name": "ProviderOptions",
+      "type": "struct",
+      "start_line": 121,
+      "end_line": 127,
+      "content_hash": "3f751be522e1469356e95810e6914a0674682fba",
+      "content": "type ProviderOptions struct {\n\tTemperature *float64 `json:\"temperature,omitempty\"`\n\tTopP        *float64 `json:\"top_p,omitempty\"`\n\tMaxTokens   *int64   `json:\"max_tokens,omitempty\"`\n}\n\n// Result represents the result from an agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Result_128": {
+      "name": "Result",
+      "type": "struct",
+      "start_line": 128,
+      "end_line": 133,
+      "content_hash": "4ef4d763085ec28222c726e650996bd3a837fff3",
+      "content": "type Result struct {\n\tContent   string     `json:\"content\"`\n\tToolCalls []ToolCall `json:\"tool_calls,omitempty\"`\n}\n\n// Provider defines the interface for LLM providers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_Provider_134": {
+      "name": "Provider",
+      "type": "interface",
+      "start_line": 134,
+      "end_line": 138,
+      "content_hash": "efeee2b5372f7b8c0df7dc4b1d0b5847f063a617",
+      "content": "type Provider interface {\n\tCall(ctx context.Context, messages []any, options ProviderOptions) (*Result, error)\n}\n\n// NewAgentToolWithParams creates a tool with JSON parameter schema",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAgentToolWithParams_139": {
+      "name": "NewAgentToolWithParams",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 149,
+      "content_hash": "3f395638479ed04b139b473cc258d4811908dee7",
+      "content": "func NewAgentToolWithParams(name, description string, params any, handler ToolHandler) AgentTool {\n\tinfo := ToolInfo{\n\t\tName:        name,\n\t\tDescription: description,\n\t\tParameters:  params,\n\t}\n\treturn &BasicTool{\n\t\tinfo:    info,\n\t\thandler: handler,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

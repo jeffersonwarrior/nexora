@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/agent/agents/agent_parser.go",
+  "file_hash": "ef2cc09f3954dab02b4867b09bd90e36be73aa23",
+  "updated_at": "2025-12-26T17:34:25.006943",
+  "symbols": {
+    "struct_AgentConfig_13": {
+      "name": "AgentConfig",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 23,
+      "content_hash": "d400ba3a36f66b47a64bcf52f050591e54c72093",
+      "content": "type AgentConfig struct {\n\tName         string   `yaml:\"name\"`\n\tDescription  string   `yaml:\"description\"`\n\tModel        string   `yaml:\"model\"`    // \"inherit\" or specific model\n\tColor        string   `yaml:\"color\"`    // Visual indicator\n\tTools        []string `yaml:\"tools\"`    // Explicit tool access\n\tTriggers     []string `yaml:\"triggers\"` // Natural language triggers\n\tSystemPrompt string   // Markdown content after frontmatter\n}\n\n// AgentRegistry holds all loaded agents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_AgentRegistry_24": {
+      "name": "AgentRegistry",
+      "type": "struct",
+      "start_line": 24,
+      "end_line": 28,
+      "content_hash": "7e2383f00612e8e27c5d4ee2cc41fc0f54353eba",
+      "content": "type AgentRegistry struct {\n\tagents map[string]*AgentConfig\n}\n\n// NewAgentRegistry creates a new agent registry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAgentRegistry_29": {
+      "name": "NewAgentRegistry",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 35,
+      "content_hash": "a94d4515b83a1ce0f7fe8689a6cfe00b89033b48",
+      "content": "func NewAgentRegistry() *AgentRegistry {\n\treturn &AgentRegistry{\n\t\tagents: make(map[string]*AgentConfig),\n\t}\n}\n\n// LoadAgentFromFile loads an agent from a markdown file with YAML frontmatter",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_LoadAgentFromFile_36": {
+      "name": "LoadAgentFromFile",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 62,
+      "content_hash": "4cb783915b4cee8c9d0191b322515304729dea4d",
+      "content": "func (r *AgentRegistry) LoadAgentFromFile(filePath string) error {\n\tcontent, err := os.ReadFile(filePath)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to read agent file: %w\", err)\n\t}\n\n\t// Split frontmatter from content\n\tparts := strings.SplitN(string(content), \"---\", 3)\n\tif len(parts) != 3 {\n\t\treturn fmt.Errorf(\"invalid agent file format: missing YAML frontmatter\")\n\t}\n\n\t// Parse YAML frontmatter\n\tvar config AgentConfig\n\tif err := yaml.Unmarshal([]byte(parts[1]), &config); err != nil {\n\t\treturn fmt.Errorf(\"failed to parse agent frontmatter: %w\", err)\n\t}\n\n\t// Set system prompt from markdown content\n\tconfig.SystemPrompt = strings.TrimSpace(parts[2])\n\n\t// Store in registry\n\tr.agents[config.Name] = &config\n\treturn nil\n}\n\n// LoadAgentsFromDirectory loads all agents from a directory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_LoadAgentsFromDirectory_63": {
+      "name": "LoadAgentsFromDirectory",
+      "type": "method",
+      "start_line": 63,
+      "end_line": 83,
+      "content_hash": "018e40f7fb5be68fc292958dca8c5365b3858b85",
+      "content": "func (r *AgentRegistry) LoadAgentsFromDirectory(dirPath string) error {\n\tentries, err := os.ReadDir(dirPath)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to read agents directory: %w\", err)\n\t}\n\n\tfor _, entry := range entries {\n\t\tif entry.IsDir() || !strings.HasSuffix(entry.Name(), \".md\") {\n\t\t\tcontinue\n\t\t}\n\n\t\tfilePath := filepath.Join(dirPath, entry.Name())\n\t\tif err := r.LoadAgentFromFile(filePath); err != nil {\n\t\t\treturn fmt.Errorf(\"failed to load agent %s: %w\", entry.Name(), err)\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// GetAgent retrieves an agent by name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAgent_84": {
+      "name": "GetAgent",
+      "type": "method",
+      "start_line": 84,
+      "end_line": 89,
+      "content_hash": "f3cd65ae9a07d6e5f3a28fc07a2de2007ec7143d",
+      "content": "func (r *AgentRegistry) GetAgent(name string) (*AgentConfig, bool) {\n\tagent, exists := r.agents[name]\n\treturn agent, exists\n}\n\n// ListAgents returns all agent names",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListAgents_90": {
+      "name": "ListAgents",
+      "type": "method",
+      "start_line": 90,
+      "end_line": 98,
+      "content_hash": "7b9621c420baf56b56fe142b25d7c2495836c762",
+      "content": "func (r *AgentRegistry) ListAgents() []string {\n\tnames := make([]string, 0, len(r.agents))\n\tfor name := range r.agents {\n\t\tnames = append(names, name)\n\t}\n\treturn names\n}\n\n// MatchAgent finds the best agent for a given input using triggers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MatchAgent_99": {
+      "name": "MatchAgent",
+      "type": "method",
+      "start_line": 99,
+      "end_line": 128,
+      "content_hash": "aa1c6403ebb8f535f85d4329644e6f97ee716b99",
+      "content": "func (r *AgentRegistry) MatchAgent(input string) *AgentConfig {\n\tinput = strings.ToLower(input)\n\n\tvar bestMatch *AgentConfig\n\tvar bestScore int\n\n\tfor _, agent := range r.agents {\n\t\tscore := 0\n\t\tfor _, trigger := range agent.Triggers {\n\t\t\tif strings.Contains(input, strings.ToLower(trigger)) {\n\t\t\t\tscore += len(trigger) // Prefer longer, more specific triggers\n\t\t\t}\n\t\t}\n\t\tif score > bestScore {\n\t\t\tbestScore = score\n\t\t\tbestMatch = agent\n\t\t}\n\t}\n\n\t// If no agent matched, return the first agent as default\n\tif bestMatch == nil && len(r.agents) > 0 {\n\t\tfor _, agent := range r.agents {\n\t\t\treturn agent // Return first agent found\n\t\t}\n\t}\n\n\treturn bestMatch\n}\n\n// ValidateAgent checks if an agent config is valid",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ValidateAgent_129": {
+      "name": "ValidateAgent",
+      "type": "function",
+      "start_line": 129,
+      "end_line": 143,
+      "content_hash": "364d88b7a85b85bca1bc284a45cea9fb285ef364",
+      "content": "func ValidateAgent(config *AgentConfig) error {\n\tif config.Name == \"\" {\n\t\treturn fmt.Errorf(\"agent name is required\")\n\t}\n\tif config.Description == \"\" {\n\t\treturn fmt.Errorf(\"agent description is required\")\n\t}\n\tif config.SystemPrompt == \"\" {\n\t\treturn fmt.Errorf(\"agent system prompt is required\")\n\t}\n\tif len(config.Triggers) == 0 {\n\t\treturn fmt.Errorf(\"agent must have at least one trigger\")\n\t}\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

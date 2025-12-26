@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/config/provider_empty_test.go",
+  "file_hash": "a4ef0b3ec89bf80ca1f966d9c664329a9f3b525c",
+  "updated_at": "2025-12-26T17:34:21.825803",
+  "symbols": {
+    "struct_emptyProviderClient_13": {
+      "name": "emptyProviderClient",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 14,
+      "content_hash": "edd69b539edaa29882cd75d024da3f1fc0699bdf",
+      "content": "type emptyProviderClient struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetProviders_15": {
+      "name": "GetProviders",
+      "type": "method",
+      "start_line": 15,
+      "end_line": 18,
+      "content_hash": "d777801ca6cd46d45d6a23c99c5c6dc89a93900c",
+      "content": "func (m *emptyProviderClient) GetProviders(ctx context.Context, githubURL string) ([]catwalk.Provider, error) {\n\treturn []catwalk.Provider{}, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestProvider_loadProvidersEmptyResult_19": {
+      "name": "TestProvider_loadProvidersEmptyResult",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 33,
+      "content_hash": "98ceba202ea1f974db228ddd3446ad7e6b377cd5",
+      "content": "func TestProvider_loadProvidersEmptyResult(t *testing.T) {\n\tclient := &emptyProviderClient{}\n\ttmpPath := t.TempDir() + \"/providers.json\"\n\n\tproviders, err := loadProviders(false, client, tmpPath)\n\trequire.NoError(t, err)\n\t// Should get embedded providers + injected providers\n\trequire.NotEmpty(t, providers)\n\t// Should have embedded providers (mock) + custom providers\n\trequire.Greater(t, len(providers), 0)\n\n\t// Check that no cache file was created for embedded fallback\n\trequire.NoFileExists(t, tmpPath, \"Cache file should not exist when using embedded providers as fallback\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestProvider_loadProvidersEmptyCache_34": {
+      "name": "TestProvider_loadProvidersEmptyCache",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 60,
+      "content_hash": "741e3112ddb1a1c7992b47685c145c4879344890",
+      "content": "func TestProvider_loadProvidersEmptyCache(t *testing.T) {\n\tclient := &mockProviderClient{shouldFail: false}\n\ttmpPath := t.TempDir() + \"/providers.json\"\n\n\t// Create an empty cache file\n\temptyProviders := []catwalk.Provider{}\n\tdata, err := json.Marshal(emptyProviders)\n\trequire.NoError(t, err)\n\trequire.NoError(t, os.WriteFile(tmpPath, data, 0o644))\n\n\t// Should refresh and get real providers instead of using empty cache\n\tproviders, err := loadProviders(false, client, tmpPath)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, providers)\n\t// Custom providers are injected and Mock from Catwalk is appended\n\trequire.Equal(t, \"Mistral (General)\", providers[0].Name)\n\n\t// Find the Mock provider from the client\n\tvar mockProviderFound bool\n\tfor _, p := range providers {\n\t\tif p.Name == \"Mock\" {\n\t\t\tmockProviderFound = true\n\t\t\tbreak\n\t\t}\n\t}\n\trequire.True(t, mockProviderFound, \"Expected to find Mock provider from client\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

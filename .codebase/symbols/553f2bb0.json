@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/utils.py",
+  "file_hash": "409528e4dd845cc1805738cecac6d7f3f1abae0f",
+  "updated_at": "2025-12-26T17:34:24.500152",
+  "symbols": {
+    "function_sanitize_vector_name_8": {
+      "name": "sanitize_vector_name",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 23,
+      "content_hash": "636c141923f92ea3b1ba9f360f9c5de61d165632",
+      "content": "def sanitize_vector_name(model_name: str) -> str:\n    name = (model_name or \"\").strip().lower()\n    # Common fastembed alias mapping for MiniLM\n    if name in (\n        \"sentence-transformers/all-minilm-l6-v2\",\n        \"sentence-transformers/all-minilm-l-6-v2\",\n    ):\n        return \"fast-all-minilm-l6-v2\"\n    # Common fastembed alias mapping for BGE base\n    if \"bge-base-en-v1.5\" in name:\n        return \"fast-bge-base-en-v1.5\"\n    # Qwen3-Embedding ONNX model\n    if \"qwen3-embedding\" in name:\n        return \"fast-qwen3-embedding-0.6b\"\n    # Fallback: compact name\n    return name.replace(\"/\", \"-\").replace(\"_\", \"-\")[:64]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__safe_int_35": {
+      "name": "_safe_int",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 39,
+      "content_hash": "a3b22d172b9a168507ac534decd88e83c06eab88",
+      "content": "def _safe_int(val: str | None, default: int) -> int:\n    try:\n        return int(val) if val else default\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__safe_float_41": {
+      "name": "_safe_float",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 45,
+      "content_hash": "19cbcb20099f618812a39d233cc8f6bb6b5634a7",
+      "content": "def _safe_float(val: str | None, default: float) -> float:\n    try:\n        return float(val) if val else default\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__split_ident_lex_52": {
+      "name": "_split_ident_lex",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 60,
+      "content_hash": "187e67c5a205e2b70bcb632ec5286c69ea0d1e11",
+      "content": "def _split_ident_lex(s: str) -> list[str]:\n    parts = re.split(r\"[^A-Za-z0-9]+\", s)\n    out: list[str] = []\n    for p in parts:\n        if not p:\n            continue\n        segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n        out.extend([x for x in segs if x])\n    return [x.lower() for x in out if x]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__hash_token_63": {
+      "name": "_hash_token",
+      "type": "function",
+      "start_line": 63,
+      "end_line": 67,
+      "content_hash": "c76457b265c38f5a0b4abb6ed2344143bcdb2b7c",
+      "content": "def _hash_token(token: str, seed: int = 0) -> int:\n    \"\"\"Hash a token with optional seed for multi-hash.\"\"\"\n    if seed == 0:\n        return int(hashlib.md5(token.encode(\"utf-8\", errors=\"ignore\")).hexdigest()[:8], 16)\n    return int(hashlib.md5(f\"{seed}:{token}\".encode(\"utf-8\", errors=\"ignore\")).hexdigest()[:8], 16)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_hash_vector_text_78": {
+      "name": "lex_hash_vector_text",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 113,
+      "content_hash": "402865fb29c140b57696ead1ed15996609f0b0ba",
+      "content": "def lex_hash_vector_text(text: str, dim: int | None = None) -> list[float]:\n    \"\"\"Hash text into sparse lexical vector with multi-hash and bigrams.\n\n    Features (when enabled via env):\n    - Multi-hash: each token hashes to multiple buckets (reduces collision impact)\n    - Bigrams: consecutive token pairs captured for phrase matching\n\n    Note: dim defaults to LEX_VECTOR_DIM env var (legacy 4096) for consistency with ingest.\n    \"\"\"\n    if dim is None:\n        dim = _LEX_VECTOR_DIM_DEFAULT\n    if not text:\n        return [0.0] * dim\n    toks = _split_ident_lex(text)\n    if not toks:\n        return [0.0] * dim\n\n    vec = [0.0] * dim\n    n_hashes = _LEX_MULTI_HASH\n\n    # Unigrams with multi-hash\n    for t in toks:\n        for seed in range(n_hashes):\n            h = _hash_token(t, seed)\n            vec[h % dim] += 1.0\n\n    # Bigrams (weighted less than unigrams)\n    if _LEX_BIGRAMS and len(toks) > 1:\n        for i in range(len(toks) - 1):\n            bigram = f\"{toks[i]}_{toks[i+1]}\"\n            for seed in range(n_hashes):\n                h = _hash_token(bigram, seed)\n                vec[h % dim] += _LEX_BIGRAM_WEIGHT\n\n    norm = math.sqrt(sum(v * v for v in vec)) or 1.0\n    return [v / norm for v in vec]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_sparse_vector_text_116": {
+      "name": "lex_sparse_vector_text",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 151,
+      "content_hash": "a0ffe15e49a8f3da72697dd1f4e1099b6f86d754",
+      "content": "def lex_sparse_vector_text(text: str) -> dict:\n    \"\"\"Lossless sparse lexical vector - no dimension limit, no collisions.\n\n    Returns Qdrant sparse vector format: {\"indices\": [...], \"values\": [...]}\n    Uses full 32-bit hash as index (4B+ possible buckets).\n    \"\"\"\n    if not text:\n        return {\"indices\": [], \"values\": []}\n    toks = _split_ident_lex(text)\n    if not toks:\n        return {\"indices\": [], \"values\": []}\n\n    # Accumulate weights by hash index\n    weights: dict[int, float] = {}\n    n_hashes = _LEX_MULTI_HASH\n\n    # Unigrams\n    for t in toks:\n        for seed in range(n_hashes):\n            h = _hash_token(t, seed)\n            weights[h] = weights.get(h, 0.0) + 1.0\n\n    # Bigrams\n    if _LEX_BIGRAMS and len(toks) > 1:\n        for i in range(len(toks) - 1):\n            bigram = f\"{toks[i]}_{toks[i+1]}\"\n            for seed in range(n_hashes):\n                h = _hash_token(bigram, seed)\n                weights[h] = weights.get(h, 0.0) + _LEX_BIGRAM_WEIGHT\n\n    # Normalize\n    norm = math.sqrt(sum(v * v for v in weights.values())) or 1.0\n    indices = sorted(weights.keys())\n    values = [weights[i] / norm for i in indices]\n\n    return {\"indices\": indices, \"values\": values}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_sparse_vector_queries_154": {
+      "name": "lex_sparse_vector_queries",
+      "type": "function",
+      "start_line": 154,
+      "end_line": 184,
+      "content_hash": "0cc4b5ca7ff16453de1b8d71af6196684eaa1223",
+      "content": "def lex_sparse_vector_queries(phrases: list[str]) -> dict:\n    \"\"\"Lossless sparse lexical vector for queries.\n\n    Returns Qdrant sparse vector format: {\"indices\": [...], \"values\": [...]}\n    \"\"\"\n    toks: list[str] = []\n    for ph in phrases or []:\n        toks.extend(_split_ident_lex(str(ph)))\n    if not toks:\n        return {\"indices\": [], \"values\": []}\n\n    weights: dict[int, float] = {}\n    n_hashes = _LEX_MULTI_HASH\n\n    for t in toks:\n        for seed in range(n_hashes):\n            h = _hash_token(t, seed)\n            weights[h] = weights.get(h, 0.0) + 1.0\n\n    if _LEX_BIGRAMS and len(toks) > 1:\n        for i in range(len(toks) - 1):\n            bigram = f\"{toks[i]}_{toks[i+1]}\"\n            for seed in range(n_hashes):\n                h = _hash_token(bigram, seed)\n                weights[h] = weights.get(h, 0.0) + _LEX_BIGRAM_WEIGHT\n\n    norm = math.sqrt(sum(v * v for v in weights.values())) or 1.0\n    indices = sorted(weights.keys())\n    values = [weights[i] / norm for i in indices]\n\n    return {\"indices\": indices, \"values\": values}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lex_hash_vector_queries_187": {
+      "name": "lex_hash_vector_queries",
+      "type": "function",
+      "start_line": 187,
+      "end_line": 218,
+      "content_hash": "2c6e6f973920700f7f22920ab02dabcece3dd955",
+      "content": "def lex_hash_vector_queries(phrases: list[str], dim: int | None = None) -> list[float]:\n    \"\"\"Hash query phrases into sparse lexical vector (same algorithm as text).\n\n    Note: dim defaults to LEX_VECTOR_DIM env var (legacy 4096) for consistency with ingest.\n    \"\"\"\n    if dim is None:\n        dim = _LEX_VECTOR_DIM_DEFAULT\n    toks: list[str] = []\n    for ph in phrases or []:\n        toks.extend(_split_ident_lex(str(ph)))\n    if not toks:\n        return [0.0] * dim\n\n    vec = [0.0] * dim\n    n_hashes = _LEX_MULTI_HASH\n\n    # Unigrams with multi-hash\n    for t in toks:\n        for seed in range(n_hashes):\n            h = _hash_token(t, seed)\n            vec[h % dim] += 1.0\n\n    # Bigrams\n    if _LEX_BIGRAMS and len(toks) > 1:\n        for i in range(len(toks) - 1):\n            bigram = f\"{toks[i]}_{toks[i+1]}\"\n            for seed in range(n_hashes):\n                h = _hash_token(bigram, seed)\n                vec[h % dim] += _LEX_BIGRAM_WEIGHT\n\n    norm = math.sqrt(sum(v * v for v in vec)) or 1.0\n    return [v / norm for v in vec]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_highlight_snippet_223": {
+      "name": "highlight_snippet",
+      "type": "function",
+      "start_line": 223,
+      "end_line": 240,
+      "content_hash": "8b23b231a337fe6ab4ac17235999be2d3d95d8c6",
+      "content": "def highlight_snippet(snippet: str, tokens: list[str]) -> str:\n    if not snippet or not tokens:\n        return snippet\n\n    # longest first to avoid partial overlaps\n    toks = sorted(set(tokens), key=len, reverse=True)\n    import re as _re\n\n    def _repl(m):\n        return f\"<<{m.group(0)}>>\"\n\n    for t in toks:\n        try:\n            pat = _re.compile(_re.escape(t), _re.IGNORECASE)\n            snippet = pat.sub(_repl, snippet)\n        except Exception:\n            continue\n    return snippet",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__repl_231": {
+      "name": "_repl",
+      "type": "function",
+      "start_line": 231,
+      "end_line": 232,
+      "content_hash": "20699958f9a1bb6e957d90edec010c27ed293998",
+      "content": "    def _repl(m):\n        return f\"<<{m.group(0)}>>\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

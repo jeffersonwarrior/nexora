@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/project.rs",
+  "file_hash": "607437a104627bc3ed1bd31f441e37566289512e",
+  "updated_at": "2025-12-26T17:34:24.003551",
+  "symbols": {
+    "struct_ProjectContext_6": {
+      "name": "ProjectContext",
+      "type": "struct",
+      "start_line": 6,
+      "end_line": 13,
+      "content_hash": "610fcea93ddbec8fced0d5356dd5a560cd95185e",
+      "content": "pub struct ProjectContext {\n    /// The root directory of the project\n    pub root: PathBuf,\n    pub config: HelixConfig,\n    // The path to the .helix directory\n    pub helix_dir: PathBuf,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_ProjectContext_14": {
+      "name": "ProjectContext",
+      "type": "impl",
+      "start_line": 14,
+      "end_line": 15,
+      "content_hash": "51e9f49d63fdece839df8b93eae604d1508b8224",
+      "content": "impl ProjectContext {\n    /// Find and load the project context starting from the given directory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_find_and_load_16": {
+      "name": "find_and_load",
+      "type": "method",
+      "start_line": 16,
+      "end_line": 34,
+      "content_hash": "2e813469765342b2c2dd15e3058fce4696a7d896",
+      "content": "    pub fn find_and_load(start_dir: Option<&Path>) -> Result<Self> {\n        let start = match start_dir {\n            Some(dir) => dir.to_path_buf(),\n            None => env::current_dir()?,\n        };\n\n        let root = find_project_root(&start)?;\n        let config_path = root.join(\"helix.toml\");\n        let config = HelixConfig::from_file(&config_path)?;\n        let helix_dir = root.join(\".helix\");\n\n        Ok(ProjectContext {\n            root,\n            config,\n            helix_dir,\n        })\n    }\n\n    /// Get the workspace directory for a specific instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_instance_workspace_35": {
+      "name": "instance_workspace",
+      "type": "method",
+      "start_line": 35,
+      "end_line": 39,
+      "content_hash": "7f5a3225ae91ce965e8c4956f004e49c8e171984",
+      "content": "    pub fn instance_workspace(&self, instance_name: &str) -> PathBuf {\n        self.helix_dir.join(instance_name)\n    }\n\n    /// Get the volumes directory for persistent data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_volumes_dir_40": {
+      "name": "volumes_dir",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 44,
+      "content_hash": "179f7734ac2fd8d6ae8e9c03d4e230c61a7717e4",
+      "content": "    pub fn volumes_dir(&self) -> PathBuf {\n        self.helix_dir.join(\".volumes\")\n    }\n\n    /// Get the volume path for a specific instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_instance_volume_45": {
+      "name": "instance_volume",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 49,
+      "content_hash": "9c152a9eba094a529f7ca4fb92d6ad1b8d7221b3",
+      "content": "    pub fn instance_volume(&self, instance_name: &str) -> PathBuf {\n        self.volumes_dir().join(instance_name)\n    }\n\n    /// Get the docker-compose file path for an instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_docker_compose_path_50": {
+      "name": "docker_compose_path",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 55,
+      "content_hash": "c99a23fa7092c9bf41b1bef5dd8c40d97650c5f9",
+      "content": "    pub fn docker_compose_path(&self, instance_name: &str) -> PathBuf {\n        self.instance_workspace(instance_name)\n            .join(\"docker-compose.yml\")\n    }\n\n    /// Get the Dockerfile path for an instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_dockerfile_path_56": {
+      "name": "dockerfile_path",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 60,
+      "content_hash": "f906aa4421e85b6d20875db981d2c91f55ecf9ba",
+      "content": "    pub fn dockerfile_path(&self, instance_name: &str) -> PathBuf {\n        self.instance_workspace(instance_name).join(\"Dockerfile\")\n    }\n\n    /// Get the compiled container directory for an instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_container_dir_61": {
+      "name": "container_dir",
+      "type": "method",
+      "start_line": 61,
+      "end_line": 66,
+      "content_hash": "937715db4336e64eb81e9a6d8356f6545e402176",
+      "content": "    pub fn container_dir(&self, instance_name: &str) -> PathBuf {\n        self.instance_workspace(instance_name)\n            .join(\"helix-container\")\n    }\n\n    /// Ensure all necessary directories exist for an instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ensure_instance_dirs_67": {
+      "name": "ensure_instance_dirs",
+      "type": "method",
+      "start_line": 67,
+      "end_line": 80,
+      "content_hash": "a9e8b4cf599daa3cc776de116cea4961d2f0f838",
+      "content": "    pub fn ensure_instance_dirs(&self, instance_name: &str) -> Result<()> {\n        let workspace = self.instance_workspace(instance_name);\n        let volume = self.instance_volume(instance_name);\n        let container = self.container_dir(instance_name);\n\n        std::fs::create_dir_all(&workspace)?;\n        std::fs::create_dir_all(&volume)?;\n        std::fs::create_dir_all(&container)?;\n\n        Ok(())\n    }\n}\n\n/// Find the project root by looking for helix.toml file",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_find_project_root_81": {
+      "name": "find_project_root",
+      "type": "method",
+      "start_line": 81,
+      "end_line": 111,
+      "content_hash": "38aef25f000120993e91149eb4a23e6157917b02",
+      "content": "fn find_project_root(start: &Path) -> Result<PathBuf> {\n    let mut current = start.to_path_buf();\n\n    loop {\n        let config_path = current.join(\"helix.toml\");\n        if config_path.exists() {\n            return Ok(current);\n        }\n\n        // Check for old v1 config.hx.json file\n        let v1_config_path = current.join(\"config.hx.json\");\n        if v1_config_path.exists() {\n            let error = crate::errors::config_error(\"found v1 project configuration\")\n                .with_file_path(v1_config_path.display().to_string())\n                .with_context(\"This project uses the old v1 configuration format\")\n                .with_hint(format!(\"Run 'helix migrate --path \\\"{}\\\"' to migrate this project to v2 format\", current.display()));\n            return Err(eyre!(\"{}\", error.render()));\n        }\n\n        match current.parent() {\n            Some(parent) => current = parent.to_path_buf(),\n            None => break,\n        }\n    }\n\n    let error = crate::errors::config_error(\"project configuration not found\")\n        .with_file_path(start.display().to_string())\n        .with_context(format!(\"searched from {} up to filesystem root\", start.display()));\n    Err(eyre!(\"{}\", error.render()))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_helix_cache_dir_112": {
+      "name": "get_helix_cache_dir",
+      "type": "method",
+      "start_line": 112,
+      "end_line": 129,
+      "content_hash": "2cdd318da295b21549d955d1b5c744b3f999d19d",
+      "content": "pub fn get_helix_cache_dir() -> Result<PathBuf> {\n    let home = dirs::home_dir().ok_or_else(|| eyre!(\"Cannot find home directory\"))?;\n    let helix_dir = home.join(\".helix\");\n\n    // Check if this is a fresh installation (no .helix directory exists)\n    let is_fresh_install = !helix_dir.exists();\n\n    std::fs::create_dir_all(&helix_dir)?;\n\n    // For fresh installations, create .v2 marker to indicate this is a v2 helix directory\n    if is_fresh_install {\n        let v2_marker = helix_dir.join(\".v2\");\n        std::fs::write(&v2_marker, \"\")?;\n    }\n\n    Ok(helix_dir)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_helix_repo_cache_130": {
+      "name": "get_helix_repo_cache",
+      "type": "method",
+      "start_line": 130,
+      "end_line": 133,
+      "content_hash": "bae818d966707b16af846554d9657aa8d9d8e418",
+      "content": "pub fn get_helix_repo_cache() -> Result<PathBuf> {\n    let helix_dir = get_helix_cache_dir()?;\n    Ok(helix_dir.join(\"repo\"))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/.local/tools/modelscan/providers/google.go",
+  "file_hash": "4118ac80c9dbab8d626fadaf4ab2985fbea25c1f",
+  "updated_at": "2025-12-26T17:34:20.345876",
+  "symbols": {
+    "struct_GoogleProvider_15": {
+      "name": "GoogleProvider",
+      "type": "struct",
+      "start_line": 15,
+      "end_line": 21,
+      "content_hash": "2a57a11b15f6a81d5269548f5aa76942732b7fd8",
+      "content": "type GoogleProvider struct {\n\tapiKey    string\n\tbaseURL   string\n\tendpoints []Endpoint\n}\n\n// NewGoogleProvider creates a new Google Gemini provider instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewGoogleProvider_22": {
+      "name": "NewGoogleProvider",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 28,
+      "content_hash": "3f9ec406bf3a555a72505899731cb946c07dde04",
+      "content": "func NewGoogleProvider(apiKey string) Provider {\n\treturn &GoogleProvider{\n\t\tapiKey:  apiKey,\n\t\tbaseURL: \"https://generativelanguage.googleapis.com/v1beta\",\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_init_29": {
+      "name": "init",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 33,
+      "content_hash": "b26b2b4769b863c045d20fad756dd72161ef2b2e",
+      "content": "func init() {\n\tRegisterProvider(\"google\", NewGoogleProvider)\n}\n\n// googleModelsResponse represents the response from the models list endpoint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_googleModelsResponse_34": {
+      "name": "googleModelsResponse",
+      "type": "struct",
+      "start_line": 34,
+      "end_line": 38,
+      "content_hash": "d7a773a4deb59bcc8afc592952c38533731ce7a6",
+      "content": "type googleModelsResponse struct {\n\tModels        []googleModelInfo `json:\"models\"`\n\tNextPageToken string            `json:\"nextPageToken,omitempty\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_googleModelInfo_39": {
+      "name": "googleModelInfo",
+      "type": "struct",
+      "start_line": 39,
+      "end_line": 52,
+      "content_hash": "0197c3cd5ed18a180e016f1166e2e810940029f6",
+      "content": "type googleModelInfo struct {\n\tName                       string   `json:\"name\"`\n\tBaseModelID                string   `json:\"baseModelId,omitempty\"`\n\tVersion                    string   `json:\"version,omitempty\"`\n\tDisplayName                string   `json:\"displayName\"`\n\tDescription                string   `json:\"description\"`\n\tInputTokenLimit            int      `json:\"inputTokenLimit\"`\n\tOutputTokenLimit           int      `json:\"outputTokenLimit\"`\n\tSupportedGenerationMethods []string `json:\"supportedGenerationMethods\"`\n\tTemperature                float64  `json:\"temperature,omitempty\"`\n\tTopP                       float64  `json:\"topP,omitempty\"`\n\tTopK                       int      `json:\"topK,omitempty\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ValidateEndpoints_53": {
+      "name": "ValidateEndpoints",
+      "type": "method",
+      "start_line": 53,
+      "end_line": 97,
+      "content_hash": "46f930198b7059acb1422015acfb5b94cf1bdfe1",
+      "content": "func (p *GoogleProvider) ValidateEndpoints(ctx context.Context, verbose bool) error {\n\tendpoints := p.GetEndpoints()\n\n\t// Parallelize endpoint testing for better performance\n\tvar wg sync.WaitGroup\n\tvar mu sync.Mutex // Protect concurrent writes to endpoint status\n\n\tfor i := range endpoints {\n\t\twg.Add(1)\n\t\tgo func(endpoint *Endpoint) {\n\t\t\tdefer wg.Done()\n\n\t\t\tif verbose {\n\t\t\t\tmu.Lock()\n\t\t\t\tfmt.Printf(\"  Testing endpoint: %s %s\\n\", endpoint.Method, endpoint.Path)\n\t\t\t\tmu.Unlock()\n\t\t\t}\n\n\t\t\tstart := time.Now()\n\t\t\terr := p.testEndpoint(ctx, endpoint)\n\t\t\tlatency := time.Since(start)\n\n\t\t\tmu.Lock()\n\t\t\tendpoint.Latency = latency\n\t\t\tif err != nil {\n\t\t\t\tendpoint.Status = StatusFailed\n\t\t\t\tendpoint.Error = err.Error()\n\t\t\t\tif verbose {\n\t\t\t\t\tfmt.Printf(\"    \u2717 Failed: %v\\n\", err)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tendpoint.Status = StatusWorking\n\t\t\t\tif verbose {\n\t\t\t\t\tfmt.Printf(\"    \u2713 Working (%v)\\n\", latency)\n\t\t\t\t}\n\t\t\t}\n\t\t\tmu.Unlock()\n\t\t}(&endpoints[i])\n\t}\n\twg.Wait()\n\n\tp.endpoints = endpoints\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListModels_98": {
+      "name": "ListModels",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 157,
+      "content_hash": "eca6c5c96af54d5e1d47040112e70b75064b0216",
+      "content": "func (p *GoogleProvider) ListModels(ctx context.Context, verbose bool) ([]Model, error) {\n\tif verbose {\n\t\tfmt.Println(\"  Fetching available models from Google Gemini API...\")\n\t}\n\n\t// Call the models endpoint\n\turl := p.baseURL + \"/models?key=\" + p.apiKey\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", url, nil)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\tclient := &http.Client{Timeout: 30 * time.Second}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to list models: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\tbody, _ := io.ReadAll(resp.Body)\n\t\treturn nil, fmt.Errorf(\"API returned status %d: %s\", resp.StatusCode, string(body))\n\t}\n\n\tvar modelsResp googleModelsResponse\n\tif err := json.NewDecoder(resp.Body).Decode(&modelsResp); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to decode response: %w\", err)\n\t}\n\n\tmodels := make([]Model, 0, len(modelsResp.Models))\n\tfor _, apiModel := range modelsResp.Models {\n\t\t// Skip non-generative models\n\t\tif !p.isGenerativeModel(apiModel) {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Extract model ID from name (format: \"models/gemini-...\")\n\t\tmodelID := strings.TrimPrefix(apiModel.Name, \"models/\")\n\n\t\tmodel := Model{\n\t\t\tID:            modelID,\n\t\t\tName:          apiModel.DisplayName,\n\t\t\tDescription:   apiModel.Description,\n\t\t\tContextWindow: apiModel.InputTokenLimit,\n\t\t\tMaxTokens:     apiModel.OutputTokenLimit,\n\t\t}\n\n\t\t// Enrich with pricing and capabilities\n\t\tmodel = p.enrichModelDetails(model)\n\t\tmodels = append(models, model)\n\t}\n\n\tif verbose {\n\t\tfmt.Printf(\"  Found %d models\\n\", len(models))\n\t}\n\n\treturn models, nil\n}\n\n// isGenerativeModel checks if the model supports text generation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isGenerativeModel_158": {
+      "name": "isGenerativeModel",
+      "type": "method",
+      "start_line": 158,
+      "end_line": 167,
+      "content_hash": "44fb6f8b7d368f178e2d8bc7d1c61d09f64f9da6",
+      "content": "func (p *GoogleProvider) isGenerativeModel(model googleModelInfo) bool {\n\tfor _, method := range model.SupportedGenerationMethods {\n\t\tif method == \"generateContent\" || method == \"streamGenerateContent\" {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// enrichModelDetails adds pricing and capability information",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_enrichModelDetails_168": {
+      "name": "enrichModelDetails",
+      "type": "method",
+      "start_line": 168,
+      "end_line": 312,
+      "content_hash": "ecaba65170700b939d69e40836ad7515d2d5361a",
+      "content": "func (p *GoogleProvider) enrichModelDetails(model Model) Model {\n\t// Set common capabilities\n\tmodel.SupportsTools = true\n\tmodel.CanStream = true\n\tmodel.SupportsImages = true // Most Gemini models support multimodal\n\n\t// Determine specific details based on model ID\n\tswitch {\n\t// Gemini 3 Pro (latest preview)\n\tcase strings.Contains(model.ID, \"gemini-3-pro\"):\n\t\tmodel.CostPer1MIn = 2.00\n\t\tmodel.CostPer1MOut = 12.00\n\t\tmodel.CanReason = true\n\t\tmodel.Categories = []string{\"chat\", \"reasoning\", \"multimodal\", \"preview\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"reasoning\":        \"adaptive\",\n\t\t\t\"vision\":           \"high\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t\t\"json_mode\":        \"supported\",\n\t\t}\n\n\t// Gemini 3 Flash (latest preview)\n\tcase strings.Contains(model.ID, \"gemini-3-flash\"):\n\t\tmodel.CostPer1MIn = 0.50\n\t\tmodel.CostPer1MOut = 3.00\n\t\tmodel.CanReason = true\n\t\tmodel.Categories = []string{\"chat\", \"fast\", \"multimodal\", \"preview\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"reasoning\":        \"advanced\",\n\t\t\t\"vision\":           \"high\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t}\n\n\t// Gemini 2.5 Pro\n\tcase strings.Contains(model.ID, \"gemini-2.5-pro\"):\n\t\tmodel.CostPer1MIn = 1.25\n\t\tmodel.CostPer1MOut = 10.00\n\t\tmodel.CanReason = true\n\t\tmodel.Categories = []string{\"chat\", \"reasoning\", \"coding\", \"multimodal\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"reasoning\":        \"advanced\",\n\t\t\t\"vision\":           \"high\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t\t\"json_mode\":        \"supported\",\n\t\t}\n\n\t// Gemini 2.5 Flash\n\tcase strings.Contains(model.ID, \"gemini-2.5-flash\"):\n\t\tmodel.CostPer1MIn = 0.30\n\t\tmodel.CostPer1MOut = 2.50\n\t\tmodel.CanReason = false\n\t\tmodel.Categories = []string{\"chat\", \"fast\", \"cost-effective\", \"multimodal\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"vision\":           \"high\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t}\n\n\t// Gemini 2.5 Flash-Lite\n\tcase strings.Contains(model.ID, \"gemini-2.5-flash-lite\"):\n\t\tmodel.CostPer1MIn = 0.10\n\t\tmodel.CostPer1MOut = 0.40\n\t\tmodel.CanReason = false\n\t\tmodel.Categories = []string{\"chat\", \"fast\", \"ultra-efficient\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t}\n\n\t// Gemini 2.0 Flash\n\tcase strings.Contains(model.ID, \"gemini-2.0-flash\"):\n\t\tmodel.CostPer1MIn = 0.30\n\t\tmodel.CostPer1MOut = 1.20\n\t\tmodel.CanReason = false\n\t\tmodel.Categories = []string{\"chat\", \"balanced\", \"multimodal\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"vision\":           \"medium\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t}\n\n\t// Gemini 1.5 Pro\n\tcase strings.Contains(model.ID, \"gemini-1.5-pro\") || strings.Contains(model.ID, \"gemini-pro\"):\n\t\tmodel.CostPer1MIn = 1.25\n\t\tmodel.CostPer1MOut = 5.00\n\t\tmodel.CanReason = true\n\t\tmodel.Categories = []string{\"chat\", \"premium\", \"multimodal\", \"legacy\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"reasoning\":        \"good\",\n\t\t\t\"vision\":           \"high\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t}\n\n\t// Gemini 1.5 Flash\n\tcase strings.Contains(model.ID, \"gemini-1.5-flash\") || strings.Contains(model.ID, \"gemini-flash\"):\n\t\tmodel.CostPer1MIn = 0.075\n\t\tmodel.CostPer1MOut = 0.30\n\t\tmodel.CanReason = false\n\t\tmodel.Categories = []string{\"chat\", \"fast\", \"legacy\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"vision\":           \"medium\",\n\t\t\t\"function_calling\": \"full\",\n\t\t\t\"streaming\":        \"supported\",\n\t\t}\n\n\t// Image generation models\n\tcase strings.Contains(model.ID, \"image\"):\n\t\tmodel.CostPer1MIn = 1.00\n\t\tmodel.CostPer1MOut = 30.00\n\t\tmodel.SupportsImages = false\n\t\tmodel.Categories = []string{\"image-generation\", \"multimodal\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"image_generation\": \"high-fidelity\",\n\t\t\t\"image_editing\":    \"conversational\",\n\t\t}\n\n\t// Embedding models\n\tcase strings.Contains(model.ID, \"embedding\"):\n\t\tmodel.CostPer1MIn = 0.025\n\t\tmodel.CostPer1MOut = 0.00\n\t\tmodel.SupportsImages = false\n\t\tmodel.SupportsTools = false\n\t\tmodel.Categories = []string{\"embedding\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"embedding\": \"text\",\n\t\t}\n\n\tdefault:\n\t\t// Default values for unknown models\n\t\tmodel.CostPer1MIn = 1.00\n\t\tmodel.CostPer1MOut = 3.00\n\t\tmodel.CanReason = false\n\t\tmodel.Categories = []string{\"chat\"}\n\t\tmodel.Capabilities = map[string]string{\n\t\t\t\"function_calling\": \"full\",\n\t\t}\n\t}\n\n\treturn model\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCapabilities_313": {
+      "name": "GetCapabilities",
+      "type": "method",
+      "start_line": 313,
+      "end_line": 331,
+      "content_hash": "ba0584b16a7a2eb8dfb2844d5540eca7eae06214",
+      "content": "func (p *GoogleProvider) GetCapabilities() ProviderCapabilities {\n\treturn ProviderCapabilities{\n\t\tSupportsChat:         true,\n\t\tSupportsFIM:          false,\n\t\tSupportsEmbeddings:   true,\n\t\tSupportsFineTuning:   true,\n\t\tSupportsAgents:       true,\n\t\tSupportsFileUpload:   true,\n\t\tSupportsStreaming:    true,\n\t\tSupportsJSONMode:     true,\n\t\tSupportsVision:       true,\n\t\tSupportsAudio:        true,\n\t\tSupportedParameters:  []string{\"temperature\", \"maxOutputTokens\", \"topP\", \"topK\", \"stopSequences\"},\n\t\tSecurityFeatures:     []string{\"safety_settings\", \"content_filtering\", \"harm_categories\"},\n\t\tMaxRequestsPerMinute: 60,\n\t\tMaxTokensPerRequest:  1000000,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetEndpoints_332": {
+      "name": "GetEndpoints",
+      "type": "method",
+      "start_line": 332,
+      "end_line": 346,
+      "content_hash": "80f13caa4fe7a0efb0118af8da1fdd352c61f24d",
+      "content": "func (p *GoogleProvider) GetEndpoints() []Endpoint {\n\treturn []Endpoint{\n\t\t{\n\t\t\tPath:        \"/v1beta/models\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"List available models\",\n\t\t},\n\t\t{\n\t\t\tPath:        \"/v1beta/models/gemini-2.5-flash:generateContent\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Generate content (chat completion)\",\n\t\t},\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_TestModel_347": {
+      "name": "TestModel",
+      "type": "method",
+      "start_line": 347,
+      "end_line": 397,
+      "content_hash": "93c78e6ae8464430bc4948bbbc3ed35ca7bd922a",
+      "content": "func (p *GoogleProvider) TestModel(ctx context.Context, modelID string, verbose bool) error {\n\tif verbose {\n\t\tfmt.Printf(\"  Testing model: %s\\n\", modelID)\n\t}\n\n\t// Construct the generateContent endpoint\n\turl := fmt.Sprintf(\"%s/models/%s:generateContent?key=%s\", p.baseURL, modelID, p.apiKey)\n\n\trequestBody := map[string]interface{}{\n\t\t\"contents\": []map[string]interface{}{\n\t\t\t{\n\t\t\t\t\"parts\": []map[string]string{\n\t\t\t\t\t{\"text\": \"Say 'test successful' in 2 words\"},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t\"generationConfig\": map[string]interface{}{\n\t\t\t\"maxOutputTokens\": 10,\n\t\t},\n\t}\n\n\tbodyBytes, err := json.Marshal(requestBody)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to marshal request: %w\", err)\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, \"POST\", url, strings.NewReader(string(bodyBytes)))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\n\tclient := &http.Client{Timeout: 30 * time.Second}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"request failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\tbody, _ := io.ReadAll(resp.Body)\n\t\treturn fmt.Errorf(\"model test failed with status %d: %s\", resp.StatusCode, string(body))\n\t}\n\n\tif verbose {\n\t\tfmt.Printf(\"    \u2713 Model is working\\n\")\n\t}\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_testEndpoint_398": {
+      "name": "testEndpoint",
+      "type": "method",
+      "start_line": 398,
+      "end_line": 442,
+      "content_hash": "8b4ca55c57b69962b37ebb5ec11e2235e2ace769",
+      "content": "func (p *GoogleProvider) testEndpoint(ctx context.Context, endpoint *Endpoint) error {\n\turl := p.baseURL + endpoint.Path\n\n\t// Add API key as query parameter\n\tif !strings.Contains(url, \"?\") {\n\t\turl += \"?key=\" + p.apiKey\n\t}\n\n\tvar req *http.Request\n\tvar err error\n\n\tif endpoint.Method == \"POST\" {\n\t\t// Test generateContent endpoint\n\t\tbody := `{\n\t\t\t\"contents\": [{\n\t\t\t\t\"parts\": [{\"text\": \"Hi\"}]\n\t\t\t}],\n\t\t\t\"generationConfig\": {\"maxOutputTokens\": 5}\n\t\t}`\n\t\treq, err = http.NewRequestWithContext(ctx, endpoint.Method, url, strings.NewReader(body))\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to create request: %w\", err)\n\t\t}\n\t\treq.Header.Set(\"Content-Type\", \"application/json\")\n\t} else {\n\t\treq, err = http.NewRequestWithContext(ctx, endpoint.Method, url, nil)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to create request: %w\", err)\n\t\t}\n\t}\n\n\tclient := &http.Client{Timeout: 30 * time.Second}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"request failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode >= 200 && resp.StatusCode < 300 {\n\t\treturn nil\n\t}\n\n\tbody, _ := io.ReadAll(resp.Body)\n\treturn fmt.Errorf(\"endpoint returned status %d: %s\", resp.StatusCode, string(body))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/lsp_defaults_test.go",
+  "file_hash": "56fe37b10eceef67a24b0a0a375699ba00f46612",
+  "updated_at": "2025-12-26T17:34:24.271453",
+  "symbols": {
+    "function_TestApplyLSPDefaults_9": {
+      "name": "TestApplyLSPDefaults",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 35,
+      "content_hash": "f2d671e88d30bea90cf847f3da4cf9fab13742f1",
+      "content": "func TestApplyLSPDefaults(t *testing.T) {\n\tt.Parallel()\n\n\t// Create a config with an LSP that should get defaults\n\tconfig := &Config{\n\t\tLSP: map[string]LSPConfig{\n\t\t\t\"gopls\": {\n\t\t\t\tCommand: \"gopls\", // This should get defaults from powernap\n\t\t\t},\n\t\t\t\"custom\": {\n\t\t\t\tCommand:     \"custom-lsp\",\n\t\t\t\tRootMarkers: []string{\"custom.toml\"}, // This should keep its explicit config\n\t\t\t},\n\t\t},\n\t}\n\n\t// Apply defaults\n\tconfig.applyLSPDefaults()\n\n\t// Check that gopls got defaults (it should have some root markers now)\n\tgoplsConfig := config.LSP[\"gopls\"]\n\trequire.NotEmpty(t, goplsConfig.RootMarkers, \"gopls should have received default root markers\")\n\n\t// Check that custom LSP kept its explicit config\n\tcustomConfig := config.LSP[\"custom\"]\n\trequire.Equal(t, []string{\"custom.toml\"}, customConfig.RootMarkers, \"custom LSP should keep its explicit root markers\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

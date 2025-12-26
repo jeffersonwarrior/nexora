@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/tui/tmux_tui_test.go",
+  "file_hash": "e9a98873438e4ee71b58a02e16fb66c68b867e6c",
+  "updated_at": "2025-12-26T17:34:23.441999",
+  "symbols": {
+    "function_TestTUIInteractions_14": {
+      "name": "TestTUIInteractions",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 196,
+      "content_hash": "2f4c4a00e68414faa7426c09bb41a51a75e6507b",
+      "content": "func TestTUIInteractions(t *testing.T) {\n\tif testing.Short() {\n\t\tt.Skip(\"Skipping TUI test in short mode\")\n\t}\n\n\t// Check prerequisites\n\tif !hasTMUX(t) {\n\t\tt.Skip(\"tmux not available\")\n\t}\n\n\tif !existsNexora(t) {\n\t\tt.Skip(\"nexora binary not found\")\n\t}\n\n\tsessionName := \"nexora-tui-test-\" + strings.Replace(t.Name(), \"/\", \"-\", -1)\n\t\n\t// Cleanup setup\n\tsetup := func() {\n\t\texec.Command(\"tmux\", \"kill-session\", \"-t\", sessionName).Run()\n\t\ttime.Sleep(500 * time.Millisecond)\n\t}\n\t\n\tteardown := func() {\n\t\texec.Command(\"tmux\", \"kill-session\", \"-t\", sessionName).Run()\n\t}\n\n\tsetup()\n\tdefer teardown()\n\n\t// Start nexora\n\tnexoraPath := getNexoraPath()\n\ttmuxCmd := exec.Command(\"tmux\", \"new-session\", \"-d\", \"-s\", sessionName, nexoraPath)\n\tif err := tmuxCmd.Run(); err != nil {\n\t\tt.Fatalf(\"Failed to start nexora in tmux: %v\", err)\n\t}\n\ttime.Sleep(2 * time.Second)\n\n\t// Helper functions\n\tsendKeys := func(keys string) {\n\t\texec.Command(\"tmux\", \"send-keys\", \"-t\", sessionName, \"0\", keys).Run()\n\t\ttime.Sleep(300 * time.Millisecond)\n\t}\n\n\tsendCtrl := func(key string) {\n\t\tsendKeys(\"C-\" + key)\n\t}\n\n\tcapture := func() string {\n\t\tcmd := exec.Command(\"tmux\", \"capture-pane\", \"-t\", sessionName, \"-p\")\n\t\tvar buf bytes.Buffer\n\t\tcmd.Stdout = &buf\n\t\tcmd.Run()\n\t\treturn buf.String()\n\t}\n\n\t// Test 7: TUI responsiveness\n\tt.Run(\"TUIResponsive\", func(t *testing.T) {\n\t\t// Send some keys and verify no crash\n\t\tsendKeys(\"hello\")\n\t\ttime.Sleep(300 * time.Millisecond)\n\t\tsendKeys(\"C-u\") // clear\n\t\ttime.Sleep(300 * time.Millisecond)\n\t\t\n\t\tscreen := capture()\n\t\tif strings.Contains(screen, \"nexora\") || strings.Contains(screen, \"Nexora\") {\n\t\t\tt.Log(\"\u2713 TUI is responsive\")\n\t\t} else {\n\t\t\tt.Log(\"Note: TUI appears to be running\")\n\t\t}\n\t})\n\tt.Run(\"SlashCommandTrigger\", func(t *testing.T) {\n\t\t// Clear line\n\t\tsendKeys(\"C-u\")\n\t\ttime.Sleep(300 * time.Millisecond)\n\t\t\n\t\t// Type \"/\"\n\t\tsendKeys(\"/\")\n\t\ttime.Sleep(1 * time.Second)\n\t\t\n\t\tscreen := capture()\n\t\tt.Logf(\"Screen after '/': %s\", screen)\n\t\t\n\t\t// Should see commands menu or dialog\n\t\tif strings.Contains(screen, \"command\") || strings.Contains(screen, \"Command\") {\n\t\t\tt.Log(\"\u2713 '/' triggers commands menu\")\n\t\t} else {\n\t\t\tt.Log(\"Note: Commands menu may require configuration\")\n\t\t}\n\t})\n\n\t// Test 2: \"/\" passthrough with path text\n\tt.Run(\"SlashPassthrough\", func(t *testing.T) {\n\t\t// Clear first\n\t\tsendKeys(\"C-u\")\n\t\ttime.Sleep(300 * time.Millisecond)\n\t\t\n\t\t// Type path\n\t\tsendKeys(\"/home/user/project\")\n\t\ttime.Sleep(500 * time.Millisecond)\n\t\t\n\t\tscreen := capture()\n\t\t\n\t\tif strings.Contains(screen, \"/home/user/project\") {\n\t\t\tt.Log(\"\u2713 '/' passthrough works - path typed correctly\")\n\t\t} else {\n\t\t\tt.Log(\"Note: Could not verify path text in output\")\n\t\t}\n\t})\n\n\t// Test 3: Ctrl+E opens models dialog\n\tt.Run(\"CtrlEOpensModels\", func(t *testing.T) {\n\t\tsendCtrl(\"e\")\n\t\ttime.Sleep(1 * time.Second)\n\t\t\n\t\tscreen := capture()\n\t\t\n\t\tif strings.Contains(screen, \"model\") || strings.Contains(screen, \"Model\") {\n\t\t\tt.Log(\"\u2713 Ctrl+E opens models dialog\")\n\t\t} else {\n\t\t\tt.Log(\"Note: Models dialog may not be visible (requires provider config)\")\n\t\t}\n\t})\n\n\t// Test 4: Ctrl+P opens prompts dialog\n\tt.Run(\"CtrlPOpensPrompts\", func(t *testing.T) {\n\t\tsendCtrl(\"p\")\n\t\ttime.Sleep(1 * time.Second)\n\t\t\n\t\tscreen := capture()\n\t\t\n\t\tif strings.Contains(screen, \"prompt\") || strings.Contains(screen, \"Prompt\") {\n\t\t\tt.Log(\"\u2713 Ctrl+P opens prompts dialog\")\n\t\t} else {\n\t\t\tt.Log(\"Note: Prompts dialog may not be visible\")\n\t\t}\n\t})\n\n\t// Test 5: Dialog navigation with j/k\n\tt.Run(\"DialogNavigation\", func(t *testing.T) {\n\t\t// Open prompts dialog\n\t\tsendCtrl(\"p\")\n\t\ttime.Sleep(500 * time.Millisecond)\n\t\t\n\t\t// Try j/k navigation\n\t\tsendKeys(\"j\")\n\t\ttime.Sleep(200 * time.Millisecond)\n\t\tsendKeys(\"k\")\n\t\ttime.Sleep(200 * time.Millisecond)\n\t\t\n\t\tt.Log(\"\u2713 j/k navigation attempted\")\n\t})\n\n\t// Test 6: Ctrl+N new session\n\tt.Run(\"CtrlNNewSession\", func(t *testing.T) {\n\t\tsendCtrl(\"n\")\n\t\ttime.Sleep(500 * time.Millisecond)\n\t\tt.Log(\"\u2713 Ctrl+N sent (new session)\")\n\t})\n\n\t// Test 7: TUI responsiveness\n\tt.Run(\"TUIResponsive\", func(t *testing.T) {\n\t\t// Send some keys and verify no crash\n\t\tsendKeys(\"hello\")\n\t\ttime.Sleep(300 * time.Millisecond)\n\t\tsendKeys(\"C-u\") // clear\n\t\ttime.Sleep(300 * time.Millisecond)\n\t\t\n\t\tscreen := capture()\n\t\tif strings.Contains(screen, \"nexora\") || strings.Contains(screen, \"Nexora\") {\n\t\t\tt.Log(\"\u2713 TUI is responsive\")\n\t\t} else {\n\t\t\tt.Log(\"Note: TUI appears to be running\")\n\t\t}\n\t})\n\n\t// Final screen capture for debugging\n\tt.Run(\"FinalScreen\", func(t *testing.T) {\n\t\tscreen := capture()\n\t\tt.Logf(\"Final TUI state:\\n%s\", screen)\n\t})\n}\n\n// TestTUIKeyBindings tests specific key bindings",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTUIKeyBindings_197": {
+      "name": "TestTUIKeyBindings",
+      "type": "function",
+      "start_line": 197,
+      "end_line": 251,
+      "content_hash": "45a6e15dedae5988d38dd926f23104e335d2541e",
+      "content": "func TestTUIKeyBindings(t *testing.T) {\n\tif testing.Short() {\n\t\tt.Skip(\"Skipping in short mode\")\n\t}\n\n\tif !hasTMUX(t) || !existsNexora(t) {\n\t\tt.Skip(\"Prerequisites not met\")\n\t}\n\n\tsessionName := \"nexora-keys-test\"\n\tdefer exec.Command(\"tmux\", \"kill-session\", \"-t\", sessionName).Run()\n\n\t// Start nexora\n\tnexoraPath := getNexoraPath()\n\texec.Command(\"tmux\", \"new-session\", \"-d\", \"-s\", sessionName, nexoraPath).Run()\n\ttime.Sleep(2 * time.Second)\n\n\tsend := func(keys string) {\n\t\texec.Command(\"tmux\", \"send-keys\", \"-t\", sessionName, \"0\", keys).Run()\n\t\ttime.Sleep(300 * time.Millisecond)\n\t}\n\n\tcapture := func() string {\n\t\tcmd := exec.Command(\"tmux\", \"capture-pane\", \"-t\", sessionName, \"-p\")\n\t\tvar buf bytes.Buffer\n\t\tcmd.Stdout = &buf\n\t\tcmd.Run()\n\t\treturn buf.String()\n\t}\n\n\t// Test each key binding\n\ttests := []struct {\n\t\tname  string\n\t\tkeys  string\n\t\tcheck func(string) bool\n\t}{\n\t\t{\"Ctrl+E models\", \"C-e\", func(s string) bool { return true }}, // Just verify no crash\n\t\t{\"Ctrl+P prompts\", \"C-p\", func(s string) bool { return true }},\n\t\t{\"Ctrl+N session\", \"C-n\", func(s string) bool { return true }},\n\t\t{\"j down\", \"j\", func(s string) bool { return true }},\n\t\t{\"k up\", \"k\", func(s string) bool { return true }},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tsend(tt.keys)\n\t\t\tscreen := capture()\n\t\t\tif !tt.check(screen) {\n\t\t\t\tt.Logf(\"Unexpected screen state for %s\", tt.name)\n\t\t\t}\n\t\t})\n\t}\n}\n\n// TestTUIDialogs tests dialog opening and navigation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTUIDialogs_252": {
+      "name": "TestTUIDialogs",
+      "type": "function",
+      "start_line": 252,
+      "end_line": 302,
+      "content_hash": "dbce2958603bf3e962b8ed4b1204bbe8141172df",
+      "content": "func TestTUIDialogs(t *testing.T) {\n\tif testing.Short() {\n\t\tt.Skip(\"Skipping in short mode\")\n\t}\n\n\tif !hasTMUX(t) || !existsNexora(t) {\n\t\tt.Skip(\"Prerequisites not met\")\n\t}\n\n\tsessionName := \"nexora-dialogs-test\"\n\tdefer exec.Command(\"tmux\", \"kill-session\", \"-t\", sessionName).Run()\n\n\texec.Command(\"tmux\", \"new-session\", \"-d\", \"-s\", sessionName, \"./nexora\").Run()\n\ttime.Sleep(2 * time.Second)\n\n\tsend := func(keys string) {\n\t\texec.Command(\"tmux\", \"send-keys\", \"-t\", sessionName, \"0\", keys).Run()\n\t\ttime.Sleep(300 * time.Millisecond)\n\t}\n\n\tcapture := func() string {\n\t\tcmd := exec.Command(\"tmux\", \"capture-pane\", \"-t\", sessionName, \"-p\")\n\t\tvar buf bytes.Buffer\n\t\tcmd.Stdout = &buf\n\t\tcmd.Run()\n\t\treturn buf.String()\n\t}\n\n\tt.Run(\"CommandsDialog\", func(t *testing.T) {\n\t\tsend(\":\") // Command mode\n\t\ttime.Sleep(500 * time.Millisecond)\n\t\tscreen := capture()\n\t\tt.Logf(\"After ':': %s\", screen)\n\t})\n\n\tt.Run(\"ModelsDialog\", func(t *testing.T) {\n\t\tsend(\"C-e\")\n\t\ttime.Sleep(500 * time.Millisecond)\n\t\tscreen := capture()\n\t\tt.Logf(\"After Ctrl+E: %s\", screen)\n\t})\n\n\tt.Run(\"PromptsDialog\", func(t *testing.T) {\n\t\tsend(\"C-p\")\n\t\ttime.Sleep(500 * time.Millisecond)\n\t\tscreen := capture()\n\t\tt.Logf(\"After Ctrl+P: %s\", screen)\n\t})\n}\n\n// Helper: check if tmux is available",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_hasTMUX_303": {
+      "name": "hasTMUX",
+      "type": "function",
+      "start_line": 303,
+      "end_line": 308,
+      "content_hash": "c3099d19af0e89b5a5e407b4aec0cde90d990be5",
+      "content": "func hasTMUX(t *testing.T) bool {\n\tcmd := exec.Command(\"which\", \"tmux\")\n\treturn cmd.Run() == nil\n}\n\n// Helper: check if nexora binary exists",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_existsNexora_309": {
+      "name": "existsNexora",
+      "type": "function",
+      "start_line": 309,
+      "end_line": 325,
+      "content_hash": "81b98b824ff83a320a572b0896c604921bb63293",
+      "content": "func existsNexora(t *testing.T) bool {\n\t// Check in multiple possible locations\n\tpaths := []string{\n\t\t\"./nexora\",\n\t\t\"/home/nexora/nexora\",\n\t\t\"nexora\",\n\t}\n\tfor _, p := range paths {\n\t\tcmd := exec.Command(\"test\", \"-x\", p)\n\t\tif cmd.Run() == nil {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// getNexoraPath returns the path to nexora binary",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getNexoraPath_326": {
+      "name": "getNexoraPath",
+      "type": "function",
+      "start_line": 326,
+      "end_line": 341,
+      "content_hash": "e4730e6a96b7af559ca8b1845089b2bfe084adc7",
+      "content": "func getNexoraPath() string {\n\tpaths := []string{\n\t\t\"./nexora\",\n\t\t\"/home/nexora/nexora\",\n\t\t\"nexora\",\n\t}\n\tfor _, p := range paths {\n\t\tcmd := exec.Command(\"test\", \"-x\", p)\n\t\tif cmd.Run() == nil {\n\t\t\treturn p\n\t\t}\n\t}\n\treturn \"./nexora\"\n}\n\n// BenchmarkTUIStart measures TUI startup time",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkTUIStart_342": {
+      "name": "BenchmarkTUIStart",
+      "type": "function",
+      "start_line": 342,
+      "end_line": 357,
+      "content_hash": "c8f4c7e2881f359ca33aeeb7f1ab7e6df83c40bd",
+      "content": "func BenchmarkTUIStart(b *testing.B) {\n\tif !hasTMUX(nil) || !existsNexora(nil) {\n\t\tb.Skip(\"Prerequisites not met\")\n\t}\n\n\tnexoraPath := getNexoraPath()\n\tfor i := 0; i < b.N; i++ {\n\t\tsessionName := \"nexora-bench-\" + string(rune(i))\n\t\tdefer exec.Command(\"tmux\", \"kill-session\", \"-t\", sessionName).Run()\n\n\t\tcmd := exec.Command(\"tmux\", \"new-session\", \"-d\", \"-s\", sessionName, nexoraPath)\n\t\tcmd.Start()\n\t\ttime.Sleep(2 * time.Second)\n\t\tcmd.Process.Kill()\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

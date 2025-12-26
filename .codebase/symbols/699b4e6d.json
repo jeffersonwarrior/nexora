@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/filepicker/keys.go",
+  "file_hash": "acc35cb0531017b4fcbbcd8967c89777e66ee137",
+  "updated_at": "2025-12-26T17:34:24.496594",
+  "symbols": {
+    "struct_KeyMap_8": {
+      "name": "KeyMap",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 16,
+      "content_hash": "3d3d76d97715e803b2b79181600e866a7ccf4472",
+      "content": "type KeyMap struct {\n\tSelect,\n\tDown,\n\tUp,\n\tForward,\n\tBackward,\n\tClose key.Binding\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultKeyMap_17": {
+      "name": "DefaultKeyMap",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 47,
+      "content_hash": "c50310ad43585a003e0831a3d4361f9837fd35da",
+      "content": "func DefaultKeyMap() KeyMap {\n\treturn KeyMap{\n\t\tSelect: key.NewBinding(\n\t\t\tkey.WithKeys(\"enter\"),\n\t\t\tkey.WithHelp(\"enter\", \"accept\"),\n\t\t),\n\t\tDown: key.NewBinding(\n\t\t\tkey.WithKeys(\"down\", \"j\"),\n\t\t\tkey.WithHelp(\"down/j\", \"move down\"),\n\t\t),\n\t\tUp: key.NewBinding(\n\t\t\tkey.WithKeys(\"up\", \"k\"),\n\t\t\tkey.WithHelp(\"up/k\", \"move up\"),\n\t\t),\n\t\tForward: key.NewBinding(\n\t\t\tkey.WithKeys(\"right\", \"l\"),\n\t\t\tkey.WithHelp(\"right/l\", \"move forward\"),\n\t\t),\n\t\tBackward: key.NewBinding(\n\t\t\tkey.WithKeys(\"left\", \"h\"),\n\t\t\tkey.WithHelp(\"left/h\", \"move backward\"),\n\t\t),\n\n\t\tClose: key.NewBinding(\n\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\tkey.WithHelp(\"esc\", \"close/exit\"),\n\t\t),\n\t}\n}\n\n// KeyBindings implements layout.KeyMapProvider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KeyBindings_48": {
+      "name": "KeyBindings",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 59,
+      "content_hash": "79298425b644bdbd171c2edcfb0766b039be019b",
+      "content": "func (k KeyMap) KeyBindings() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Select,\n\t\tk.Down,\n\t\tk.Up,\n\t\tk.Forward,\n\t\tk.Backward,\n\t\tk.Close,\n\t}\n}\n\n// FullHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FullHelp_60": {
+      "name": "FullHelp",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 70,
+      "content_hash": "d025b1da137e7ad2cbb1026b62ee4f3831299acb",
+      "content": "func (k KeyMap) FullHelp() [][]key.Binding {\n\tm := [][]key.Binding{}\n\tslice := k.KeyBindings()\n\tfor i := 0; i < len(slice); i += 4 {\n\t\tend := min(i+4, len(slice))\n\t\tm = append(m, slice[i:end])\n\t}\n\treturn m\n}\n\n// ShortHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShortHelp_71": {
+      "name": "ShortHelp",
+      "type": "method",
+      "start_line": 71,
+      "end_line": 80,
+      "content_hash": "ed0b85712407992fa0cc1773d9f1c70973a39f49",
+      "content": "func (k KeyMap) ShortHelp() []key.Binding {\n\treturn []key.Binding{\n\t\tkey.NewBinding(\n\t\t\tkey.WithKeys(\"right\", \"l\", \"left\", \"h\", \"up\", \"k\", \"down\", \"j\"),\n\t\t\tkey.WithHelp(\"\u2191\u2193\u2190\u2192\", \"navigate\"),\n\t\t),\n\t\tk.Select,\n\t\tk.Close,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

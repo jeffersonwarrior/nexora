@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_rerank_recursive.py",
+  "file_hash": "a27d10bf6f20851dd9d490767716f9a4caa6ccdf",
+  "updated_at": "2025-12-26T17:34:22.735157",
+  "symbols": {
+    "class_TestTinyScorer_29": {
+      "name": "TestTinyScorer",
+      "type": "class",
+      "start_line": 29,
+      "end_line": 56,
+      "content_hash": "1d3512011c505258ea14a1407f40bcbdcf4850a6",
+      "content": "class TestTinyScorer:\n    \"\"\"Tests for the tiny scoring network.\"\"\"\n    \n    def test_forward_shape(self):\n        \"\"\"Scorer should produce correct output shape.\"\"\"\n        scorer = TinyScorer(dim=64, hidden_dim=128)\n        \n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(5, 64).astype(np.float32)\n        z = np.random.randn(64).astype(np.float32)\n        \n        scores = scorer.forward(query_emb, doc_embs, z)\n        \n        assert scores.shape == (5,)\n        assert scores.dtype == np.float32\n    \n    def test_forward_deterministic(self):\n        \"\"\"Same inputs should produce same outputs.\"\"\"\n        scorer = TinyScorer(dim=64)\n        \n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(3, 64).astype(np.float32)\n        z = np.random.randn(64).astype(np.float32)\n        \n        scores1 = scorer.forward(query_emb, doc_embs, z)\n        scores2 = scorer.forward(query_emb, doc_embs, z)\n        \n        np.testing.assert_array_almost_equal(scores1, scores2)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_forward_shape_32": {
+      "name": "test_forward_shape",
+      "type": "method",
+      "start_line": 32,
+      "end_line": 43,
+      "content_hash": "5e4a5d8bd2b99455e070a2c64738f9fed9f814d9",
+      "content": "    def test_forward_shape(self):\n        \"\"\"Scorer should produce correct output shape.\"\"\"\n        scorer = TinyScorer(dim=64, hidden_dim=128)\n        \n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(5, 64).astype(np.float32)\n        z = np.random.randn(64).astype(np.float32)\n        \n        scores = scorer.forward(query_emb, doc_embs, z)\n        \n        assert scores.shape == (5,)\n        assert scores.dtype == np.float32",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_forward_deterministic_45": {
+      "name": "test_forward_deterministic",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 56,
+      "content_hash": "4bc4c754ceed24e01a72e574284ecebb4ed15ada",
+      "content": "    def test_forward_deterministic(self):\n        \"\"\"Same inputs should produce same outputs.\"\"\"\n        scorer = TinyScorer(dim=64)\n        \n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(3, 64).astype(np.float32)\n        z = np.random.randn(64).astype(np.float32)\n        \n        scores1 = scorer.forward(query_emb, doc_embs, z)\n        scores2 = scorer.forward(query_emb, doc_embs, z)\n        \n        np.testing.assert_array_almost_equal(scores1, scores2)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestLatentRefiner_59": {
+      "name": "TestLatentRefiner",
+      "type": "class",
+      "start_line": 59,
+      "end_line": 87,
+      "content_hash": "85e3937940f78007836927a45478df0e29d97704",
+      "content": "class TestLatentRefiner:\n    \"\"\"Tests for latent state refinement.\"\"\"\n    \n    def test_refine_shape(self):\n        \"\"\"Refiner should produce latent of same dimension.\"\"\"\n        refiner = LatentRefiner(dim=64)\n        \n        z = np.random.randn(64).astype(np.float32)\n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(5, 64).astype(np.float32)\n        scores = np.random.randn(5).astype(np.float32)\n        \n        z_refined = refiner.refine(z, query_emb, doc_embs, scores)\n        \n        assert z_refined.shape == (64,)\n    \n    def test_refine_normalized(self):\n        \"\"\"Refined latent should be unit normalized.\"\"\"\n        refiner = LatentRefiner(dim=64)\n        \n        z = np.random.randn(64).astype(np.float32)\n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(5, 64).astype(np.float32)\n        scores = np.random.randn(5).astype(np.float32)\n        \n        z_refined = refiner.refine(z, query_emb, doc_embs, scores)\n        \n        norm = np.linalg.norm(z_refined)\n        assert abs(norm - 1.0) < 1e-5",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_refine_shape_62": {
+      "name": "test_refine_shape",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 73,
+      "content_hash": "7a2dc062934bd61470ab7d8e7613a4e6daf10de1",
+      "content": "    def test_refine_shape(self):\n        \"\"\"Refiner should produce latent of same dimension.\"\"\"\n        refiner = LatentRefiner(dim=64)\n        \n        z = np.random.randn(64).astype(np.float32)\n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(5, 64).astype(np.float32)\n        scores = np.random.randn(5).astype(np.float32)\n        \n        z_refined = refiner.refine(z, query_emb, doc_embs, scores)\n        \n        assert z_refined.shape == (64,)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_refine_normalized_75": {
+      "name": "test_refine_normalized",
+      "type": "method",
+      "start_line": 75,
+      "end_line": 87,
+      "content_hash": "d30552a427fbbca246a8972ac75b03dca7c3c1cc",
+      "content": "    def test_refine_normalized(self):\n        \"\"\"Refined latent should be unit normalized.\"\"\"\n        refiner = LatentRefiner(dim=64)\n        \n        z = np.random.randn(64).astype(np.float32)\n        query_emb = np.random.randn(64).astype(np.float32)\n        doc_embs = np.random.randn(5, 64).astype(np.float32)\n        scores = np.random.randn(5).astype(np.float32)\n        \n        z_refined = refiner.refine(z, query_emb, doc_embs, scores)\n        \n        norm = np.linalg.norm(z_refined)\n        assert abs(norm - 1.0) < 1e-5",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestConfidenceEstimator_90": {
+      "name": "TestConfidenceEstimator",
+      "type": "class",
+      "start_line": 90,
+      "end_line": 194,
+      "content_hash": "eb0fa3abf34a1e4c54a0c7bd8f5e4d1b761ba8a1",
+      "content": "class TestConfidenceEstimator:\n    \"\"\"Tests for early stopping logic.\"\"\"\n\n    def test_no_stop_on_first_iteration(self):\n        \"\"\"Should not stop on first iteration.\"\"\"\n        estimator = ConfidenceEstimator()\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5, 0.3, 0.1]),\n            iteration=0\n        )\n        state.score_history = [state.scores]\n\n        assert not estimator.should_stop(state)\n\n    def test_stop_on_convergence(self):\n        \"\"\"Should stop when top-k rankings stabilize.\"\"\"\n        estimator = ConfidenceEstimator()\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5, 0.3, 0.1]),\n            iteration=2\n        )\n        # Same scores twice = converged\n        state.score_history = [\n            np.array([0.5, 0.3, 0.1]),\n            np.array([0.5, 0.3, 0.1])\n        ]\n\n        assert estimator.should_stop(state)\n\n    def test_single_candidate(self):\n        \"\"\"Should handle single candidate without crashing.\"\"\"\n        estimator = ConfidenceEstimator()\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5]),\n            iteration=2\n        )\n        state.score_history = [\n            np.array([0.4]),\n            np.array([0.5])\n        ]\n\n        # Should not crash and should stop (single element = stable ranking)\n        result = estimator.should_stop(state)\n        assert isinstance(result, bool)\n\n    def test_flipping_order_resets_patience(self):\n        \"\"\"Flipping ranking order should reset stability count.\"\"\"\n        estimator = ConfidenceEstimator(patience=2)\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.3, 0.5, 0.1]),  # Order: 1, 0, 2\n            iteration=1\n        )\n        state.score_history = [\n            np.array([0.5, 0.3, 0.1]),  # Order: 0, 1, 2\n            np.array([0.3, 0.5, 0.1])   # Order: 1, 0, 2 (flipped!)\n        ]\n\n        # Flipped order = not stable, should not stop\n        assert not estimator.should_stop(state)\n        assert estimator._stable_count == 0\n\n    def test_patience_respected(self):\n        \"\"\"Should require patience consecutive stable iterations to stop.\"\"\"\n        estimator = ConfidenceEstimator(patience=3)\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5, 0.3, 0.1]),\n            iteration=1\n        )\n\n        # First stable iteration\n        state.score_history = [\n            np.array([0.5, 0.3, 0.1]),\n            np.array([0.5, 0.3, 0.1])\n        ]\n        assert not estimator.should_stop(state)\n        assert estimator._stable_count == 1\n\n        # Second stable iteration\n        state.score_history.append(np.array([0.5, 0.3, 0.1]))\n        assert not estimator.should_stop(state)\n        assert estimator._stable_count == 2\n\n        # Third stable iteration - now should stop\n        state.score_history.append(np.array([0.5, 0.3, 0.1]))\n        assert estimator.should_stop(state)\n        assert estimator._stable_count == 3\n\n    def test_reset_clears_state(self):\n        \"\"\"Reset should clear stability count.\"\"\"\n        estimator = ConfidenceEstimator(patience=2)\n        estimator._stable_count = 5\n\n        estimator.reset()\n\n        assert estimator._stable_count == 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_no_stop_on_first_iteration_93": {
+      "name": "test_no_stop_on_first_iteration",
+      "type": "method",
+      "start_line": 93,
+      "end_line": 104,
+      "content_hash": "a520763035b01ee4033a8bf45f83d71b84244946",
+      "content": "    def test_no_stop_on_first_iteration(self):\n        \"\"\"Should not stop on first iteration.\"\"\"\n        estimator = ConfidenceEstimator()\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5, 0.3, 0.1]),\n            iteration=0\n        )\n        state.score_history = [state.scores]\n\n        assert not estimator.should_stop(state)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_stop_on_convergence_106": {
+      "name": "test_stop_on_convergence",
+      "type": "method",
+      "start_line": 106,
+      "end_line": 121,
+      "content_hash": "5ba67c5a09ee9b02df7eab93b00892777cd8ecbd",
+      "content": "    def test_stop_on_convergence(self):\n        \"\"\"Should stop when top-k rankings stabilize.\"\"\"\n        estimator = ConfidenceEstimator()\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5, 0.3, 0.1]),\n            iteration=2\n        )\n        # Same scores twice = converged\n        state.score_history = [\n            np.array([0.5, 0.3, 0.1]),\n            np.array([0.5, 0.3, 0.1])\n        ]\n\n        assert estimator.should_stop(state)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_single_candidate_123": {
+      "name": "test_single_candidate",
+      "type": "method",
+      "start_line": 123,
+      "end_line": 139,
+      "content_hash": "171ea17543cf35926670dba10832d849255f21b8",
+      "content": "    def test_single_candidate(self):\n        \"\"\"Should handle single candidate without crashing.\"\"\"\n        estimator = ConfidenceEstimator()\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5]),\n            iteration=2\n        )\n        state.score_history = [\n            np.array([0.4]),\n            np.array([0.5])\n        ]\n\n        # Should not crash and should stop (single element = stable ranking)\n        result = estimator.should_stop(state)\n        assert isinstance(result, bool)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_flipping_order_resets_patience_141": {
+      "name": "test_flipping_order_resets_patience",
+      "type": "method",
+      "start_line": 141,
+      "end_line": 157,
+      "content_hash": "f11462e1fcef6728ab80d489f08fbf9e6cdf4b81",
+      "content": "    def test_flipping_order_resets_patience(self):\n        \"\"\"Flipping ranking order should reset stability count.\"\"\"\n        estimator = ConfidenceEstimator(patience=2)\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.3, 0.5, 0.1]),  # Order: 1, 0, 2\n            iteration=1\n        )\n        state.score_history = [\n            np.array([0.5, 0.3, 0.1]),  # Order: 0, 1, 2\n            np.array([0.3, 0.5, 0.1])   # Order: 1, 0, 2 (flipped!)\n        ]\n\n        # Flipped order = not stable, should not stop\n        assert not estimator.should_stop(state)\n        assert estimator._stable_count == 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_patience_respected_159": {
+      "name": "test_patience_respected",
+      "type": "method",
+      "start_line": 159,
+      "end_line": 185,
+      "content_hash": "97364eb87802c0e5b1f4455d007d370d94fa572a",
+      "content": "    def test_patience_respected(self):\n        \"\"\"Should require patience consecutive stable iterations to stop.\"\"\"\n        estimator = ConfidenceEstimator(patience=3)\n\n        state = RefinementState(\n            z=np.zeros(64),\n            scores=np.array([0.5, 0.3, 0.1]),\n            iteration=1\n        )\n\n        # First stable iteration\n        state.score_history = [\n            np.array([0.5, 0.3, 0.1]),\n            np.array([0.5, 0.3, 0.1])\n        ]\n        assert not estimator.should_stop(state)\n        assert estimator._stable_count == 1\n\n        # Second stable iteration\n        state.score_history.append(np.array([0.5, 0.3, 0.1]))\n        assert not estimator.should_stop(state)\n        assert estimator._stable_count == 2\n\n        # Third stable iteration - now should stop\n        state.score_history.append(np.array([0.5, 0.3, 0.1]))\n        assert estimator.should_stop(state)\n        assert estimator._stable_count == 3",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_reset_clears_state_187": {
+      "name": "test_reset_clears_state",
+      "type": "method",
+      "start_line": 187,
+      "end_line": 194,
+      "content_hash": "c07614b88e6df8ffe6b4286a02585c8b58a22b40",
+      "content": "    def test_reset_clears_state(self):\n        \"\"\"Reset should clear stability count.\"\"\"\n        estimator = ConfidenceEstimator(patience=2)\n        estimator._stable_count = 5\n\n        estimator.reset()\n\n        assert estimator._stable_count == 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_TestRecursiveReranker_197": {
+      "name": "TestRecursiveReranker",
+      "type": "class",
+      "start_line": 197,
+      "end_line": 241,
+      "content_hash": "35277cb8c0919646ce018d3d2eaab47c7bcdde09",
+      "content": "class TestRecursiveReranker:\n    \"\"\"Tests for the main recursive reranker.\"\"\"\n    \n    def test_rerank_returns_same_count(self):\n        \"\"\"Reranker should return same number of candidates.\"\"\"\n        reranker = RecursiveReranker(n_iterations=2, dim=64)\n        \n        candidates = [\n            {\"path\": \"a.py\", \"symbol\": \"func_a\", \"code\": \"def a(): pass\"},\n            {\"path\": \"b.py\", \"symbol\": \"func_b\", \"code\": \"def b(): pass\"},\n            {\"path\": \"c.py\", \"symbol\": \"func_c\", \"code\": \"def c(): pass\"},\n        ]\n        \n        results = reranker.rerank(\"search query\", candidates)\n        \n        assert len(results) == 3\n    \n    def test_rerank_adds_metadata(self):\n        \"\"\"Reranked results should have recursive metadata.\"\"\"\n        reranker = RecursiveReranker(n_iterations=2, dim=64)\n        \n        candidates = [\n            {\"path\": \"a.py\", \"symbol\": \"func_a\", \"code\": \"def a(): pass\"},\n        ]\n        \n        results = reranker.rerank(\"query\", candidates)\n        \n        assert \"recursive_score\" in results[0]\n        assert \"recursive_rank\" in results[0]\n        assert \"recursive_iterations\" in results[0]\n        assert \"score_trajectory\" in results[0]\n    \n    def test_rerank_preserves_original_fields(self):\n        \"\"\"Original candidate fields should be preserved.\"\"\"\n        reranker = RecursiveReranker(n_iterations=2, dim=64)\n        \n        candidates = [\n            {\"path\": \"a.py\", \"symbol\": \"func_a\", \"code\": \"def a(): pass\", \"custom\": \"value\"},\n        ]\n        \n        results = reranker.rerank(\"query\", candidates)\n        \n        assert results[0][\"path\"] == \"a.py\"\n        assert results[0][\"symbol\"] == \"func_a\"\n        assert results[0][\"custom\"] == \"value\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_rerank_returns_same_count_200": {
+      "name": "test_rerank_returns_same_count",
+      "type": "method",
+      "start_line": 200,
+      "end_line": 212,
+      "content_hash": "185543d45a904b28adfb8818ef0514a968497cae",
+      "content": "    def test_rerank_returns_same_count(self):\n        \"\"\"Reranker should return same number of candidates.\"\"\"\n        reranker = RecursiveReranker(n_iterations=2, dim=64)\n        \n        candidates = [\n            {\"path\": \"a.py\", \"symbol\": \"func_a\", \"code\": \"def a(): pass\"},\n            {\"path\": \"b.py\", \"symbol\": \"func_b\", \"code\": \"def b(): pass\"},\n            {\"path\": \"c.py\", \"symbol\": \"func_c\", \"code\": \"def c(): pass\"},\n        ]\n        \n        results = reranker.rerank(\"search query\", candidates)\n        \n        assert len(results) == 3",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_rerank_adds_metadata_214": {
+      "name": "test_rerank_adds_metadata",
+      "type": "method",
+      "start_line": 214,
+      "end_line": 227,
+      "content_hash": "8528ad8d914a8a006146791faf8875858c391cb1",
+      "content": "    def test_rerank_adds_metadata(self):\n        \"\"\"Reranked results should have recursive metadata.\"\"\"\n        reranker = RecursiveReranker(n_iterations=2, dim=64)\n        \n        candidates = [\n            {\"path\": \"a.py\", \"symbol\": \"func_a\", \"code\": \"def a(): pass\"},\n        ]\n        \n        results = reranker.rerank(\"query\", candidates)\n        \n        assert \"recursive_score\" in results[0]\n        assert \"recursive_rank\" in results[0]\n        assert \"recursive_iterations\" in results[0]\n        assert \"score_trajectory\" in results[0]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_rerank_preserves_original_fields_229": {
+      "name": "test_rerank_preserves_original_fields",
+      "type": "method",
+      "start_line": 229,
+      "end_line": 241,
+      "content_hash": "58a8d04dcd4d481a2d6f2666d1bd9c14493d2932",
+      "content": "    def test_rerank_preserves_original_fields(self):\n        \"\"\"Original candidate fields should be preserved.\"\"\"\n        reranker = RecursiveReranker(n_iterations=2, dim=64)\n        \n        candidates = [\n            {\"path\": \"a.py\", \"symbol\": \"func_a\", \"code\": \"def a(): pass\", \"custom\": \"value\"},\n        ]\n        \n        results = reranker.rerank(\"query\", candidates)\n        \n        assert results[0][\"path\"] == \"a.py\"\n        assert results[0][\"symbol\"] == \"func_a\"\n        assert results[0][\"custom\"] == \"value\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

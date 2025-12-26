@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/apikey.go",
+  "file_hash": "5c1980041450f09843654beb1cf4ef58a0a11237",
+  "updated_at": "2025-12-26T17:34:20.986102",
+  "symbols": {
+    "struct_APIKeyStateChangeMsg_25": {
+      "name": "APIKeyStateChangeMsg",
+      "type": "struct",
+      "start_line": 25,
+      "end_line": 28,
+      "content_hash": "02c29202a03a66e11bda5aa526ec58e00aad0a87",
+      "content": "type APIKeyStateChangeMsg struct {\n\tState APIKeyInputState\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_APIKeyInput_29": {
+      "name": "APIKeyInput",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 38,
+      "content_hash": "3292aff5a3b1cc0e44c2a8d3bfa817daf2c9f63b",
+      "content": "type APIKeyInput struct {\n\tinput        textinput.Model\n\twidth        int\n\tspinner      spinner.Model\n\tproviderName string\n\tstate        APIKeyInputState\n\ttitle        string\n\tshowTitle    bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAPIKeyInput_39": {
+      "name": "NewAPIKeyInput",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 60,
+      "content_hash": "243567d732675c680685fab009e026bee7ff7cdc",
+      "content": "func NewAPIKeyInput() *APIKeyInput {\n\tt := styles.CurrentTheme()\n\n\tti := textinput.New()\n\tti.Placeholder = \"Enter your API key...\"\n\tti.SetVirtualCursor(false)\n\tti.Prompt = \"> \"\n\tti.SetStyles(t.S().TextInput)\n\tti.Focus()\n\n\treturn &APIKeyInput{\n\t\tinput: ti,\n\t\tstate: APIKeyInputStateInitial,\n\t\tspinner: spinner.New(\n\t\t\tspinner.WithSpinner(spinner.Dot),\n\t\t\tspinner.WithStyle(t.S().Base.Foreground(t.Green)),\n\t\t),\n\t\tproviderName: \"Provider\",\n\t\tshowTitle:    true,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetProviderName_61": {
+      "name": "SetProviderName",
+      "type": "method",
+      "start_line": 61,
+      "end_line": 65,
+      "content_hash": "cccf7ffb587ef566e8e43c91c1efbde809b41737",
+      "content": "func (a *APIKeyInput) SetProviderName(name string) {\n\ta.providerName = name\n\ta.updateStatePresentation()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetShowTitle_66": {
+      "name": "SetShowTitle",
+      "type": "method",
+      "start_line": 66,
+      "end_line": 69,
+      "content_hash": "7a024fae70d7086d5535fd705899dcfcdfa2c67a",
+      "content": "func (a *APIKeyInput) SetShowTitle(show bool) {\n\ta.showTitle = show\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetTitle_70": {
+      "name": "GetTitle",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 73,
+      "content_hash": "7434e9793376102906a2f51db6980dc2ca398ce5",
+      "content": "func (a *APIKeyInput) GetTitle() string {\n\treturn a.title\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_74": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 74,
+      "end_line": 78,
+      "content_hash": "e3d3cc02eddb0eda79553253f734754215ad17cc",
+      "content": "func (a *APIKeyInput) Init() tea.Cmd {\n\ta.updateStatePresentation()\n\treturn a.spinner.Tick\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_79": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 79,
+      "end_line": 103,
+      "content_hash": "d27248b7fa05f76a8a68d3e98211c826355f27b3",
+      "content": "func (a *APIKeyInput) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase spinner.TickMsg:\n\t\tif a.state == APIKeyInputStateVerifying {\n\t\t\tvar cmd tea.Cmd\n\t\t\ta.spinner, cmd = a.spinner.Update(msg)\n\t\t\ta.updateStatePresentation()\n\t\t\treturn a, cmd\n\t\t}\n\t\treturn a, nil\n\tcase APIKeyStateChangeMsg:\n\t\ta.state = msg.State\n\t\tvar cmd tea.Cmd\n\t\tif msg.State == APIKeyInputStateVerifying {\n\t\t\tcmd = a.spinner.Tick\n\t\t}\n\t\ta.updateStatePresentation()\n\t\treturn a, cmd\n\t}\n\n\tvar cmd tea.Cmd\n\ta.input, cmd = a.input.Update(msg)\n\treturn a, cmd\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_updateStatePresentation_104": {
+      "name": "updateStatePresentation",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 143,
+      "content_hash": "396636877836952577ceb2ed854f7001ad4cf7b9",
+      "content": "func (a *APIKeyInput) updateStatePresentation() {\n\tt := styles.CurrentTheme()\n\n\tprefixStyle := t.S().Base.\n\t\tForeground(t.Primary)\n\taccentStyle := t.S().Base.Foreground(t.Green).Bold(true)\n\terrorStyle := t.S().Base.Foreground(t.Cherry)\n\n\tswitch a.state {\n\tcase APIKeyInputStateInitial:\n\t\ttitlePrefix := prefixStyle.Render(\"Enter your \")\n\t\ta.title = titlePrefix + accentStyle.Render(a.providerName+\" API Key\") + prefixStyle.Render(\".\")\n\t\ta.input.SetStyles(t.S().TextInput)\n\t\ta.input.Prompt = \"> \"\n\tcase APIKeyInputStateVerifying:\n\t\ttitlePrefix := prefixStyle.Render(\"Verifying your \")\n\t\ta.title = titlePrefix + accentStyle.Render(a.providerName+\" API Key\") + prefixStyle.Render(\"...\")\n\t\tts := t.S().TextInput\n\t\t// make the blurred state be the same\n\t\tts.Blurred.Prompt = ts.Focused.Prompt\n\t\ta.input.Prompt = a.spinner.View()\n\t\ta.input.Blur()\n\tcase APIKeyInputStateVerified:\n\t\ta.title = accentStyle.Render(a.providerName+\" API Key\") + prefixStyle.Render(\" validated.\")\n\t\tts := t.S().TextInput\n\t\t// make the blurred state be the same\n\t\tts.Blurred.Prompt = ts.Focused.Prompt\n\t\ta.input.SetStyles(ts)\n\t\ta.input.Prompt = styles.CheckIcon + \" \"\n\t\ta.input.Blur()\n\tcase APIKeyInputStateError:\n\t\ta.title = errorStyle.Render(\"Invalid \") + accentStyle.Render(a.providerName+\" API Key\") + errorStyle.Render(\". Try again?\")\n\t\tts := t.S().TextInput\n\t\tts.Focused.Prompt = ts.Focused.Prompt.Foreground(t.Cherry)\n\t\ta.input.Focus()\n\t\ta.input.SetStyles(ts)\n\t\ta.input.Prompt = styles.ErrorIcon + \" \"\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_144": {
+      "name": "View",
+      "type": "method",
+      "start_line": 144,
+      "end_line": 173,
+      "content_hash": "5109d2def78e87a1e738402c53d513c538aa9a1e",
+      "content": "func (a *APIKeyInput) View() string {\n\tinputView := a.input.View()\n\n\tdataPath := config.GlobalConfigData()\n\tdataPath = home.Short(dataPath)\n\thelpText := styles.CurrentTheme().S().Muted.\n\t\tRender(fmt.Sprintf(\"This will be written to the global configuration: %s\", dataPath))\n\n\tvar content string\n\tif a.showTitle && a.title != \"\" {\n\t\tcontent = lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\ta.title,\n\t\t\t\"\",\n\t\t\tinputView,\n\t\t\t\"\",\n\t\t\thelpText,\n\t\t)\n\t} else {\n\t\tcontent = lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\tinputView,\n\t\t\t\"\",\n\t\t\thelpText,\n\t\t)\n\t}\n\n\treturn content\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_174": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 174,
+      "end_line": 181,
+      "content_hash": "271b2d166efaf87112334b44ae68a201e6628d65",
+      "content": "func (a *APIKeyInput) Cursor() *tea.Cursor {\n\tcursor := a.input.Cursor()\n\tif cursor != nil && a.showTitle {\n\t\tcursor.Y += 2 // Adjust for title and spacing\n\t}\n\treturn cursor\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Value_182": {
+      "name": "Value",
+      "type": "method",
+      "start_line": 182,
+      "end_line": 185,
+      "content_hash": "5230d0419a62285426a4380418b09e280b063d06",
+      "content": "func (a *APIKeyInput) Value() string {\n\treturn a.input.Value()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Tick_186": {
+      "name": "Tick",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 192,
+      "content_hash": "f0169168f9687a4332a37d80b27b6eca8d2c51dc",
+      "content": "func (a *APIKeyInput) Tick() tea.Cmd {\n\tif a.state == APIKeyInputStateVerifying {\n\t\treturn a.spinner.Tick\n\t}\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetWidth_193": {
+      "name": "SetWidth",
+      "type": "method",
+      "start_line": 193,
+      "end_line": 197,
+      "content_hash": "2d653f24462e4f8c92012d6012bee9614fecc6e7",
+      "content": "func (a *APIKeyInput) SetWidth(width int) {\n\ta.width = width\n\ta.input.SetWidth(width - 4)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Reset_198": {
+      "name": "Reset",
+      "type": "method",
+      "start_line": 198,
+      "end_line": 203,
+      "content_hash": "0f4a30b893021065c8f9db7e85e3088e8e1e6777",
+      "content": "func (a *APIKeyInput) Reset() {\n\ta.state = APIKeyInputStateInitial\n\ta.input.SetValue(\"\")\n\ta.input.Focus()\n\ta.updateStatePresentation()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

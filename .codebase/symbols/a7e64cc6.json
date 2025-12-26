@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/internal/task/simplified.go",
+  "file_hash": "3d2127594acfc25e4f2966121ee9f09d855c5589",
+  "updated_at": "2025-12-26T17:34:21.164543",
+  "symbols": {
+    "struct_SimpleTask_11": {
+      "name": "SimpleTask",
+      "type": "struct",
+      "start_line": 11,
+      "end_line": 21,
+      "content_hash": "d8bdb7626f164ce7ea36728f7aa48314107d2c07",
+      "content": "type SimpleTask struct {\n\tID          string    `json:\"id\"`\n\tTitle       string    `json:\"title\"`\n\tDescription string    `json:\"description\"`\n\tStatus      string    `json:\"status\"`\n\tSessionID   string    `json:\"session_id\"`\n\tCreated     time.Time `json:\"created\"`\n\tUpdated     time.Time `json:\"updated\"`\n}\n\n// SimpleService provides the essential task management functionality",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_SimpleService_22": {
+      "name": "SimpleService",
+      "type": "interface",
+      "start_line": 22,
+      "end_line": 31,
+      "content_hash": "636fe66193a25abe6d0e8912ab93102ee88f766b",
+      "content": "type SimpleService interface {\n\tCreateTask(ctx context.Context, sessionID, title, description string) *SimpleTask\n\tGetActiveTask(ctx context.Context, sessionID string) (*SimpleTask, bool)\n\tUpdateTask(ctx context.Context, sessionID, description string) *SimpleTask\n\tCompleteTask(ctx context.Context, sessionID string) bool\n\tCheckFocus(ctx context.Context, sessionID, response string) (bool, string)\n\tGetFocusPrompt(ctx context.Context, sessionID string) string\n}\n\n// simpleService implements SimpleService",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_simpleService_32": {
+      "name": "simpleService",
+      "type": "struct",
+      "start_line": 32,
+      "end_line": 36,
+      "content_hash": "15399d9be46c676b3d8fcc2b46ca89e79bdcf2c9",
+      "content": "type simpleService struct {\n\ttasks map[string]*SimpleTask // sessionID -> task\n}\n\n// NewSimpleService creates a new task service",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSimpleService_37": {
+      "name": "NewSimpleService",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 43,
+      "content_hash": "e1d861125b4f39219e496e123f817bb690e6c276",
+      "content": "func NewSimpleService() SimpleService {\n\treturn &simpleService{\n\t\ttasks: make(map[string]*SimpleTask),\n\t}\n}\n\n// CreateTask creates a new focused task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateTask_44": {
+      "name": "CreateTask",
+      "type": "method",
+      "start_line": 44,
+      "end_line": 59,
+      "content_hash": "412044e25044b9399603613ddaed0ec5edc7da6e",
+      "content": "func (s *simpleService) CreateTask(ctx context.Context, sessionID, title, description string) *SimpleTask {\n\ttask := &SimpleTask{\n\t\tID:          fmt.Sprintf(\"task-%d\", time.Now().UnixNano()),\n\t\tTitle:       title,\n\t\tDescription: description,\n\t\tStatus:      \"active\",\n\t\tSessionID:   sessionID,\n\t\tCreated:     time.Now(),\n\t\tUpdated:     time.Now(),\n\t}\n\n\ts.tasks[sessionID] = task\n\treturn task\n}\n\n// GetActiveTask retrieves the current task for a session",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetActiveTask_60": {
+      "name": "GetActiveTask",
+      "type": "method",
+      "start_line": 60,
+      "end_line": 65,
+      "content_hash": "10813e3f059f984e8c4d360662cd034ca67b65d7",
+      "content": "func (s *simpleService) GetActiveTask(ctx context.Context, sessionID string) (*SimpleTask, bool) {\n\ttask, exists := s.tasks[sessionID]\n\treturn task, exists\n}\n\n// UpdateTask updates the task description (working context)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_UpdateTask_66": {
+      "name": "UpdateTask",
+      "type": "method",
+      "start_line": 66,
+      "end_line": 77,
+      "content_hash": "c15eb2f17e5ae34509358346af4d4bedef5ed133",
+      "content": "func (s *simpleService) UpdateTask(ctx context.Context, sessionID, description string) *SimpleTask {\n\ttask, exists := s.tasks[sessionID]\n\tif !exists {\n\t\treturn nil\n\t}\n\n\ttask.Description = description\n\ttask.Updated = time.Now()\n\treturn task\n}\n\n// CompleteTask marks tasks as completed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CompleteTask_78": {
+      "name": "CompleteTask",
+      "type": "method",
+      "start_line": 78,
+      "end_line": 89,
+      "content_hash": "cffcf18d2d684130978117cca73b8539a5cd751f",
+      "content": "func (s *simpleService) CompleteTask(ctx context.Context, sessionID string) bool {\n\ttask, exists := s.tasks[sessionID]\n\tif exists {\n\t\ttask.Status = \"completed\"\n\t\ttask.Updated = time.Now()\n\t\tdelete(s.tasks, sessionID) // Remove from active tracking\n\t\treturn true\n\t}\n\treturn false\n}\n\n// CheckFocus analyzes if the AI is drifting from its current task",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CheckFocus_90": {
+      "name": "CheckFocus",
+      "type": "method",
+      "start_line": 90,
+      "end_line": 148,
+      "content_hash": "b6f4c7414f39c0230a928507571e2842c98b2b19",
+      "content": "func (s *simpleService) CheckFocus(ctx context.Context, sessionID, response string) (bool, string) {\n\ttask, exists := s.tasks[sessionID]\n\tif !exists {\n\t\treturn true, \"No active task - all work accepted\"\n\t}\n\n\tresponse = strings.ToLower(response)\n\ttaskContext := strings.ToLower(task.Title + \" \" + task.Description)\n\n\t// If no task context, assume focused\n\tif taskContext == \"\" {\n\t\treturn true, \"No specific task context\"\n\t}\n\n\t// Check for task relevance\n\tresponseWords := strings.Fields(response)\n\ttaskWords := strings.Fields(taskContext)\n\n\tvar overlap int\n\tfor _, rword := range responseWords {\n\t\tfor _, tword := range taskWords {\n\t\t\tif len(rword) > 2 && len(tword) > 2 {\n\t\t\t\tif strings.Contains(tword, rword) || strings.Contains(rword, tword) {\n\t\t\t\t\toverlap++\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tif rword == tword {\n\t\t\t\toverlap++\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n\n\t// Check for clear drift indicators\n\tdriftIndicators := []string{\n\t\t\"weather\", \"news\", \"sports\", \"celebrity\", \"random\", \"joke\",\n\t\t\"fun fact\", \"trivia\", \"entertainment\", \"music\", \"movie\",\n\t\t\"could also\", \"while we're at it\", \"by the way\", \"also\",\n\t}\n\n\tfor _, indicator := range driftIndicators {\n\t\tif strings.Contains(response, indicator) {\n\t\t\treturn false, \"Detected potential drift: \" + indicator\n\t\t}\n\t}\n\n\t// Require at least 10% relevance to stay on task\n\tif len(responseWords) > 0 {\n\t\trelevance := float64(overlap) / float64(len(responseWords))\n\t\tif relevance < 0.1 {\n\t\t\treturn false, \"Low relevance to current task\"\n\t\t}\n\t}\n\n\treturn true, \"Maintaining focus\"\n}\n\n// GetFocusPrompt returns a correction prompt if the agent is drifting",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetFocusPrompt_149": {
+      "name": "GetFocusPrompt",
+      "type": "method",
+      "start_line": 149,
+      "end_line": 167,
+      "content_hash": "2d6f4669199dd31365d4f7ac8c5a7a6607b64fac",
+      "content": "func (s *simpleService) GetFocusPrompt(ctx context.Context, sessionID string) string {\n\ttask, exists := s.tasks[sessionID]\n\tif !exists {\n\t\treturn \"\"\n\t}\n\n\treturn fmt.Sprintf(`## TASK FOCUS REQUIRED\n\nYou appear to be drifting from your current task. Please refocus:\n\n**Current Task:** %s\n**Task Description:** %s\n\nStay focused on this task. Ignore unrelated requests or distractions.\nProceed with the focused approach to complete this specific task.\n\n---\n`, task.Title, task.Description)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

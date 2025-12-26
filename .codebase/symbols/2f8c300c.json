@@ -1,0 +1,293 @@
+{
+  "file_path": "/work/external-deps/helix-db/.github/workflows/s3_push.yml",
+  "file_hash": "79229d679402f6939f968d02b09dab88a04bc126",
+  "updated_at": "2025-12-26T17:34:24.480649",
+  "symbols": {
+    "key_name_1": {
+      "name": "name",
+      "type": "key",
+      "start_line": 1,
+      "end_line": 1,
+      "content_hash": "a050fb090a6998640212f94f2436684fc54fee61",
+      "content": "name: Push to S3",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on_3": {
+      "name": "on",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 9,
+      "content_hash": "9c8515dab6b3b75b6463e16e9d9547bf0239df0c",
+      "content": "on:\n  release:\n    types: [published, created]\n  create:\n    tags:\n      - 'v*'\n  workflow_dispatch:",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.release_4": {
+      "name": "on.release",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 5,
+      "content_hash": "92a56f46fe12142a65a390e5c5658f33a504ad52",
+      "content": "  release:\n    types: [published, created]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.release.types_5": {
+      "name": "on.release.types",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "da0911d6928f0e3a5324b4cd29f427e411b1a404",
+      "content": "    types: [published, created]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.create_6": {
+      "name": "on.create",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 8,
+      "content_hash": "41d674853b1b998d29372786df528bd5b66d3659",
+      "content": "  create:\n    tags:\n      - 'v*'",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.create.tags_7": {
+      "name": "on.create.tags",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 8,
+      "content_hash": "32b23c29b3d7e858d36dc6b4d77f122b50e765f9",
+      "content": "    tags:\n      - 'v*'",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_on.workflow_dispatch_9": {
+      "name": "on.workflow_dispatch",
+      "type": "key",
+      "start_line": 9,
+      "end_line": 9,
+      "content_hash": "9d55e62244dd2e683f9f9153af7efd66d4894293",
+      "content": "  workflow_dispatch:",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_permissions_11": {
+      "name": "permissions",
+      "type": "key",
+      "start_line": 11,
+      "end_line": 13,
+      "content_hash": "da7486b3c7273f0239a9e9e7aa5d2721f7ac32c3",
+      "content": "permissions:\n  id-token: write\n  contents: read",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_permissions.id-token_12": {
+      "name": "permissions.id-token",
+      "type": "key",
+      "start_line": 12,
+      "end_line": 12,
+      "content_hash": "4a0c77e0180447ae10c76ac853513f6a974556ae",
+      "content": "  id-token: write",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_permissions.contents_13": {
+      "name": "permissions.contents",
+      "type": "key",
+      "start_line": 13,
+      "end_line": 13,
+      "content_hash": "11a0af2662fcadc8d3459283e8faa75e041a1df3",
+      "content": "  contents: read",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs_15": {
+      "name": "jobs",
+      "type": "key",
+      "start_line": 15,
+      "end_line": 46,
+      "content_hash": "d6bb891c90fd09ae75cb9a615fee5878bcaa1d1b",
+      "content": "jobs:\n  upload-to-s3:\n    runs-on: ubuntu-latest\n\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Configure AWS credentials using OIDC\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsS3Role\n          aws-region: us-east-1\n\n      - name: Create and upload template.tar.gz\n        run: |\n          # Create tarball excluding .git and target directories\n          # Write to /tmp to avoid modifying the source directory during archiving\n          tar -czvf /tmp/template.tar.gz \\\n            --exclude='.git' \\\n            --exclude='target' \\\n            .\n\n          # Upload to S3\n          aws s3 cp /tmp/template.tar.gz s3://helix-repo/template.tar.gz\n\n      - name: Upload completion notification\n        if: success()\n        run: |\n          echo \"Successfully uploaded template.tar.gz to S3 bucket: helix-repo\"\n          echo \"Upload triggered by: ${{ github.event_name }}\"\n          echo \"Reference: ${{ github.ref }}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3_16": {
+      "name": "jobs.upload-to-s3",
+      "type": "key",
+      "start_line": 16,
+      "end_line": 46,
+      "content_hash": "3afcb5d601f5b0f7e0e71a7e463627b664b4fb46",
+      "content": "  upload-to-s3:\n    runs-on: ubuntu-latest\n\n    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Configure AWS credentials using OIDC\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsS3Role\n          aws-region: us-east-1\n\n      - name: Create and upload template.tar.gz\n        run: |\n          # Create tarball excluding .git and target directories\n          # Write to /tmp to avoid modifying the source directory during archiving\n          tar -czvf /tmp/template.tar.gz \\\n            --exclude='.git' \\\n            --exclude='target' \\\n            .\n\n          # Upload to S3\n          aws s3 cp /tmp/template.tar.gz s3://helix-repo/template.tar.gz\n\n      - name: Upload completion notification\n        if: success()\n        run: |\n          echo \"Successfully uploaded template.tar.gz to S3 bucket: helix-repo\"\n          echo \"Upload triggered by: ${{ github.event_name }}\"\n          echo \"Reference: ${{ github.ref }}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.runs-on_17": {
+      "name": "jobs.upload-to-s3.runs-on",
+      "type": "key",
+      "start_line": 17,
+      "end_line": 17,
+      "content_hash": "af41e65e8de6d5fac9a3ffe97c9153f19e320298",
+      "content": "    runs-on: ubuntu-latest",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps_19": {
+      "name": "jobs.upload-to-s3.steps",
+      "type": "key",
+      "start_line": 19,
+      "end_line": 46,
+      "content_hash": "a13caa989e12a275849589ae0452f29108c20208",
+      "content": "    steps:\n      - name: Checkout repository\n        uses: actions/checkout@v4\n\n      - name: Configure AWS credentials using OIDC\n        uses: aws-actions/configure-aws-credentials@v4\n        with:\n          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsS3Role\n          aws-region: us-east-1\n\n      - name: Create and upload template.tar.gz\n        run: |\n          # Create tarball excluding .git and target directories\n          # Write to /tmp to avoid modifying the source directory during archiving\n          tar -czvf /tmp/template.tar.gz \\\n            --exclude='.git' \\\n            --exclude='target' \\\n            .\n\n          # Upload to S3\n          aws s3 cp /tmp/template.tar.gz s3://helix-repo/template.tar.gz\n\n      - name: Upload completion notification\n        if: success()\n        run: |\n          echo \"Successfully uploaded template.tar.gz to S3 bucket: helix-repo\"\n          echo \"Upload triggered by: ${{ github.event_name }}\"\n          echo \"Reference: ${{ github.ref }}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.name_20": {
+      "name": "jobs.upload-to-s3.steps.name",
+      "type": "key",
+      "start_line": 20,
+      "end_line": 20,
+      "content_hash": "34459d1f1131615ad3ed75da1b85fdb2e1bf0f30",
+      "content": "      - name: Checkout repository",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.uses_21": {
+      "name": "jobs.upload-to-s3.steps.uses",
+      "type": "key",
+      "start_line": 21,
+      "end_line": 21,
+      "content_hash": "d7f1119ee118e6481c5dfff4c75c00d9d907227d",
+      "content": "        uses: actions/checkout@v4",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.name_23": {
+      "name": "jobs.upload-to-s3.steps.name",
+      "type": "key",
+      "start_line": 23,
+      "end_line": 23,
+      "content_hash": "a5eee7b56c8df006dd0f95c0a997aca57b9ec106",
+      "content": "      - name: Configure AWS credentials using OIDC",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.uses_24": {
+      "name": "jobs.upload-to-s3.steps.uses",
+      "type": "key",
+      "start_line": 24,
+      "end_line": 24,
+      "content_hash": "b68d5e7b9a4740b2cc132e38b5a8f696ec7cb78b",
+      "content": "        uses: aws-actions/configure-aws-credentials@v4",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.with_25": {
+      "name": "jobs.upload-to-s3.steps.with",
+      "type": "key",
+      "start_line": 25,
+      "end_line": 27,
+      "content_hash": "0bdce5c21d76f484b46c5641bb79e3f3dae744c5",
+      "content": "        with:\n          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsS3Role\n          aws-region: us-east-1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.with.role-to-assume_26": {
+      "name": "jobs.upload-to-s3.steps.with.role-to-assume",
+      "type": "key",
+      "start_line": 26,
+      "end_line": 26,
+      "content_hash": "be4000bbdaa203a5dfe036a0b5b0d0e60301345e",
+      "content": "          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/GitHubActionsS3Role",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.with.aws-region_27": {
+      "name": "jobs.upload-to-s3.steps.with.aws-region",
+      "type": "key",
+      "start_line": 27,
+      "end_line": 27,
+      "content_hash": "5122ba40b95fef0f3f7e537cea42e608dabe6f72",
+      "content": "          aws-region: us-east-1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.name_29": {
+      "name": "jobs.upload-to-s3.steps.name",
+      "type": "key",
+      "start_line": 29,
+      "end_line": 29,
+      "content_hash": "436780a235e55e96133f20501b2d2e90199f708f",
+      "content": "      - name: Create and upload template.tar.gz",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.run_30": {
+      "name": "jobs.upload-to-s3.steps.run",
+      "type": "key",
+      "start_line": 30,
+      "end_line": 39,
+      "content_hash": "8b08ed1e7660c9fc4f9cf7c47e45cd6561655ba3",
+      "content": "        run: |\n          # Create tarball excluding .git and target directories\n          # Write to /tmp to avoid modifying the source directory during archiving\n          tar -czvf /tmp/template.tar.gz \\\n            --exclude='.git' \\\n            --exclude='target' \\\n            .\n\n          # Upload to S3\n          aws s3 cp /tmp/template.tar.gz s3://helix-repo/template.tar.gz",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.name_41": {
+      "name": "jobs.upload-to-s3.steps.name",
+      "type": "key",
+      "start_line": 41,
+      "end_line": 41,
+      "content_hash": "dc8fae8bbdb1f32e54f5a25b0c53adf316a8dd9f",
+      "content": "      - name: Upload completion notification",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.if_42": {
+      "name": "jobs.upload-to-s3.steps.if",
+      "type": "key",
+      "start_line": 42,
+      "end_line": 42,
+      "content_hash": "b4102596017f3fa3bc30b5791109990e27601f40",
+      "content": "        if: success()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_jobs.upload-to-s3.steps.run_43": {
+      "name": "jobs.upload-to-s3.steps.run",
+      "type": "key",
+      "start_line": 43,
+      "end_line": 46,
+      "content_hash": "2d2ba644160c40fe6cc4ac1a8c5f31c44ded3988",
+      "content": "        run: |\n          echo \"Successfully uploaded template.tar.gz to S3 bucket: helix-repo\"\n          echo \"Upload triggered by: ${{ github.event_name }}\"\n          echo \"Reference: ${{ github.ref }}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

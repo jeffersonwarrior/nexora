@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/tests/traversal_tests/util_tests.rs",
+  "file_hash": "52e2c3965ec0f2e9f35b609789e1ffb401ba7033",
+  "updated_at": "2025-12-26T17:34:20.225634",
+  "symbols": {
+    "function_setup_test_db_28": {
+      "name": "setup_test_db",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 40,
+      "content_hash": "08bb0f06064d2277b5cf43aecf3c82469d11003e",
+      "content": "fn setup_test_db() -> (TempDir, Arc<HelixGraphStorage>) {\n    let temp_dir = TempDir::new().unwrap();\n    let db_path = temp_dir.path().to_str().unwrap();\n    let storage = HelixGraphStorage::new(\n        db_path,\n        crate::helix_engine::traversal_core::config::Config::default(),\n        Default::default(),\n    )\n    .unwrap();\n    (temp_dir, Arc::new(storage))\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_order_node_by_asc_41": {
+      "name": "test_order_node_by_asc",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 72,
+      "content_hash": "5483050ec08c66cdc5d4e181e6b3cfb454406ae7",
+      "content": "fn test_order_node_by_asc() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 30 }), None)\n        .collect_to_obj().unwrap();\n\n    let node2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 20 }), None)\n        .collect_to_obj().unwrap();\n\n    let node3 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 10 }), None)\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\")\n        .order_by_asc(\"age\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 3);\n    assert_eq!(traversal[0].id(), node3.id());\n    assert_eq!(traversal[1].id(), node2.id());\n    assert_eq!(traversal[2].id(), node.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_order_node_by_desc_73": {
+      "name": "test_order_node_by_desc",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 104,
+      "content_hash": "f19b7e22cfe3ecc734fe649b2e54aa77d805b75c",
+      "content": "fn test_order_node_by_desc() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 30 }), None)\n        .collect_to_obj().unwrap();\n\n    let node2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 20 }), None)\n        .collect_to_obj().unwrap();\n\n    let node3 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 10 }), None)\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\")\n        .order_by_desc(\"age\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 3);\n    assert_eq!(traversal[0].id(), node.id());\n    assert_eq!(traversal[1].id(), node2.id());\n    assert_eq!(traversal[2].id(), node3.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_order_edge_by_asc_105": {
+      "name": "test_order_edge_by_asc",
+      "type": "function",
+      "start_line": 105,
+      "end_line": 156,
+      "content_hash": "ab5c5c747bba2ea5bbaddb66bed89f7439ae1cd4",
+      "content": "fn test_order_edge_by_asc() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 30 }), None)\n        .collect_to_obj().unwrap();\n\n    let node2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 20 }), None)\n        .collect_to_obj().unwrap();\n\n    let node3 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 10 }), None)\n        .collect_to_obj().unwrap();\n\n    let edge = G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            props_option(&arena, props! { \"since\" => 2010 }),\n            node.id(),\n            node2.id(),\n            false,\n        )\n        .collect_to_obj().unwrap();\n\n    let edge2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            props_option(&arena, props! { \"since\" => 2014 }),\n            node3.id(),\n            node2.id(),\n            false,\n        )\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\")\n        .out_e(\"knows\")\n        .order_by_asc(\"since\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 2);\n    assert_eq!(traversal[0].id(), edge.id());\n    assert_eq!(traversal[1].id(), edge2.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_order_edge_by_desc_157": {
+      "name": "test_order_edge_by_desc",
+      "type": "function",
+      "start_line": 157,
+      "end_line": 208,
+      "content_hash": "6ce619475e91d866b5ff831417be85215f1695be",
+      "content": "fn test_order_edge_by_desc() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 30 }), None)\n        .collect_to_obj().unwrap();\n\n    let node2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 20 }), None)\n        .collect_to_obj().unwrap();\n\n    let node3 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 10 }), None)\n        .collect_to_obj().unwrap();\n\n    let edge = G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            props_option(&arena, props! { \"since\" => 2010 }),\n            node.id(),\n            node2.id(),\n            false,\n        )\n        .collect_to_obj().unwrap();\n\n    let edge2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            props_option(&arena, props! { \"since\" => 2014 }),\n            node3.id(),\n            node2.id(),\n            false,\n        )\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\")\n        .out_e(\"knows\")\n        .order_by_desc(\"since\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 2);\n    assert_eq!(traversal[0].id(), edge2.id());\n    assert_eq!(traversal[1].id(), edge.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_order_vector_by_asc_209": {
+      "name": "test_order_vector_by_asc",
+      "type": "function",
+      "start_line": 209,
+      "end_line": 241,
+      "content_hash": "99a0d26c32be66026c68b8201bae15e41883c574",
+      "content": "fn test_order_vector_by_asc() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    type FnTy = fn(&HVector, &RoTxn) -> bool;\n\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<FnTy>(&[1.0, 2.0, 3.0], \"vector\", props_option(&arena, props! { \"age\" => 30 }))\n        .collect_to_obj().unwrap();\n\n    let vector2 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<FnTy>(&[1.0, 2.0, 3.0], \"vector\", props_option(&arena, props! { \"age\" => 20 }))\n        .collect_to_obj().unwrap();\n\n    let vector3 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<FnTy>(&[1.0, 2.0, 3.0], \"vector\", props_option(&arena, props! { \"age\" => 10 }))\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .search_v::<FnTy, _>(&[1.0, 2.0, 3.0], 10, \"vector\", None)\n        .order_by_asc(\"age\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 3);\n    assert_eq!(traversal[0].id(), vector3.id());\n    assert_eq!(traversal[1].id(), vector2.id());\n    assert_eq!(traversal[2].id(), vector.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_order_vector_by_desc_242": {
+      "name": "test_order_vector_by_desc",
+      "type": "function",
+      "start_line": 242,
+      "end_line": 274,
+      "content_hash": "f8a2ba08445511ae6c509f6e614d1f54f2c567c7",
+      "content": "fn test_order_vector_by_desc() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    type FnTy = fn(&HVector, &RoTxn) -> bool;\n\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<FnTy>(&[1.0, 2.0, 3.0], \"vector\", props_option(&arena, props! { \"age\" => 30 }))\n        .collect_to_obj().unwrap();\n\n    let vector2 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<FnTy>(&[1.0, 2.0, 3.0], \"vector\", props_option(&arena, props! { \"age\" => 20 }))\n        .collect_to_obj().unwrap();\n\n    let vector3 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<FnTy>(&[1.0, 2.0, 3.0], \"vector\", props_option(&arena, props! { \"age\" => 10 }))\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .search_v::<FnTy, _>(&[1.0, 2.0, 3.0], 10, \"vector\", None)\n        .order_by_desc(\"age\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 3);\n    assert_eq!(traversal[0].id(), vector.id());\n    assert_eq!(traversal[1].id(), vector2.id());\n    assert_eq!(traversal[2].id(), vector3.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_dedup_275": {
+      "name": "test_dedup",
+      "type": "function",
+      "start_line": 275,
+      "end_line": 330,
+      "content_hash": "7a5cd1848bb1a1c56a71a693980338aeba7dd22d",
+      "content": "fn test_dedup() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 30 }), None)\n        .collect_to_obj().unwrap();\n\n    let node2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 20 }), None)\n        .collect_to_obj().unwrap();\n\n    let node3 = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", props_option(&arena, props! { \"age\" => 10 }), None)\n        .collect_to_obj().unwrap();\n\n    let _edge = G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            props_option(&arena, props! { \"since\" => 2010 }),\n            node.id(),\n            node2.id(),\n            false,\n        )\n        .collect_to_obj().unwrap();\n\n    let _edge2 = G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\n            \"knows\",\n            props_option(&arena, props! { \"since\" => 2010 }),\n            node3.id(),\n            node2.id(),\n            false,\n        )\n        .collect_to_obj().unwrap();\n\n    txn.commit().unwrap();\n\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\")\n        .out_node(\"knows\")\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 2);\n\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_type(\"person\")\n        .out_node(\"knows\")\n        .dedup()\n        .collect::<Result<Vec<_>,_>>().unwrap();\n\n    assert_eq!(traversal.len(), 1);\n    assert_eq!(traversal[0].id(), node2.id());\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

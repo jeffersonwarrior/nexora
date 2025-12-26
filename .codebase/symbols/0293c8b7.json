@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/dev-setup.sh",
+  "file_hash": "9677b5e6d9b8aed0d08fee7a1f511cbcc46af6ad",
+  "updated_at": "2025-12-26T17:34:19.730325",
+  "symbols": {
+    "function_log_info_19": {
+      "name": "log_info",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 19,
+      "content_hash": "a91415c6f1c45396f7cb73d6960b026a8b0e4b22",
+      "content": "log_info() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_success_23": {
+      "name": "log_success",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 23,
+      "content_hash": "653f8b34a1b865506f885ffc5371f597ad0e65ad",
+      "content": "log_success() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_warning_27": {
+      "name": "log_warning",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 27,
+      "content_hash": "d60a2f5d9d10baec6b9d4fdaae64685473b5f9be",
+      "content": "log_warning() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_error_31": {
+      "name": "log_error",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 31,
+      "content_hash": "1e38ccbd2de2f3a10a4dc47dda61b7ff8a54a495",
+      "content": "log_error() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_docker_36": {
+      "name": "check_docker",
+      "type": "function",
+      "start_line": 36,
+      "end_line": 36,
+      "content_hash": "5c940b365bbb1dbadfaef672a952734415947139",
+      "content": "check_docker() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_docker_compose_52": {
+      "name": "check_docker_compose",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 52,
+      "content_hash": "4c9c7bc2e9ea0f3d913754503d15bb172a05d4f2",
+      "content": "check_docker_compose() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setup_workspace_63": {
+      "name": "setup_workspace",
+      "type": "function",
+      "start_line": 63,
+      "end_line": 63,
+      "content_hash": "ba60da0f451618b7ebcb33994a0fc08bbd27c9c1",
+      "content": "setup_workspace() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_env_file_75": {
+      "name": "create_env_file",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 75,
+      "content_hash": "37b6f48251d0f16412bcd278429486571e656c17",
+      "content": "create_env_file() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_print_usage_120": {
+      "name": "print_usage",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 120,
+      "content_hash": "2c4d68ce902cdeddad6ea25a5a92bc2f20b6a23d",
+      "content": "print_usage() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_156": {
+      "name": "main",
+      "type": "function",
+      "start_line": 156,
+      "end_line": 156,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

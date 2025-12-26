@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/deploy/kubernetes/namespace.yaml",
+  "file_hash": "ddffa9cddf6a1d6e7ccfdff8837889c981a5fca3",
+  "updated_at": "2025-12-26T17:34:21.566698",
+  "symbols": {
+    "key_apiVersion_1": {
+      "name": "apiVersion",
+      "type": "key",
+      "start_line": 1,
+      "end_line": 1,
+      "content_hash": "c0a550963fd5e81041b9eaca5adf04e3017a866d",
+      "content": "apiVersion: v1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_kind_2": {
+      "name": "kind",
+      "type": "key",
+      "start_line": 2,
+      "end_line": 2,
+      "content_hash": "e3f3eafd4a781437252744c88cfba56a774bcbea",
+      "content": "kind: Namespace",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata_3": {
+      "name": "metadata",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 8,
+      "content_hash": "41eb4ec1a553afeafc1bf51db671bc5351967091",
+      "content": "metadata:\n  name: context-engine\n  labels:\n    app: context-engine\n    component: infrastructure\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.name_4": {
+      "name": "metadata.name",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 4,
+      "content_hash": "1e8be6da6c02fb5522d10892d50585415437faf8",
+      "content": "  name: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels_5": {
+      "name": "metadata.labels",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 8,
+      "content_hash": "3790849a72dc14ad3a792cbded5139ca80145c78",
+      "content": "  labels:\n    app: context-engine\n    component: infrastructure\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels.app_6": {
+      "name": "metadata.labels.app",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 6,
+      "content_hash": "d0283716b7840d82a58152046f9f70a9b1d33c35",
+      "content": "    app: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels.component_7": {
+      "name": "metadata.labels.component",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 7,
+      "content_hash": "224c2d0fa4eb75b024ac0225f642ac6820f84d92",
+      "content": "    component: infrastructure",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

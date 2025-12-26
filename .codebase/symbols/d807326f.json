@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/tools/error_messages.go",
+  "file_hash": "ed7fe7993220da6cff93bc76629ef8fea53c7632",
+  "updated_at": "2025-12-26T17:34:21.577373",
+  "symbols": {
+    "function_findMostSimilarContent_9": {
+      "name": "findMostSimilarContent",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 47,
+      "content_hash": "1e17108c18ad9a7e4b564918cf5b5b088a9f675e",
+      "content": "func findMostSimilarContent(fileContent, target string) string {\n\ttargetLines := strings.Split(strings.TrimSpace(target), \"\\n\")\n\tif len(targetLines) == 0 {\n\t\treturn \"\"\n\t}\n\n\tfileLines := strings.Split(fileContent, \"\\n\")\n\tbestMatch := \"\"\n\tbestScore := 0\n\n\t// Look for sequences with at least 50% line overlap\n\tfor i := 0; i <= len(fileLines)-len(targetLines); i++ {\n\t\tmatchCount := 0\n\t\tfor j, targetLine := range targetLines {\n\t\t\tif i+j < len(fileLines) {\n\t\t\t\tfileLine := fileLines[i+j]\n\t\t\t\tif strings.TrimSpace(fileLine) == strings.TrimSpace(targetLine) {\n\t\t\t\t\tmatchCount++\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif matchCount > bestScore {\n\t\t\tbestScore = matchCount\n\t\t\tendIdx := i + len(targetLines)\n\t\t\tif endIdx > len(fileLines) {\n\t\t\t\tendIdx = len(fileLines)\n\t\t\t}\n\t\t\tbestMatch = strings.Join(fileLines[i:endIdx], \"\\n\")\n\t\t}\n\t}\n\n\tif bestScore >= len(targetLines)/2 {\n\t\treturn bestMatch\n\t}\n\treturn \"\"\n}\n\n// visualizeDifference creates a visual diff showing expected vs actual",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_visualizeDifference_48": {
+      "name": "visualizeDifference",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 77,
+      "content_hash": "251817ed92e1fc77a972d73d8414f15bfe77f86c",
+      "content": "func visualizeDifference(expected, actual string) string {\n\tvar result strings.Builder\n\tresult.WriteString(\"EXPECTED (your old_string):\\n\")\n\n\texpectedLines := strings.Split(expected, \"\\n\")\n\tfor i, line := range expectedLines {\n\t\t// Show whitespace visually\n\t\tvisualLine := strings.ReplaceAll(line, \"\\t\", \"\u2192\")\n\t\tvisualLine = strings.ReplaceAll(visualLine, \" \", \"\u00b7\")\n\t\tresult.WriteString(fmt.Sprintf(\"  %d: %s\\n\", i+1, visualLine))\n\t}\n\n\tresult.WriteString(\"\\nACTUAL (closest match in file):\\n\")\n\tactualLines := strings.Split(actual, \"\\n\")\n\tfor i, line := range actualLines {\n\t\tvisualLine := strings.ReplaceAll(line, \"\\t\", \"\u2192\")\n\t\tvisualLine = strings.ReplaceAll(visualLine, \" \", \"\u00b7\")\n\n\t\t// Mark differing lines\n\t\tmarker := \" \"\n\t\tif i < len(expectedLines) && strings.TrimSpace(line) != strings.TrimSpace(expectedLines[i]) {\n\t\t\tmarker = \"\u2717\"\n\t\t}\n\t\tresult.WriteString(fmt.Sprintf(\"%s %d: %s\\n\", marker, i+1, visualLine))\n\t}\n\n\treturn result.String()\n}\n\n// createEnhancedErrorMessage generates AI-friendly error messages with visual diffs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createEnhancedErrorMessage_78": {
+      "name": "createEnhancedErrorMessage",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 129,
+      "content_hash": "6373701065e5d11cfde99d921cbf14f11bed0af9",
+      "content": "func createEnhancedErrorMessage(err error, fileContent, oldString string) string {\n\tanalysis := AnalyzeWhitespaceDifference(fileContent, oldString)\n\n\t// Tab mismatch - most common issue\n\tif analysis[\"has_tab_mismatch\"].(bool) {\n\t\treturn fmt.Sprintf(\"TAB_MISMATCH: The VIEW tool shows tabs as '\u2192\\t' but EDIT needs raw tabs. \"+\n\t\t\t\"Found %d display tabs in your pattern. Try: \"+\n\t\t\t\"1) Use AI mode (ai_mode=true) for automatic normalization, or \"+\n\t\t\t\"2) Replace '\u2192\\t' with actual tab characters in your pattern.\",\n\t\t\tanalysis[\"display_tabs\"].(int))\n\t}\n\n\t// Space mismatch\n\tif analysis[\"has_space_mismatch\"].(bool) {\n\t\treturn fmt.Sprintf(\"SPACE_MISMATCH: Expected %d leading spaces but found %d. \"+\n\t\t\t\"Count spaces carefully. AI mode (ai_mode=true) can help with this.\",\n\t\t\tanalysis[\"expected_spaces\"].(int), analysis[\"found_spaces\"].(int))\n\t}\n\n\t// Pattern not found at all - show visual diff\n\tif !analysis[\"pattern_in_file\"].(bool) {\n\t\t// Check if it would match after normalization\n\t\tif analysis[\"pattern_after_normalization\"].(bool) {\n\t\t\treturn fmt.Sprintf(\"PATTERN_FORMAT_MISMATCH: Your pattern would match after tab normalization. \" +\n\t\t\t\t\"Use AI mode (ai_mode=true) or normalize tabs manually.\")\n\t\t}\n\n\t\t// Try to find similar content and show diff\n\t\tsimilarContent := findMostSimilarContent(fileContent, oldString)\n\t\tif similarContent != \"\" {\n\t\t\tdiff := visualizeDifference(oldString, similarContent)\n\t\t\treturn fmt.Sprintf(\"PATTERN_NOT_FOUND: The text was not found in the file.\\n\\n\"+\n\t\t\t\t\"Most similar content found:\\n%s\\n\\n\"+\n\t\t\t\t\"Common fixes:\\n\"+\n\t\t\t\t\"1) Use `sed -n 'START,ENDp' file` to extract exact text (RECOMMENDED)\\n\"+\n\t\t\t\t\"2) Use AI mode (ai_mode=true)\\n\"+\n\t\t\t\t\"3) If edit fails once, use `write` tool instead\\n\"+\n\t\t\t\t\"4) Use `smart_edit` tool with line numbers for 100%% reliability\",\n\t\t\t\tdiff)\n\t\t}\n\n\t\treturn fmt.Sprintf(\"PATTERN_NOT_FOUND: The text was not found in the file. \" +\n\t\t\t\"Common fixes:\\n\" +\n\t\t\t\"1) Use `grep -n 'pattern' file` to find line numbers, then use `smart_edit`\\n\" +\n\t\t\t\"2) Use `sed -n 'START,ENDp' file` to extract exact text\\n\" +\n\t\t\t\"3) Include more surrounding context (3-5 lines)\\n\" +\n\t\t\t\"4) If edit fails once, use `write` tool instead\")\n\t}\n\n\t// Fallback to original error\n\treturn err.Error()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

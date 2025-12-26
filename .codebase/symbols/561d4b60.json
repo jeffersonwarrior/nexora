@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/lib.rs",
+  "file_hash": "36b472c2502571243b892f487240fea573b8e388",
+  "updated_at": "2025-12-26T17:34:21.743732",
+  "symbols": {
+    "enum_AuthAction_18": {
+      "name": "AuthAction",
+      "type": "enum",
+      "start_line": 18,
+      "end_line": 30,
+      "content_hash": "edebf74da9272f1b1ee61faf81082a1506259a10",
+      "content": "pub enum AuthAction {\n    /// Login to Helix cloud\n    Login,\n    /// Logout from Helix cloud\n    Logout,\n    /// Create a new API key\n    CreateKey {\n        /// Cluster ID\n        cluster: String,\n    },\n}\n\n#[derive(Subcommand)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_MetricsAction_31": {
+      "name": "MetricsAction",
+      "type": "enum",
+      "start_line": 31,
+      "end_line": 42,
+      "content_hash": "0f8672463a948d1bba18206c6e67dd7a6bd3ea5b",
+      "content": "pub enum MetricsAction {\n    /// Enable metrics collection\n    Full,\n    /// Disable metrics collection\n    Basic,\n    /// Disable metrics collection\n    Off,\n    /// Show metrics status\n    Status,\n}\n\n#[derive(Subcommand)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_DashboardAction_43": {
+      "name": "DashboardAction",
+      "type": "enum",
+      "start_line": 43,
+      "end_line": 75,
+      "content_hash": "62f76f9d65ad9e062c632c14e3f219e49eb9a4b7",
+      "content": "pub enum DashboardAction {\n    /// Start the dashboard\n    Start {\n        /// Instance to connect to (from helix.toml)\n        instance: Option<String>,\n\n        /// Port to run dashboard on\n        #[clap(short, long, default_value = \"3000\")]\n        port: u16,\n\n        /// Helix host to connect to (e.g., localhost). Bypasses project config.\n        #[clap(long)]\n        host: Option<String>,\n\n        /// Helix port to connect to. Used with --host.\n        #[clap(long, default_value = \"6969\")]\n        helix_port: u16,\n\n        /// Run dashboard in foreground with logs\n        #[clap(long)]\n        attach: bool,\n\n        /// Restart if dashboard is already running\n        #[clap(long)]\n        restart: bool,\n    },\n    /// Stop the dashboard\n    Stop,\n    /// Show dashboard status\n    Status,\n}\n\n#[derive(Subcommand)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_CloudDeploymentTypeCommand_76": {
+      "name": "CloudDeploymentTypeCommand",
+      "type": "enum",
+      "start_line": 76,
+      "end_line": 124,
+      "content_hash": "dfb69a2d96394d4b6ffd7acbb4c11f25ea8632e1",
+      "content": "pub enum CloudDeploymentTypeCommand {\n    /// Initialize Helix Cloud deployment\n    #[clap(name = \"cloud\")]\n    Helix {\n        /// Region for Helix cloud instance (default: us-east-1)\n        #[clap(long, default_value = \"us-east-1\")]\n        region: Option<String>,\n\n        /// Instance name\n        #[clap(short, long)]\n        name: Option<String>,\n    },\n    /// Initialize ECR deployment\n    Ecr {\n        /// Instance name\n        #[clap(short, long)]\n        name: Option<String>,\n    },\n    /// Initialize Fly.io deployment\n    Fly {\n        /// Authentication type\n        #[clap(long, default_value = \"cli\")]\n        auth: String,\n\n        /// volume size\n        #[clap(long, default_value = \"20\")]\n        volume_size: u16,\n\n        /// vm size\n        #[clap(long, default_value = \"shared-cpu-4x\")]\n        vm_size: String,\n\n        /// privacy\n        #[clap(long, default_value = \"false\")]\n        private: bool,\n\n        /// Instance name\n        #[clap(short, long)]\n        name: Option<String>,\n    },\n\n    /// Initialize Local deployment\n    Local {\n        /// Instance name\n        #[clap(short, long)]\n        name: Option<String>,\n    },\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_CloudDeploymentTypeCommand_125": {
+      "name": "CloudDeploymentTypeCommand",
+      "type": "impl",
+      "start_line": 125,
+      "end_line": 125,
+      "content_hash": "fc8068f9dee146a2c5533fd8ba447475cb88e3b9",
+      "content": "impl CloudDeploymentTypeCommand {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_name_126": {
+      "name": "name",
+      "type": "method",
+      "start_line": 126,
+      "end_line": 137,
+      "content_hash": "c271c74261433bfa3a37e012d738b1c441e88945",
+      "content": "    pub fn name(&self) -> Option<String> {\n        match self {\n            CloudDeploymentTypeCommand::Helix { name, .. } => name.clone(),\n            CloudDeploymentTypeCommand::Ecr { name } => name.clone(),\n            CloudDeploymentTypeCommand::Fly { name, .. } => name.clone(),\n            CloudDeploymentTypeCommand::Local { name } => name.clone(),\n        }\n    }\n}\n\n#[cfg(test)]\nmod tests;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

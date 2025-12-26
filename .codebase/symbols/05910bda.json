@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/sessions/sessions.go",
+  "file_hash": "997f5ebc28a0106e9183270f9b09f904d0b7b20a",
+  "updated_at": "2025-12-26T17:34:21.596255",
+  "symbols": {
+    "interface_SessionDialog_20": {
+      "name": "SessionDialog",
+      "type": "interface",
+      "start_line": 20,
+      "end_line": 25,
+      "content_hash": "c3749ab69164d4bdcc75fe99b4d9ebd8e62ceb06",
+      "content": "type SessionDialog interface {\n\tdialogs.DialogModel\n}\n\ntype SessionsList = list.FilterableList[list.CompletionItem[session.Session]]\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_sessionDialogCmp_26": {
+      "name": "sessionDialogCmp",
+      "type": "struct",
+      "start_line": 26,
+      "end_line": 37,
+      "content_hash": "f96bad8470131c2b2e2c6e59963d142f36ff406a",
+      "content": "type sessionDialogCmp struct {\n\tselectedInx       int\n\twWidth            int\n\twHeight           int\n\twidth             int\n\tselectedSessionID string\n\tkeyMap            KeyMap\n\tsessionsList      SessionsList\n\thelp              help.Model\n}\n\n// NewSessionDialogCmp creates a new session switching dialog",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewSessionDialogCmp_38": {
+      "name": "NewSessionDialogCmp",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 75,
+      "content_hash": "08e480d9c848dd97085bddf082118c266b8d3208",
+      "content": "func NewSessionDialogCmp(sessions []session.Session, selectedID string) SessionDialog {\n\tt := styles.CurrentTheme()\n\tlistKeyMap := list.DefaultKeyMap()\n\tkeyMap := DefaultKeyMap()\n\tlistKeyMap.Down.SetEnabled(false)\n\tlistKeyMap.Up.SetEnabled(false)\n\tlistKeyMap.DownOneItem = keyMap.Next\n\tlistKeyMap.UpOneItem = keyMap.Previous\n\n\titems := make([]list.CompletionItem[session.Session], len(sessions))\n\tif len(sessions) > 0 {\n\t\tfor i, session := range sessions {\n\t\t\titems[i] = list.NewCompletionItem(session.Title, session, list.WithCompletionID(session.ID))\n\t\t}\n\t}\n\n\tinputStyle := t.S().Base.PaddingLeft(1).PaddingBottom(1)\n\tsessionsList := list.NewFilterableList(\n\t\titems,\n\t\tlist.WithFilterPlaceholder(\"Enter a session name\"),\n\t\tlist.WithFilterInputStyle(inputStyle),\n\t\tlist.WithFilterListOptions(\n\t\t\tlist.WithKeyMap(listKeyMap),\n\t\t\tlist.WithWrapNavigation(),\n\t\t),\n\t)\n\thelp := help.New()\n\thelp.Styles = t.S().Help\n\ts := &sessionDialogCmp{\n\t\tselectedSessionID: selectedID,\n\t\tkeyMap:            DefaultKeyMap(),\n\t\tsessionsList:      sessionsList,\n\t\thelp:              help,\n\t}\n\n\treturn s\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_76": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 76,
+      "end_line": 82,
+      "content_hash": "2140ebbd710d4dc93b191baeeecc5478d9aaf8fb",
+      "content": "func (s *sessionDialogCmp) Init() tea.Cmd {\n\tvar cmds []tea.Cmd\n\tcmds = append(cmds, s.sessionsList.Init())\n\tcmds = append(cmds, s.sessionsList.Focus())\n\treturn tea.Sequence(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_83": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 83,
+      "end_line": 119,
+      "content_hash": "e2707f4d24da5b3cf0c425b4b848abf0023f6dfe",
+      "content": "func (s *sessionDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase tea.WindowSizeMsg:\n\t\tvar cmds []tea.Cmd\n\t\ts.wWidth = msg.Width\n\t\ts.wHeight = msg.Height\n\t\ts.width = min(120, s.wWidth-8)\n\t\ts.sessionsList.SetInputWidth(s.listWidth() - 2)\n\t\tcmds = append(cmds, s.sessionsList.SetSize(s.listWidth(), s.listHeight()))\n\t\tif s.selectedSessionID != \"\" {\n\t\t\tcmds = append(cmds, s.sessionsList.SetSelected(s.selectedSessionID))\n\t\t}\n\t\treturn s, tea.Batch(cmds...)\n\tcase tea.KeyPressMsg:\n\t\tswitch {\n\t\tcase key.Matches(msg, s.keyMap.Select):\n\t\t\tselectedItem := s.sessionsList.SelectedItem()\n\t\t\tif selectedItem != nil {\n\t\t\t\tselected := *selectedItem\n\t\t\t\treturn s, tea.Sequence(\n\t\t\t\t\tutil.CmdHandler(dialogs.CloseDialogMsg{}),\n\t\t\t\t\tutil.CmdHandler(\n\t\t\t\t\t\tchat.SessionSelectedMsg(selected.Value()),\n\t\t\t\t\t),\n\t\t\t\t)\n\t\t\t}\n\t\tcase key.Matches(msg, s.keyMap.Close):\n\t\t\treturn s, util.CmdHandler(dialogs.CloseDialogMsg{})\n\t\tdefault:\n\t\t\tu, cmd := s.sessionsList.Update(msg)\n\t\t\ts.sessionsList = u.(SessionsList)\n\t\t\treturn s, cmd\n\t\t}\n\t}\n\treturn s, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_120": {
+      "name": "View",
+      "type": "method",
+      "start_line": 120,
+      "end_line": 133,
+      "content_hash": "4a73cbc0e29d86d5633b40d5db3868692a58cc2d",
+      "content": "func (s *sessionDialogCmp) View() string {\n\tt := styles.CurrentTheme()\n\tlistView := s.sessionsList.View()\n\tcontent := lipgloss.JoinVertical(\n\t\tlipgloss.Left,\n\t\tt.S().Base.Padding(0, 1, 1, 1).Render(core.Title(\"Switch Session\", s.width-4)),\n\t\tlistView,\n\t\t\"\",\n\t\tt.S().Base.Width(s.width-2).PaddingLeft(1).AlignHorizontal(lipgloss.Left).Render(s.help.View(s.keyMap)),\n\t)\n\n\treturn s.style().Render(content)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_134": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 134,
+      "end_line": 144,
+      "content_hash": "00b4d1b10c03576a733373d25b3c96769fd122a1",
+      "content": "func (s *sessionDialogCmp) Cursor() *tea.Cursor {\n\tif cursor, ok := s.sessionsList.(util.Cursor); ok {\n\t\tcursor := cursor.Cursor()\n\t\tif cursor != nil {\n\t\t\tcursor = s.moveCursor(cursor)\n\t\t}\n\t\treturn cursor\n\t}\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_style_145": {
+      "name": "style",
+      "type": "method",
+      "start_line": 145,
+      "end_line": 152,
+      "content_hash": "03a92f0e99051d7f784c6adef7bda50b3f13971b",
+      "content": "func (s *sessionDialogCmp) style() lipgloss.Style {\n\tt := styles.CurrentTheme()\n\treturn t.S().Base.\n\t\tWidth(s.width).\n\t\tBorder(lipgloss.RoundedBorder()).\n\t\tBorderForeground(t.BorderFocus)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_listHeight_153": {
+      "name": "listHeight",
+      "type": "method",
+      "start_line": 153,
+      "end_line": 156,
+      "content_hash": "d7a2c5f564ca7b2cb5c115c7a45681c716ac41be",
+      "content": "func (s *sessionDialogCmp) listHeight() int {\n\treturn s.wHeight/2 - 6 // 5 for the border, title and help\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_listWidth_157": {
+      "name": "listWidth",
+      "type": "method",
+      "start_line": 157,
+      "end_line": 160,
+      "content_hash": "373f99dd496e042022931a6fd52813e80e185c53",
+      "content": "func (s *sessionDialogCmp) listWidth() int {\n\treturn s.width - 2 // 2 for the border\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Position_161": {
+      "name": "Position",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 167,
+      "content_hash": "6f40101d1a7b640409f89728539925903e803f53",
+      "content": "func (s *sessionDialogCmp) Position() (int, int) {\n\trow := s.wHeight/4 - 2 // just a bit above the center\n\tcol := s.wWidth / 2\n\tcol -= s.width / 2\n\treturn row, col\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_moveCursor_168": {
+      "name": "moveCursor",
+      "type": "method",
+      "start_line": 168,
+      "end_line": 176,
+      "content_hash": "cdce43cea00e74ba410b9461112d673779fe7242",
+      "content": "func (s *sessionDialogCmp) moveCursor(cursor *tea.Cursor) *tea.Cursor {\n\trow, col := s.Position()\n\toffset := row + 3 // Border + title\n\tcursor.Y += offset\n\tcursor.X = cursor.X + col + 2\n\treturn cursor\n}\n\n// ID implements SessionDialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ID_177": {
+      "name": "ID",
+      "type": "method",
+      "start_line": 177,
+      "end_line": 179,
+      "content_hash": "64875faf531499777df13868e2602294b48fdd81",
+      "content": "func (s *sessionDialogCmp) ID() dialogs.DialogID {\n\treturn SessionsDialogID\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

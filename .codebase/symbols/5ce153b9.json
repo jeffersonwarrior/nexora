@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/config/resolve_test.go",
+  "file_hash": "6de7c180bc35334bd95995a1d4466d8bc54af858",
+  "updated_at": "2025-12-26T17:34:22.023403",
+  "symbols": {
+    "struct_mockShell_13": {
+      "name": "mockShell",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 16,
+      "content_hash": "2574bc626a1a71cfb7f0292021f4d87d0160aa02",
+      "content": "type mockShell struct {\n\texecFunc func(ctx context.Context, command string) (stdout, stderr string, err error)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Exec_17": {
+      "name": "Exec",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 23,
+      "content_hash": "d64c81da2e755668132c2480ab0248d0b3339ca4",
+      "content": "func (m *mockShell) Exec(ctx context.Context, command string) (stdout, stderr string, err error) {\n\tif m.execFunc != nil {\n\t\treturn m.execFunc(ctx, command)\n\t}\n\treturn \"\", \"\", nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestShellVariableResolver_ResolveValue_24": {
+      "name": "TestShellVariableResolver_ResolveValue",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 96,
+      "content_hash": "dbf298d2e1426315a538833099cde2a9fa0ceb87",
+      "content": "func TestShellVariableResolver_ResolveValue(t *testing.T) {\n\ttests := []struct {\n\t\tname        string\n\t\tvalue       string\n\t\tenvVars     map[string]string\n\t\tshellFunc   func(ctx context.Context, command string) (stdout, stderr string, err error)\n\t\texpected    string\n\t\texpectError bool\n\t}{\n\t\t{\n\t\t\tname:     \"non-variable string returns as-is\",\n\t\t\tvalue:    \"plain-string\",\n\t\t\texpected: \"plain-string\",\n\t\t},\n\t\t{\n\t\t\tname:     \"environment variable resolution\",\n\t\t\tvalue:    \"$HOME\",\n\t\t\tenvVars:  map[string]string{\"HOME\": \"/home/user\"},\n\t\t\texpected: \"/home/user\",\n\t\t},\n\t\t{\n\t\t\tname:        \"missing environment variable returns error\",\n\t\t\tvalue:       \"$MISSING_VAR\",\n\t\t\tenvVars:     map[string]string{},\n\t\t\texpectError: true,\n\t\t},\n\n\t\t{\n\t\t\tname:  \"shell command with whitespace trimming\",\n\t\t\tvalue: \"$(echo '  spaced  ')\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\tif command == \"echo '  spaced  '\" {\n\t\t\t\t\treturn \"  spaced  \\n\", \"\", nil\n\t\t\t\t}\n\t\t\t\treturn \"\", \"\", errors.New(\"unexpected command\")\n\t\t\t},\n\t\t\texpected: \"spaced\",\n\t\t},\n\t\t{\n\t\t\tname:  \"shell command execution error\",\n\t\t\tvalue: \"$(false)\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\treturn \"\", \"\", errors.New(\"command failed\")\n\t\t\t},\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"invalid format returns error\",\n\t\t\tvalue:       \"$\",\n\t\t\texpectError: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\ttestEnv := env.NewFromMap(tt.envVars)\n\t\t\tresolver := &shellVariableResolver{\n\t\t\t\tshell: &mockShell{execFunc: tt.shellFunc},\n\t\t\t\tenv:   testEnv,\n\t\t\t}\n\n\t\t\tresult, err := resolver.ResolveValue(tt.value)\n\n\t\t\tif tt.expectError {\n\t\t\t\trequire.Error(t, err)\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\trequire.Equal(t, tt.expected, result)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestShellVariableResolver_EnhancedResolveValue_97": {
+      "name": "TestShellVariableResolver_EnhancedResolveValue",
+      "type": "function",
+      "start_line": 97,
+      "end_line": 261,
+      "content_hash": "e460dd106eb3eb67ba53310e5d2dd1603b7a98ce",
+      "content": "func TestShellVariableResolver_EnhancedResolveValue(t *testing.T) {\n\ttests := []struct {\n\t\tname        string\n\t\tvalue       string\n\t\tenvVars     map[string]string\n\t\tshellFunc   func(ctx context.Context, command string) (stdout, stderr string, err error)\n\t\texpected    string\n\t\texpectError bool\n\t}{\n\t\t{\n\t\t\tname:  \"command substitution within string\",\n\t\t\tvalue: \"Bearer $(echo token123)\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\tif command == \"echo token123\" {\n\t\t\t\t\treturn \"token123\\n\", \"\", nil\n\t\t\t\t}\n\t\t\t\treturn \"\", \"\", errors.New(\"unexpected command\")\n\t\t\t},\n\t\t\texpected: \"Bearer token123\",\n\t\t},\n\t\t{\n\t\t\tname:     \"environment variable within string\",\n\t\t\tvalue:    \"Bearer $TOKEN\",\n\t\t\tenvVars:  map[string]string{\"TOKEN\": \"sk-ant-123\"},\n\t\t\texpected: \"Bearer sk-ant-123\",\n\t\t},\n\t\t{\n\t\t\tname:     \"environment variable with braces within string\",\n\t\t\tvalue:    \"Bearer ${TOKEN}\",\n\t\t\tenvVars:  map[string]string{\"TOKEN\": \"sk-ant-456\"},\n\t\t\texpected: \"Bearer sk-ant-456\",\n\t\t},\n\t\t{\n\t\t\tname:  \"mixed command and environment substitution\",\n\t\t\tvalue: \"$USER-$(date +%Y)-$HOST\",\n\t\t\tenvVars: map[string]string{\n\t\t\t\t\"USER\": \"testuser\",\n\t\t\t\t\"HOST\": \"localhost\",\n\t\t\t},\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\tif command == \"date +%Y\" {\n\t\t\t\t\treturn \"2024\\n\", \"\", nil\n\t\t\t\t}\n\t\t\t\treturn \"\", \"\", errors.New(\"unexpected command\")\n\t\t\t},\n\t\t\texpected: \"testuser-2024-localhost\",\n\t\t},\n\t\t{\n\t\t\tname:  \"multiple command substitutions\",\n\t\t\tvalue: \"$(echo hello) $(echo world)\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\tswitch command {\n\t\t\t\tcase \"echo hello\":\n\t\t\t\t\treturn \"hello\\n\", \"\", nil\n\t\t\t\tcase \"echo world\":\n\t\t\t\t\treturn \"world\\n\", \"\", nil\n\t\t\t\t}\n\t\t\t\treturn \"\", \"\", errors.New(\"unexpected command\")\n\t\t\t},\n\t\t\texpected: \"hello world\",\n\t\t},\n\t\t{\n\t\t\tname:  \"nested parentheses in command\",\n\t\t\tvalue: \"$(echo $(echo inner))\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\tif command == \"echo $(echo inner)\" {\n\t\t\t\t\treturn \"nested\\n\", \"\", nil\n\t\t\t\t}\n\t\t\t\treturn \"\", \"\", errors.New(\"unexpected command\")\n\t\t\t},\n\t\t\texpected: \"nested\",\n\t\t},\n\t\t{\n\t\t\tname:        \"lone dollar with non-variable chars\",\n\t\t\tvalue:       \"prefix$123suffix\", // Numbers can't start variable names\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"dollar with special chars\",\n\t\t\tvalue:       \"a$@b$#c\", // Special chars aren't valid in variable names\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"empty environment variable substitution\",\n\t\t\tvalue:       \"Bearer $EMPTY_VAR\",\n\t\t\tenvVars:     map[string]string{},\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"unmatched command substitution opening\",\n\t\t\tvalue:       \"Bearer $(echo test\",\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"unmatched environment variable braces\",\n\t\t\tvalue:       \"Bearer ${TOKEN\",\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:  \"command substitution with error\",\n\t\t\tvalue: \"Bearer $(false)\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\treturn \"\", \"\", errors.New(\"command failed\")\n\t\t\t},\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:  \"complex real-world example\",\n\t\t\tvalue: \"Bearer $(cat /tmp/token.txt | base64 -w 0)\",\n\t\t\tshellFunc: func(ctx context.Context, command string) (stdout, stderr string, err error) {\n\t\t\t\tif command == \"cat /tmp/token.txt | base64 -w 0\" {\n\t\t\t\t\treturn \"c2stYW50LXRlc3Q=\\n\", \"\", nil\n\t\t\t\t}\n\t\t\t\treturn \"\", \"\", errors.New(\"unexpected command\")\n\t\t\t},\n\t\t\texpected: \"Bearer c2stYW50LXRlc3Q=\",\n\t\t},\n\t\t{\n\t\t\tname:     \"environment variable with underscores and numbers\",\n\t\t\tvalue:    \"Bearer $API_KEY_V2\",\n\t\t\tenvVars:  map[string]string{\"API_KEY_V2\": \"sk-test-123\"},\n\t\t\texpected: \"Bearer sk-test-123\",\n\t\t},\n\t\t{\n\t\t\tname:     \"no substitution needed\",\n\t\t\tvalue:    \"Bearer sk-ant-static-token\",\n\t\t\texpected: \"Bearer sk-ant-static-token\",\n\t\t},\n\t\t{\n\t\t\tname:        \"incomplete variable at end\",\n\t\t\tvalue:       \"Bearer $\",\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"variable with invalid character\",\n\t\t\tvalue:       \"Bearer $VAR-NAME\", // Hyphen not allowed in variable names\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"multiple invalid variables\",\n\t\t\tvalue:       \"$1$2$3\",\n\t\t\texpectError: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\ttestEnv := env.NewFromMap(tt.envVars)\n\t\t\tresolver := &shellVariableResolver{\n\t\t\t\tshell: &mockShell{execFunc: tt.shellFunc},\n\t\t\t\tenv:   testEnv,\n\t\t\t}\n\n\t\t\tresult, err := resolver.ResolveValue(tt.value)\n\n\t\t\tif tt.expectError {\n\t\t\t\trequire.Error(t, err)\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\trequire.Equal(t, tt.expected, result)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestEnvironmentVariableResolver_ResolveValue_262": {
+      "name": "TestEnvironmentVariableResolver_ResolveValue",
+      "type": "function",
+      "start_line": 262,
+      "end_line": 317,
+      "content_hash": "d2e81f565651c1892fee14cf9b5c4b947e2f0c20",
+      "content": "func TestEnvironmentVariableResolver_ResolveValue(t *testing.T) {\n\ttests := []struct {\n\t\tname        string\n\t\tvalue       string\n\t\tenvVars     map[string]string\n\t\texpected    string\n\t\texpectError bool\n\t}{\n\t\t{\n\t\t\tname:     \"non-variable string returns as-is\",\n\t\t\tvalue:    \"plain-string\",\n\t\t\texpected: \"plain-string\",\n\t\t},\n\t\t{\n\t\t\tname:     \"environment variable resolution\",\n\t\t\tvalue:    \"$HOME\",\n\t\t\tenvVars:  map[string]string{\"HOME\": \"/home/user\"},\n\t\t\texpected: \"/home/user\",\n\t\t},\n\t\t{\n\t\t\tname:     \"environment variable with complex value\",\n\t\t\tvalue:    \"$PATH\",\n\t\t\tenvVars:  map[string]string{\"PATH\": \"/usr/bin:/bin:/usr/local/bin\"},\n\t\t\texpected: \"/usr/bin:/bin:/usr/local/bin\",\n\t\t},\n\t\t{\n\t\t\tname:        \"missing environment variable returns error\",\n\t\t\tvalue:       \"$MISSING_VAR\",\n\t\t\tenvVars:     map[string]string{},\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"empty environment variable returns error\",\n\t\t\tvalue:       \"$EMPTY_VAR\",\n\t\t\tenvVars:     map[string]string{\"EMPTY_VAR\": \"\"},\n\t\t\texpectError: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\ttestEnv := env.NewFromMap(tt.envVars)\n\t\t\tresolver := NewEnvironmentVariableResolver(testEnv)\n\n\t\t\tresult, err := resolver.ResolveValue(tt.value)\n\n\t\t\tif tt.expectError {\n\t\t\t\trequire.Error(t, err)\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\trequire.Equal(t, tt.expected, result)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewShellVariableResolver_318": {
+      "name": "TestNewShellVariableResolver",
+      "type": "function",
+      "start_line": 318,
+      "end_line": 325,
+      "content_hash": "ba25a5f4805f58a748152a3cf246421851422bb7",
+      "content": "func TestNewShellVariableResolver(t *testing.T) {\n\ttestEnv := env.NewFromMap(map[string]string{\"TEST\": \"value\"})\n\tresolver := NewShellVariableResolver(testEnv)\n\n\trequire.NotNil(t, resolver)\n\trequire.Implements(t, (*VariableResolver)(nil), resolver)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewEnvironmentVariableResolver_326": {
+      "name": "TestNewEnvironmentVariableResolver",
+      "type": "function",
+      "start_line": 326,
+      "end_line": 332,
+      "content_hash": "49173f11762c7265bd070d3c7a696c19d15a76f1",
+      "content": "func TestNewEnvironmentVariableResolver(t *testing.T) {\n\ttestEnv := env.NewFromMap(map[string]string{\"TEST\": \"value\"})\n\tresolver := NewEnvironmentVariableResolver(testEnv)\n\n\trequire.NotNil(t, resolver)\n\trequire.Implements(t, (*VariableResolver)(nil), resolver)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

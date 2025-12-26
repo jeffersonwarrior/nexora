@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/fetch_helpers.go",
+  "file_hash": "1b0cf2b73411e1b4a03ff26eeda5de497e1c144c",
+  "updated_at": "2025-12-26T17:34:21.779674",
+  "symbols": {
+    "function_FetchURLAndConvert_23": {
+      "name": "FetchURLAndConvert",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 80,
+      "content_hash": "2e82c1e34c4ce29bc52f847791fb3fc687dd7bcb",
+      "content": "func FetchURLAndConvert(ctx context.Context, client *http.Client, url string) (string, error) {\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", url, nil)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\t// Use realistic browser headers for better compatibility.\n\treq.Header.Set(\"User-Agent\", BrowserUserAgent)\n\treq.Header.Set(\"Accept\", \"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\")\n\treq.Header.Set(\"Accept-Language\", \"en-US,en;q=0.5\")\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"failed to fetch URL: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn \"\", fmt.Errorf(\"request failed with status code: %d\", resp.StatusCode)\n\t}\n\n\tmaxSize := int64(5 * 1024 * 1024) // 5MB\n\tbody, err := io.ReadAll(io.LimitReader(resp.Body, maxSize))\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"failed to read response body: %w\", err)\n\t}\n\n\tcontent := string(body)\n\n\tif !utf8.ValidString(content) {\n\t\treturn \"\", errors.New(\"response content is not valid UTF-8\")\n\t}\n\n\tcontentType := resp.Header.Get(\"Content-Type\")\n\n\t// Convert HTML to markdown for better AI processing.\n\tif strings.Contains(contentType, \"text/html\") {\n\t\t// Remove noisy elements before conversion.\n\t\tcleanedHTML := removeNoisyElements(content)\n\t\tmarkdown, err := ConvertHTMLToMarkdown(cleanedHTML)\n\t\tif err != nil {\n\t\t\treturn \"\", fmt.Errorf(\"failed to convert HTML to markdown: %w\", err)\n\t\t}\n\t\tcontent = cleanupMarkdown(markdown)\n\t} else if strings.Contains(contentType, \"application/json\") || strings.Contains(contentType, \"text/json\") {\n\t\t// Format JSON for better readability.\n\t\tformatted, err := FormatJSON(content)\n\t\tif err == nil {\n\t\t\tcontent = formatted\n\t\t}\n\t\t// If formatting fails, keep original content.\n\t}\n\n\treturn content, nil\n}\n\n// removeNoisyElements removes script, style, nav, header, footer, and other\n// noisy elements from HTML to improve content extraction.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_removeNoisyElements_81": {
+      "name": "removeNoisyElements",
+      "type": "function",
+      "start_line": 81,
+      "end_line": 128,
+      "content_hash": "efa35e9d652c05f70a1164400a43718a9d62e802",
+      "content": "func removeNoisyElements(htmlContent string) string {\n\tdoc, err := html.Parse(strings.NewReader(htmlContent))\n\tif err != nil {\n\t\t// If parsing fails, return original content.\n\t\treturn htmlContent\n\t}\n\n\t// Elements to remove entirely.\n\tnoisyTags := map[string]bool{\n\t\t\"script\":   true,\n\t\t\"style\":    true,\n\t\t\"nav\":      true,\n\t\t\"header\":   true,\n\t\t\"footer\":   true,\n\t\t\"aside\":    true,\n\t\t\"noscript\": true,\n\t\t\"iframe\":   true,\n\t\t\"svg\":      true,\n\t}\n\n\tvar removeNodes func(*html.Node)\n\tremoveNodes = func(n *html.Node) {\n\t\tvar toRemove []*html.Node\n\n\t\tfor c := n.FirstChild; c != nil; c = c.NextSibling {\n\t\t\tif c.Type == html.ElementNode && noisyTags[c.Data] {\n\t\t\t\ttoRemove = append(toRemove, c)\n\t\t\t} else {\n\t\t\t\tremoveNodes(c)\n\t\t\t}\n\t\t}\n\n\t\tfor _, node := range toRemove {\n\t\t\tn.RemoveChild(node)\n\t\t}\n\t}\n\n\tremoveNodes(doc)\n\n\tvar buf bytes.Buffer\n\tif err := html.Render(&buf, doc); err != nil {\n\t\treturn htmlContent\n\t}\n\n\treturn buf.String()\n}\n\n// cleanupMarkdown removes excessive whitespace and blank lines from markdown.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanupMarkdown_129": {
+      "name": "cleanupMarkdown",
+      "type": "function",
+      "start_line": 129,
+      "end_line": 147,
+      "content_hash": "6486cd00e0394411795d3274254f31aca8f789a8",
+      "content": "func cleanupMarkdown(content string) string {\n\t// Collapse multiple blank lines into at most two.\n\tmultipleNewlines := regexp.MustCompile(`\\n{3,}`)\n\tcontent = multipleNewlines.ReplaceAllString(content, \"\\n\\n\")\n\n\t// Remove trailing whitespace from each line.\n\tlines := strings.Split(content, \"\\n\")\n\tfor i, line := range lines {\n\t\tlines[i] = strings.TrimRight(line, \" \\t\")\n\t}\n\tcontent = strings.Join(lines, \"\\n\")\n\n\t// Trim leading/trailing whitespace.\n\tcontent = strings.TrimSpace(content)\n\n\treturn content\n}\n\n// ConvertHTMLToMarkdown converts HTML content to markdown format.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ConvertHTMLToMarkdown_148": {
+      "name": "ConvertHTMLToMarkdown",
+      "type": "function",
+      "start_line": 148,
+      "end_line": 159,
+      "content_hash": "669cfcd6bbdf67eeecb67e54af6123ac3aebe58a",
+      "content": "func ConvertHTMLToMarkdown(htmlContent string) (string, error) {\n\tconverter := md.NewConverter(\"\", true, nil)\n\n\tmarkdown, err := converter.ConvertString(htmlContent)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn markdown, nil\n}\n\n// FormatJSON formats JSON content with proper indentation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_FormatJSON_160": {
+      "name": "FormatJSON",
+      "type": "function",
+      "start_line": 160,
+      "end_line": 174,
+      "content_hash": "1490bc9df1d820915a590f694dcc6025909ee0fa",
+      "content": "func FormatJSON(content string) (string, error) {\n\tvar data any\n\tif err := json.Unmarshal([]byte(content), &data); err != nil {\n\t\treturn \"\", err\n\t}\n\n\tvar buf bytes.Buffer\n\tencoder := json.NewEncoder(&buf)\n\tencoder.SetIndent(\"\", \"  \")\n\tif err := encoder.Encode(data); err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn buf.String(), nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

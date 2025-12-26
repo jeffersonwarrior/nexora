@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/context-engine/scripts/hybrid/expand.py",
+  "file_hash": "14a8f7ec9f0461d786ca9289daa7b344fa4f84c8",
+  "updated_at": "2025-12-26T17:34:20.363580",
+  "symbols": {
+    "function__split_ident_74": {
+      "name": "_split_ident",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 84,
+      "content_hash": "efd603374b72311e7742b8320c74ff57c3f5f705",
+      "content": "def _split_ident(s: str) -> List[str]:\n    \"\"\"Split snake_case and camelCase identifiers into tokens.\"\"\"\n    parts = re.split(r\"[^A-Za-z0-9]+\", s)\n    out: List[str] = []\n    for p in parts:\n        if not p:\n            continue\n        # camelCase split\n        segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n        out.extend([x for x in segs if x])\n    return [x.lower() for x in out if x and x.lower() not in _STOP]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_tokenize_queries_87": {
+      "name": "tokenize_queries",
+      "type": "function",
+      "start_line": 87,
+      "end_line": 103,
+      "content_hash": "5fc64b32965a391e1f0151448da18d80311d7c9f",
+      "content": "def tokenize_queries(phrases: List[str]) -> List[str]:\n    \"\"\"Tokenize query phrases into individual tokens.\n    \n    Splits identifiers on camelCase and snake_case boundaries,\n    removes stop words, and deduplicates while preserving order.\n    \"\"\"\n    toks: List[str] = []\n    for ph in phrases:\n        toks.extend(_split_ident(ph))\n    # de-dup preserving order\n    seen = set()\n    out: List[str] = []\n    for t in toks:\n        if t not in seen:\n            out.append(t)\n            seen.add(t)\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_expand_queries_116": {
+      "name": "expand_queries",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 138,
+      "content_hash": "d4b1ef5f3121f78ff0b3c69d3d652b265d9493c9",
+      "content": "def expand_queries(\n    queries: List[str], language: str | None = None, max_extra: int = 2\n) -> List[str]:\n    \"\"\"Expand queries using code-aware synonyms.\n    \n    Args:\n        queries: Original query strings\n        language: Optional programming language hint (currently unused)\n        max_extra: Maximum number of synonym expansions per word\n        \n    Returns:\n        List of expanded queries including originals and synonym variants\n    \"\"\"\n    out: List[str] = list(queries)\n    for q in list(queries):\n        ql = q.lower()\n        for word, syns in CODE_SYNONYMS.items():\n            if word in ql:\n                for s in syns[:max_extra]:\n                    exp = re.sub(rf\"\\b{re.escape(word)}\\b\", s, q, flags=re.IGNORECASE)\n                    if exp not in out:\n                        out.append(exp)\n    return out[: max(8, len(queries))]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_expand_queries_enhanced_141": {
+      "name": "expand_queries_enhanced",
+      "type": "function",
+      "start_line": 141,
+      "end_line": 200,
+      "content_hash": "cd657897dfbc692c392277a509b791e55885870c",
+      "content": "def expand_queries_enhanced(\n    queries: List[str],\n    language: str | None = None,\n    max_extra: int = 2,\n    client: \"QdrantClient | None\" = None,\n    model: Any = None,\n    collection: str | None = None,\n) -> List[str]:\n    \"\"\"\n    Enhanced query expansion combining synonym-based and semantic similarity approaches.\n\n    Args:\n        queries: Original query strings\n        language: Optional programming language hint\n        max_extra: Maximum number of additional expansions per query\n        client: QdrantClient instance for semantic expansion\n        model: Embedding model instance for semantic analysis\n        collection: Collection name for semantic expansion\n\n    Returns:\n        List of expanded queries\n    \"\"\"\n    # Start with original queries\n    out: List[str] = list(queries)\n\n    # 1. Apply traditional synonym-based expansion\n    synonym_expanded = expand_queries(queries, language, max_extra)\n    for q in synonym_expanded:\n        if q not in out:\n            out.append(q)\n\n    # 2. Apply semantic similarity expansion if available\n    if SEMANTIC_EXPANSION_AVAILABLE and expand_queries_semantically and client and model:\n        try:\n            semantic_terms = expand_queries_semantically(\n                queries, language, client, model, collection, max_extra\n            )\n\n            # Create expanded queries using semantic terms\n            for q in list(queries):\n                for term in semantic_terms:\n                    # Add term as a standalone query\n                    if term not in out:\n                        out.append(term)\n\n                    # Create combined queries with semantic terms\n                    combined = f\"{q} {term}\"\n                    if combined not in out:\n                        out.append(combined)\n\n            if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n                logger.debug(f\"Semantic expansion added {len(semantic_terms)} terms: {semantic_terms}\")\n\n        except Exception as e:\n            if os.environ.get(\"DEBUG_HYBRID_SEARCH\"):\n                logger.debug(f\"Semantic expansion failed: {e}\")\n\n    # Limit total number of queries to prevent explosion\n    max_queries = max(8, len(queries) * 3)\n    return out[:max_queries]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__llm_expand_queries_203": {
+      "name": "_llm_expand_queries",
+      "type": "function",
+      "start_line": 203,
+      "end_line": 291,
+      "content_hash": "46c3c57f6d80bccb2b6023dce970d214db44a994",
+      "content": "def _llm_expand_queries(\n    queries: List[str], language: str | None = None, max_new: int = 4\n) -> List[str]:\n    \"\"\"Best-effort LLM expansion using configured decoder.\n    \n    If REFRAG_RUNTIME is set, uses the configured client (glm, minimax, llamacpp).\n    If REFRAG_RUNTIME is unset, tries llamacpp (for users with just the container).\n    On any error, returns [] silently.\n    \n    Args:\n        queries: Original query strings\n        language: Optional programming language hint (currently unused)\n        max_new: Maximum number of new query alternatives to generate\n        \n    Returns:\n        List of alternative query phrasings, empty on error\n    \"\"\"\n    if not queries or max_new <= 0:\n        return []\n\n    # If REFRAG_RUNTIME is explicitly set, use it; otherwise default to llamacpp\n    runtime_kind = os.environ.get(\"REFRAG_RUNTIME\", \"\").strip().lower() or \"llamacpp\"\n    \n    original_q = \" \".join(queries)\n    \n    def _parse_alts(out: str) -> List[str]:\n        \"\"\"Parse alternatives from LLM output.\"\"\"\n        alts: List[str] = []\n        # Try direct JSON parse\n        try:\n            parsed = json.loads(out)\n            if isinstance(parsed, list):\n                for s in parsed:\n                    if isinstance(s, str) and s.strip() and s not in queries:\n                        alts.append(s.strip())\n                        if len(alts) >= max_new:\n                            return alts\n        except Exception:\n            pass\n        # Try ast.literal_eval for single-quoted lists\n        try:\n            parsed = ast.literal_eval(out)\n            if isinstance(parsed, list):\n                for s in parsed:\n                    if isinstance(s, str) and s.strip() and s not in queries:\n                        alts.append(s.strip())\n                        if len(alts) >= max_new:\n                            return alts\n        except Exception:\n            pass\n        # Try regex extraction from verbose output - only keep multi-word phrases\n        for m in re.finditer(r'\"([^\"]+)\"', out):\n            candidate = m.group(1).strip()\n            # Skip single words and duplicates - we want complete search phrases\n            if candidate and \" \" in candidate and candidate not in queries and candidate not in alts:\n                alts.append(candidate)\n                if len(alts) >= max_new:\n                    break\n        return alts\n\n    try:\n        max_tokens = int(os.environ.get(\"EXPAND_MAX_TOKENS\", \"512\"))\n        if runtime_kind == \"glm\":\n            from scripts.refrag_glm import GLMRefragClient\n            client = GLMRefragClient()\n            prompt = f'Rewrite \"{original_q}\" as {max_new} different code search queries using synonyms or related terms. Each query should be a complete phrase, not single words. Output as JSON array:'\n            txt = client.generate_with_soft_embeddings(\n                prompt, max_tokens=max_tokens, temperature=1.0, top_p=0.9,\n                disable_thinking=True, force_json=False\n            )\n        elif runtime_kind == \"minimax\":\n            from scripts.refrag_minimax import MiniMaxRefragClient\n            client = MiniMaxRefragClient()\n            prompt = f'Rewrite \"{original_q}\" as {max_new} different search queries using synonyms:'\n            txt = client.generate_with_soft_embeddings(\n                prompt, max_tokens=max_tokens, temperature=1.0,\n                system=\"You rewrite search queries using synonyms. Output format: JSON array of strings. No other text.\"\n            )\n        else:\n            from scripts.refrag_llamacpp import LlamaCppRefragClient\n            client = LlamaCppRefragClient()\n            prompt = (\n                f\"Rewrite this code search query using different words: {original_q}\\n\"\n                f'Give {max_new} short alternative phrasings as a JSON array. Example: [\"alt1\", \"alt2\"]'\n            )\n            txt = client.generate_with_soft_embeddings(prompt, max_tokens=max_tokens, temperature=0.7)\n        return _parse_alts(txt)\n    except Exception:\n        return []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__parse_alts_228": {
+      "name": "_parse_alts",
+      "type": "function",
+      "start_line": 228,
+      "end_line": 261,
+      "content_hash": "23bd87494fb94a2642376468e8c1d6487051d114",
+      "content": "    def _parse_alts(out: str) -> List[str]:\n        \"\"\"Parse alternatives from LLM output.\"\"\"\n        alts: List[str] = []\n        # Try direct JSON parse\n        try:\n            parsed = json.loads(out)\n            if isinstance(parsed, list):\n                for s in parsed:\n                    if isinstance(s, str) and s.strip() and s not in queries:\n                        alts.append(s.strip())\n                        if len(alts) >= max_new:\n                            return alts\n        except Exception:\n            pass\n        # Try ast.literal_eval for single-quoted lists\n        try:\n            parsed = ast.literal_eval(out)\n            if isinstance(parsed, list):\n                for s in parsed:\n                    if isinstance(s, str) and s.strip() and s not in queries:\n                        alts.append(s.strip())\n                        if len(alts) >= max_new:\n                            return alts\n        except Exception:\n            pass\n        # Try regex extraction from verbose output - only keep multi-word phrases\n        for m in re.finditer(r'\"([^\"]+)\"', out):\n            candidate = m.group(1).strip()\n            # Skip single words and duplicates - we want complete search phrases\n            if candidate and \" \" in candidate and candidate not in queries and candidate not in alts:\n                alts.append(candidate)\n                if len(alts) >= max_new:\n                    break\n        return alts",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__prf_terms_from_results_294": {
+      "name": "_prf_terms_from_results",
+      "type": "function",
+      "start_line": 294,
+      "end_line": 329,
+      "content_hash": "b9977cd5007f2b35fb2cae6b65ab0768f04d6f1c",
+      "content": "def _prf_terms_from_results(\n    score_map: Dict[str, Dict[str, Any]], top_docs: int = 8, max_terms: int = 6\n) -> List[str]:\n    \"\"\"Extract pseudo-relevant feedback terms from top documents' metadata.\n    \n    Uses the tokenize_queries function to extract tokens from symbol names\n    and paths of the top-scoring documents.\n    \n    Args:\n        score_map: Dictionary mapping point IDs to scoring records with 'pt' and 's' keys\n        top_docs: Number of top documents to extract terms from\n        max_terms: Maximum number of terms to return\n        \n    Returns:\n        List of most frequent tokens from top documents\n    \"\"\"\n    # Rank by current fused score 's'\n    ranked = sorted(score_map.values(), key=lambda r: r.get(\"s\", 0.0), reverse=True)[\n        : max(1, top_docs)\n    ]\n    freq: Dict[str, int] = {}\n    for rec in ranked:\n        pt = rec.get(\"pt\")\n        if pt is None:\n            continue\n        payload = getattr(pt, \"payload\", None) or {}\n        md = payload.get(\"metadata\") or {}\n        path = str(md.get(\"path\") or md.get(\"symbol_path\") or md.get(\"file_path\") or \"\")\n        symbol = str(md.get(\"symbol\") or \"\")\n        text = f\"{symbol} {path}\"\n        for tok in tokenize_queries([text]):\n            if tok:\n                freq[tok] = freq.get(tok, 0) + 1\n    # sort by frequency desc\n    terms = sorted(freq.items(), key=lambda kv: kv[1], reverse=True)\n    return [t for t, _ in terms[: max(1, max_terms)]]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

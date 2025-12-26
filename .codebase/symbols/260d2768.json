@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/context-engine/deploy/kubernetes/hpa.yaml",
+  "file_hash": "55cf9e472003c5bfe7c86be1fb1c8b81105c0269",
+  "updated_at": "2025-12-26T17:34:20.728002",
+  "symbols": {
+    "key_apiVersion_2": {
+      "name": "apiVersion",
+      "type": "key",
+      "start_line": 2,
+      "end_line": 2,
+      "content_hash": "6b9bea92950f0aee0dca426b6aee0769c5bdee24",
+      "content": "apiVersion: autoscaling/v2",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_kind_3": {
+      "name": "kind",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 3,
+      "content_hash": "6bd9568e0b1e5b21b1dc98784794aa10922d1d8a",
+      "content": "kind: HorizontalPodAutoscaler",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata_4": {
+      "name": "metadata",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 6,
+      "content_hash": "e4dde304890f5f3de45c020286c9955c3245d68e",
+      "content": "metadata:\n  name: mcp-indexer-hpa\n  namespace: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.name_5": {
+      "name": "metadata.name",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "468fcc454bfdc6061adaa0b41f2d31164cc7a3fa",
+      "content": "  name: mcp-indexer-hpa",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.namespace_6": {
+      "name": "metadata.namespace",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 6,
+      "content_hash": "1a68fd2e6c59390f3813b7e9d5ff5c156e377737",
+      "content": "  namespace: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec_7": {
+      "name": "spec",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 22,
+      "content_hash": "d631c94c5bfc3398ddcee094d131c6478406eea4",
+      "content": "spec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: mcp-indexer\n  minReplicas: 1\n  maxReplicas: 5\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 70\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.scaleTargetRef_8": {
+      "name": "spec.scaleTargetRef",
+      "type": "key",
+      "start_line": 8,
+      "end_line": 11,
+      "content_hash": "eb3155aa35d2fe67fa1a3e1fbbee36bab0794fcd",
+      "content": "  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: mcp-indexer",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.scaleTargetRef.apiVersion_9": {
+      "name": "spec.scaleTargetRef.apiVersion",
+      "type": "key",
+      "start_line": 9,
+      "end_line": 9,
+      "content_hash": "2de955d3aae791d40016e50bd7211201bc2cfa01",
+      "content": "    apiVersion: apps/v1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.scaleTargetRef.kind_10": {
+      "name": "spec.scaleTargetRef.kind",
+      "type": "key",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "d3df29c1a01b841d88dcd1fb51130ee60d7f7226",
+      "content": "    kind: Deployment",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.scaleTargetRef.name_11": {
+      "name": "spec.scaleTargetRef.name",
+      "type": "key",
+      "start_line": 11,
+      "end_line": 11,
+      "content_hash": "0e915409e4b3ee1577e04819ed6c546582ffcfd6",
+      "content": "    name: mcp-indexer",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.minReplicas_12": {
+      "name": "spec.minReplicas",
+      "type": "key",
+      "start_line": 12,
+      "end_line": 12,
+      "content_hash": "0ca391288b1cb67faddffed74a7a4163d7b147fa",
+      "content": "  minReplicas: 1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.maxReplicas_13": {
+      "name": "spec.maxReplicas",
+      "type": "key",
+      "start_line": 13,
+      "end_line": 13,
+      "content_hash": "aaa246501adc8d41f6fdd1933119d7c28e90fad7",
+      "content": "  maxReplicas: 5",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics_14": {
+      "name": "spec.metrics",
+      "type": "key",
+      "start_line": 14,
+      "end_line": 22,
+      "content_hash": "13b655e1879437036f74634bdcebff8bcb6983fa",
+      "content": "  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 70\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics.type_15": {
+      "name": "spec.metrics.type",
+      "type": "key",
+      "start_line": 15,
+      "end_line": 15,
+      "content_hash": "c12b36645381d0115ff6b2db1db9d4e08b86faa9",
+      "content": "    - type: Resource",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics.resource_16": {
+      "name": "spec.metrics.resource",
+      "type": "key",
+      "start_line": 16,
+      "end_line": 22,
+      "content_hash": "4e130399d0e943abd089ae0672b8d745de3c1c0d",
+      "content": "      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 70\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics.resource.name_17": {
+      "name": "spec.metrics.resource.name",
+      "type": "key",
+      "start_line": 17,
+      "end_line": 17,
+      "content_hash": "865026e7ad8146aac8920b3663cee3c2f1956ca8",
+      "content": "        name: cpu",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics.resource.target_18": {
+      "name": "spec.metrics.resource.target",
+      "type": "key",
+      "start_line": 18,
+      "end_line": 22,
+      "content_hash": "657cdff31f43aaf557c36f785b372cee041b14c0",
+      "content": "        target:\n          type: Utilization\n          averageUtilization: 70\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics.resource.target.type_19": {
+      "name": "spec.metrics.resource.target.type",
+      "type": "key",
+      "start_line": 19,
+      "end_line": 19,
+      "content_hash": "ef30e81624d531df3038fa347d657780d7c6356c",
+      "content": "          type: Utilization",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.metrics.resource.target.averageUtilization_20": {
+      "name": "spec.metrics.resource.target.averageUtilization",
+      "type": "key",
+      "start_line": 20,
+      "end_line": 20,
+      "content_hash": "3c5b42f5d4737aac007e24859f8feaef41e0ac80",
+      "content": "          averageUtilization: 70",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

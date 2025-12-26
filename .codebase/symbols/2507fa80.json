@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/context-engine/tests/test_error_paths.py",
+  "file_hash": "b17afc50341cfa815f60f77d26f649007815170b",
+  "updated_at": "2025-12-26T17:34:23.152843",
+  "symbols": {
+    "function_test_repo_search_malformed_jsonl_subprocess_10": {
+      "name": "test_repo_search_malformed_jsonl_subprocess",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 25,
+      "content_hash": "df879ba9ce57fcf428c6a766c13195a75d8c51c2",
+      "content": "def test_repo_search_malformed_jsonl_subprocess(monkeypatch):\n    # Force subprocess path and simulate malformed JSONL stdout\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"0\")\n\n    async def fake_run(cmd, **kwargs):\n        # Simulate subprocess failure with malformed output\n        return {\"ok\": False, \"code\": 1, \"stdout\": \"not-json\\n\", \"stderr\": \"malformed\"}\n\n    monkeypatch.setattr(srv, \"_run_async\", fake_run)\n\n    res = srv.asyncio.get_event_loop().run_until_complete(\n        srv.repo_search(queries=[\"x\"], limit=1, compact=False)\n    )\n\n    assert res.get(\"ok\") is False\n    assert res.get(\"code\", 1) != 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_14": {
+      "name": "fake_run",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 16,
+      "content_hash": "c92c14c1d3cabbeafc3ffec504b2af7e4b853531",
+      "content": "    async def fake_run(cmd, **kwargs):\n        # Simulate subprocess failure with malformed output\n        return {\"ok\": False, \"code\": 1, \"stdout\": \"not-json\\n\", \"stderr\": \"malformed\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_repo_search_inproc_qdrant_failure_fallback_and_fail_29": {
+      "name": "test_repo_search_inproc_qdrant_failure_fallback_and_fail",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 57,
+      "content_hash": "14fa1263901ffa6d7221a30ce152b024f0a3c36e",
+      "content": "def test_repo_search_inproc_qdrant_failure_fallback_and_fail(monkeypatch):\n    # In-process hybrid raises (simulating Qdrant connectivity failure),\n    # subprocess fallback also fails.\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"1\")\n\n    # Avoid real model load\n    monkeypatch.setattr(srv, \"_get_embedding_model\", lambda *a, **k: object())\n\n    # Cause in-process path to fail\n    import scripts.hybrid_search as hy\n\n    def boom(*a, **k):\n        raise ConnectionError(\"qdrant down\")\n\n    monkeypatch.setattr(hy, \"run_hybrid_search\", boom)\n\n    # And make the subprocess fallback fail too\n    async def fake_run(cmd, **kwargs):\n        return {\"ok\": False, \"code\": 1, \"stdout\": \"\", \"stderr\": \"qdrant unreachable\"}\n\n    monkeypatch.setattr(srv, \"_run_async\", fake_run)\n\n    res = srv.asyncio.get_event_loop().run_until_complete(\n        srv.repo_search(queries=[\"x\"], limit=1, compact=True)\n    )\n\n    assert res.get(\"ok\") is False\n    assert res.get(\"code\", 0) != 0\n    assert \"stderr\" in res or res.get(\"error\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_boom_40": {
+      "name": "boom",
+      "type": "function",
+      "start_line": 40,
+      "end_line": 41,
+      "content_hash": "3788adfd7f9fd8dc7bd4783351a2dbf9573d323a",
+      "content": "    def boom(*a, **k):\n        raise ConnectionError(\"qdrant down\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_46": {
+      "name": "fake_run",
+      "type": "function",
+      "start_line": 46,
+      "end_line": 47,
+      "content_hash": "d5b87e0138309e543f1879f0e9ffaa48febf5bc7",
+      "content": "    async def fake_run(cmd, **kwargs):\n        return {\"ok\": False, \"code\": 1, \"stdout\": \"\", \"stderr\": \"qdrant unreachable\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

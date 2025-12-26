@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/attribution_migration_test.go",
+  "file_hash": "1641b707ed1c342b40dcdf71ecb813e95152a759",
+  "updated_at": "2025-12-26T17:34:24.323216",
+  "symbols": {
+    "function_TestAttributionMigration_11": {
+      "name": "TestAttributionMigration",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 95,
+      "content_hash": "f8683b2a7f6988b7ddca5372c2e86cec7e4070a1",
+      "content": "func TestAttributionMigration(t *testing.T) {\n\tt.Parallel()\n\n\ttests := []struct {\n\t\tname             string\n\t\tconfigJSON       string\n\t\texpectedTrailer  TrailerStyle\n\t\texpectedGenerate bool\n\t}{\n\t\t{\n\t\t\tname: \"old setting co_authored_by=true migrates to co-authored-by\",\n\t\t\tconfigJSON: `{\n\t\t\t\t\"options\": {\n\t\t\t\t\t\"attribution\": {\n\t\t\t\t\t\t\"co_authored_by\": true,\n\t\t\t\t\t\t\"generated_with\": false\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}`,\n\t\t\texpectedTrailer:  TrailerStyleCoAuthoredBy,\n\t\t\texpectedGenerate: false,\n\t\t},\n\t\t{\n\t\t\tname: \"old setting co_authored_by=false migrates to none\",\n\t\t\tconfigJSON: `{\n\t\t\t\t\"options\": {\n\t\t\t\t\t\"attribution\": {\n\t\t\t\t\t\t\"co_authored_by\": false,\n\t\t\t\t\t\t\"generated_with\": true\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}`,\n\t\t\texpectedTrailer:  TrailerStyleNone,\n\t\t\texpectedGenerate: true,\n\t\t},\n\t\t{\n\t\t\tname: \"new setting takes precedence over old setting\",\n\t\t\tconfigJSON: `{\n\t\t\t\t\"options\": {\n\t\t\t\t\t\"attribution\": {\n\t\t\t\t\t\t\"trailer_style\": \"assisted-by\",\n\t\t\t\t\t\t\"co_authored_by\": true,\n\t\t\t\t\t\t\"generated_with\": false\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}`,\n\t\t\texpectedTrailer:  TrailerStyleAssistedBy,\n\t\t\texpectedGenerate: false,\n\t\t},\n\t\t{\n\t\t\tname: \"default when neither setting present\",\n\t\t\tconfigJSON: `{\n\t\t\t\t\"options\": {\n\t\t\t\t\t\"attribution\": {\n\t\t\t\t\t\t\"generated_with\": true\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}`,\n\t\t\texpectedTrailer:  TrailerStyleAssistedBy,\n\t\t\texpectedGenerate: true,\n\t\t},\n\t\t{\n\t\t\tname: \"default when attribution is null\",\n\t\t\tconfigJSON: `{\n\t\t\t\t\"options\": {}\n\t\t\t}`,\n\t\t\texpectedTrailer:  TrailerStyleAssistedBy,\n\t\t\texpectedGenerate: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tt.Parallel()\n\n\t\t\tcfg, err := loadFromReaders([]io.Reader{strings.NewReader(tt.configJSON)})\n\t\t\trequire.NoError(t, err)\n\n\t\t\tcfg.setDefaults(t.TempDir(), \"\")\n\n\t\t\trequire.Equal(t, tt.expectedTrailer, cfg.Options.Attribution.TrailerStyle)\n\t\t\trequire.Equal(t, tt.expectedGenerate, cfg.Options.Attribution.GeneratedWith)\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

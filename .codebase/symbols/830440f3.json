@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/tui/exp/list/filterable_test.go",
+  "file_hash": "4206537286e65c1a4e75cbfbcad8f11f08592b3b",
+  "updated_at": "2025-12-26T17:34:22.032139",
+  "symbols": {
+    "function_TestFilterableList_12": {
+      "name": "TestFilterableList",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 36,
+      "content_hash": "710e9165997e5cc68c0161fbb77781d1494e379e",
+      "content": "func TestFilterableList(t *testing.T) {\n\tt.Parallel()\n\tt.Run(\"should create simple filterable list\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\titems := []FilterableItem{}\n\t\tfor i := range 5 {\n\t\t\titem := NewFilterableItem(fmt.Sprintf(\"Item %d\", i))\n\t\t\titems = append(items, item)\n\t\t}\n\t\tl := NewFilterableList(\n\t\t\titems,\n\t\t\tWithFilterListOptions(WithDirectionForward()),\n\t\t).(*filterableList[FilterableItem])\n\n\t\tl.SetSize(100, 10)\n\t\tcmd := l.Init()\n\t\tif cmd != nil {\n\t\t\tcmd()\n\t\t}\n\n\t\tassert.Equal(t, 0, l.selectedItemIdx)\n\t\tgolden.RequireEqual(t, []byte(l.View()))\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestUpdateKeyMap_37": {
+      "name": "TestUpdateKeyMap",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 55,
+      "content_hash": "642bde691cdc9f4116e0148a899502b31ecfd792",
+      "content": "func TestUpdateKeyMap(t *testing.T) {\n\tt.Parallel()\n\tl := NewFilterableList(\n\t\t[]FilterableItem{},\n\t\tWithFilterListOptions(WithDirectionForward()),\n\t).(*filterableList[FilterableItem])\n\n\thasJ := slices.Contains(l.keyMap.Down.Keys(), \"j\")\n\tfmt.Println(l.keyMap.Down.Keys())\n\thasCtrlJ := slices.Contains(l.keyMap.Down.Keys(), \"ctrl+j\")\n\n\thasUpperCaseK := slices.Contains(l.keyMap.UpOneItem.Keys(), \"K\")\n\n\tassert.False(t, l.keyMap.HalfPageDown.Enabled(), \"should disable keys that are only letters\")\n\tassert.False(t, hasJ, \"should not contain j\")\n\tassert.False(t, hasUpperCaseK, \"should also remove upper case K\")\n\tassert.True(t, hasCtrlJ, \"should still have ctrl+j\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_filterableItem_56": {
+      "name": "filterableItem",
+      "type": "struct",
+      "start_line": 56,
+      "end_line": 59,
+      "content_hash": "532c7a33b9fcc684eaec1feb81126f418f67c096",
+      "content": "type filterableItem struct {\n\t*selectableItem\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewFilterableItem_60": {
+      "name": "NewFilterableItem",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 65,
+      "content_hash": "6c1c02798a50ad96b2d3ae8d4fac15f00d109c1a",
+      "content": "func NewFilterableItem(content string) FilterableItem {\n\treturn &filterableItem{\n\t\tselectableItem: NewSelectableItem(content).(*selectableItem),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FilterValue_66": {
+      "name": "FilterValue",
+      "type": "method",
+      "start_line": 66,
+      "end_line": 68,
+      "content_hash": "4cdc9056dda0495b966dc2a8bd53c3b100e1ad6a",
+      "content": "func (f *filterableItem) FilterValue() string {\n\treturn f.content\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

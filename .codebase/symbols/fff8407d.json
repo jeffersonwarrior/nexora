@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/summarizer.go",
+  "file_hash": "bb2b23137a593dc82f4f234fd14cbd12718b9549",
+  "updated_at": "2025-12-26T17:34:24.527412",
+  "symbols": {
+    "struct_ModelProvider_8": {
+      "name": "ModelProvider",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 15,
+      "content_hash": "04b0d51e59d68f697d9f9ffad7ba455555df333f",
+      "content": "type ModelProvider struct {\n\tProvider string\n\tModel    string\n}\n\n// DetectFastestSummarizer determines the fastest available summarization model\n// based on the provider configuration and known performance characteristics.\n// Returns empty ModelProvider if no fast summarizer is available.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DetectFastestSummarizer_16": {
+      "name": "DetectFastestSummarizer",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 44,
+      "content_hash": "cdede30d6efc0724d4100dbfd4bdf8a1f2ea047d",
+      "content": "func DetectFastestSummarizer(cfg config.Config) ModelProvider {\n\t// Known fast summarizers in order of preference (fastest first):\n\t// 1. Cerebras llama-3.1-8b: ~2000 tokens/second\n\t// 2. xAI grok-3-mini: ~1200 tokens/second\n\n\t// Check for Cerebras provider first (highest preference)\n\tif cfg.Providers != nil {\n\t\tif provider, ok := cfg.Providers.Get(\"cerebras\"); ok && !provider.Disable {\n\t\t\treturn ModelProvider{\n\t\t\t\tProvider: \"cerebras\",\n\t\t\t\tModel:    \"llama3.1-8b\",\n\t\t\t}\n\t\t}\n\n\t\t// Check for xAI provider as second choice\n\t\tif provider, ok := cfg.Providers.Get(\"xai\"); ok && !provider.Disable {\n\t\t\treturn ModelProvider{\n\t\t\t\tProvider: \"xai\",\n\t\t\t\tModel:    \"grok-3-mini\",\n\t\t\t}\n\t\t}\n\t}\n\n\t// No fast summarizer available\n\treturn ModelProvider{}\n}\n\n// IsFastSummarizer checks if the given provider/model combination is considered\n// a \"fast\" summarizer (can handle >1000 tokens/second).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_IsFastSummarizer_45": {
+      "name": "IsFastSummarizer",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 54,
+      "content_hash": "5de633f5636f6fb87ca1544cdab8c50c54f91377",
+      "content": "func IsFastSummarizer(provider, model string) bool {\n\tswitch provider {\n\tcase \"cerebras\":\n\t\treturn model == \"llama3.1-8b\" || model == \"llama-3.1-8b\"\n\tcase \"xai\":\n\t\treturn model == \"grok-3-mini\" || model == \"grok-3-mini-beta\"\n\tdefault:\n\t\treturn false\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

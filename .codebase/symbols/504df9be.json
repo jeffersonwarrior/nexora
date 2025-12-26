@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/install.sh",
+  "file_hash": "a6db249fa7a4eac3eb0c023145dbbde05dba5b1a",
+  "updated_at": "2025-12-26T17:34:21.524311",
+  "symbols": {
+    "function_print_status_18": {
+      "name": "print_status",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 18,
+      "content_hash": "cd9987549d0a1f99565660be0242bf53e623eb97",
+      "content": "print_status() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_print_warning_22": {
+      "name": "print_warning",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 22,
+      "content_hash": "17f555b1aeee8466d1ca9fdc22bcb8a9eace0343",
+      "content": "print_warning() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_print_error_26": {
+      "name": "print_error",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 26,
+      "content_hash": "0d67d5b971f7e628edcca5d980d8c22ba10b6cca",
+      "content": "print_error() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_go_89": {
+      "name": "check_go",
+      "type": "function",
+      "start_line": 89,
+      "end_line": 89,
+      "content_hash": "d0e6870e302f4f968a396ee38d7e58e73f68e8b7",
+      "content": "check_go() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_install_go_107": {
+      "name": "install_go",
+      "type": "function",
+      "start_line": 107,
+      "end_line": 107,
+      "content_hash": "235e8e51396d8f9730f37328e374d65e06aae2a3",
+      "content": "install_go() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_build_nexora_204": {
+      "name": "build_nexora",
+      "type": "function",
+      "start_line": 204,
+      "end_line": 204,
+      "content_hash": "e5580ebe7a022aa94e9060398b0cae6a0327c164",
+      "content": "build_nexora() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_remove_existing_267": {
+      "name": "remove_existing",
+      "type": "function",
+      "start_line": 267,
+      "end_line": 267,
+      "content_hash": "7d8c54e1b0109041a4d837c8300b9522930f9a66",
+      "content": "remove_existing() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_install_binary_295": {
+      "name": "install_binary",
+      "type": "function",
+      "start_line": 295,
+      "end_line": 295,
+      "content_hash": "ec2f598dad6a6467d6ca2fe2aebac7e3df1603a9",
+      "content": "install_binary() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_verify_installation_312": {
+      "name": "verify_installation",
+      "type": "function",
+      "start_line": 312,
+      "end_line": 312,
+      "content_hash": "a64c95765eaca2d3f6b83e2e12ff682a2c1574c4",
+      "content": "verify_installation() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_install_better_tools_362": {
+      "name": "install_better_tools",
+      "type": "function",
+      "start_line": 362,
+      "end_line": 362,
+      "content_hash": "07ec24d792bf861ace9a00bc6a63813c93b2b064",
+      "content": "install_better_tools() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_474": {
+      "name": "main",
+      "type": "function",
+      "start_line": 474,
+      "end_line": 474,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

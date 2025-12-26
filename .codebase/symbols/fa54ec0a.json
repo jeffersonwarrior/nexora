@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/install.sh",
+  "file_hash": "33853e6358465d2cd74bca9838a7b47ebcb00d38",
+  "updated_at": "2025-12-26T17:34:23.808355",
+  "symbols": {
+    "function_log_error_24": {
+      "name": "log_error",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 24,
+      "content_hash": "2e96a19ca5488e21e488701a5f82c0cc2d878f4a",
+      "content": "log_error() { echo -e \"${RED}ERROR:${NC} $*\" >&2; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_success_25": {
+      "name": "log_success",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 25,
+      "content_hash": "a7492e2e8ba9bf98713f76dd5c958165acf05459",
+      "content": "log_success() { echo -e \"${GREEN}SUCCESS:${NC} $*\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_info_26": {
+      "name": "log_info",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 26,
+      "content_hash": "4cbd85274e4be02616eea0072b23dea803436b9b",
+      "content": "log_info() { echo -e \"${BLUE}INFO:${NC} $*\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_log_warn_27": {
+      "name": "log_warn",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 27,
+      "content_hash": "f7efed222b51f79718a2cddf616c55aaa2b11f23",
+      "content": "log_warn() { echo -e \"${YELLOW}WARN:${NC} $*\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_usage_30": {
+      "name": "usage",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 30,
+      "content_hash": "7f27e8125edea207ed545d9b7b3a55fda3bda362",
+      "content": "usage() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parse_args_59": {
+      "name": "parse_args",
+      "type": "function",
+      "start_line": 59,
+      "end_line": 59,
+      "content_hash": "f6eeb435835a7278a6fc847ed63f5e076bdf1abb",
+      "content": "parse_args() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_set_install_dir_88": {
+      "name": "set_install_dir",
+      "type": "function",
+      "start_line": 88,
+      "end_line": 88,
+      "content_hash": "6e1268a617e4fea4e7cd0e4371ccb2afe5735778",
+      "content": "set_install_dir() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_detect_platform_108": {
+      "name": "detect_platform",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 108,
+      "content_hash": "a34872484a80affd25745ce912339fda906d974a",
+      "content": "detect_platform() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_latest_version_168": {
+      "name": "get_latest_version",
+      "type": "function",
+      "start_line": 168,
+      "end_line": 168,
+      "content_hash": "b6d610f131196116cb0058afbc608bf9dde1d75e",
+      "content": "get_latest_version() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_installed_version_183": {
+      "name": "get_installed_version",
+      "type": "function",
+      "start_line": 183,
+      "end_line": 183,
+      "content_hash": "fb9579186f612e9eb6dc11a5edbd5e12c49e7040",
+      "content": "get_installed_version() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_should_install_198": {
+      "name": "should_install",
+      "type": "function",
+      "start_line": 198,
+      "end_line": 198,
+      "content_hash": "2a820282a87e974bca044f0a4d2e336ac1a74ec5",
+      "content": "should_install() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_install_binary_231": {
+      "name": "install_binary",
+      "type": "function",
+      "start_line": 231,
+      "end_line": 231,
+      "content_hash": "ec2f598dad6a6467d6ca2fe2aebac7e3df1603a9",
+      "content": "install_binary() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setup_path_272": {
+      "name": "setup_path",
+      "type": "function",
+      "start_line": 272,
+      "end_line": 272,
+      "content_hash": "d8e241362ea6409d1c8ef7142874de34e464c70a",
+      "content": "setup_path() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_verify_installation_320": {
+      "name": "verify_installation",
+      "type": "function",
+      "start_line": 320,
+      "end_line": 320,
+      "content_hash": "a64c95765eaca2d3f6b83e2e12ff682a2c1574c4",
+      "content": "verify_installation() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_homebrew_350": {
+      "name": "check_homebrew",
+      "type": "function",
+      "start_line": 350,
+      "end_line": 350,
+      "content_hash": "a3a235a7a0f501bcd572f9cec8c0609050f62c3a",
+      "content": "check_homebrew() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_docker_desktop_359": {
+      "name": "check_docker_desktop",
+      "type": "function",
+      "start_line": 359,
+      "end_line": 359,
+      "content_hash": "a958c382b0ffa3b10a4dcaa5f3db35070c5ca660",
+      "content": "check_docker_desktop() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_412": {
+      "name": "main",
+      "type": "function",
+      "start_line": 412,
+      "end_line": 412,
+      "content_hash": "8b64a9546b12954bd91e69f0d5cc1b1889837f78",
+      "content": "main() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

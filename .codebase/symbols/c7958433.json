@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/bm25/hybrid_search_bm25.rs",
+  "file_hash": "86c01b30c18deed06b01eb87b015c151beceba28",
+  "updated_at": "2025-12-26T17:34:21.744454",
+  "symbols": {
+    "struct_HybridSearchBM25_13": {
+      "name": "HybridSearchBM25",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 20,
+      "content_hash": "ddccba51c99ae5c4a5bfdf03c86464d5b0b9420f",
+      "content": "pub struct HybridSearchBM25<'scope, 'inner> {\n    txn: &'scope RoTxn<'scope>,\n    iter: std::vec::IntoIter<(u128, f32)>,\n    storage: Arc<HelixGraphStorage>,\n    label: &'inner str,\n}\n\n// implementing iterator for HybridSearchBM25",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_21": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 21,
+      "end_line": 23,
+      "content_hash": "f426a8d6b6e5a845a2ba447a844869443be566c0",
+      "content": "impl<'scope, 'inner> Iterator for HybridSearchBM25<'scope, 'inner> {\n    type Item = Result<TraversalValue, GraphError>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_24": {
+      "name": "next",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 38,
+      "content_hash": "d85f47bba966b8ae8d0c941c6bbec7a624945ee7",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        let next = self.iter.next()?;\n        match self.storage.get_node(self.txn, &next.0) {\n            Ok(node) => {\n                if node.label == self.label {\n                    Some(Ok(TraversalValue::Node(node)))\n                } else {\n                    return None;\n                }\n            }\n            Err(e) => Some(Err(e)),\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_HybridSearchBM25Adapter_39": {
+      "name": "HybridSearchBM25Adapter",
+      "type": "trait",
+      "start_line": 39,
+      "end_line": 39,
+      "content_hash": "21bc361314aa596509d0874840d50267fd66d7b3",
+      "content": "pub trait HybridSearchBM25Adapter<'a>: Iterator<Item = Result<TraversalValue, GraphError>> {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_hybrid_search_bm25_40": {
+      "name": "hybrid_search_bm25",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 51,
+      "content_hash": "a7ed0d561ec5a4f6d4df055994fc15e5158dd6c8",
+      "content": "    fn hybrid_search_bm25(\n        self,\n        label: &str,\n        query: &str,\n        query_vector: Vec<f64>,\n        k: usize,\n    ) -> RoTraversalIterator<'a, impl Iterator<Item = Result<TraversalValue, GraphError>>>;\n}\n\nimpl<'a, I: Iterator<Item = Result<TraversalValue, GraphError>>> HybridSearchBM25Adapter<'a>\n    for RoTraversalIterator<'a, I>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_hybrid_search_bm25_52": {
+      "name": "hybrid_search_bm25",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 82,
+      "content_hash": "c99db7ef8985d23a388173bfad679fcdf51ee0ba",
+      "content": "    fn hybrid_search_bm25(\n        self,\n        label: &str,\n        query: &str,\n        query_vector: &Vec<f64>,\n        k: usize,\n    ) -> RoTraversalIterator<'a, impl Iterator<Item = Result<TraversalValue, GraphError>>> {\n        // check bm25 enabled\n\n        let results = self.storage.hybrid_search(\n            query,\n            query_vector,\n            0.5,\n            k,\n        );\n\n        let iter = HybridSearchBM25 {\n            txn: self.txn,\n            iter: results,\n            storage: Arc::clone(&self.storage),\n            label,\n        };\n        RoTraversalIterator {\n            inner: iter,\n            storage: self.storage,\n            txn: self.txn,\n        }\n    }\n}\n*/\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

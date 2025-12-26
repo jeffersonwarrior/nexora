@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/scripts/record-vcr.sh",
+  "file_hash": "a0452f835a5477aa9eeebc124e1b160a77f07878",
+  "updated_at": "2025-12-26T17:34:22.836177",
+  "symbols": {
+    "function_check_env_29": {
+      "name": "check_env",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 29,
+      "content_hash": "11ba8c49d41801478d44524a3d69f7d842dc4a21",
+      "content": "check_env() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_record_provider_42": {
+      "name": "record_provider",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 42,
+      "content_hash": "ecf08ed2d6fc2b8efc1703df9c96c04bc41ee903",
+      "content": "record_provider() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

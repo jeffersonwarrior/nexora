@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/commands/keys.go",
+  "file_hash": "5639d992880c23fba1bad6b31ebeafe72b0d6881",
+  "updated_at": "2025-12-26T17:34:23.598260",
+  "symbols": {
+    "struct_CommandsDialogKeyMap_7": {
+      "name": "CommandsDialogKeyMap",
+      "type": "struct",
+      "start_line": 7,
+      "end_line": 14,
+      "content_hash": "adc3f2533ad1a91337b0aecec868a642672db776",
+      "content": "type CommandsDialogKeyMap struct {\n\tSelect,\n\tNext,\n\tPrevious,\n\tTab,\n\tClose key.Binding\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultCommandsDialogKeyMap_15": {
+      "name": "DefaultCommandsDialogKeyMap",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 40,
+      "content_hash": "712f35abe71f9c86a173b2293bb9efbd6381a3ad",
+      "content": "func DefaultCommandsDialogKeyMap() CommandsDialogKeyMap {\n\treturn CommandsDialogKeyMap{\n\t\tSelect: key.NewBinding(\n\t\t\tkey.WithKeys(\"enter\", \"ctrl+y\"),\n\t\t\tkey.WithHelp(\"enter\", \"confirm\"),\n\t\t),\n\t\tNext: key.NewBinding(\n\t\t\tkey.WithKeys(\"down\", \"ctrl+n\"),\n\t\t\tkey.WithHelp(\"\u2193\", \"next item\"),\n\t\t),\n\t\tPrevious: key.NewBinding(\n\t\t\tkey.WithKeys(\"up\", \"ctrl+p\"),\n\t\t\tkey.WithHelp(\"\u2191\", \"previous item\"),\n\t\t),\n\t\tTab: key.NewBinding(\n\t\t\tkey.WithKeys(\"tab\"),\n\t\t\tkey.WithHelp(\"tab\", \"switch selection\"),\n\t\t),\n\t\tClose: key.NewBinding(\n\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\tkey.WithHelp(\"esc\", \"cancel\"),\n\t\t),\n\t}\n}\n\n// KeyBindings implements layout.KeyMapProvider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KeyBindings_41": {
+      "name": "KeyBindings",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 51,
+      "content_hash": "f69411347b562b489e2eb8183d2d983ed4667198",
+      "content": "func (k CommandsDialogKeyMap) KeyBindings() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Select,\n\t\tk.Next,\n\t\tk.Previous,\n\t\tk.Tab,\n\t\tk.Close,\n\t}\n}\n\n// FullHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FullHelp_52": {
+      "name": "FullHelp",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 62,
+      "content_hash": "bde2ece5b36c59b42716d181a665f0a044c69b8c",
+      "content": "func (k CommandsDialogKeyMap) FullHelp() [][]key.Binding {\n\tm := [][]key.Binding{}\n\tslice := k.KeyBindings()\n\tfor i := 0; i < len(slice); i += 4 {\n\t\tend := min(i+4, len(slice))\n\t\tm = append(m, slice[i:end])\n\t}\n\treturn m\n}\n\n// ShortHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShortHelp_63": {
+      "name": "ShortHelp",
+      "type": "method",
+      "start_line": 63,
+      "end_line": 74,
+      "content_hash": "ba2a1af481ff77bd8aa81e0e17c47cee78bb5a10",
+      "content": "func (k CommandsDialogKeyMap) ShortHelp() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Tab,\n\t\tkey.NewBinding(\n\t\t\tkey.WithKeys(\"down\", \"up\"),\n\t\t\tkey.WithHelp(\"\u2191\u2193\", \"choose\"),\n\t\t),\n\t\tk.Select,\n\t\tk.Close,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ArgumentsDialogKeyMap_75": {
+      "name": "ArgumentsDialogKeyMap",
+      "type": "struct",
+      "start_line": 75,
+      "end_line": 81,
+      "content_hash": "698a0071e341faf79a8acc64203db9d30ee8d0c9",
+      "content": "type ArgumentsDialogKeyMap struct {\n\tConfirm  key.Binding\n\tNext     key.Binding\n\tPrevious key.Binding\n\tClose    key.Binding\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultArgumentsDialogKeyMap_82": {
+      "name": "DefaultArgumentsDialogKeyMap",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 104,
+      "content_hash": "a16f453e99294667079fe345cda0f040f9742f96",
+      "content": "func DefaultArgumentsDialogKeyMap() ArgumentsDialogKeyMap {\n\treturn ArgumentsDialogKeyMap{\n\t\tConfirm: key.NewBinding(\n\t\t\tkey.WithKeys(\"enter\"),\n\t\t\tkey.WithHelp(\"enter\", \"confirm\"),\n\t\t),\n\n\t\tNext: key.NewBinding(\n\t\t\tkey.WithKeys(\"tab\", \"down\"),\n\t\t\tkey.WithHelp(\"tab/\u2193\", \"next\"),\n\t\t),\n\t\tPrevious: key.NewBinding(\n\t\t\tkey.WithKeys(\"shift+tab\", \"up\"),\n\t\t\tkey.WithHelp(\"shift+tab/\u2191\", \"previous\"),\n\t\t),\n\t\tClose: key.NewBinding(\n\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\tkey.WithHelp(\"esc\", \"cancel\"),\n\t\t),\n\t}\n}\n\n// KeyBindings implements layout.KeyMapProvider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KeyBindings_105": {
+      "name": "KeyBindings",
+      "type": "method",
+      "start_line": 105,
+      "end_line": 114,
+      "content_hash": "711ccd38157394251eebafcf909c4451ebe30a31",
+      "content": "func (k ArgumentsDialogKeyMap) KeyBindings() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Confirm,\n\t\tk.Next,\n\t\tk.Previous,\n\t\tk.Close,\n\t}\n}\n\n// FullHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FullHelp_115": {
+      "name": "FullHelp",
+      "type": "method",
+      "start_line": 115,
+      "end_line": 125,
+      "content_hash": "8fc3615031600d3a41cdce69a0246cf9820f1cbb",
+      "content": "func (k ArgumentsDialogKeyMap) FullHelp() [][]key.Binding {\n\tm := [][]key.Binding{}\n\tslice := k.KeyBindings()\n\tfor i := 0; i < len(slice); i += 4 {\n\t\tend := min(i+4, len(slice))\n\t\tm = append(m, slice[i:end])\n\t}\n\treturn m\n}\n\n// ShortHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShortHelp_126": {
+      "name": "ShortHelp",
+      "type": "method",
+      "start_line": 126,
+      "end_line": 133,
+      "content_hash": "1ced2be9dda6bea6e9c8d21ef3b1b188110b2551",
+      "content": "func (k ArgumentsDialogKeyMap) ShortHelp() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Confirm,\n\t\tk.Next,\n\t\tk.Previous,\n\t\tk.Close,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

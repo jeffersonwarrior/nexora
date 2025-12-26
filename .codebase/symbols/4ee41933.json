@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/source/n_from_index.rs",
+  "file_hash": "f703c3cfd6fe2b6deddd37eec20554887913c1a5",
+  "updated_at": "2025-12-26T17:34:24.491960",
+  "symbols": {
+    "trait_NFromIndexAdapter_10": {
+      "name": "NFromIndexAdapter",
+      "type": "trait",
+      "start_line": 10,
+      "end_line": 21,
+      "content_hash": "b478a0bacac7f5d443ee5e3c77419ea6e28ce94e",
+      "content": "pub trait NFromIndexAdapter<'db, 'arena, 'txn, 's, K: Into<Value> + Serialize>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    /// Returns a new iterator that will return the node from the secondary index.\n    ///\n    /// # Arguments\n    ///\n    /// * `index` - The name of the secondary index.\n    /// * `key` - The key to search for in the secondary index.\n    ///\n    /// Note that both the `index` and `key` must be provided.\n    /// The index must be a valid and existing secondary index and the key should match the type of the index.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_n_from_index_22": {
+      "name": "n_from_index",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 30,
+      "content_hash": "3ae243c873fae318b6589f9e3aa0f10f6e1e70f5",
+      "content": "    fn n_from_index(\n        self,\n        label: &'s str,\n        index: &'s str,\n        key: &'s K,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_31": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 31,
+      "end_line": 46,
+      "content_hash": "9320bd1cb8ca5aa34b75462d9add293e3423e561",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >\n    where\n        K: Into<Value> + Serialize + Clone;\n}\n\nimpl<\n    'db,\n    'arena,\n    'txn,\n    's,\n    K: Into<Value> + Serialize,\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n> NFromIndexAdapter<'db, 'arena, 'txn, 's, K> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    #[inline]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_n_from_index_47": {
+      "name": "n_from_index",
+      "type": "method",
+      "start_line": 47,
+      "end_line": 55,
+      "content_hash": "289c189865c31db1816c5fd4519abeef550eb49e",
+      "content": "    fn n_from_index(\n        self,\n        label: &'s str,\n        index: &'s str,\n        key: &K,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_56": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 56,
+      "end_line": 121,
+      "content_hash": "cd8190e9cd0c954f5fe4f8e81be57e197423870d",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >\n    where\n        K: Into<Value> + Serialize + Clone,\n    {\n        let db = self\n            .storage\n            .secondary_indices\n            .get(index)\n            .ok_or(GraphError::New(format!(\n                \"Secondary Index {index} not found\"\n            )))\n            .unwrap();\n        let label_as_bytes = label.as_bytes();\n        let res = db\n            .prefix_iter(self.txn, &bincode::serialize(&Value::from(key)).unwrap())\n            .unwrap()\n            .filter_map(move |item| {\n                if let Ok((_, node_id)) = item &&\n                 let Some(value) = self.storage.nodes_db.get(self.txn, &node_id).ok()? {\n                    assert!(\n                        value.len() >= LMDB_STRING_HEADER_LENGTH,\n                        \"value length does not contain header which means the `label` field was missing from the node on insertion\"\n                    );\n                    let length_of_label_in_lmdb =\n                        u64::from_le_bytes(value[..LMDB_STRING_HEADER_LENGTH].try_into().unwrap()) as usize;\n        \n                    if length_of_label_in_lmdb != label.len() {\n                        return None;\n                    }\n        \n                    assert!(\n                        value.len() >= length_of_label_in_lmdb + LMDB_STRING_HEADER_LENGTH,\n                        \"value length is not at least the header length plus the label length meaning there has been a corruption on node insertion\"\n                    );\n                    let label_in_lmdb = &value[LMDB_STRING_HEADER_LENGTH\n                        ..LMDB_STRING_HEADER_LENGTH + length_of_label_in_lmdb];\n        \n                    if label_in_lmdb == label_as_bytes {\n                        match Node::<'arena>::from_bincode_bytes(node_id, value, self.arena) {\n                            Ok(node) => {\n                                return Some(Ok(TraversalValue::Node(node)));\n                            }\n                            Err(e) => {\n                                println!(\"{} Error decoding node: {:?}\", line!(), e);\n                                return Some(Err(GraphError::ConversionError(e.to_string())));\n                            }\n                        }\n                    } else {\n                        return None;\n                    }\n                \n                }\n                None\n            \n\n            });\n\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: res,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

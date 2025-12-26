@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/tools/fetch.go",
+  "file_hash": "72f0112822958f330cc89fe47e7498e5e2ff8e64",
+  "updated_at": "2025-12-26T17:34:25.115209",
+  "symbols": {
+    "function_NewFetchTool_24": {
+      "name": "NewFetchTool",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 165,
+      "content_hash": "19ea58b7fae2b0af0e14027e19086ab1c5c612e5",
+      "content": "func NewFetchTool(permissions permission.Service, workingDir string, client *http.Client) fantasy.AgentTool {\n\tif client == nil {\n\t\tclient = &http.Client{\n\t\t\tTimeout: 30 * time.Second,\n\t\t\tTransport: &http.Transport{\n\t\t\t\tMaxIdleConns:        100,\n\t\t\t\tMaxIdleConnsPerHost: 10,\n\t\t\t\tIdleConnTimeout:     90 * time.Second,\n\t\t\t},\n\t\t}\n\t}\n\n\treturn fantasy.NewParallelAgentTool(\n\t\tFetchToolName,\n\t\tstring(fetchDescription),\n\t\tfunc(ctx context.Context, params FetchParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif params.URL == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"URL parameter is required\"), nil\n\t\t\t}\n\n\t\t\tformat := strings.ToLower(params.Format)\n\t\t\tif format != \"text\" && format != \"markdown\" && format != \"html\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"Format must be one of: text, markdown, html\"), nil\n\t\t\t}\n\n\t\t\tif !strings.HasPrefix(params.URL, \"http://\") && !strings.HasPrefix(params.URL, \"https://\") {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"URL must start with http:// or https://\"), nil\n\t\t\t}\n\n\t\t\tsessionID := GetSessionFromContext(ctx)\n\t\t\tif sessionID == \"\" {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"session ID is required for creating a new file\")\n\t\t\t}\n\n\t\t\tp := permissions.Request(\n\t\t\t\tpermission.CreatePermissionRequest{\n\t\t\t\t\tSessionID:   sessionID,\n\t\t\t\t\tPath:        workingDir,\n\t\t\t\t\tToolCallID:  call.ID,\n\t\t\t\t\tToolName:    FetchToolName,\n\t\t\t\t\tAction:      \"fetch\",\n\t\t\t\t\tDescription: fmt.Sprintf(\"Fetch content from URL: %s\", params.URL),\n\t\t\t\t\tParams:      FetchPermissionsParams(params),\n\t\t\t\t},\n\t\t\t)\n\n\t\t\tif !p {\n\t\t\t\treturn fantasy.ToolResponse{}, permission.ErrorPermissionDenied\n\t\t\t}\n\n\t\t\t// Handle timeout with context\n\t\t\trequestCtx := ctx\n\t\t\tif params.Timeout > 0 {\n\t\t\t\tmaxTimeout := 120 // 2 minutes\n\t\t\t\tif params.Timeout > maxTimeout {\n\t\t\t\t\tparams.Timeout = maxTimeout\n\t\t\t\t}\n\t\t\t\tvar cancel context.CancelFunc\n\t\t\t\trequestCtx, cancel = context.WithTimeout(ctx, time.Duration(params.Timeout)*time.Second)\n\t\t\t\tdefer cancel()\n\t\t\t}\n\n\t\t\treq, err := http.NewRequestWithContext(requestCtx, \"GET\", params.URL, nil)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to create request: %w\", err)\n\t\t\t}\n\n\t\t\treq.Header.Set(\"User-Agent\", \"nexora/1.0\")\n\n\t\t\tresp, err := client.Do(req)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"failed to fetch URL: %w\", err)\n\t\t\t}\n\t\t\tdefer resp.Body.Close()\n\n\t\t\tif resp.StatusCode != http.StatusOK {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"Request failed with status code: %d\", resp.StatusCode)), nil\n\t\t\t}\n\n\t\t\tmaxSize := int64(5 * 1024 * 1024) // 5MB\n\t\t\tbody, err := io.ReadAll(io.LimitReader(resp.Body, maxSize))\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"Failed to read response body: \" + err.Error()), nil\n\t\t\t}\n\n\t\t\tcontent := string(body)\n\n\t\t\tisValidUt8 := utf8.ValidString(content)\n\t\t\tif !isValidUt8 {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"Response content is not valid UTF-8\"), nil\n\t\t\t}\n\t\t\tcontentType := resp.Header.Get(\"Content-Type\")\n\n\t\t\tswitch format {\n\t\t\tcase \"text\":\n\t\t\t\tif strings.Contains(contentType, \"text/html\") {\n\t\t\t\t\ttext, err := extractTextFromHTML(content)\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn fantasy.NewTextErrorResponse(\"Failed to extract text from HTML: \" + err.Error()), nil\n\t\t\t\t\t}\n\t\t\t\t\tcontent = text\n\t\t\t\t}\n\n\t\t\tcase \"markdown\":\n\t\t\t\tif strings.Contains(contentType, \"text/html\") {\n\t\t\t\t\tmarkdown, err := convertHTMLToMarkdown(content)\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn fantasy.NewTextErrorResponse(\"Failed to convert HTML to Markdown: \" + err.Error()), nil\n\t\t\t\t\t}\n\t\t\t\t\tcontent = markdown\n\t\t\t\t}\n\n\t\t\t\tcontent = \"```\\n\" + content + \"\\n```\"\n\n\t\t\tcase \"html\":\n\t\t\t\t// return only the body of the HTML document\n\t\t\t\tif strings.Contains(contentType, \"text/html\") {\n\t\t\t\t\tdoc, err := goquery.NewDocumentFromReader(strings.NewReader(content))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn fantasy.NewTextErrorResponse(\"Failed to parse HTML: \" + err.Error()), nil\n\t\t\t\t\t}\n\t\t\t\t\tbody, err := doc.Find(\"body\").Html()\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn fantasy.NewTextErrorResponse(\"Failed to extract body from HTML: \" + err.Error()), nil\n\t\t\t\t\t}\n\t\t\t\t\tif body == \"\" {\n\t\t\t\t\t\treturn fantasy.NewTextErrorResponse(\"No body content found in HTML\"), nil\n\t\t\t\t\t}\n\t\t\t\t\tcontent = \"<html>\\n<body>\\n\" + body + \"\\n</body>\\n</html>\"\n\t\t\t\t}\n\t\t\t}\n\t\t\t// calculate byte size of content\n\t\t\tcontentSize := int64(len(content))\n\t\t\tif contentSize > MaxReadSize {\n\t\t\t\tcontent = content[:MaxReadSize]\n\t\t\t\tcontent += fmt.Sprintf(\"\\n\\n[Content truncated to %d bytes]\", MaxReadSize)\n\t\t\t}\n\n\t\t\treturn fantasy.NewTextResponse(content), nil\n\t\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractTextFromHTML_166": {
+      "name": "extractTextFromHTML",
+      "type": "function",
+      "start_line": 166,
+      "end_line": 177,
+      "content_hash": "bf2cb287cbb1dba19b7db503d2c950a4e592d1bc",
+      "content": "func extractTextFromHTML(html string) (string, error) {\n\tdoc, err := goquery.NewDocumentFromReader(strings.NewReader(html))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\ttext := doc.Find(\"body\").Text()\n\ttext = strings.Join(strings.Fields(text), \" \")\n\n\treturn text, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_convertHTMLToMarkdown_178": {
+      "name": "convertHTMLToMarkdown",
+      "type": "function",
+      "start_line": 178,
+      "end_line": 187,
+      "content_hash": "91f9817699603b38087e43955a306bbc3c8d33ea",
+      "content": "func convertHTMLToMarkdown(html string) (string, error) {\n\tconverter := md.NewConverter(\"\", true, nil)\n\n\tmarkdown, err := converter.ConvertString(html)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn markdown, nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

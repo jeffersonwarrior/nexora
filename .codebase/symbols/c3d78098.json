@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/env/env.go",
+  "file_hash": "e3844032e9311e4074e80c2f8f1ee80ec4186b34",
+  "updated_at": "2025-12-26T17:34:20.101214",
+  "symbols": {
+    "interface_Env_5": {
+      "name": "Env",
+      "type": "interface",
+      "start_line": 5,
+      "end_line": 9,
+      "content_hash": "01c05a63662cdb466deb82f3ea8e63f9811c40a0",
+      "content": "type Env interface {\n\tGet(key string) string\n\tEnv() []string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_osEnv_10": {
+      "name": "osEnv",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 12,
+      "content_hash": "c3cd2a955aff0fb74b0204f58ceffdbe564e768b",
+      "content": "type osEnv struct{}\n\n// Get implements Env.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_13": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 13,
+      "end_line": 16,
+      "content_hash": "f369f3fd833689873e3a38182960704d135594cd",
+      "content": "func (o *osEnv) Get(key string) string {\n\treturn os.Getenv(key)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Env_17": {
+      "name": "Env",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 24,
+      "content_hash": "bf0aa00329d341f9987c1c75f1e101ac2fcd049f",
+      "content": "func (o *osEnv) Env() []string {\n\tenv := os.Environ()\n\tif len(env) == 0 {\n\t\treturn nil\n\t}\n\treturn env\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_New_25": {
+      "name": "New",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 28,
+      "content_hash": "b79d7d15f92eee3118397ba01d28457792457480",
+      "content": "func New() Env {\n\treturn &osEnv{}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_mapEnv_29": {
+      "name": "mapEnv",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 33,
+      "content_hash": "3a8e879d3ef6524a547e33f0865f53bf8da41892",
+      "content": "type mapEnv struct {\n\tm map[string]string\n}\n\n// Get implements Env.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_34": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 41,
+      "content_hash": "5e18fdfdcbfad8ee4692335f37bd6c388015053a",
+      "content": "func (m *mapEnv) Get(key string) string {\n\tif value, ok := m.m[key]; ok {\n\t\treturn value\n\t}\n\treturn \"\"\n}\n\n// Env implements Env.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Env_42": {
+      "name": "Env",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 52,
+      "content_hash": "47412fac3f44996bc808917d5509f90e99a23fbe",
+      "content": "func (m *mapEnv) Env() []string {\n\tif len(m.m) == 0 {\n\t\treturn nil\n\t}\n\tenv := make([]string, 0, len(m.m))\n\tfor k, v := range m.m {\n\t\tenv = append(env, k+\"=\"+v)\n\t}\n\treturn env\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewFromMap_53": {
+      "name": "NewFromMap",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 58,
+      "content_hash": "21be594f249523daef7d1caf748d11167be3d396",
+      "content": "func NewFromMap(m map[string]string) Env {\n\tif m == nil {\n\t\tm = make(map[string]string)\n\t}\n\treturn &mapEnv{m: m}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

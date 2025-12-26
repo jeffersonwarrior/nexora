@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/ratelimit/bucket.go",
+  "file_hash": "6889ec2f865048b892fa502b18e10494a4474e2c",
+  "updated_at": "2025-12-26T17:34:20.340167",
+  "symbols": {
+    "struct_TokenBucket_13": {
+      "name": "TokenBucket",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 22,
+      "content_hash": "001373c7730339b206248c800ffa7161580afefc",
+      "content": "type TokenBucket struct {\n\tcapacity       int64         // Maximum tokens in bucket\n\ttokens         int64         // Current tokens available\n\trefillRate     int64         // Tokens added per refill interval\n\trefillInterval time.Duration // How often to refill\n\tlastRefill     time.Time     // Last refill timestamp\n\tmu             sync.Mutex\n}\n\n// RateLimiter manages multiple token buckets for different limit types",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_RateLimiter_23": {
+      "name": "RateLimiter",
+      "type": "struct",
+      "start_line": 23,
+      "end_line": 30,
+      "content_hash": "e0aca53e7795d0985ac3ab5abc5afb20a614b900",
+      "content": "type RateLimiter struct {\n\tproviderName string\n\tplanType     string\n\tbuckets      map[string]*TokenBucket // key: limit_type (rpm, tpm, etc.)\n\tmu           sync.RWMutex\n}\n\n// NewRateLimiter creates a rate limiter from database configuration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewRateLimiter_31": {
+      "name": "NewRateLimiter",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 61,
+      "content_hash": "5ed250dc35fd951aed0dbd2338b5f79ef1c1a579",
+      "content": "func NewRateLimiter(providerName, planType string) (*RateLimiter, error) {\n\tlimits, err := storage.GetAllRateLimitsForProvider(providerName, planType)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to load rate limits: %w\", err)\n\t}\n\n\tif len(limits) == 0 {\n\t\treturn nil, fmt.Errorf(\"no rate limits found for provider=%s plan=%s\", providerName, planType)\n\t}\n\n\trl := &RateLimiter{\n\t\tproviderName: providerName,\n\t\tplanType:     planType,\n\t\tbuckets:      make(map[string]*TokenBucket),\n\t}\n\n\tfor _, limit := range limits {\n\t\tbucket := &TokenBucket{\n\t\t\tcapacity:       limit.LimitValue + limit.BurstAllowance,\n\t\t\ttokens:         limit.LimitValue + limit.BurstAllowance,\n\t\t\trefillRate:     limit.LimitValue,\n\t\t\trefillInterval: time.Duration(limit.ResetWindowSeconds) * time.Second,\n\t\t\tlastRefill:     time.Now(),\n\t\t}\n\t\trl.buckets[limit.LimitType] = bucket\n\t}\n\n\treturn rl, nil\n}\n\n// Acquire attempts to acquire n tokens from the specified bucket",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Acquire_62": {
+      "name": "Acquire",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 75,
+      "content_hash": "890baca84593dc877620d4a6734b4cadad7cd1c5",
+      "content": "func (rl *RateLimiter) Acquire(ctx context.Context, limitType string, tokens int64) error {\n\trl.mu.RLock()\n\tbucket, exists := rl.buckets[limitType]\n\trl.mu.RUnlock()\n\n\tif !exists {\n\t\t// No rate limit for this type, allow immediately\n\t\treturn nil\n\t}\n\n\treturn bucket.Acquire(ctx, tokens)\n}\n\n// Acquire attempts to acquire n tokens from the bucket",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Acquire_76": {
+      "name": "Acquire",
+      "type": "method",
+      "start_line": 76,
+      "end_line": 115,
+      "content_hash": "a6c6ef524855bd7eb034f94304326c8a182b149f",
+      "content": "func (tb *TokenBucket) Acquire(ctx context.Context, n int64) error {\n\tfor {\n\t\t// Check context cancellation\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\treturn ctx.Err()\n\t\tdefault:\n\t\t}\n\n\t\ttb.mu.Lock()\n\t\ttb.refill()\n\n\t\tif tb.tokens >= n {\n\t\t\ttb.tokens -= n\n\t\t\ttb.mu.Unlock()\n\t\t\treturn nil\n\t\t}\n\n\t\t// Calculate wait time for next refill\n\t\twaitTime := tb.refillInterval - time.Since(tb.lastRefill)\n\t\ttb.mu.Unlock()\n\n\t\tif waitTime <= 0 {\n\t\t\twaitTime = 10 * time.Millisecond\n\t\t}\n\n\t\t// Wait for refill or context cancellation\n\t\ttimer := time.NewTimer(waitTime)\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\ttimer.Stop()\n\t\t\treturn ctx.Err()\n\t\tcase <-timer.C:\n\t\t\t// Retry after wait\n\t\t}\n\t}\n}\n\n// refill adds tokens to the bucket based on elapsed time\n// Must be called with tb.mu locked",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_refill_116": {
+      "name": "refill",
+      "type": "method",
+      "start_line": 116,
+      "end_line": 129,
+      "content_hash": "bffd2d35e70a3713f04b1d7dc2bcc3a97499b5a0",
+      "content": "func (tb *TokenBucket) refill() {\n\tnow := time.Now()\n\telapsed := now.Sub(tb.lastRefill)\n\n\tif elapsed >= tb.refillInterval && tb.refillInterval > 0 {\n\t\t// Calculate how many full refill periods have elapsed\n\t\tperiods := elapsed / tb.refillInterval\n\t\ttokensToAdd := int64(periods) * tb.refillRate\n\t\ttb.tokens = min(tb.capacity, tb.tokens+tokensToAdd)\n\t\ttb.lastRefill = now\n\t}\n}\n\n// GetAvailableTokens returns current available tokens (thread-safe)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAvailableTokens_130": {
+      "name": "GetAvailableTokens",
+      "type": "method",
+      "start_line": 130,
+      "end_line": 137,
+      "content_hash": "50abaae6722ca81e0954b499c06f96e9c171db84",
+      "content": "func (tb *TokenBucket) GetAvailableTokens() int64 {\n\ttb.mu.Lock()\n\tdefer tb.mu.Unlock()\n\ttb.refill()\n\treturn tb.tokens\n}\n\n// MultiLimitCoordinator manages multiple rate limiters that must all succeed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MultiLimitCoordinator_138": {
+      "name": "MultiLimitCoordinator",
+      "type": "struct",
+      "start_line": 138,
+      "end_line": 142,
+      "content_hash": "2c27c2237289cec9aa532fbe197a630e129dd9d3",
+      "content": "type MultiLimitCoordinator struct {\n\tlimiters []*RateLimiter\n}\n\n// NewMultiLimitCoordinator creates a coordinator for multiple limiters",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewMultiLimitCoordinator_143": {
+      "name": "NewMultiLimitCoordinator",
+      "type": "function",
+      "start_line": 143,
+      "end_line": 147,
+      "content_hash": "c819d2330f307f03dd5f0ede27c1ac65b96ec1bb",
+      "content": "func NewMultiLimitCoordinator(limiters ...*RateLimiter) *MultiLimitCoordinator {\n\treturn &MultiLimitCoordinator{limiters: limiters}\n}\n\n// AcquireAll attempts to acquire tokens from all limiters (RPM + TPM)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AcquireAll_148": {
+      "name": "AcquireAll",
+      "type": "method",
+      "start_line": 148,
+      "end_line": 189,
+      "content_hash": "b3710a9648c4b60f17f16b2d638104b7181260c5",
+      "content": "func (mlc *MultiLimitCoordinator) AcquireAll(ctx context.Context, rpm, tpm int64) error {\n\t// Try to acquire from all limiters\n\tacquired := make([]struct {\n\t\tlimiter   *RateLimiter\n\t\tlimitType string\n\t\ttokens    int64\n\t}, 0, len(mlc.limiters)*2)\n\n\tfor _, limiter := range mlc.limiters {\n\t\t// Acquire RPM\n\t\tif rpm > 0 {\n\t\t\tif err := limiter.Acquire(ctx, \"rpm\", rpm); err != nil {\n\t\t\t\t// Rollback already acquired tokens\n\t\t\t\tmlc.rollback(acquired)\n\t\t\t\treturn fmt.Errorf(\"rpm limit exceeded for %s: %w\", limiter.providerName, err)\n\t\t\t}\n\t\t\tacquired = append(acquired, struct {\n\t\t\t\tlimiter   *RateLimiter\n\t\t\t\tlimitType string\n\t\t\t\ttokens    int64\n\t\t\t}{limiter, \"rpm\", rpm})\n\t\t}\n\n\t\t// Acquire TPM\n\t\tif tpm > 0 {\n\t\t\tif err := limiter.Acquire(ctx, \"tpm\", tpm); err != nil {\n\t\t\t\t// Rollback already acquired tokens\n\t\t\t\tmlc.rollback(acquired)\n\t\t\t\treturn fmt.Errorf(\"tpm limit exceeded for %s: %w\", limiter.providerName, err)\n\t\t\t}\n\t\t\tacquired = append(acquired, struct {\n\t\t\t\tlimiter   *RateLimiter\n\t\t\t\tlimitType string\n\t\t\t\ttokens    int64\n\t\t\t}{limiter, \"tpm\", tpm})\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// rollback returns tokens to buckets",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_rollback_190": {
+      "name": "rollback",
+      "type": "method",
+      "start_line": 190,
+      "end_line": 209,
+      "content_hash": "85976c7305e51d42aa15a6c64449bd4cfa732dfd",
+      "content": "func (mlc *MultiLimitCoordinator) rollback(acquired []struct {\n\tlimiter   *RateLimiter\n\tlimitType string\n\ttokens    int64\n}) {\n\tfor _, acq := range acquired {\n\t\tacq.limiter.mu.RLock()\n\t\tif bucket, exists := acq.limiter.buckets[acq.limitType]; exists {\n\t\t\tbucket.mu.Lock()\n\t\t\tbucket.tokens += acq.tokens\n\t\t\tif bucket.tokens > bucket.capacity {\n\t\t\t\tbucket.tokens = bucket.capacity\n\t\t\t}\n\t\t\tbucket.mu.Unlock()\n\t\t}\n\t\tacq.limiter.mu.RUnlock()\n\t}\n}\n\n// EstimateTokens estimates tokens for a text string (rough approximation)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_EstimateTokens_210": {
+      "name": "EstimateTokens",
+      "type": "function",
+      "start_line": 210,
+      "end_line": 215,
+      "content_hash": "7b62730db490662ffc470faaf3eee3de74507ad2",
+      "content": "func EstimateTokens(text string) int64 {\n\t// Rough estimate: 1 token \u2248 4 characters for English text\n\treturn int64(len(text) / 4)\n}\n\n// GetRateLimitInfo returns current status of all buckets",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetRateLimitInfo_216": {
+      "name": "GetRateLimitInfo",
+      "type": "method",
+      "start_line": 216,
+      "end_line": 231,
+      "content_hash": "30ecb53d09a7aef677dfe23801d3bbae14572aae",
+      "content": "func (rl *RateLimiter) GetRateLimitInfo() map[string]map[string]interface{} {\n\trl.mu.RLock()\n\tdefer rl.mu.RUnlock()\n\n\tinfo := make(map[string]map[string]interface{})\n\tfor limitType, bucket := range rl.buckets {\n\t\tinfo[limitType] = map[string]interface{}{\n\t\t\t\"capacity\":  bucket.capacity,\n\t\t\t\"available\": bucket.GetAvailableTokens(),\n\t\t\t\"refill\":    bucket.refillRate,\n\t\t\t\"interval\":  bucket.refillInterval.String(),\n\t\t}\n\t}\n\treturn info\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_min_232": {
+      "name": "min",
+      "type": "function",
+      "start_line": 232,
+      "end_line": 237,
+      "content_hash": "9787115f44fc23eed84973f696dc005ca37e4048",
+      "content": "func min(a, b int64) int64 {\n\tif a < b {\n\t\treturn a\n\t}\n\treturn b\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

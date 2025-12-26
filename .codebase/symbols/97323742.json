@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/context-engine/scripts/dev_up.sh",
+  "file_hash": "ccf711bc752a2ebbe5093ff76286fac35e24a731",
+  "updated_at": "2025-12-26T17:34:20.171332",
+  "symbols": {
+    "function_log_15": {
+      "name": "log",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 15,
+      "content_hash": "92ed880c4cc894d5c1599596c0fa34a7ffe8fbc5",
+      "content": "log() { echo \"[$(date +'%Y-%m-%d %H:%M:%S')] $*\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_die_16": {
+      "name": "die",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 16,
+      "content_hash": "5107913ee28e9f7b94b9794214ffbffa0fa39711",
+      "content": "die() { echo \"ERROR: $*\" >&2; exit 1; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_need_27": {
+      "name": "need",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 27,
+      "content_hash": "3ab21bc6e3e1bba43fc18af5c4cde68433dc5f31",
+      "content": "need() { command -v \"$1\" >/dev/null 2>&1 || die \"Missing dependency: $1\"; }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_wait_for_url_36": {
+      "name": "wait_for_url",
+      "type": "function",
+      "start_line": 36,
+      "end_line": 36,
+      "content_hash": "9eddb906f121c4efaaf9c4b65f95715c739cbaf1",
+      "content": "wait_for_url() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

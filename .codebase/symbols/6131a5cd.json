@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/hooks/usePagination.ts",
+  "file_hash": "58c39bdbcd7a896d24f2072ee8972cf8155df779",
+  "updated_at": "2025-12-26T17:34:20.753406",
+  "symbols": {
+    "function_usePaginationFor_17": {
+      "name": "usePaginationFor",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 95,
+      "content_hash": "f2fb2b70ba1d4442b8920d0304f5ee1952e23ecb",
+      "content": "function usePaginationFor(endpoint: string, dataType: DataType, currentFilter: string) {\n  const [state, setState] = useState<PaginationState>({\n    isLoading: false,\n    hasMore: true\n  });\n\n  // Track offset and filter in refs to handle synchronous resets\n  const offsetRef = useRef(0);\n  const lastFilterRef = useRef(currentFilter);\n  const stateRef = useRef(state);\n\n  /**\n   * Load more items from the API\n   * Automatically resets offset to 0 if filter has changed\n   */\n  const loadMore = useCallback(async (): Promise<DataItem[]> => {\n    // Check if filter changed - if so, reset pagination synchronously\n    const filterChanged = lastFilterRef.current !== currentFilter;\n\n    if (filterChanged) {\n      offsetRef.current = 0;\n      lastFilterRef.current = currentFilter;\n\n      // Reset state both in React state and ref synchronously\n      const newState = { isLoading: false, hasMore: true };\n      setState(newState);\n      stateRef.current = newState;  // Update ref immediately to avoid stale checks\n    }\n\n    // Prevent concurrent requests using ref (always current)\n    // Skip this check if we just reset the filter - we want to load the first page\n    if (!filterChanged && (stateRef.current.isLoading || !stateRef.current.hasMore)) {\n      return [];\n    }\n\n    setState(prev => ({ ...prev, isLoading: true }));\n\n    try {\n      // Build query params using current offset from ref\n      const params = new URLSearchParams({\n        offset: offsetRef.current.toString(),\n        limit: UI.PAGINATION_PAGE_SIZE.toString()\n      });\n\n      // Add project filter if present\n      if (currentFilter) {\n        params.append('project', currentFilter);\n      }\n\n      const response = await fetch(`${endpoint}?${params}`);\n\n      if (!response.ok) {\n        throw new Error(`Failed to load ${dataType}: ${response.statusText}`);\n      }\n\n      const data = await response.json() as { items: DataItem[], hasMore: boolean };\n\n      setState(prev => ({\n        ...prev,\n        isLoading: false,\n        hasMore: data.hasMore\n      }));\n\n      // Increment offset after successful load\n      offsetRef.current += UI.PAGINATION_PAGE_SIZE;\n\n      return data.items;\n    } catch (error) {\n      console.error(`Failed to load ${dataType}:`, error);\n      setState(prev => ({ ...prev, isLoading: false }));\n      return [];\n    }\n  }, [currentFilter, endpoint, dataType]);\n\n  return {\n    ...state,\n    loadMore\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_usePagination_100": {
+      "name": "usePagination",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 110,
+      "content_hash": "623378ae98055ee2575f1704c13fecbffc82b351",
+      "content": "export function usePagination(currentFilter: string) {\n  const observations = usePaginationFor(API_ENDPOINTS.OBSERVATIONS, 'observations', currentFilter);\n  const summaries = usePaginationFor(API_ENDPOINTS.SUMMARIES, 'summaries', currentFilter);\n  const prompts = usePaginationFor(API_ENDPOINTS.PROMPTS, 'prompts', currentFilter);\n\n  return {\n    observations,\n    summaries,\n    prompts\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

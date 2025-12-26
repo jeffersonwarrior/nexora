@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/utils/data.ts",
+  "file_hash": "a153ca33b1a01a122843af05842697aeb6fc0d69",
+  "updated_at": "2025-12-26T17:34:22.098073",
+  "symbols": {
+    "function_mergeAndDeduplicateByProject_15": {
+      "name": "mergeAndDeduplicateByProject",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 26,
+      "content_hash": "a7ba36cff8f49374d4a762cc75032a0d47db91a9",
+      "content": "export function mergeAndDeduplicateByProject<T extends { id: number; project?: string }>(\n  liveItems: T[],\n  paginatedItems: T[]\n): T[] {\n  // Deduplicate by ID\n  const seen = new Set<number>();\n  return [...liveItems, ...paginatedItems].filter(item => {\n    if (seen.has(item.id)) return false;\n    seen.add(item.id);\n    return true;\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

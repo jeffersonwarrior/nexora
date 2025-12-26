@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/context-engine/tests/test_watcher_collection_resolution.py",
+  "file_hash": "d05b809a6b97ab5c73328ac1e4b2e283e92064de",
+  "updated_at": "2025-12-26T17:34:21.037241",
+  "symbols": {
+    "function_test_main_resolves_collection_from_state_8": {
+      "name": "test_main_resolves_collection_from_state",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 71,
+      "content_hash": "26a650af9d2daf4b7d3c879c31fd6139ae66068f",
+      "content": "def test_main_resolves_collection_from_state(monkeypatch, tmp_path):\n    # Env setup: placeholder collection name at startup\n    monkeypatch.setenv(\"WATCH_ROOT\", str(tmp_path))\n    monkeypatch.setenv(\"COLLECTION_NAME\", \"my-collection\")\n    monkeypatch.setenv(\"QDRANT_URL\", \"http://localhost:6333\")\n    monkeypatch.setenv(\"EMBEDDING_MODEL\", \"fake\")\n\n    # Single-repo mode: watch_index.main should keep COLLECTION_NAME from env.\n\n    wi = importlib.import_module(\"scripts.watch_index\")\n    # Reload to re-read env defaults (COLLECTION) in module globals\n    wi = importlib.reload(wi)\n\n    # Fake QdrantClient: force get_collection to raise so code chooses sanitized vector name path\n    class FakeQdrant:\n        def __init__(self, *a, **k):\n            pass\n        def get_collection(self, *a, **k):\n            raise RuntimeError(\"not available in unit test\")\n    monkeypatch.setattr(wi, \"QdrantClient\", FakeQdrant, raising=True)\n\n    # Fake embedding model: just yield a fixed-dim vector on probe\n    class FakeModel:\n        def __init__(self, model_name: str = \"fake\"):\n            self.model_name = model_name\n        def embed(self, texts):\n            # Next() will take the first yielded item and len() is the dim\n            yield [0.0] * 32\n\n    # Patch the embedder module that watch_index imports from at runtime\n    embedder = importlib.import_module(\"scripts.embedder\")\n    monkeypatch.setattr(embedder, \"get_embedding_model\", lambda m: FakeModel(m), raising=True)\n    monkeypatch.setattr(embedder, \"get_model_dimension\", lambda m: 32, raising=True)\n\n    # No-op ensure calls\n    idx = importlib.import_module(\"scripts.ingest_code\")\n    monkeypatch.setattr(idx, \"ensure_collection\", lambda *a, **k: None, raising=True)\n    monkeypatch.setattr(idx, \"ensure_payload_indexes\", lambda *a, **k: None, raising=True)\n\n    # Fake Observer to avoid starting real threads\n    class FakeObserver:\n        def schedule(self, *a, **k):\n            pass\n        def start(self):\n            pass\n        def stop(self):\n            pass\n        def join(self):\n            pass\n    monkeypatch.setattr(wi, \"Observer\", FakeObserver, raising=True)\n\n    # Make the main loop exit immediately by raising KeyboardInterrupt on sleep\n    def _raise_kb(_):\n        raise KeyboardInterrupt()\n    monkeypatch.setattr(wi.time, \"sleep\", _raise_kb, raising=True)\n\n    # Precondition: module-level COLLECTION should reflect placeholder at import time\n    assert wi.COLLECTION == os.environ.get(\"COLLECTION_NAME\") == \"my-collection\"\n\n    # Run main(); in single-repo mode it should keep the env-provided COLLECTION_NAME\n    wi.main()\n\n    # Postcondition: global COLLECTION remains the env-provided name\n    assert wi.COLLECTION == \"my-collection\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakeQdrant_22": {
+      "name": "FakeQdrant",
+      "type": "class",
+      "start_line": 22,
+      "end_line": 26,
+      "content_hash": "33369c8fd889b314cd9dd00d62edc23f6f0cac70",
+      "content": "    class FakeQdrant:\n        def __init__(self, *a, **k):\n            pass\n        def get_collection(self, *a, **k):\n            raise RuntimeError(\"not available in unit test\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___23": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 23,
+      "end_line": 24,
+      "content_hash": "2f01f3eeec882714bac9a504b0450cf9884e2078",
+      "content": "        def __init__(self, *a, **k):\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_collection_25": {
+      "name": "get_collection",
+      "type": "method",
+      "start_line": 25,
+      "end_line": 26,
+      "content_hash": "90dd74d3b6e91f90e48ab262a04c042278f8085a",
+      "content": "        def get_collection(self, *a, **k):\n            raise RuntimeError(\"not available in unit test\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakeModel_30": {
+      "name": "FakeModel",
+      "type": "class",
+      "start_line": 30,
+      "end_line": 35,
+      "content_hash": "8896bec69ab0ad3abdca5a078757cad67c55fc7f",
+      "content": "    class FakeModel:\n        def __init__(self, model_name: str = \"fake\"):\n            self.model_name = model_name\n        def embed(self, texts):\n            # Next() will take the first yielded item and len() is the dim\n            yield [0.0] * 32",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___31": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 31,
+      "end_line": 32,
+      "content_hash": "50e9cb8c7ea64b9074985938a5e66b9c1ec59e28",
+      "content": "        def __init__(self, model_name: str = \"fake\"):\n            self.model_name = model_name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_embed_33": {
+      "name": "embed",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 35,
+      "content_hash": "dbb2cb31b66735f4478b50d7ccfd376dba333607",
+      "content": "        def embed(self, texts):\n            # Next() will take the first yielded item and len() is the dim\n            yield [0.0] * 32",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_FakeObserver_48": {
+      "name": "FakeObserver",
+      "type": "class",
+      "start_line": 48,
+      "end_line": 56,
+      "content_hash": "efcb7a4ca4b415c727cbacc9f2e610a409a296dd",
+      "content": "    class FakeObserver:\n        def schedule(self, *a, **k):\n            pass\n        def start(self):\n            pass\n        def stop(self):\n            pass\n        def join(self):\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_schedule_49": {
+      "name": "schedule",
+      "type": "method",
+      "start_line": 49,
+      "end_line": 50,
+      "content_hash": "927bd5f708cc160825675746dfe8e958b85714d9",
+      "content": "        def schedule(self, *a, **k):\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_start_51": {
+      "name": "start",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 52,
+      "content_hash": "ae139c771548c98595e32e96a174ada33151df65",
+      "content": "        def start(self):\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_stop_53": {
+      "name": "stop",
+      "type": "method",
+      "start_line": 53,
+      "end_line": 54,
+      "content_hash": "35e028f3f50ec9657b2d96bb285200d1a61dad32",
+      "content": "        def stop(self):\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_join_55": {
+      "name": "join",
+      "type": "method",
+      "start_line": 55,
+      "end_line": 56,
+      "content_hash": "9ba83a7c69b9eb95fbb0f88ec14a8d8c779d7f90",
+      "content": "        def join(self):\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__raise_kb_60": {
+      "name": "_raise_kb",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 61,
+      "content_hash": "80432d7285a84fdd823d6b66dae35f7318d70f43",
+      "content": "    def _raise_kb(_):\n        raise KeyboardInterrupt()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

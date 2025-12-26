@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/keys.go",
+  "file_hash": "e7139a1ddff42b2b71df11f3fe4a62608f490e7e",
+  "updated_at": "2025-12-26T17:34:19.938086",
+  "symbols": {
+    "struct_KeyMap_7": {
+      "name": "KeyMap",
+      "type": "struct",
+      "start_line": 7,
+      "end_line": 23,
+      "content_hash": "a63131211f7513d2c6d5cc851098ef5c59243c30",
+      "content": "type KeyMap struct {\n\tSelect,\n\tNext,\n\tPrevious,\n\tChoose,\n\tTab,\n\tClose key.Binding\n\n\tisAPIKeyHelp  bool\n\tisAPIKeyValid bool\n\n\tisClaudeAuthChoiseHelp    bool\n\tisClaudeOAuthHelp         bool\n\tisClaudeOAuthURLState     bool\n\tisClaudeOAuthHelpComplete bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultKeyMap_24": {
+      "name": "DefaultKeyMap",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 53,
+      "content_hash": "3480697011935e2298fb1b3301d4e06a6acc1cc4",
+      "content": "func DefaultKeyMap() KeyMap {\n\treturn KeyMap{\n\t\tSelect: key.NewBinding(\n\t\t\tkey.WithKeys(\"enter\", \"ctrl+y\"),\n\t\t\tkey.WithHelp(\"enter\", \"choose\"),\n\t\t),\n\t\tNext: key.NewBinding(\n\t\t\tkey.WithKeys(\"down\", \"ctrl+n\"),\n\t\t\tkey.WithHelp(\"\u2193\", \"next item\"),\n\t\t),\n\t\tPrevious: key.NewBinding(\n\t\t\tkey.WithKeys(\"up\", \"ctrl+p\"),\n\t\t\tkey.WithHelp(\"\u2191\", \"previous item\"),\n\t\t),\n\t\tChoose: key.NewBinding(\n\t\t\tkey.WithKeys(\"left\", \"right\", \"h\", \"l\"),\n\t\t\tkey.WithHelp(\"\u2190\u2192\", \"choose\"),\n\t\t),\n\t\tTab: key.NewBinding(\n\t\t\tkey.WithKeys(\"tab\"),\n\t\t\tkey.WithHelp(\"tab\", \"toggle type\"),\n\t\t),\n\t\tClose: key.NewBinding(\n\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\tkey.WithHelp(\"esc\", \"exit\"),\n\t\t),\n\t}\n}\n\n// KeyBindings implements layout.KeyMapProvider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_KeyBindings_54": {
+      "name": "KeyBindings",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 64,
+      "content_hash": "e230c3b012eb4f556ede747adacb34e014cb376f",
+      "content": "func (k KeyMap) KeyBindings() []key.Binding {\n\treturn []key.Binding{\n\t\tk.Select,\n\t\tk.Next,\n\t\tk.Previous,\n\t\tk.Tab,\n\t\tk.Close,\n\t}\n}\n\n// FullHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_FullHelp_65": {
+      "name": "FullHelp",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 75,
+      "content_hash": "d025b1da137e7ad2cbb1026b62ee4f3831299acb",
+      "content": "func (k KeyMap) FullHelp() [][]key.Binding {\n\tm := [][]key.Binding{}\n\tslice := k.KeyBindings()\n\tfor i := 0; i < len(slice); i += 4 {\n\t\tend := min(i+4, len(slice))\n\t\tm = append(m, slice[i:end])\n\t}\n\treturn m\n}\n\n// ShortHelp implements help.KeyMap.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShortHelp_76": {
+      "name": "ShortHelp",
+      "type": "method",
+      "start_line": 76,
+      "end_line": 151,
+      "content_hash": "f05790f728b0fbd0f1dccc343d161bf6b623325d",
+      "content": "func (k KeyMap) ShortHelp() []key.Binding {\n\tif k.isClaudeAuthChoiseHelp {\n\t\treturn []key.Binding{\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"left\", \"right\", \"h\", \"l\"),\n\t\t\t\tkey.WithHelp(\"\u2190\u2192\", \"choose\"),\n\t\t\t),\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\tkey.WithHelp(\"enter\", \"accept\"),\n\t\t\t),\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"esc\"),\n\t\t\t\tkey.WithHelp(\"esc\", \"back\"),\n\t\t\t),\n\t\t}\n\t}\n\tif k.isClaudeOAuthHelp {\n\t\tif k.isClaudeOAuthHelpComplete {\n\t\t\treturn []key.Binding{\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\t\tkey.WithHelp(\"enter\", \"close\"),\n\t\t\t\t),\n\t\t\t}\n\t\t}\n\n\t\tenterHelp := \"submit\"\n\t\tif k.isClaudeOAuthURLState {\n\t\t\tenterHelp = \"open\"\n\t\t}\n\n\t\tbindings := []key.Binding{\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\tkey.WithHelp(\"enter\", enterHelp),\n\t\t\t),\n\t\t}\n\n\t\tif k.isClaudeOAuthURLState {\n\t\t\tbindings = append(bindings, key.NewBinding(\n\t\t\t\tkey.WithKeys(\"c\"),\n\t\t\t\tkey.WithHelp(\"c\", \"copy url\"),\n\t\t\t))\n\t\t}\n\n\t\tbindings = append(bindings, key.NewBinding(\n\t\t\tkey.WithKeys(\"esc\"),\n\t\t\tkey.WithHelp(\"esc\", \"back\"),\n\t\t))\n\n\t\treturn bindings\n\t}\n\tif k.isAPIKeyHelp && !k.isAPIKeyValid {\n\t\treturn []key.Binding{\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\tkey.WithHelp(\"enter\", \"submit\"),\n\t\t\t),\n\t\t\tk.Close,\n\t\t}\n\t} else if k.isAPIKeyValid {\n\t\treturn []key.Binding{\n\t\t\tk.Select,\n\t\t}\n\t}\n\treturn []key.Binding{\n\t\tkey.NewBinding(\n\t\t\tkey.WithKeys(\"down\", \"up\"),\n\t\t\tkey.WithHelp(\"\u2191\u2193\", \"choose\"),\n\t\t),\n\t\tk.Tab,\n\t\tk.Select,\n\t\tk.Close,\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/context-engine/scripts/hybrid/filters.py",
+  "file_hash": "7dee2910ded5d7eb961f5ffca9905fd165ea1a43",
+  "updated_at": "2025-12-26T17:34:20.188841",
+  "symbols": {
+    "function_is_test_file_100": {
+      "name": "is_test_file",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 106,
+      "content_hash": "0511f8086b2e3ee7ba54fe6cc8a55174ddb1a948",
+      "content": "def is_test_file(path: str) -> bool:\n    \"\"\"Check if path matches test file patterns.\"\"\"\n    p = path.lower()\n    for pattern in TEST_FILE_PATTERNS:\n        if re.search(pattern, p):\n            return True\n    return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_is_core_file_109": {
+      "name": "is_core_file",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 120,
+      "content_hash": "606570c9a2c435a3178d8be6d009157369c917e7",
+      "content": "def is_core_file(path: str) -> bool:\n    \"\"\"Check if file is core implementation (not test/doc).\"\"\"\n    path_lower = path.lower()\n    # Skip non-core files\n    for pattern in NON_CORE_PATTERNS:\n        if re.search(pattern, path_lower):\n            return False\n    # Check for core file extensions\n    for pattern in CORE_FILE_PATTERNS:\n        if re.search(pattern, path_lower):\n            return True\n    return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_is_vendor_path_123": {
+      "name": "is_vendor_path",
+      "type": "function",
+      "start_line": 123,
+      "end_line": 126,
+      "content_hash": "9b9390c21e2bfbf8627eec558a16fccbe64a4ed5",
+      "content": "def is_vendor_path(path: str) -> bool:\n    \"\"\"Check if path is in vendor/third-party directories.\"\"\"\n    p = path.lower()\n    return any(s in p for s in VENDOR_PATTERNS)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_lang_matches_path_129": {
+      "name": "lang_matches_path",
+      "type": "function",
+      "start_line": 129,
+      "end_line": 135,
+      "content_hash": "c4b24f444718aeba497f686f74c3b11b71a50841",
+      "content": "def lang_matches_path(lang: str, path: str) -> bool:\n    \"\"\"Check if language matches file path extension.\"\"\"\n    if not lang:\n        return False\n    exts = LANG_EXTS.get(lang.lower(), [])\n    pl = path.lower()\n    return any(pl.endswith(ext) for ext in exts)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parse_query_dsl_142": {
+      "name": "parse_query_dsl",
+      "type": "function",
+      "start_line": 142,
+      "end_line": 187,
+      "content_hash": "91c15515e40b0071c80327fdec35d994f81c9fc9",
+      "content": "def parse_query_dsl(queries: List[str]) -> Tuple[List[str], Dict[str, str]]:\n    \"\"\"\n    Parse query DSL tokens from query strings.\n    \n    Supported tokens: lang:, language:, file:, path:, under:, kind:, symbol:, ext:, not:, case:, repo:\n    \n    Returns:\n        Tuple of (clean_queries, extracted_tokens)\n    \"\"\"\n    clean: List[str] = []\n    extracted: Dict[str, str] = {}\n    token_re = re.compile(\n        r\"\\b(?:(lang|language|file|path|under|kind|symbol|ext|not|case|repo))\\s*:\\s*([^\\s]+)\",\n        re.IGNORECASE,\n    )\n    for q in queries:\n        parts = []\n        last = 0\n        for m in token_re.finditer(q):\n            key = m.group(1).lower()\n            val = m.group(2)\n            if key in (\"file\", \"path\"):\n                extracted[\"under\"] = val\n            elif key in (\"lang\", \"language\"):\n                extracted[\"language\"] = val\n            elif key in (\"ext\",):\n                extracted[\"ext\"] = val\n            elif key in (\"not\",):\n                extracted[\"not\"] = val\n            elif key in (\"case\",):\n                extracted[\"case\"] = val\n            elif key in (\"repo\",):\n                extracted[\"repo\"] = val\n            else:\n                extracted[key] = val\n            parts.append(q[last : m.start()].strip())\n            last = m.end()\n        parts.append(q[last:].strip())\n        remaining = \" \".join([p for p in parts if p])\n        if remaining:\n            clean.append(remaining)\n    # Keep at least an empty query if everything was tokens (filter-only mode)\n    # Callers should filter empty strings before embedding\n    if not clean and queries:\n        clean = [\"\"]\n    return clean, extracted",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__split_ident_215": {
+      "name": "_split_ident",
+      "type": "function",
+      "start_line": 215,
+      "end_line": 225,
+      "content_hash": "efd603374b72311e7742b8320c74ff57c3f5f705",
+      "content": "def _split_ident(s: str) -> List[str]:\n    \"\"\"Split snake_case and camelCase identifiers into tokens.\"\"\"\n    parts = re.split(r\"[^A-Za-z0-9]+\", s)\n    out: List[str] = []\n    for p in parts:\n        if not p:\n            continue\n        # camelCase split\n        segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n        out.extend([x for x in segs if x])\n    return [x.lower() for x in out if x and x.lower() not in _STOP]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_tokenize_queries_228": {
+      "name": "tokenize_queries",
+      "type": "function",
+      "start_line": 228,
+      "end_line": 240,
+      "content_hash": "be738224fbd226f9d859062a08c648857dcbdf71",
+      "content": "def tokenize_queries(phrases: List[str]) -> List[str]:\n    \"\"\"Tokenize query phrases into individual terms, removing stopwords and deduping.\"\"\"\n    toks: List[str] = []\n    for ph in phrases:\n        toks.extend(_split_ident(ph))\n    # de-dup preserving order\n    seen = set()\n    out: List[str] = []\n    for t in toks:\n        if t not in seen:\n            out.append(t)\n            seen.add(t)\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__sanitize_filter_obj_252": {
+      "name": "_sanitize_filter_obj",
+      "type": "function",
+      "start_line": 252,
+      "end_line": 302,
+      "content_hash": "27628c061324fcafb8cb3bf293e6cce5fbe2e36f",
+      "content": "def _sanitize_filter_obj(flt: Any) -> Any:\n    \"\"\"\n    Sanitize filter objects for Qdrant queries.\n    \n    Handles both model-style objects and dict-like filters.\n    Uses caching to avoid repeated deep copies.\n    \n    Args:\n        flt: Filter object (models.Filter, dict, or None)\n        \n    Returns:\n        Sanitized filter or None if empty/invalid\n    \"\"\"\n    if flt is None:\n        return None\n\n    # Try cache first (hash by id for object identity)\n    cache_key = id(flt)\n    with _FILTER_CACHE_LOCK:\n        if cache_key in _FILTER_CACHE:\n            return _FILTER_CACHE[cache_key]\n\n    try:\n        # Try model-style attributes first\n        must = getattr(flt, \"must\", None)\n        should = getattr(flt, \"should\", None)\n        must_not = getattr(flt, \"must_not\", None)\n        if must is None and should is None and must_not is None:\n            # Maybe dict-like\n            if isinstance(flt, dict):\n                m = [c for c in (flt.get(\"must\") or []) if c is not None]\n                s = [c for c in (flt.get(\"should\") or []) if c is not None]\n                mn = [c for c in (flt.get(\"must_not\") or []) if c is not None]\n                result = None if (not m and not s and not mn) else flt\n            else:\n                # Unknown structure -> drop\n                result = None\n        else:\n            m = [c for c in (must or []) if c is not None]\n            s = [c for c in (should or []) if c is not None]\n            mn = [c for c in (must_not or []) if c is not None]\n            result = None if (not m and not s and not mn) else flt\n    except Exception:\n        result = None\n\n    # Cache result (with size limit)\n    with _FILTER_CACHE_LOCK:\n        if len(_FILTER_CACHE) < _FILTER_CACHE_MAX:\n            _FILTER_CACHE[cache_key] = result\n\n    return result",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_clear_filter_cache_305": {
+      "name": "clear_filter_cache",
+      "type": "function",
+      "start_line": 305,
+      "end_line": 308,
+      "content_hash": "6bb11eed53d506a8815cc5118e43dda972d28975",
+      "content": "def clear_filter_cache() -> None:\n    \"\"\"Clear the filter sanitization cache.\"\"\"\n    with _FILTER_CACHE_LOCK:\n        _FILTER_CACHE.clear()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

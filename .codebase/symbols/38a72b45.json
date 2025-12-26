@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/components/PromptCard.tsx",
+  "file_hash": "e7e04c09a5d40d1215f4ce7eb9d89fb61bc9b2cc",
+  "updated_at": "2025-12-26T17:34:23.927337",
+  "symbols": {
+    "function_PromptCard_9": {
+      "name": "PromptCard",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 28,
+      "content_hash": "2e3ef9dbdc2d1d96ca72abc0c08bdb5a750e4131",
+      "content": "export function PromptCard({ prompt }: PromptCardProps) {\n  const date = formatDate(prompt.created_at_epoch);\n\n  return (\n    <div className=\"card prompt-card\">\n      <div className=\"card-header\">\n        <div className=\"card-header-left\">\n          <span className=\"card-type\">Prompt</span>\n          <span className=\"card-project\">{prompt.project}</span>\n        </div>\n      </div>\n      <div className=\"card-content\">\n        {prompt.prompt_text}\n      </div>\n      <div className=\"card-meta\">\n        <span className=\"meta-date\">#{prompt.id} \u2022 {date}</span>\n      </div>\n    </div>\n  );\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/filepicker/filepicker.go",
+  "file_hash": "acca7625df2364027df28a8a2432b5d23d0c223d",
+  "updated_at": "2025-12-26T17:34:23.542725",
+  "symbols": {
+    "struct_FilePickedMsg_31": {
+      "name": "FilePickedMsg",
+      "type": "struct",
+      "start_line": 31,
+      "end_line": 34,
+      "content_hash": "f315dede9eb79dca62eeb8ab33170e174bd2b5f0",
+      "content": "type FilePickedMsg struct {\n\tAttachment message.Attachment\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_FilePicker_35": {
+      "name": "FilePicker",
+      "type": "interface",
+      "start_line": 35,
+      "end_line": 38,
+      "content_hash": "a62db3b955b0fd59ccefe263015a835a6ecb3b75",
+      "content": "type FilePicker interface {\n\tdialogs.DialogModel\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_model_39": {
+      "name": "model",
+      "type": "struct",
+      "start_line": 39,
+      "end_line": 51,
+      "content_hash": "01677d09d7ff264095364abe6b5478b03e4e397b",
+      "content": "type model struct {\n\twWidth          int\n\twHeight         int\n\twidth           int\n\tfilePicker      filepicker.Model\n\thighlightedFile string\n\timage           image.Model\n\tkeyMap          KeyMap\n\thelp            help.Model\n}\n\nvar AllowedTypes = []string{\".jpg\", \".jpeg\", \".png\"}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewFilePickerCmp_52": {
+      "name": "NewFilePickerCmp",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 86,
+      "content_hash": "b85d5459b15de2384250c5f9a39567def9da83d1",
+      "content": "func NewFilePickerCmp(workingDir string) FilePicker {\n\tt := styles.CurrentTheme()\n\tfp := filepicker.New()\n\tfp.AllowedTypes = AllowedTypes\n\n\tif workingDir != \"\" {\n\t\tfp.CurrentDirectory = workingDir\n\t} else {\n\t\t// Fallback to current working directory, then home directory\n\t\tif cwd, err := os.Getwd(); err == nil {\n\t\t\tfp.CurrentDirectory = cwd\n\t\t} else {\n\t\t\tfp.CurrentDirectory = home.Dir()\n\t\t}\n\t}\n\n\tfp.ShowPermissions = false\n\tfp.ShowSize = false\n\tfp.AutoHeight = false\n\tfp.Styles = t.S().FilePicker\n\tfp.Cursor = \"\"\n\tfp.SetHeight(fileSelectionHeight)\n\n\timage := image.New(1, 1, \"\")\n\n\thelp := help.New()\n\thelp.Styles = t.S().Help\n\treturn &model{\n\t\tfilePicker: fp,\n\t\timage:      image,\n\t\tkeyMap:     DefaultKeyMap(),\n\t\thelp:       help,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_87": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 87,
+      "end_line": 90,
+      "content_hash": "76c280e9e1d10516317fbd0461ed54c04fd54e27",
+      "content": "func (m *model) Init() tea.Cmd {\n\treturn m.filePicker.Init()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_91": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 91,
+      "end_line": 160,
+      "content_hash": "70ffef72372a0d1f39ef03bac11459a6f8f5bff1",
+      "content": "func (m *model) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase tea.WindowSizeMsg:\n\t\tm.wWidth = msg.Width\n\t\tm.wHeight = msg.Height\n\t\tm.width = min(70, m.wWidth)\n\t\tstyles := m.filePicker.Styles\n\t\tstyles.Directory = styles.Directory.Width(m.width - 4)\n\t\tstyles.Selected = styles.Selected.PaddingLeft(1).Width(m.width - 4)\n\t\tstyles.DisabledSelected = styles.DisabledSelected.PaddingLeft(1).Width(m.width - 4)\n\t\tstyles.File = styles.File.Width(m.width)\n\t\tm.filePicker.Styles = styles\n\t\treturn m, nil\n\tcase tea.KeyPressMsg:\n\t\tif key.Matches(msg, m.keyMap.Close) {\n\t\t\treturn m, util.CmdHandler(dialogs.CloseDialogMsg{})\n\t\t}\n\t\tif key.Matches(msg, m.filePicker.KeyMap.Back) {\n\t\t\t// make sure we don't go back if we are at the home directory\n\t\t\tif m.filePicker.CurrentDirectory == home.Dir() {\n\t\t\t\treturn m, nil\n\t\t\t}\n\t\t}\n\t}\n\n\tvar cmd tea.Cmd\n\tvar cmds []tea.Cmd\n\tm.filePicker, cmd = m.filePicker.Update(msg)\n\tcmds = append(cmds, cmd)\n\tif m.highlightedFile != m.currentImage() && m.currentImage() != \"\" {\n\t\tw, h := m.imagePreviewSize()\n\t\tcmd = m.image.Redraw(uint(w-2), uint(h-2), m.currentImage())\n\t\tcmds = append(cmds, cmd)\n\t}\n\tm.highlightedFile = m.currentImage()\n\n\t// Did the user select a file?\n\tif didSelect, path := m.filePicker.DidSelectFile(msg); didSelect {\n\t\t// Get the path of the selected file.\n\t\treturn m, tea.Sequence(\n\t\t\tutil.CmdHandler(dialogs.CloseDialogMsg{}),\n\t\t\tfunc() tea.Msg {\n\t\t\t\tisFileLarge, err := IsFileTooBig(path, MaxAttachmentSize)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn util.ReportError(fmt.Errorf(\"unable to read the image: %w\", err))\n\t\t\t\t}\n\t\t\t\tif isFileLarge {\n\t\t\t\t\treturn util.ReportError(fmt.Errorf(\"file too large, max 5MB\"))\n\t\t\t\t}\n\n\t\t\t\tcontent, err := os.ReadFile(path)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn util.ReportError(fmt.Errorf(\"unable to read the image: %w\", err))\n\t\t\t\t}\n\n\t\t\t\tmimeBufferSize := min(512, len(content))\n\t\t\t\tmimeType := http.DetectContentType(content[:mimeBufferSize])\n\t\t\t\tfileName := filepath.Base(path)\n\t\t\t\tattachment := message.Attachment{FilePath: path, FileName: fileName, MimeType: mimeType, Content: content}\n\t\t\t\treturn FilePickedMsg{\n\t\t\t\t\tAttachment: attachment,\n\t\t\t\t}\n\t\t\t},\n\t\t)\n\t}\n\tm.image, cmd = m.image.Update(msg)\n\tcmds = append(cmds, cmd)\n\treturn m, tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_161": {
+      "name": "View",
+      "type": "method",
+      "start_line": 161,
+      "end_line": 185,
+      "content_hash": "d5a0a7e03215f95183a44db472cdc52c835d52a1",
+      "content": "func (m *model) View() string {\n\tt := styles.CurrentTheme()\n\n\tstrs := []string{\n\t\tt.S().Base.Padding(0, 1, 1, 1).Render(core.Title(\"Add Image\", m.width-4)),\n\t}\n\n\t// hide image preview if the terminal is too small\n\tif x, y := m.imagePreviewSize(); x > 0 && y > 0 {\n\t\tstrs = append(strs, m.imagePreview())\n\t}\n\n\tstrs = append(\n\t\tstrs,\n\t\tm.filePicker.View(),\n\t\tt.S().Base.Width(m.width-2).PaddingLeft(1).AlignHorizontal(lipgloss.Left).Render(m.help.View(m.keyMap)),\n\t)\n\n\tcontent := lipgloss.JoinVertical(\n\t\tlipgloss.Left,\n\t\tstrs...,\n\t)\n\treturn m.style().Render(content)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_currentImage_186": {
+      "name": "currentImage",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 194,
+      "content_hash": "fb0bca91f18874c37f3689930fe412dab9e3a059",
+      "content": "func (m *model) currentImage() string {\n\tfor _, ext := range m.filePicker.AllowedTypes {\n\t\tif strings.HasSuffix(m.filePicker.HighlightedPath(), ext) {\n\t\t\treturn m.filePicker.HighlightedPath()\n\t\t}\n\t}\n\treturn \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_imagePreview_195": {
+      "name": "imagePreview",
+      "type": "method",
+      "start_line": 195,
+      "end_line": 212,
+      "content_hash": "be0c604386d22cd63f240bf09d0a8400af5f9e10",
+      "content": "func (m *model) imagePreview() string {\n\tconst padding = 2\n\n\tt := styles.CurrentTheme()\n\tw, h := m.imagePreviewSize()\n\n\tif m.currentImage() == \"\" {\n\t\timgPreview := t.S().Base.\n\t\t\tWidth(w - padding).\n\t\t\tHeight(h - padding).\n\t\t\tBackground(t.BgOverlay)\n\n\t\treturn m.imagePreviewStyle().Render(imgPreview.Render())\n\t}\n\n\treturn m.imagePreviewStyle().Width(w).Height(h).Render(m.image.View())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_imagePreviewStyle_213": {
+      "name": "imagePreviewStyle",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 217,
+      "content_hash": "254a3d452d92048a2e02b4acb3d15213d4c0e477",
+      "content": "func (m *model) imagePreviewStyle() lipgloss.Style {\n\tt := styles.CurrentTheme()\n\treturn t.S().Base.Padding(1, 1, 1, 1)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_imagePreviewSize_218": {
+      "name": "imagePreviewSize",
+      "type": "method",
+      "start_line": 218,
+      "end_line": 224,
+      "content_hash": "a717251b1144e2e9aee7ca0cbe567ac8341834a5",
+      "content": "func (m *model) imagePreviewSize() (int, int) {\n\tif m.wHeight-fileSelectionHeight-8 > previewHeight {\n\t\treturn m.width - 4, previewHeight\n\t}\n\treturn 0, 0\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_style_225": {
+      "name": "style",
+      "type": "method",
+      "start_line": 225,
+      "end_line": 233,
+      "content_hash": "a49c5ec5c190d32b05c2bb932c2bd2c53e75b554",
+      "content": "func (m *model) style() lipgloss.Style {\n\tt := styles.CurrentTheme()\n\treturn t.S().Base.\n\t\tWidth(m.width).\n\t\tBorder(lipgloss.RoundedBorder()).\n\t\tBorderForeground(t.BorderFocus)\n}\n\n// ID implements FilePicker.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ID_234": {
+      "name": "ID",
+      "type": "method",
+      "start_line": 234,
+      "end_line": 238,
+      "content_hash": "8a0fa3f2e06936926ec41be3e4a28e71341652aa",
+      "content": "func (m *model) ID() dialogs.DialogID {\n\treturn FilePickerID\n}\n\n// Position implements FilePicker.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Position_239": {
+      "name": "Position",
+      "type": "method",
+      "start_line": 239,
+      "end_line": 248,
+      "content_hash": "731842a461613115db491c3194e0df9c70d1f985",
+      "content": "func (m *model) Position() (int, int) {\n\t_, imageHeight := m.imagePreviewSize()\n\tdialogHeight := fileSelectionHeight + imageHeight + 4\n\trow := (m.wHeight - dialogHeight) / 2\n\n\tcol := m.wWidth / 2\n\tcol -= m.width / 2\n\treturn row, col\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_IsFileTooBig_249": {
+      "name": "IsFileTooBig",
+      "type": "function",
+      "start_line": 249,
+      "end_line": 260,
+      "content_hash": "9d559e2b2724e711aca85efbbe97428bc6a49612",
+      "content": "func IsFileTooBig(filePath string, sizeLimit int64) (bool, error) {\n\tfileInfo, err := os.Stat(filePath)\n\tif err != nil {\n\t\treturn false, fmt.Errorf(\"error getting file info: %w\", err)\n\t}\n\n\tif fileInfo.Size() > sizeLimit {\n\t\treturn true, nil\n\t}\n\n\treturn false, nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

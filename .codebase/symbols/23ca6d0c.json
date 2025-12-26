@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/openrouter_sort_test.go",
+  "file_hash": "52f0b326a15be2e868ac7feec2b5cccfe196a98e",
+  "updated_at": "2025-12-26T17:34:23.159960",
+  "symbols": {
+    "function_TestOpenRouterProviderSorting_11": {
+      "name": "TestOpenRouterProviderSorting",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 53,
+      "content_hash": "d058f21979253ef9d3d24055ba438bcb64b62ffa",
+      "content": "func TestOpenRouterProviderSorting(t *testing.T) {\n\tproviders := []catwalk.Provider{\n\t\t{ID: catwalk.InferenceProviderOpenAI, Name: \"OpenAI\"},\n\t\t{ID: catwalk.InferenceProviderAnthropic, Name: \"Anthropic\"},\n\t\t{ID: catwalk.InferenceProviderOpenRouter, Name: \"OpenRouter\"},\n\t\t{ID: catwalk.InferenceProviderAzure, Name: \"Azure\"},\n\t}\n\n\t// Simulate the sorting logic from list.go\n\tsortedProviders := make([]catwalk.Provider, len(providers))\n\tcopy(sortedProviders, providers)\n\tslices.SortStableFunc(sortedProviders, func(a, b catwalk.Provider) int {\n\t\t// If a is OpenRouter, it should come after b\n\t\tif a.ID == catwalk.InferenceProviderOpenRouter && b.ID != catwalk.InferenceProviderOpenRouter {\n\t\t\treturn 1\n\t\t}\n\t\t// If b is OpenRouter, it should come after a\n\t\tif b.ID == catwalk.InferenceProviderOpenRouter && a.ID != catwalk.InferenceProviderOpenRouter {\n\t\t\treturn -1\n\t\t}\n\t\t// Keep original order for all other providers\n\t\treturn 0\n\t})\n\n\t// Verify OpenRouter is at the bottom\n\topenRouterIndex := -1\n\tfor i, p := range sortedProviders {\n\t\tif p.ID == catwalk.InferenceProviderOpenRouter {\n\t\t\topenRouterIndex = i\n\t\t\tbreak\n\t\t}\n\t}\n\n\trequire.Greater(t, openRouterIndex, 0, \"OpenRouter should not be the first provider\")\n\trequire.Equal(t, len(sortedProviders)-1, openRouterIndex, \"OpenRouter should be the last provider\")\n\n\t// Verify all other providers maintain their relative order\n\totherProviders := sortedProviders[:openRouterIndex]\n\trequire.Equal(t, 3, len(otherProviders), \"Should have 3 other providers\")\n\trequire.Equal(t, catwalk.InferenceProviderOpenAI, otherProviders[0].ID)\n\trequire.Equal(t, catwalk.InferenceProviderAnthropic, otherProviders[1].ID)\n\trequire.Equal(t, catwalk.InferenceProviderAzure, otherProviders[2].ID)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

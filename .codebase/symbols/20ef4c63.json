@@ -1,0 +1,282 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/auth_backend.py",
+  "file_hash": "c6dedd7545aa280f17bcd21fa9cef01e898bcb1f",
+  "updated_at": "2025-12-26T17:34:22.942209",
+  "symbols": {
+    "class_AuthDisabledError_68": {
+      "name": "AuthDisabledError",
+      "type": "class",
+      "start_line": 68,
+      "end_line": 69,
+      "content_hash": "33e3351c1ae49bc3e7f8cb64f4e4ec14315f600a",
+      "content": "class AuthDisabledError(Exception):\n    \"\"\"Raised when auth is disabled via configuration.\"\"\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_AuthInvalidToken_72": {
+      "name": "AuthInvalidToken",
+      "type": "class",
+      "start_line": 72,
+      "end_line": 73,
+      "content_hash": "14bec943edd751e52447c13a6aa7501f5542ba6d",
+      "content": "class AuthInvalidToken(Exception):\n    \"\"\"Raised when a shared token login attempt fails validation.\"\"\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_auth_db_path_76": {
+      "name": "_get_auth_db_path",
+      "type": "function",
+      "start_line": 76,
+      "end_line": 82,
+      "content_hash": "34a65fa0e564fef8764644a46529882d7d1a713f",
+      "content": "def _get_auth_db_path() -> str:\n    raw = AUTH_DB_URL or \"\"\n    if raw.startswith(\"sqlite///\"):\n        return raw[len(\"sqlite///\") :]\n    if raw.startswith(\"sqlite://\"):\n        return raw[len(\"sqlite://\") :]\n    return raw",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__db_connection_86": {
+      "name": "_db_connection",
+      "type": "function",
+      "start_line": 86,
+      "end_line": 92,
+      "content_hash": "45505a46942a3286c4ab8538d1d4344b82ab217d",
+      "content": "def _db_connection():\n    path = _get_auth_db_path()\n    conn = sqlite3.connect(path)\n    try:\n        yield conn\n    finally:\n        conn.close()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__ensure_db_95": {
+      "name": "_ensure_db",
+      "type": "function",
+      "start_line": 95,
+      "end_line": 126,
+      "content_hash": "216c73ab0f418e271a83cac3f26ae6efa5250caf",
+      "content": "def _ensure_db() -> None:\n    path = _get_auth_db_path()\n    if not path:\n        return\n    try:\n        os.makedirs(os.path.dirname(path), exist_ok=True)\n    except Exception:\n        pass\n    with _db_connection() as conn:\n        with conn:\n            conn.execute(\n                \"CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, user_id TEXT, created_at INTEGER, expires_at INTEGER, metadata_json TEXT)\"\n            )\n            conn.execute(\n                \"CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, created_at INTEGER NOT NULL, metadata_json TEXT, role TEXT NOT NULL DEFAULT 'user')\"\n            )\n            conn.execute(\n                \"CREATE TABLE IF NOT EXISTS collections (id TEXT PRIMARY KEY, qdrant_collection TEXT UNIQUE NOT NULL, created_at INTEGER NOT NULL, metadata_json TEXT, is_deleted INTEGER NOT NULL DEFAULT 0)\"\n            )\n            conn.execute(\n                \"CREATE TABLE IF NOT EXISTS collection_acl (collection_id TEXT NOT NULL, user_id TEXT NOT NULL, permission TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (collection_id, user_id))\"\n            )\n            try:\n                cur = conn.cursor()\n                cur.execute(\"PRAGMA table_info(users)\")\n                cols = [r[1] for r in cur.fetchall() or []]\n                if \"role\" not in cols:\n                    conn.execute(\n                        \"ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'\"\n                    )\n            except Exception:\n                pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__hash_password_129": {
+      "name": "_hash_password",
+      "type": "function",
+      "start_line": 129,
+      "end_line": 135,
+      "content_hash": "d32bf0db47da9492d1bff5dda4eb3dd50794a42a",
+      "content": "def _hash_password(password: str) -> str:\n    if not isinstance(password, str) or not password:\n        raise ValueError(\"Password is required\")\n    salt = os.urandom(16)\n    iterations = 200_000\n    dk = hashlib.pbkdf2_hmac(\"sha256\", password.encode(\"utf-8\"), salt, iterations)\n    return f\"pbkdf2_sha256${iterations}${salt.hex()}${dk.hex()}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__verify_password_138": {
+      "name": "_verify_password",
+      "type": "function",
+      "start_line": 138,
+      "end_line": 148,
+      "content_hash": "78e4124c350e1ee3002f6e17fa8b611c3813c7f2",
+      "content": "def _verify_password(password: str, encoded: str) -> bool:\n    try:\n        scheme, iter_s, salt_hex, hash_hex = encoded.split(\"$\", 3)\n        if scheme != \"pbkdf2_sha256\":\n            return False\n        iterations = int(iter_s)\n        salt = bytes.fromhex(salt_hex)\n        dk = hashlib.pbkdf2_hmac(\"sha256\", password.encode(\"utf-8\"), salt, iterations)\n        return dk.hex() == hash_hex\n    except Exception:\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_user_151": {
+      "name": "create_user",
+      "type": "function",
+      "start_line": 151,
+      "end_line": 187,
+      "content_hash": "8fa752d625c386647a6b2191015fbed3252970c6",
+      "content": "def create_user(\n    username: str,\n    password: str,\n    metadata: Optional[Dict[str, Any]] = None,\n    role: Optional[str] = None,\n) -> Dict[str, Any]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    path = _get_auth_db_path()\n    now_ts = int(datetime.now().timestamp())\n    password_hash = _hash_password(password)\n    meta_json: Optional[str] = None\n    if metadata:\n        try:\n            meta_json = json.dumps(metadata)\n        except Exception:\n            meta_json = None\n    user_id = uuid.uuid4().hex\n    with _db_connection() as conn:\n        with conn:\n            desired_role = (str(role).strip().lower() if role is not None else \"\")\n            if desired_role and desired_role not in {\"user\", \"admin\"}:\n                raise ValueError(\"Invalid role\")\n            role_val = desired_role or \"user\"\n            try:\n                cur = conn.cursor()\n                cur.execute(\"SELECT 1 FROM users LIMIT 1\")\n                if not cur.fetchone():\n                    role_val = \"admin\"\n            except Exception:\n                role_val = \"user\"\n            conn.execute(\n                \"INSERT INTO users (id, username, password_hash, created_at, metadata_json, role) VALUES (?, ?, ?, ?, ?, ?)\",\n                (user_id, username, password_hash, now_ts, meta_json, role_val),\n            )\n    return {\"id\": user_id, \"user_id\": user_id, \"username\": username, \"role\": role_val}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_user_by_username_190": {
+      "name": "_get_user_by_username",
+      "type": "function",
+      "start_line": 190,
+      "end_line": 208,
+      "content_hash": "85dc1fe33d4cf851432a32649e886610b20008e2",
+      "content": "def _get_user_by_username(username: str) -> Optional[Dict[str, Any]]:\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\n            \"SELECT id, username, password_hash, created_at, metadata_json, role FROM users WHERE username = ?\",\n            (username,),\n        )\n        row = cur.fetchone()\n    if not row:\n        return None\n    return {\n        \"id\": row[0],\n        \"username\": row[1],\n        \"password_hash\": row[2],\n        \"created_at\": row[3],\n        \"metadata_json\": row[4],\n        \"role\": row[5],\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_user_role_211": {
+      "name": "_get_user_role",
+      "type": "function",
+      "start_line": 211,
+      "end_line": 222,
+      "content_hash": "a2c6d2ab1bfc2fd2d9e4bf06f19e2ff94c03a6ad",
+      "content": "def _get_user_role(user_id: str) -> Optional[str]:\n    uid = (user_id or \"\").strip()\n    if not uid:\n        return None\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\"SELECT role FROM users WHERE id = ?\", (uid,))\n        row = cur.fetchone()\n    if not row:\n        return None\n    return str(row[0] or \"\").strip() or None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_is_admin_user_225": {
+      "name": "is_admin_user",
+      "type": "function",
+      "start_line": 225,
+      "end_line": 226,
+      "content_hash": "c4e4c7cc555c1e0e98f39fe566a6ea3124822a99",
+      "content": "def is_admin_user(user_id: str) -> bool:\n    return (_get_user_role(user_id) or \"\").lower() == \"admin\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_has_any_users_229": {
+      "name": "has_any_users",
+      "type": "function",
+      "start_line": 229,
+      "end_line": 242,
+      "content_hash": "e20f42ae7e42c1db9f230b9761ca2a4ea43a9972",
+      "content": "def has_any_users() -> bool:\n    \"\"\"Return True if at least one user exists.\n\n    Used by HTTP layers to allow first-user bootstrap flows when the\n    database is empty. Raises AuthDisabledError when auth is disabled.\n    \"\"\"\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\"SELECT 1 FROM users LIMIT 1\")\n        row = cur.fetchone()\n    return bool(row)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_authenticate_user_245": {
+      "name": "authenticate_user",
+      "type": "function",
+      "start_line": 245,
+      "end_line": 251,
+      "content_hash": "984c0dd89dcb7497fa79efbe0c2ef7dddca8a7d5",
+      "content": "def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:\n    user = _get_user_by_username(username)\n    if not user:\n        return None\n    if not _verify_password(password, user.get(\"password_hash\") or \"\"):\n        return None\n    return user",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_session_254": {
+      "name": "create_session",
+      "type": "function",
+      "start_line": 254,
+      "end_line": 282,
+      "content_hash": "26f17f8ed1d8df4b6a97980df1a01c5ec7efd156",
+      "content": "def create_session(\n    user_id: str,\n    metadata: Optional[Dict[str, Any]] = None,\n    ttl_seconds: int = AUTH_SESSION_TTL_SECONDS,\n) -> Dict[str, Any]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    path = _get_auth_db_path()\n    now_ts = int(datetime.now().timestamp())\n    ttl_val = int(ttl_seconds or 0)\n    if ttl_val <= 0:\n        expires_ts = 0\n    else:\n        expires_ts = now_ts + ttl_val\n    meta_json: Optional[str] = None\n    if metadata:\n        try:\n            meta_json = json.dumps(metadata)\n        except Exception:\n            meta_json = None\n    session_id = uuid.uuid4().hex\n    with _db_connection() as conn:\n        with conn:\n            conn.execute(\n                \"INSERT OR REPLACE INTO sessions (id, user_id, created_at, expires_at, metadata_json) VALUES (?, ?, ?, ?, ?)\",\n                (session_id, user_id, now_ts, expires_ts, meta_json),\n            )\n    return {\"session_id\": session_id, \"user_id\": user_id, \"expires_at\": expires_ts}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_session_for_token_285": {
+      "name": "create_session_for_token",
+      "type": "function",
+      "start_line": 285,
+      "end_line": 308,
+      "content_hash": "1d3b8c01d56037e898eeff752e649e46049451a8",
+      "content": "def create_session_for_token(\n    client: str,\n    workspace: Optional[str] = None,\n    token: Optional[str] = None,\n) -> Dict[str, Any]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    if AUTH_SHARED_TOKEN:\n        # When a shared token is configured, require it for all token-based sessions.\n        if not token or token != AUTH_SHARED_TOKEN:\n            raise AuthInvalidToken(\"Invalid auth token\")\n    else:\n        # Harden default behavior: when auth is enabled but no shared token is configured,\n        # disable token-based login unless explicitly allowed via env.\n        if not ALLOW_OPEN_TOKEN_LOGIN:\n            raise AuthInvalidToken(\n                \"Token-based login disabled (no shared token configured; set CTXCE_AUTH_SHARED_TOKEN \"\n                \"or CTXCE_AUTH_ALLOW_OPEN_TOKEN_LOGIN=1 to enable)\"\n            )\n    user_id = client or \"ctxce\"\n    meta: Dict[str, Any] = {}\n    if workspace:\n        meta[\"workspace\"] = workspace\n    return create_session(user_id=user_id, metadata=meta)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validate_session_311": {
+      "name": "validate_session",
+      "type": "function",
+      "start_line": 311,
+      "end_line": 366,
+      "content_hash": "4a2443e6c7e32489b8411f1e1ba56ac9350e0a43",
+      "content": "def validate_session(session_id: str) -> Optional[Dict[str, Any]]:\n    \"\"\"Validate a session id and return its record if active.\n\n    Returns a dict with keys {id, user_id, created_at, expires_at, metadata}\n    when valid, or None when missing/expired/unknown. Raises AuthDisabledError\n    when auth is disabled.\n    \"\"\"\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    sid = (session_id or \"\").strip()\n    if not sid:\n        return None\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\n            \"SELECT id, user_id, created_at, expires_at, metadata_json FROM sessions WHERE id = ?\",\n            (sid,),\n        )\n        row = cur.fetchone()\n    if not row:\n        return None\n    now_ts = int(datetime.now().timestamp())\n    expires_ts = int(row[3] or 0)\n    if expires_ts and expires_ts < now_ts:\n        return None\n    if AUTH_SESSION_TTL_SECONDS > 0 and expires_ts:\n        remaining = expires_ts - now_ts\n        if remaining < AUTH_SESSION_TTL_SECONDS // 2:\n            new_expires_ts = now_ts + AUTH_SESSION_TTL_SECONDS\n            try:\n                with _db_connection() as conn2:\n                    with conn2:\n                        conn2.execute(\n                            \"UPDATE sessions SET expires_at = ? WHERE id = ?\",\n                            (new_expires_ts, sid),\n                        )\n                expires_ts = new_expires_ts\n            except Exception:\n                pass\n    meta: Optional[Dict[str, Any]] = None\n    raw_meta = row[4]\n    if isinstance(raw_meta, str) and raw_meta.strip():\n        try:\n            obj = json.loads(raw_meta)\n            if isinstance(obj, dict):\n                meta = obj\n        except Exception:\n            meta = None\n    return {\n        \"id\": row[0],\n        \"user_id\": row[1],\n        \"created_at\": int(row[2] or 0),\n        \"expires_at\": expires_ts,\n        \"metadata\": meta or {},\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensure_collection_369": {
+      "name": "ensure_collection",
+      "type": "function",
+      "start_line": 369,
+      "end_line": 425,
+      "content_hash": "c2fa919d65effc5abfd092c845179018cc353334",
+      "content": "def ensure_collection(qdrant_collection: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:\n    if not COLLECTION_REGISTRY_ENABLED:\n        raise AuthDisabledError(\"Collection registry not enabled\")\n    name = (qdrant_collection or \"\").strip()\n    if not name:\n        raise ValueError(\"qdrant_collection is required\")\n    undelete_on_discovery = (\n        str(os.environ.get(\"CTXCE_COLLECTION_REGISTRY_UNDELETE_ON_DISCOVERY\", \"0\")).strip().lower()\n        in {\"1\", \"true\", \"yes\", \"on\"}\n    )\n    _ensure_db()\n    now_ts = int(datetime.now().timestamp())\n    meta_json: Optional[str] = None\n    if metadata:\n        try:\n            meta_json = json.dumps(metadata)\n        except Exception:\n            meta_json = None\n    with _db_connection() as conn:\n        with conn:\n            cur = conn.cursor()\n            cur.execute(\n                \"SELECT id, qdrant_collection, created_at, metadata_json, is_deleted FROM collections WHERE qdrant_collection = ?\",\n                (name,),\n            )\n            row = cur.fetchone()\n            if row:\n                is_deleted = int(row[4] or 0)\n                if undelete_on_discovery and is_deleted != 0:\n                    try:\n                        conn.execute(\n                            \"UPDATE collections SET is_deleted = 0 WHERE id = ?\",\n                            (row[0],),\n                        )\n                        is_deleted = 0\n                    except Exception:\n                        pass\n                return {\n                    \"id\": row[0],\n                    \"qdrant_collection\": row[1],\n                    \"created_at\": int(row[2] or 0),\n                    \"metadata_json\": row[3],\n                    \"is_deleted\": is_deleted,\n                }\n\n            coll_id = uuid.uuid4().hex\n            conn.execute(\n                \"INSERT INTO collections (id, qdrant_collection, created_at, metadata_json, is_deleted) VALUES (?, ?, ?, ?, 0)\",\n                (coll_id, name, now_ts, meta_json),\n            )\n            return {\n                \"id\": coll_id,\n                \"qdrant_collection\": name,\n                \"created_at\": now_ts,\n                \"metadata_json\": meta_json,\n                \"is_deleted\": 0,\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensure_collections_428": {
+      "name": "ensure_collections",
+      "type": "function",
+      "start_line": 428,
+      "end_line": 466,
+      "content_hash": "d4d7ab09e02e7dd7517a54cca0058186d1603872",
+      "content": "def ensure_collections(collections: List[str]) -> int:\n    if not COLLECTION_REGISTRY_ENABLED:\n        raise AuthDisabledError(\"Collection registry not enabled\")\n    names = [str(c).strip() for c in (collections or []) if str(c).strip()]\n    if not names:\n        return 0\n    _ensure_db()\n    before_count = 0\n    after_count = 0\n    failures: List[str] = []\n    try:\n        with _db_connection() as conn:\n            cur = conn.cursor()\n            cur.execute(\"SELECT COUNT(1) FROM collections\")\n            row = cur.fetchone()\n            if row:\n                before_count = int(row[0] or 0)\n    except Exception:\n        before_count = 0\n    for name in names:\n        try:\n            ensure_collection(name)\n        except Exception as e:\n            failures.append(f\"{name}: {e}\")\n            continue\n    try:\n        with _db_connection() as conn:\n            cur = conn.cursor()\n            cur.execute(\"SELECT COUNT(1) FROM collections\")\n            row = cur.fetchone()\n            if row:\n                after_count = int(row[0] or 0)\n    except Exception:\n        after_count = before_count\n\n    delta = max(0, after_count - before_count)\n    if failures and len(failures) >= len(names) and delta == 0:\n        raise RuntimeError(\"Failed to sync collections registry: \" + \"; \".join(failures[:3]))\n    return delta",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_grant_collection_access_469": {
+      "name": "grant_collection_access",
+      "type": "function",
+      "start_line": 469,
+      "end_line": 485,
+      "content_hash": "407da48d2e8b6042e2597ed43df255b6c73c73c4",
+      "content": "def grant_collection_access(user_id: str, qdrant_collection: str, permission: str = \"read\") -> Dict[str, Any]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    uid = (user_id or \"\").strip()\n    perm = (permission or \"read\").strip() or \"read\"\n    if not uid:\n        raise ValueError(\"user_id is required\")\n    coll = ensure_collection(qdrant_collection)\n    now_ts = int(datetime.now().timestamp())\n    with _db_connection() as conn:\n        with conn:\n            conn.execute(\n                \"INSERT OR REPLACE INTO collection_acl (collection_id, user_id, permission, created_at) VALUES (?, ?, ?, ?)\",\n                (coll.get(\"id\"), uid, perm, now_ts),\n            )\n    return {\"collection_id\": coll.get(\"id\"), \"user_id\": uid, \"permission\": perm}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_revoke_collection_access_488": {
+      "name": "revoke_collection_access",
+      "type": "function",
+      "start_line": 488,
+      "end_line": 513,
+      "content_hash": "c4b02782c55fb60377abec32e78a0344da79220b",
+      "content": "def revoke_collection_access(user_id: str, qdrant_collection: str) -> bool:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    uid = (user_id or \"\").strip()\n    name = (qdrant_collection or \"\").strip()\n    if not uid:\n        raise ValueError(\"user_id is required\")\n    if not name:\n        raise ValueError(\"qdrant_collection is required\")\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\n            \"SELECT c.id FROM collections c WHERE c.qdrant_collection = ? AND c.is_deleted = 0\",\n            (name,),\n        )\n        row = cur.fetchone()\n        if not row:\n            return False\n        coll_id = row[0]\n        with conn:\n            cur.execute(\n                \"DELETE FROM collection_acl WHERE collection_id = ? AND user_id = ?\",\n                (coll_id, uid),\n            )\n            return bool(cur.rowcount and cur.rowcount > 0)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_has_collection_access_516": {
+      "name": "has_collection_access",
+      "type": "function",
+      "start_line": 516,
+      "end_line": 555,
+      "content_hash": "14335c8adefab9edac5c2dc37a1869e3ad35c875",
+      "content": "def has_collection_access(user_id: str, qdrant_collection: str, permission: str = \"read\") -> bool:\n    if ACL_ALLOW_ALL:\n        return True\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    uid = (user_id or \"\").strip()\n    if not uid:\n        return False\n    if is_admin_user(uid):\n        return True\n    name = (qdrant_collection or \"\").strip()\n    if not name:\n        return False\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\n            \"SELECT c.id FROM collections c WHERE c.qdrant_collection = ? AND c.is_deleted = 0\",\n            (name,),\n        )\n        row = cur.fetchone()\n        if not row:\n            return False\n        coll_id = row[0]\n        cur.execute(\n            \"SELECT permission FROM collection_acl WHERE collection_id = ? AND user_id = ?\",\n            (coll_id, uid),\n        )\n        perm_row = cur.fetchone()\n    if not perm_row:\n        return False\n    granted = str(perm_row[0] or \"\").strip().lower()\n    want = (permission or \"read\").strip().lower()\n    if granted == \"admin\":\n        return True\n    if want == \"read\":\n        return granted in {\"read\", \"write\"}\n    if want == \"write\":\n        return granted == \"write\"\n    return granted == want",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_mark_collection_deleted_558": {
+      "name": "mark_collection_deleted",
+      "type": "function",
+      "start_line": 558,
+      "end_line": 584,
+      "content_hash": "b531d8b9e2dfe0138e70af3c287425a730479cce",
+      "content": "def mark_collection_deleted(qdrant_collection: str) -> bool:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    name = (qdrant_collection or \"\").strip()\n    if not name:\n        raise ValueError(\"qdrant_collection is required\")\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\n            \"SELECT id FROM collections WHERE qdrant_collection = ?\",\n            (name,),\n        )\n        row = cur.fetchone()\n        if not row:\n            return False\n        coll_id = row[0]\n        with conn:\n            conn.execute(\n                \"UPDATE collections SET is_deleted = 1 WHERE id = ?\",\n                (coll_id,),\n            )\n            conn.execute(\n                \"DELETE FROM collection_acl WHERE collection_id = ?\",\n                (coll_id,),\n            )\n    return True",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_list_users_587": {
+      "name": "list_users",
+      "type": "function",
+      "start_line": 587,
+      "end_line": 605,
+      "content_hash": "14158f47aa8491413201a9bc1b457b05bc2d9903",
+      "content": "def list_users() -> List[Dict[str, Any]]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\"SELECT id, username, created_at, role FROM users ORDER BY created_at ASC\")\n        rows = cur.fetchall() or []\n    out: List[Dict[str, Any]] = []\n    for r in rows:\n        out.append(\n            {\n                \"id\": r[0],\n                \"username\": r[1],\n                \"created_at\": int(r[2] or 0),\n                \"role\": r[3],\n            }\n        )\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_list_collections_608": {
+      "name": "list_collections",
+      "type": "function",
+      "start_line": 608,
+      "end_line": 633,
+      "content_hash": "f1472b246757a83caa14a36e9c3f6aa3ea9f1b17",
+      "content": "def list_collections(include_deleted: bool = False) -> List[Dict[str, Any]]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        if include_deleted:\n            cur.execute(\n                \"SELECT id, qdrant_collection, created_at, is_deleted FROM collections ORDER BY created_at ASC\"\n            )\n        else:\n            cur.execute(\n                \"SELECT id, qdrant_collection, created_at, is_deleted FROM collections WHERE is_deleted = 0 ORDER BY created_at ASC\"\n            )\n        rows = cur.fetchall() or []\n    out: List[Dict[str, Any]] = []\n    for r in rows:\n        out.append(\n            {\n                \"id\": r[0],\n                \"qdrant_collection\": r[1],\n                \"created_at\": int(r[2] or 0),\n                \"is_deleted\": int(r[3] or 0),\n            }\n        )\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_list_collection_acl_636": {
+      "name": "list_collection_acl",
+      "type": "function",
+      "start_line": 636,
+      "end_line": 664,
+      "content_hash": "5b0894e340a1eef70b60068fa7417f697924f5dd",
+      "content": "def list_collection_acl() -> List[Dict[str, Any]]:\n    if not AUTH_ENABLED:\n        raise AuthDisabledError(\"Auth not enabled\")\n    _ensure_db()\n    with _db_connection() as conn:\n        cur = conn.cursor()\n        cur.execute(\n            \"SELECT a.collection_id, c.qdrant_collection, a.user_id, u.username, u.role, a.permission, a.created_at \"\n            \"FROM collection_acl a \"\n            \"JOIN collections c ON c.id = a.collection_id \"\n            \"LEFT JOIN users u ON u.id = a.user_id \"\n            \"WHERE c.is_deleted = 0 \"\n            \"ORDER BY c.qdrant_collection ASC, u.username ASC\"\n        )\n        rows = cur.fetchall() or []\n    out: List[Dict[str, Any]] = []\n    for r in rows:\n        out.append(\n            {\n                \"collection_id\": r[0],\n                \"qdrant_collection\": r[1],\n                \"user_id\": r[2],\n                \"username\": r[3],\n                \"user_role\": r[4],\n                \"permission\": r[5],\n                \"created_at\": int(r[6] or 0),\n            }\n        )\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

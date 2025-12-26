@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/agent/tools/search.go",
+  "file_hash": "862eebee7f0fc02ea0bf4ceff51fe20965007f03",
+  "updated_at": "2025-12-26T17:34:23.593240",
+  "symbols": {
+    "struct_SearchResult_16": {
+      "name": "SearchResult",
+      "type": "struct",
+      "start_line": 16,
+      "end_line": 23,
+      "content_hash": "704e9076063c7cc9b990dc2ca11e78986692e5ed",
+      "content": "type SearchResult struct {\n\tTitle    string\n\tLink     string\n\tSnippet  string\n\tPosition int\n}\n\n// searchDuckDuckGo performs a web search using DuckDuckGo's HTML endpoint.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_searchDuckDuckGo_24": {
+      "name": "searchDuckDuckGo",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 60,
+      "content_hash": "12ee98297d487499253b8caf2c5dd5058d923fd7",
+      "content": "func searchDuckDuckGo(ctx context.Context, client *http.Client, query string, maxResults int) ([]SearchResult, error) {\n\tif maxResults <= 0 {\n\t\tmaxResults = 10\n\t}\n\n\tformData := url.Values{}\n\tformData.Set(\"q\", query)\n\tformData.Set(\"b\", \"\")\n\tformData.Set(\"kl\", \"\")\n\n\treq, err := http.NewRequestWithContext(ctx, \"POST\", \"https://html.duckduckgo.com/html\", strings.NewReader(formData.Encode()))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to create request: %w\", err)\n\t}\n\n\treq.Header.Set(\"Content-Type\", \"application/x-www-form-urlencoded\")\n\treq.Header.Set(\"User-Agent\", BrowserUserAgent)\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to execute search: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn nil, fmt.Errorf(\"search failed with status code: %d\", resp.StatusCode)\n\t}\n\n\tbody, err := io.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to read response: %w\", err)\n\t}\n\n\treturn parseSearchResults(string(body), maxResults)\n}\n\n// parseSearchResults extracts search results from DuckDuckGo HTML response.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parseSearchResults_61": {
+      "name": "parseSearchResults",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 90,
+      "content_hash": "68ab3432cd0eaacced43ca4edbe20042e6f7849d",
+      "content": "func parseSearchResults(htmlContent string, maxResults int) ([]SearchResult, error) {\n\tdoc, err := html.Parse(strings.NewReader(htmlContent))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to parse HTML: %w\", err)\n\t}\n\n\tvar results []SearchResult\n\tvar traverse func(*html.Node)\n\n\ttraverse = func(n *html.Node) {\n\t\tif n.Type == html.ElementNode && n.Data == \"div\" && hasClass(n, \"result\") {\n\t\t\tresult := extractResult(n)\n\t\t\tif result != nil && result.Link != \"\" && !strings.Contains(result.Link, \"y.js\") {\n\t\t\t\tresult.Position = len(results) + 1\n\t\t\t\tresults = append(results, *result)\n\t\t\t\tif len(results) >= maxResults {\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tfor c := n.FirstChild; c != nil && len(results) < maxResults; c = c.NextSibling {\n\t\t\ttraverse(c)\n\t\t}\n\t}\n\n\ttraverse(doc)\n\treturn results, nil\n}\n\n// hasClass checks if an HTML node has a specific class.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_hasClass_91": {
+      "name": "hasClass",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 100,
+      "content_hash": "651685a226906e755b8792fc1f9266503bdb99ad",
+      "content": "func hasClass(n *html.Node, class string) bool {\n\tfor _, attr := range n.Attr {\n\t\tif attr.Key == \"class\" {\n\t\t\treturn slices.Contains(strings.Fields(attr.Val), class)\n\t\t}\n\t}\n\treturn false\n}\n\n// extractResult extracts a search result from a result div node.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractResult_101": {
+      "name": "extractResult",
+      "type": "function",
+      "start_line": 101,
+      "end_line": 131,
+      "content_hash": "0f53953b696ddc68f82683a6dc39cade499bd78b",
+      "content": "func extractResult(n *html.Node) *SearchResult {\n\tresult := &SearchResult{}\n\n\tvar traverse func(*html.Node)\n\ttraverse = func(node *html.Node) {\n\t\tif node.Type == html.ElementNode {\n\t\t\t// Look for title link.\n\t\t\tif node.Data == \"a\" && hasClass(node, \"result__a\") {\n\t\t\t\tresult.Title = getTextContent(node)\n\t\t\t\tfor _, attr := range node.Attr {\n\t\t\t\t\tif attr.Key == \"href\" {\n\t\t\t\t\t\tresult.Link = cleanDuckDuckGoURL(attr.Val)\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t\t// Look for snippet.\n\t\t\tif node.Data == \"a\" && hasClass(node, \"result__snippet\") {\n\t\t\t\tresult.Snippet = getTextContent(node)\n\t\t\t}\n\t\t}\n\t\tfor c := node.FirstChild; c != nil; c = c.NextSibling {\n\t\t\ttraverse(c)\n\t\t}\n\t}\n\n\ttraverse(n)\n\treturn result\n}\n\n// getTextContent extracts all text content from a node and its children.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getTextContent_132": {
+      "name": "getTextContent",
+      "type": "function",
+      "start_line": 132,
+      "end_line": 149,
+      "content_hash": "2454b92bf6664d2975e0eb611f237d0bbc805152",
+      "content": "func getTextContent(n *html.Node) string {\n\tvar text strings.Builder\n\tvar traverse func(*html.Node)\n\n\ttraverse = func(node *html.Node) {\n\t\tif node.Type == html.TextNode {\n\t\t\ttext.WriteString(node.Data)\n\t\t}\n\t\tfor c := node.FirstChild; c != nil; c = c.NextSibling {\n\t\t\ttraverse(c)\n\t\t}\n\t}\n\n\ttraverse(n)\n\treturn strings.TrimSpace(text.String())\n}\n\n// cleanDuckDuckGoURL extracts the actual URL from DuckDuckGo's redirect URL.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanDuckDuckGoURL_150": {
+      "name": "cleanDuckDuckGoURL",
+      "type": "function",
+      "start_line": 150,
+      "end_line": 167,
+      "content_hash": "424a74372fd719d24f67746716d585c963037e59",
+      "content": "func cleanDuckDuckGoURL(rawURL string) string {\n\tif strings.HasPrefix(rawURL, \"//duckduckgo.com/l/?uddg=\") {\n\t\t// Extract the actual URL from the redirect.\n\t\tif idx := strings.Index(rawURL, \"uddg=\"); idx != -1 {\n\t\t\tencoded := rawURL[idx+5:]\n\t\t\tif ampIdx := strings.Index(encoded, \"&\"); ampIdx != -1 {\n\t\t\t\tencoded = encoded[:ampIdx]\n\t\t\t}\n\t\t\tdecoded, err := url.QueryUnescape(encoded)\n\t\t\tif err == nil {\n\t\t\t\treturn decoded\n\t\t\t}\n\t\t}\n\t}\n\treturn rawURL\n}\n\n// formatSearchResults formats search results for LLM consumption.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatSearchResults_168": {
+      "name": "formatSearchResults",
+      "type": "function",
+      "start_line": 168,
+      "end_line": 183,
+      "content_hash": "504209e7be5560278049bcc8a00990265faf2c77",
+      "content": "func formatSearchResults(results []SearchResult) string {\n\tif len(results) == 0 {\n\t\treturn \"No results were found for your search query. This could be due to DuckDuckGo's bot detection or the query returned no matches. Please try rephrasing your search or try again in a few minutes.\"\n\t}\n\n\tvar sb strings.Builder\n\tsb.WriteString(fmt.Sprintf(\"Found %d search results:\\n\\n\", len(results)))\n\n\tfor _, result := range results {\n\t\tsb.WriteString(fmt.Sprintf(\"%d. %s\\n\", result.Position, result.Title))\n\t\tsb.WriteString(fmt.Sprintf(\"   URL: %s\\n\", result.Link))\n\t\tsb.WriteString(fmt.Sprintf(\"   Summary: %s\\n\\n\", result.Snippet))\n\t}\n\n\treturn sb.String()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

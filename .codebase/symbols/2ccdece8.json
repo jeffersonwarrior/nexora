@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/source/e_from_id.rs",
+  "file_hash": "bf8f1191354d293246b0d518699a03ccad3aa55a",
+  "updated_at": "2025-12-26T17:34:25.130196",
+  "symbols": {
+    "struct_EFromId_12": {
+      "name": "EFromId",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 23,
+      "content_hash": "b65deb472de72c190d68ee8003ae3c6be2295e3b",
+      "content": "pub struct EFromId<'db, 'arena, 'txn>\nwhere\n    'db: 'arena,\n    'arena: 'txn,\n{\n    pub storage: &'db HelixGraphStorage,\n    pub arena: &'arena bumpalo::Bump,\n    pub txn: &'txn RoTxn<'db>,\n    pub iter: Once<Result<TraversalValue<'arena>, GraphError>>,\n    pub id: u128,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_24": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 24,
+      "end_line": 26,
+      "content_hash": "dfdcc918154f315bcd898f977ce9bc5449bf934a",
+      "content": "impl<'db, 'arena, 'txn> Iterator for EFromId<'db, 'arena, 'txn> {\n    type Item = Result<TraversalValue<'arena>, GraphError>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_27": {
+      "name": "next",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 36,
+      "content_hash": "5b140770c4b4e29699fcd9fe84f63e2df7388fe9",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        self.iter.next().map(|_| {\n            let edge: Edge = match self.storage.get_edge(self.txn, &self.id, self.arena) {\n                Ok(edge) => edge,\n                Err(e) => return Err(e),\n            };\n            Ok(TraversalValue::Edge(edge))\n        })\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_EFromIdAdapter_37": {
+      "name": "EFromIdAdapter",
+      "type": "trait",
+      "start_line": 37,
+      "end_line": 44,
+      "content_hash": "1b755d754a6eff393d772aa894a4a101e46838b3",
+      "content": "pub trait EFromIdAdapter<'arena>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    type OutputIter: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>;\n\n    /// Returns an iterator containing the edge with the given id.\n    ///\n    /// Note that the `id` cannot be empty and must be a valid, existing edge id.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_e_from_id_45": {
+      "name": "e_from_id",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 53,
+      "content_hash": "ab98f425afcc6728406e4ce767b064691be55e1d",
+      "content": "    fn e_from_id(self, id: &u128) -> Self::OutputIter;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    EFromIdAdapter<'arena> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    type OutputIter = RoTraversalIterator<'db, 'arena, 'txn, EFromId<'db, 'arena, 'txn>>;\n\n    #[inline]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_e_from_id_54": {
+      "name": "e_from_id",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 70,
+      "content_hash": "5bca2257cd57a0cfc2a1c81a6a9f554c3a9ddc42",
+      "content": "    fn e_from_id(self, id: &u128) -> Self::OutputIter {\n        let e_from_id = EFromId {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            iter: std::iter::once(Ok(TraversalValue::Empty)),\n            id: *id,\n        };\n\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: e_from_id,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

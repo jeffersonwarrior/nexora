@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/context-engine/tests/test_collection_memory_backup_restore.py",
+  "file_hash": "41e98b0a7e76c6bd0889042047df2def0ac86948",
+  "updated_at": "2025-12-26T17:34:20.750205",
+  "symbols": {
+    "function__create_collection_with_memory_21": {
+      "name": "_create_collection_with_memory",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 57,
+      "content_hash": "1d0357444655ed95d17b7f61d2a5b6bb13c8f5ac",
+      "content": "def _create_collection_with_memory(qdrant_url: str, name: str, dim: int = 8) -> QdrantClient:\n    \"\"\"Create a collection with dense+lex vectors and a single memory point.\n\n    The collection is intentionally created without the ReFRAG mini vector so that\n    ensure_collection(..., REFRAG_MODE=1) must add it, exercising the\n    backup/recreate/restore path.\n    \"\"\"\n    client = QdrantClient(url=qdrant_url)\n\n    vectors_cfg = {\n        \"code\": models.VectorParams(size=dim, distance=models.Distance.COSINE),\n        ing.LEX_VECTOR_NAME: models.VectorParams(\n            size=ing.LEX_VECTOR_DIM, distance=models.Distance.COSINE\n        ),\n    }\n    client.create_collection(collection_name=name, vectors_config=vectors_cfg)\n\n    # One \"memory\" point (no metadata.path) and one code point (with path).\n    # Use integer point IDs to match Qdrant's accepted ID types.\n    points = [\n        models.PointStruct(\n            id=1,\n            vector={\"code\": [0.1] * dim},\n            payload={\"information\": \"test memory\", \"metadata\": {}},\n        ),\n        models.PointStruct(\n            id=2,\n            vector={\"code\": [0.2] * dim},\n            payload={\n                \"information\": \"code chunk\",\n                # Mark as real code: has a path and language/kind so is_memory_point() returns False\n                \"metadata\": {\"path\": \"/tmp/example.py\", \"language\": \"python\", \"kind\": \"code\"},\n            },\n        ),\n    ]\n    client.upsert(collection_name=name, points=points)\n    return client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__get_point_ids_60": {
+      "name": "_get_point_ids",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 67,
+      "content_hash": "7a84b7d549d363d67acc493066005fb20be65bb3",
+      "content": "def _get_point_ids(client: QdrantClient, collection_name: str) -> set[str]:\n    pts, _ = client.scroll(\n        collection_name=collection_name,\n        limit=None,\n        with_payload=False,\n        with_vectors=False,\n    )\n    return {str(p.id) for p in pts}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_memory_backup_restore_happy_path_70": {
+      "name": "test_memory_backup_restore_happy_path",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 108,
+      "content_hash": "3098a9d07f739eae3a2a588f8ba6132ac3f73292",
+      "content": "def test_memory_backup_restore_happy_path(qdrant_container, monkeypatch):\n    \"\"\"ensure_collection should backup, recreate, and restore memories.\n\n    Scenario:\n    - Start with a collection that has dense+lex vectors and at least one\n      \"memory\" point.\n    - Enable REFRAG_MODE so ensure_collection wants to add the mini vector.\n    - Qdrant will reject adding a new vector name via update_collection, so we\n      exercise the backup -> delete -> recreate -> restore path.\n    - In tolerant mode (STRICT_MEMORY_RESTORE not set / 0) indexing should\n      succeed and the memory should still be present.\n    \"\"\"\n    os.environ[\"QDRANT_URL\"] = qdrant_container\n    collection = f\"test-mem-{uuid.uuid4().hex[:8]}\"\n\n    client = _create_collection_with_memory(qdrant_container, collection, dim=8)\n\n    # Force ReFRAG on so ensure_collection tries to add MINI_VECTOR_NAME\n    os.environ[\"REFRAG_MODE\"] = \"1\"\n    os.environ.pop(\"STRICT_MEMORY_RESTORE\", None)\n\n    # Run ensure_collection: this should trigger backup + recreate + restore\n    ing.ensure_collection(client, collection, dim=8, vector_name=\"code\")\n\n    info = client.get_collection(collection)\n    cfg = info.config.params.vectors\n\n    # Dense + lex must be present\n    assert \"code\" in cfg\n    assert ing.LEX_VECTOR_NAME in cfg\n\n    # When REFRAG_MODE is on, mini vector should be present too\n    mini_name = os.environ.get(\"MINI_VECTOR_NAME\", getattr(ing, \"MINI_VECTOR_NAME\", \"mini\"))\n    assert mini_name in cfg\n\n    # Memory id should still exist after restore, but code points are not restored\n    ids = _get_point_ids(client, collection)\n    assert \"1\" in ids\n    assert \"2\" not in ids",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_memory_restore_strict_mode_raises_on_failure_111": {
+      "name": "test_memory_restore_strict_mode_raises_on_failure",
+      "type": "function",
+      "start_line": 111,
+      "end_line": 141,
+      "content_hash": "ee4cc099f618268d1baa9a4601977166439fc7f3",
+      "content": "def test_memory_restore_strict_mode_raises_on_failure(qdrant_container, monkeypatch):\n    \"\"\"STRICT_MEMORY_RESTORE=1 should turn restore failures into hard errors.\n\n    We let the real backup script run against Qdrant, but we force the restore\n    subprocess to fail and assert that ensure_collection raises.\n    \"\"\"\n    os.environ[\"QDRANT_URL\"] = qdrant_container\n    collection = f\"test-mem-strict-{uuid.uuid4().hex[:8]}\"\n\n    client = _create_collection_with_memory(qdrant_container, collection, dim=8)\n\n    os.environ[\"REFRAG_MODE\"] = \"1\"\n    os.environ[\"STRICT_MEMORY_RESTORE\"] = \"1\"\n\n    # Patch subprocess.run to:\n    # - allow the real memory_backup.py to run\n    # - force memory_restore.py to fail with non-zero exit\n    orig_run = subprocess.run\n\n    def fake_run(args, **kwargs):  # type: ignore[override]\n        cmd_str = \" \".join(map(str, args))\n        if \"memory_backup.py\" in cmd_str:\n            return orig_run(args, **kwargs)\n        if \"memory_restore.py\" in cmd_str:\n            return SimpleNamespace(returncode=1, stdout=\"\", stderr=\"simulated restore failure\")\n        return orig_run(args, **kwargs)\n\n    monkeypatch.setattr(subprocess, \"run\", fake_run)\n\n    with pytest.raises(RuntimeError):\n        ing.ensure_collection(client, collection, dim=8, vector_name=\"code\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_130": {
+      "name": "fake_run",
+      "type": "function",
+      "start_line": 130,
+      "end_line": 136,
+      "content_hash": "db1712cfe3b2a38bb444865c15c57e4f76274b2f",
+      "content": "    def fake_run(args, **kwargs):  # type: ignore[override]\n        cmd_str = \" \".join(map(str, args))\n        if \"memory_backup.py\" in cmd_str:\n            return orig_run(args, **kwargs)\n        if \"memory_restore.py\" in cmd_str:\n            return SimpleNamespace(returncode=1, stdout=\"\", stderr=\"simulated restore failure\")\n        return orig_run(args, **kwargs)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_memory_backup_failure_tolerant_mode_still_recreates_collection_144": {
+      "name": "test_memory_backup_failure_tolerant_mode_still_recreates_collection",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 184,
+      "content_hash": "2f73b5cf2bc3a2867f040cda605a0749903347b8",
+      "content": "def test_memory_backup_failure_tolerant_mode_still_recreates_collection(qdrant_container, monkeypatch):\n    \"\"\"If backup fails but STRICT_MEMORY_RESTORE is not set, ensure_collection\n    should still recreate the collection with the correct vectors, even though\n    memories may be dropped.\n\n    This makes the behavior explicit: backup failure is best-effort by default.\n    \"\"\"\n    os.environ[\"QDRANT_URL\"] = qdrant_container\n    collection = f\"test-mem-backup-fail-{uuid.uuid4().hex[:8]}\"\n\n    client = _create_collection_with_memory(qdrant_container, collection, dim=8)\n\n    os.environ[\"REFRAG_MODE\"] = \"1\"\n    os.environ.pop(\"STRICT_MEMORY_RESTORE\", None)\n\n    # Patch subprocess.run so memory_backup.py fails, but everything else runs normally\n    orig_run = subprocess.run\n\n    def fake_run(args, **kwargs):  # type: ignore[override]\n        cmd_str = \" \".join(map(str, args))\n        if \"memory_backup.py\" in cmd_str:\n            return SimpleNamespace(returncode=1, stdout=\"\", stderr=\"simulated backup failure\")\n        return orig_run(args, **kwargs)\n\n    monkeypatch.setattr(subprocess, \"run\", fake_run)\n\n    # Should not raise even though backup fails\n    ing.ensure_collection(client, collection, dim=8, vector_name=\"code\")\n\n    info = client.get_collection(collection)\n    cfg = info.config.params.vectors\n\n    # Collection should still have the expected vectors (including mini)\n    assert \"code\" in cfg\n    assert ing.LEX_VECTOR_NAME in cfg\n    mini_name = os.environ.get(\"MINI_VECTOR_NAME\", getattr(ing, \"MINI_VECTOR_NAME\", \"mini\"))\n    assert mini_name in cfg\n\n    # Because backup failed and no restore occurred, the original memory is gone\n    ids = _get_point_ids(client, collection)\n    assert \"1\" not in ids",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_162": {
+      "name": "fake_run",
+      "type": "function",
+      "start_line": 162,
+      "end_line": 166,
+      "content_hash": "298bc11ffa912c2e2f8a16277d754cc58bf2ad8f",
+      "content": "    def fake_run(args, **kwargs):  # type: ignore[override]\n        cmd_str = \" \".join(map(str, args))\n        if \"memory_backup.py\" in cmd_str:\n            return SimpleNamespace(returncode=1, stdout=\"\", stderr=\"simulated backup failure\")\n        return orig_run(args, **kwargs)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_memory_backup_and_restore_scripts_roundtrip_187": {
+      "name": "test_memory_backup_and_restore_scripts_roundtrip",
+      "type": "function",
+      "start_line": 187,
+      "end_line": 233,
+      "content_hash": "d5a5e9936678cd9952a11c2a9bf54438dc734846",
+      "content": "def test_memory_backup_and_restore_scripts_roundtrip(qdrant_container, tmp_path):\n    \"\"\"Directly exercise memory_backup.export_memories and\n    memory_restore.restore_memories without going through ensure_collection.\n\n    This confirms that the backup file contains the expected memory and that\n    restore_memories can recreate it in a fresh collection.\n    \"\"\"\n    os.environ[\"QDRANT_URL\"] = qdrant_container\n    collection = f\"test-mem-scripts-{uuid.uuid4().hex[:8]}\"\n\n    client = _create_collection_with_memory(qdrant_container, collection, dim=8)\n\n    # Backup memories from the collection\n    backup_file = tmp_path / \"memories_backup.json\"\n    result = mem_backup.export_memories(\n        collection_name=collection,\n        output_file=str(backup_file),\n        client=client,\n        include_vectors=True,\n        batch_size=100,\n    )\n\n    assert result[\"success\"] is True\n    assert result[\"memory_count\"] == 1\n    assert backup_file.exists()\n\n    # Drop the original collection entirely\n    client.delete_collection(collection)\n\n    # Restore into a fresh collection; let restore_memories create it\n    restore_result = mem_restore.restore_memories(\n        backup_file=str(backup_file),\n        collection_name=collection,\n        client=client,\n        embedding_model_name=None,\n        vector_name=\"code\",\n        batch_size=50,\n        skip_existing=True,\n        skip_collection_creation=False,\n    )\n\n    assert restore_result[\"success\"] is True\n\n    # After restore, there should be exactly one memory point (id 1) and no code point (id 2)\n    ids = _get_point_ids(client, collection)\n    assert \"1\" in ids\n    assert \"2\" not in ids",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

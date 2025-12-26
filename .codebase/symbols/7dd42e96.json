@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/tui/exp/diffview/style.go",
+  "file_hash": "a392eae81bd68774efcd171da767fa8a936b1f0a",
+  "updated_at": "2025-12-26T17:34:22.837196",
+  "symbols": {
+    "struct_LineStyle_9": {
+      "name": "LineStyle",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 17,
+      "content_hash": "9ec5e49a6b8cfc81000030ab411426545adc3a9e",
+      "content": "type LineStyle struct {\n\tLineNumber lipgloss.Style\n\tSymbol     lipgloss.Style\n\tCode       lipgloss.Style\n}\n\n// Style defines the overall style for the diff view, including styles for\n// different line types such as divider, missing, equal, insert, and delete\n// lines.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Style_18": {
+      "name": "Style",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 26,
+      "content_hash": "f9d2e2928abe6d00426899ef4d1be0d8769502db",
+      "content": "type Style struct {\n\tDividerLine LineStyle\n\tMissingLine LineStyle\n\tEqualLine   LineStyle\n\tInsertLine  LineStyle\n\tDeleteLine  LineStyle\n}\n\n// DefaultLightStyle provides a default light theme style for the diff view.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultLightStyle_27": {
+      "name": "DefaultLightStyle",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 76,
+      "content_hash": "f1fbfaa6ce35abc64f6f8951fcba27b321756dde",
+      "content": "func DefaultLightStyle() Style {\n\treturn Style{\n\t\tDividerLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Iron).\n\t\t\t\tBackground(charmtone.Thunder),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Oyster).\n\t\t\t\tBackground(charmtone.Anchovy),\n\t\t},\n\t\tMissingLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tBackground(charmtone.Ash),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tBackground(charmtone.Ash),\n\t\t},\n\t\tEqualLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Charcoal).\n\t\t\t\tBackground(charmtone.Ash),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Pepper).\n\t\t\t\tBackground(charmtone.Salt),\n\t\t},\n\t\tInsertLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Turtle).\n\t\t\t\tBackground(lipgloss.Color(\"#c8e6c9\")),\n\t\t\tSymbol: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Turtle).\n\t\t\t\tBackground(lipgloss.Color(\"#e8f5e9\")),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Pepper).\n\t\t\t\tBackground(lipgloss.Color(\"#e8f5e9\")),\n\t\t},\n\t\tDeleteLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Cherry).\n\t\t\t\tBackground(lipgloss.Color(\"#ffcdd2\")),\n\t\t\tSymbol: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Cherry).\n\t\t\t\tBackground(lipgloss.Color(\"#ffebee\")),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Pepper).\n\t\t\t\tBackground(lipgloss.Color(\"#ffebee\")),\n\t\t},\n\t}\n}\n\n// DefaultDarkStyle provides a default dark theme style for the diff view.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultDarkStyle_77": {
+      "name": "DefaultDarkStyle",
+      "type": "function",
+      "start_line": 77,
+      "end_line": 124,
+      "content_hash": "45c82a1eab571abc8fff5a001ce84775c47bd7d5",
+      "content": "func DefaultDarkStyle() Style {\n\treturn Style{\n\t\tDividerLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Smoke).\n\t\t\t\tBackground(charmtone.Sapphire),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Smoke).\n\t\t\t\tBackground(charmtone.Ox),\n\t\t},\n\t\tMissingLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tBackground(charmtone.Charcoal),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tBackground(charmtone.Charcoal),\n\t\t},\n\t\tEqualLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Ash).\n\t\t\t\tBackground(charmtone.Charcoal),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Salt).\n\t\t\t\tBackground(charmtone.Pepper),\n\t\t},\n\t\tInsertLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Turtle).\n\t\t\t\tBackground(lipgloss.Color(\"#293229\")),\n\t\t\tSymbol: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Turtle).\n\t\t\t\tBackground(lipgloss.Color(\"#303a30\")),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Salt).\n\t\t\t\tBackground(lipgloss.Color(\"#303a30\")),\n\t\t},\n\t\tDeleteLine: LineStyle{\n\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Cherry).\n\t\t\t\tBackground(lipgloss.Color(\"#332929\")),\n\t\t\tSymbol: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Cherry).\n\t\t\t\tBackground(lipgloss.Color(\"#3a3030\")),\n\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\tForeground(charmtone.Salt).\n\t\t\t\tBackground(lipgloss.Color(\"#3a3030\")),\n\t\t},\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

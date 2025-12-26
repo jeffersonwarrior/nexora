@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/home/home_test.go",
+  "file_hash": "e602492e8f3321d228a6346ca622d5cecbb0a1d0",
+  "updated_at": "2025-12-26T17:34:23.806106",
+  "symbols": {
+    "function_TestDir_10": {
+      "name": "TestDir",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 13,
+      "content_hash": "ad506cc69ed5b747180c9f9b96d7af5c3cd82c12",
+      "content": "func TestDir(t *testing.T) {\n\trequire.NotEmpty(t, Dir())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestShort_14": {
+      "name": "TestShort",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 20,
+      "content_hash": "9952f18b596f25a3403786458cf19fce11a46f83",
+      "content": "func TestShort(t *testing.T) {\n\td := filepath.Join(Dir(), \"documents\", \"file.txt\")\n\trequire.Equal(t, filepath.FromSlash(\"~/documents/file.txt\"), Short(d))\n\tad := filepath.FromSlash(\"/absolute/path/file.txt\")\n\trequire.Equal(t, ad, Short(ad))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLong_21": {
+      "name": "TestLong",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 26,
+      "content_hash": "86faa231c5e4ee8018e68bf422a1b3ff0faa1730",
+      "content": "func TestLong(t *testing.T) {\n\td := filepath.FromSlash(\"~/documents/file.txt\")\n\trequire.Equal(t, filepath.Join(Dir(), \"documents\", \"file.txt\"), Long(d))\n\tad := filepath.FromSlash(\"/absolute/path/file.txt\")\n\trequire.Equal(t, ad, Long(ad))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

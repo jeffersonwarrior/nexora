@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/context-engine/tests/test_golden_structure.py",
+  "file_hash": "f8f2a4f4dfa5ad48a70fe5a1690a150a06b1456e",
+  "updated_at": "2025-12-26T17:34:21.747694",
+  "symbols": {
+    "function_test_repo_search_compact_golden_subset_10": {
+      "name": "test_repo_search_compact_golden_subset",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 43,
+      "content_hash": "e867e1b38c481a0692c2f05cedc7bee727465fa7",
+      "content": "def test_repo_search_compact_golden_subset(monkeypatch):\n    # Use in-process with a deterministic stub\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"1\")\n    monkeypatch.setattr(srv, \"_get_embedding_model\", lambda *a, **k: object())\n\n    import scripts.hybrid_search as hy\n\n    def stub(*a, **k):\n        return [\n            {\"score\": 0.91, \"path\": \"/x/a.py\", \"start_line\": 1, \"end_line\": 3},\n            {\"score\": 0.42, \"path\": \"/x/b.py\", \"start_line\": 10, \"end_line\": 20},\n        ]\n\n    monkeypatch.setattr(hy, \"run_hybrid_search\", stub)\n\n    res = srv.asyncio.get_event_loop().run_until_complete(\n        srv.repo_search(queries=[\"q\"], limit=2, compact=True)\n    )\n\n    # Normalize subset: path/start_line/end_line/symbol only\n    got = [\n        {\n            \"path\": r.get(\"path\"),\n            \"start_line\": r.get(\"start_line\"),\n            \"end_line\": r.get(\"end_line\"),\n        }\n        for r in res.get(\"results\", [])\n    ]\n\n    golden_path = Path(__file__).parent / \"data\" / \"golden_compact.json\"\n    with golden_path.open(\"r\", encoding=\"utf-8\") as f:\n        want = json.load(f)\n\n    assert got == want",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_stub_17": {
+      "name": "stub",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 21,
+      "content_hash": "b3bff4786058de917634336bacb988217439bce3",
+      "content": "    def stub(*a, **k):\n        return [\n            {\"score\": 0.91, \"path\": \"/x/a.py\", \"start_line\": 1, \"end_line\": 3},\n            {\"score\": 0.42, \"path\": \"/x/b.py\", \"start_line\": 10, \"end_line\": 20},\n        ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

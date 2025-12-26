@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/mistral_native_test.go",
+  "file_hash": "6200f5f11d80e75714d7e70ffd93ee35d4add6a4",
+  "updated_at": "2025-12-26T17:34:21.750425",
+  "symbols": {
+    "function_TestMistralNativeProvider_10": {
+      "name": "TestMistralNativeProvider",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 52,
+      "content_hash": "f46175ffe7cb5a8d714bc6997988109df2630fe0",
+      "content": "func TestMistralNativeProvider(t *testing.T) {\n\tt.Run(\"creates provider\", func(t *testing.T) {\n\t\tprovider := MistralNativeProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\trequire.Equal(t, catwalk.InferenceProvider(\"mistral\"), provider.ID)\n\t\trequire.Equal(t, \"Mistral AI (Native)\", provider.Name)\n\t\trequire.Equal(t, catwalk.TypeOpenAICompat, provider.Type)\n\t\trequire.Equal(t, \"$MISTRAL_API_KEY\", provider.APIKey)\n\t\trequire.Equal(t, \"https://api.mistral.ai/v1\", provider.APIEndpoint)\n\t\trequire.Len(t, provider.Models, 2)\n\t\trequire.Equal(t, \"devstral-2512\", provider.DefaultLargeModelID)\n\t\trequire.Equal(t, \"devstral-small-2512\", provider.DefaultSmallModelID)\n\n\t\tvar devstralModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"devstral-2512\" {\n\t\t\t\tdevstralModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\trequire.NotNil(t, devstralModel)\n\t\trequire.Equal(t, \"Devstral 2 (123B)\", devstralModel.Name)\n\t\trequire.Equal(t, int64(262144), devstralModel.ContextWindow)\n\n\t\tvar smallModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"devstral-small-2512\" {\n\t\t\t\tsmallModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\trequire.NotNil(t, smallModel)\n\t\trequire.Equal(t, \"Devstral Small 2 (24B)\", smallModel.Name)\n\t})\n\n\tt.Run(\"does not create if already exists\", func(t *testing.T) {\n\t\texisting := catwalk.Provider{ID: \"mistral\"}\n\t\tprovider := MistralNativeProvider([]catwalk.Provider{existing})\n\n\t\trequire.Equal(t, catwalk.InferenceProvider(\"\"), provider.ID)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

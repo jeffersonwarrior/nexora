@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/agent/tools/bash.go",
+  "file_hash": "91286e2def05c5b153b1fa0c796a18a43140d0df",
+  "updated_at": "2025-12-26T17:34:24.993603",
+  "symbols": {
+    "struct_BashParams_22": {
+      "name": "BashParams",
+      "type": "struct",
+      "start_line": 22,
+      "end_line": 28,
+      "content_hash": "73e9b27a824e4a0766caa1fce5b5b8a9696eb6a7",
+      "content": "type BashParams struct {\n\tDescription     string `json:\"description\" description:\"A brief description of what the command does, try to keep it under 30 characters or so\"`\n\tCommand         string `json:\"command\" description:\"The command to execute\"`\n\tWorkingDir      string `json:\"working_dir,omitempty\" description:\"The working directory to execute the command in (defaults to current directory)\"`\n\tRunInBackground bool   `json:\"run_in_background,omitempty\" description:\"Set to true (boolean) to run this command in the background. Use job_output to read the output later.\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_BashPermissionsParams_29": {
+      "name": "BashPermissionsParams",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 35,
+      "content_hash": "b0e63d4f0247fc8748d3302bedaddd7cbdc69619",
+      "content": "type BashPermissionsParams struct {\n\tDescription     string `json:\"description\"`\n\tCommand         string `json:\"command\"`\n\tWorkingDir      string `json:\"working_dir\"`\n\tRunInBackground bool   `json:\"run_in_background\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_BashResponseMetadata_36": {
+      "name": "BashResponseMetadata",
+      "type": "struct",
+      "start_line": 36,
+      "end_line": 61,
+      "content_hash": "77e5d74401741608bec74da8df58794716f5f4c0",
+      "content": "type BashResponseMetadata struct {\n\tStartTime        int64  `json:\"start_time\"`\n\tEndTime          int64  `json:\"end_time\"`\n\tOutput           string `json:\"output\"`\n\tDescription      string `json:\"description\"`\n\tWorkingDirectory string `json:\"working_directory\"`\n\tBackground       bool   `json:\"background,omitempty\"`\n\tShellID          string `json:\"shell_id,omitempty\"`\n}\n\nconst (\n\tBashToolName = \"bash\"\n\n\tAutoBackgroundThreshold = 1 * time.Minute // Commands taking longer automatically become background jobs\n\tMaxOutputLength         = 30000\n\tBashNoOutput            = \"no output\"\n)\n\n//go:embed bash.tpl\nvar bashDescriptionTmpl []byte\n\nvar bashDescriptionTpl = template.Must(\n\ttemplate.New(\"bashDescription\").\n\t\tParse(string(bashDescriptionTmpl)),\n)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_bashDescriptionData_62": {
+      "name": "bashDescriptionData",
+      "type": "struct",
+      "start_line": 62,
+      "end_line": 70,
+      "content_hash": "e7a5854d34e188a5a09790320adf9ed8ce72c5db",
+      "content": "type bashDescriptionData struct {\n\tBannedCommands  string\n\tMaxOutputLength int\n\tAttribution     config.Attribution\n\tModelName       string\n}\n\nvar bannedCommands = []string{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_bashDescription_71": {
+      "name": "bashDescription",
+      "type": "function",
+      "start_line": 71,
+      "end_line": 85,
+      "content_hash": "f50dc706da1b19e283fc0ad3b334dd16d6988426",
+      "content": "func bashDescription(attribution *config.Attribution, modelName string) string {\n\tbannedCommandsStr := strings.Join(bannedCommands, \", \")\n\tvar out bytes.Buffer\n\tif err := bashDescriptionTpl.Execute(&out, bashDescriptionData{\n\t\tBannedCommands:  bannedCommandsStr,\n\t\tMaxOutputLength: MaxOutputLength,\n\t\tAttribution:     *attribution,\n\t\tModelName:       modelName,\n\t}); err != nil {\n\t\t// this should never happen.\n\t\tpanic(\"failed to execute bash description template: \" + err.Error())\n\t}\n\treturn out.String()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_blockFuncs_86": {
+      "name": "blockFuncs",
+      "type": "function",
+      "start_line": 86,
+      "end_line": 89,
+      "content_hash": "523904d83f08610d90cda8483d5d2907d60e07b5",
+      "content": "func blockFuncs() []shell.BlockFunc {\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewBashTool_90": {
+      "name": "NewBashTool",
+      "type": "function",
+      "start_line": 90,
+      "end_line": 272,
+      "content_hash": "4f8a40bd816be54b874d9e5b2e20ded3ee85b77e",
+      "content": "func NewBashTool(permissions permission.Service, workingDir string, attribution *config.Attribution, modelName string) fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\tBashToolName,\n\t\tstring(bashDescription(attribution, modelName)),\n\t\tfunc(ctx context.Context, params BashParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif params.Command == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"missing command\"), nil\n\t\t\t}\n\n\t\t\t// Determine working directory\n\t\t\texecWorkingDir := cmp.Or(params.WorkingDir, workingDir)\n\n\t\t\tisSafeReadOnly := false\n\t\t\tcmdLower := strings.ToLower(params.Command)\n\n\t\t\tfor _, safe := range safeCommands {\n\t\t\t\tif strings.HasPrefix(cmdLower, safe) {\n\t\t\t\t\tif len(cmdLower) == len(safe) || cmdLower[len(safe)] == ' ' || cmdLower[len(safe)] == '-' {\n\t\t\t\t\t\tisSafeReadOnly = true\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tsessionID := GetSessionFromContext(ctx)\n\t\t\tif sessionID == \"\" {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"session ID is required for executing shell command\")\n\t\t\t}\n\t\t\tif !isSafeReadOnly {\n\t\t\t\tp := permissions.Request(\n\t\t\t\t\tpermission.CreatePermissionRequest{\n\t\t\t\t\t\tSessionID:   sessionID,\n\t\t\t\t\t\tPath:        execWorkingDir,\n\t\t\t\t\t\tToolCallID:  call.ID,\n\t\t\t\t\t\tToolName:    BashToolName,\n\t\t\t\t\t\tAction:      \"execute\",\n\t\t\t\t\t\tDescription: fmt.Sprintf(\"Execute command: %s\", params.Command),\n\t\t\t\t\t\tParams:      BashPermissionsParams(params),\n\t\t\t\t\t},\n\t\t\t\t)\n\t\t\t\tif !p {\n\t\t\t\t\treturn fantasy.ToolResponse{}, permission.ErrorPermissionDenied\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// If explicitly requested as background, start immediately with detached context\n\t\t\tif params.RunInBackground {\n\t\t\t\tstartTime := time.Now()\n\t\t\t\tbgManager := shell.GetBackgroundShellManager()\n\t\t\t\tbgManager.Cleanup()\n\t\t\t\t// Use background context so it continues after tool returns\n\t\t\t\tbgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"error starting background shell: %w\", err)\n\t\t\t\t}\n\n\t\t\t\t// Wait a short time to detect fast failures (blocked commands, syntax errors, etc.)\n\t\t\t\ttime.Sleep(1 * time.Second)\n\t\t\t\tstdout, stderr, done, execErr := bgShell.GetOutput()\n\n\t\t\t\tif done {\n\t\t\t\t\t// Command failed or completed very quickly\n\t\t\t\t\tbgManager.Remove(bgShell.ID)\n\n\t\t\t\t\tinterrupted := shell.IsInterrupt(execErr)\n\t\t\t\t\texitCode := shell.ExitCode(execErr)\n\t\t\t\t\tif exitCode == 0 && !interrupted && execErr != nil {\n\t\t\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"[Job %s] error executing command: %w\", bgShell.ID, execErr)\n\t\t\t\t\t}\n\n\t\t\t\t\tstdout = formatOutput(stdout, stderr, execErr)\n\n\t\t\t\t\tmetadata := BashResponseMetadata{\n\t\t\t\t\t\tStartTime:        startTime.UnixMilli(),\n\t\t\t\t\t\tEndTime:          time.Now().UnixMilli(),\n\t\t\t\t\t\tOutput:           stdout,\n\t\t\t\t\t\tDescription:      params.Description,\n\t\t\t\t\t\tBackground:       params.RunInBackground,\n\t\t\t\t\t\tWorkingDirectory: bgShell.WorkingDir,\n\t\t\t\t\t}\n\t\t\t\t\tif stdout == \"\" {\n\t\t\t\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(BashNoOutput), metadata), nil\n\t\t\t\t\t}\n\t\t\t\t\tstdout += fmt.Sprintf(\"\\n\\n<cwd>%s</cwd>\", normalizeWorkingDir(bgShell.WorkingDir))\n\t\t\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(stdout), metadata), nil\n\t\t\t\t}\n\n\t\t\t\t// Still running after fast-failure check - return as background job\n\t\t\t\tmetadata := BashResponseMetadata{\n\t\t\t\t\tStartTime:        startTime.UnixMilli(),\n\t\t\t\t\tEndTime:          time.Now().UnixMilli(),\n\t\t\t\t\tDescription:      params.Description,\n\t\t\t\t\tWorkingDirectory: bgShell.WorkingDir,\n\t\t\t\t\tBackground:       true,\n\t\t\t\t\tShellID:          bgShell.ID,\n\t\t\t\t}\n\t\t\t\tresponse := fmt.Sprintf(\"Background shell started with ID: %s\\n\\nUse job_output tool to view output or job_kill to terminate.\", bgShell.ID)\n\t\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil\n\t\t\t}\n\n\t\t\t// Start synchronous execution with auto-background support\n\t\t\tstartTime := time.Now()\n\n\t\t\t// Start with detached context so it can survive if moved to background\n\t\t\tbgManager := shell.GetBackgroundShellManager()\n\t\t\tbgManager.Cleanup()\n\t\t\tbgShell, err := bgManager.Start(context.Background(), execWorkingDir, blockFuncs(), params.Command, params.Description)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"error starting shell: %w\", err)\n\t\t\t}\n\n\t\t\t// Wait for either completion, auto-background threshold, or context cancellation\n\t\t\tticker := time.NewTicker(100 * time.Millisecond)\n\t\t\tdefer ticker.Stop()\n\t\t\ttimeout := time.After(AutoBackgroundThreshold)\n\n\t\t\tvar stdout, stderr string\n\t\t\tvar done bool\n\t\t\tvar execErr error\n\n\t\twaitLoop:\n\t\t\tfor {\n\t\t\t\tselect {\n\t\t\t\tcase <-ticker.C:\n\t\t\t\t\tstdout, stderr, done, execErr = bgShell.GetOutput()\n\t\t\t\t\tif done {\n\t\t\t\t\t\tbreak waitLoop\n\t\t\t\t\t}\n\t\t\t\tcase <-timeout:\n\t\t\t\t\tstdout, stderr, done, execErr = bgShell.GetOutput()\n\t\t\t\t\tbreak waitLoop\n\t\t\t\tcase <-ctx.Done():\n\t\t\t\t\t// Incoming context was cancelled before we moved to background\n\t\t\t\t\t// Kill the shell and return error\n\t\t\t\t\tbgManager.Kill(bgShell.ID)\n\t\t\t\t\treturn fantasy.ToolResponse{}, ctx.Err()\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tif done {\n\t\t\t\t// Command completed within threshold - return synchronously\n\t\t\t\t// Remove from background manager since we're returning directly\n\t\t\t\t// Don't call Kill() as it cancels the context and corrupts the exit code\n\t\t\t\tbgManager.Remove(bgShell.ID)\n\n\t\t\t\tinterrupted := shell.IsInterrupt(execErr)\n\t\t\t\texitCode := shell.ExitCode(execErr)\n\t\t\t\tif exitCode == 0 && !interrupted && execErr != nil {\n\t\t\t\t\treturn fantasy.ToolResponse{}, fmt.Errorf(\"[Job %s] error executing command: %w\", bgShell.ID, execErr)\n\t\t\t\t}\n\n\t\t\t\tstdout = formatOutput(stdout, stderr, execErr)\n\n\t\t\t\tmetadata := BashResponseMetadata{\n\t\t\t\t\tStartTime:        startTime.UnixMilli(),\n\t\t\t\t\tEndTime:          time.Now().UnixMilli(),\n\t\t\t\t\tOutput:           stdout,\n\t\t\t\t\tDescription:      params.Description,\n\t\t\t\t\tBackground:       params.RunInBackground,\n\t\t\t\t\tWorkingDirectory: bgShell.WorkingDir,\n\t\t\t\t}\n\t\t\t\tif stdout == \"\" {\n\t\t\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(BashNoOutput), metadata), nil\n\t\t\t\t}\n\t\t\t\tstdout += fmt.Sprintf(\"\\n\\n<cwd>%s</cwd>\", normalizeWorkingDir(bgShell.WorkingDir))\n\t\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(stdout), metadata), nil\n\t\t\t}\n\n\t\t\t// Still running - keep as background job\n\t\t\tmetadata := BashResponseMetadata{\n\t\t\t\tStartTime:        startTime.UnixMilli(),\n\t\t\t\tEndTime:          time.Now().UnixMilli(),\n\t\t\t\tDescription:      params.Description,\n\t\t\t\tWorkingDirectory: bgShell.WorkingDir,\n\t\t\t\tBackground:       true,\n\t\t\t\tShellID:          bgShell.ID,\n\t\t\t}\n\t\t\tresponse := fmt.Sprintf(\"Command is taking longer than expected and has been moved to background.\\n\\nBackground shell ID: %s\\n\\nUse job_output tool to view output or job_kill to terminate.\", bgShell.ID)\n\t\t\treturn fantasy.WithResponseMetadata(fantasy.NewTextResponse(response), metadata), nil\n\t\t})\n}\n\n// formatOutput formats the output of a completed command with error handling",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatOutput_273": {
+      "name": "formatOutput",
+      "type": "function",
+      "start_line": 273,
+      "end_line": 309,
+      "content_hash": "7ed85bd70acc5e23a546d9aaa8c8b8ccb7c005fe",
+      "content": "func formatOutput(stdout, stderr string, execErr error) string {\n\tinterrupted := shell.IsInterrupt(execErr)\n\texitCode := shell.ExitCode(execErr)\n\n\tstdout = truncateOutput(stdout)\n\tstderr = truncateOutput(stderr)\n\n\terrorMessage := stderr\n\tif errorMessage == \"\" && execErr != nil {\n\t\terrorMessage = execErr.Error()\n\t}\n\n\tif interrupted {\n\t\tif errorMessage != \"\" {\n\t\t\terrorMessage += \"\\n\"\n\t\t}\n\t\terrorMessage += \"Command was aborted before completion\"\n\t} else if exitCode != 0 {\n\t\tif errorMessage != \"\" {\n\t\t\terrorMessage += \"\\n\"\n\t\t}\n\t\terrorMessage += fmt.Sprintf(\"Exit code %d\", exitCode)\n\t}\n\n\thasBothOutputs := stdout != \"\" && stderr != \"\"\n\n\tif hasBothOutputs {\n\t\tstdout += \"\\n\"\n\t}\n\n\tif errorMessage != \"\" {\n\t\tstdout += \"\\n\" + errorMessage\n\t}\n\n\treturn stdout\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_truncateOutput_310": {
+      "name": "truncateOutput",
+      "type": "function",
+      "start_line": 310,
+      "end_line": 322,
+      "content_hash": "86a890388ce4d97be38799e940311cfea0cc5969",
+      "content": "func truncateOutput(content string) string {\n\tif len(content) <= MaxOutputLength {\n\t\treturn content\n\t}\n\n\thalfLength := MaxOutputLength / 2\n\tstart := content[:halfLength]\n\tend := content[len(content)-halfLength:]\n\n\ttruncatedLinesCount := countLines(content[halfLength : len(content)-halfLength])\n\treturn fmt.Sprintf(\"%s\\n\\n... [%d lines truncated] ...\\n\\n%s\", start, truncatedLinesCount, end)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_countLines_323": {
+      "name": "countLines",
+      "type": "function",
+      "start_line": 323,
+      "end_line": 329,
+      "content_hash": "82fd17860af31387604120a7ad9f1ab6fdb90e6a",
+      "content": "func countLines(s string) int {\n\tif s == \"\" {\n\t\treturn 0\n\t}\n\treturn len(strings.Split(s, \"\\n\"))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_normalizeWorkingDir_330": {
+      "name": "normalizeWorkingDir",
+      "type": "function",
+      "start_line": 330,
+      "end_line": 340,
+      "content_hash": "0d496bc2c5dac4078c533b63a423b2e0987b0162",
+      "content": "func normalizeWorkingDir(path string) string {\n\tif runtime.GOOS == \"windows\" {\n\t\tcwd, err := os.Getwd()\n\t\tif err != nil {\n\t\t\tcwd = \"C:\"\n\t\t}\n\t\tpath = strings.ReplaceAll(path, filepath.VolumeName(cwd), \"\")\n\t}\n\n\treturn filepath.ToSlash(path)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

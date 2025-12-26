@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/app/lsp_events.go",
+  "file_hash": "96ecc2c05133f73c9d1e888a7176713d150525be",
+  "updated_at": "2025-12-26T17:34:20.712299",
+  "symbols": {
+    "struct_LSPEvent_22": {
+      "name": "LSPEvent",
+      "type": "struct",
+      "start_line": 22,
+      "end_line": 30,
+      "content_hash": "44dd5432cccf6a35d5d5d1a39efd2cebdf3da9ab",
+      "content": "type LSPEvent struct {\n\tType            LSPEventType\n\tName            string\n\tState           lsp.ServerState\n\tError           error\n\tDiagnosticCount int\n}\n\n// LSPClientInfo holds information about an LSP client's state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_LSPClientInfo_31": {
+      "name": "LSPClientInfo",
+      "type": "struct",
+      "start_line": 31,
+      "end_line": 45,
+      "content_hash": "b44f391893929ec28a700b49ec4d551c650900cf",
+      "content": "type LSPClientInfo struct {\n\tName            string\n\tState           lsp.ServerState\n\tError           error\n\tClient          *lsp.Client\n\tDiagnosticCount int\n\tConnectedAt     time.Time\n}\n\nvar (\n\tlspStates = csync.NewMap[string, LSPClientInfo]()\n\tlspBroker = pubsub.NewBroker[LSPEvent]()\n)\n\n// SubscribeLSPEvents returns a channel for LSP events",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_SubscribeLSPEvents_46": {
+      "name": "SubscribeLSPEvents",
+      "type": "function",
+      "start_line": 46,
+      "end_line": 50,
+      "content_hash": "8803af3509e33c5903d268fbc77928eb7b06d93b",
+      "content": "func SubscribeLSPEvents(ctx context.Context) <-chan pubsub.Event[LSPEvent] {\n\treturn lspBroker.Subscribe(ctx)\n}\n\n// GetLSPStates returns the current state of all LSP clients",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetLSPStates_51": {
+      "name": "GetLSPStates",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 55,
+      "content_hash": "673a338789dfc18660270cc0c6a71c68e01f083e",
+      "content": "func GetLSPStates() map[string]LSPClientInfo {\n\treturn maps.Collect(lspStates.Seq2())\n}\n\n// GetLSPState returns the state of a specific LSP client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetLSPState_56": {
+      "name": "GetLSPState",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 60,
+      "content_hash": "b2cd95921d3f337f09e139c5b49dda124a15879e",
+      "content": "func GetLSPState(name string) (LSPClientInfo, bool) {\n\treturn lspStates.Get(name)\n}\n\n// updateLSPState updates the state of an LSP client and publishes an event",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_updateLSPState_61": {
+      "name": "updateLSPState",
+      "type": "function",
+      "start_line": 61,
+      "end_line": 84,
+      "content_hash": "e18a31e7513d8833f6c34af0d33e78e8287bb54b",
+      "content": "func updateLSPState(name string, state lsp.ServerState, err error, client *lsp.Client, diagnosticCount int) {\n\tinfo := LSPClientInfo{\n\t\tName:            name,\n\t\tState:           state,\n\t\tError:           err,\n\t\tClient:          client,\n\t\tDiagnosticCount: diagnosticCount,\n\t}\n\tif state == lsp.StateReady {\n\t\tinfo.ConnectedAt = time.Now()\n\t}\n\tlspStates.Set(name, info)\n\n\t// Publish state change event\n\tlspBroker.Publish(pubsub.UpdatedEvent, LSPEvent{\n\t\tType:            LSPEventStateChanged,\n\t\tName:            name,\n\t\tState:           state,\n\t\tError:           err,\n\t\tDiagnosticCount: diagnosticCount,\n\t})\n}\n\n// updateLSPDiagnostics updates the diagnostic count for an LSP client and publishes an event",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_updateLSPDiagnostics_85": {
+      "name": "updateLSPDiagnostics",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 99,
+      "content_hash": "84fadd25eb18b098e00bd9d83a2df58bdc8a25c9",
+      "content": "func updateLSPDiagnostics(name string, diagnosticCount int) {\n\tif info, exists := lspStates.Get(name); exists {\n\t\tinfo.DiagnosticCount = diagnosticCount\n\t\tlspStates.Set(name, info)\n\n\t\t// Publish diagnostics change event\n\t\tlspBroker.Publish(pubsub.UpdatedEvent, LSPEvent{\n\t\t\tType:            LSPEventDiagnosticsChanged,\n\t\t\tName:            name,\n\t\t\tState:           info.State,\n\t\t\tError:           info.Error,\n\t\t\tDiagnosticCount: diagnosticCount,\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

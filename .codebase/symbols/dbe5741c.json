@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/build-viewer.js",
+  "file_hash": "bbb0c232aaae1014c6c6ff23c7a633b3e1e08098",
+  "updated_at": "2025-12-26T17:34:19.997808",
+  "symbols": {
+    "function_buildViewer_12": {
+      "name": "buildViewer",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 80,
+      "content_hash": "67c3617d6c0e4b4994ff74257e747635632e89d5",
+      "content": "async function buildViewer() {\n  console.log('Building React viewer...');\n\n  try {\n    // Build React app\n    await esbuild.build({\n      entryPoints: [path.join(rootDir, 'src/ui/viewer/index.tsx')],\n      bundle: true,\n      minify: true,\n      sourcemap: false,\n      target: ['es2020'],\n      format: 'iife',\n      outfile: path.join(rootDir, 'plugin/ui/viewer-bundle.js'),\n      jsx: 'automatic',\n      loader: {\n        '.tsx': 'tsx',\n        '.ts': 'ts'\n      },\n      define: {\n        'process.env.NODE_ENV': '\"production\"'\n      }\n    });\n\n    // Copy HTML template to build output\n    const htmlTemplate = fs.readFileSync(\n      path.join(rootDir, 'src/ui/viewer-template.html'),\n      'utf-8'\n    );\n    fs.writeFileSync(\n      path.join(rootDir, 'plugin/ui/viewer.html'),\n      htmlTemplate\n    );\n\n    // Copy font assets\n    const fontsDir = path.join(rootDir, 'src/ui/viewer/assets/fonts');\n    const outputFontsDir = path.join(rootDir, 'plugin/ui/assets/fonts');\n\n    if (fs.existsSync(fontsDir)) {\n      fs.mkdirSync(outputFontsDir, { recursive: true });\n      const fontFiles = fs.readdirSync(fontsDir);\n      for (const file of fontFiles) {\n        fs.copyFileSync(\n          path.join(fontsDir, file),\n          path.join(outputFontsDir, file)\n        );\n      }\n    }\n\n    // Copy icon SVG files\n    const srcUiDir = path.join(rootDir, 'src/ui');\n    const outputUiDir = path.join(rootDir, 'plugin/ui');\n    const iconFiles = fs.readdirSync(srcUiDir).filter(file => file.startsWith('icon-thick-') && file.endsWith('.svg'));\n    for (const file of iconFiles) {\n      fs.copyFileSync(\n        path.join(srcUiDir, file),\n        path.join(outputUiDir, file)\n      );\n    }\n\n    console.log('\u2713 React viewer built successfully');\n    console.log('  - plugin/ui/viewer-bundle.js');\n    console.log('  - plugin/ui/viewer.html (from viewer-template.html)');\n    console.log('  - plugin/ui/assets/fonts/* (font files)');\n    console.log(`  - plugin/ui/icon-thick-*.svg (${iconFiles.length} icon files)`);\n  } catch (error) {\n    console.error('Failed to build viewer:', error);\n    process.exit(1);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

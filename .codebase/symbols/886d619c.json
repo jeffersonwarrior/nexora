@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/feature-generator.ts",
+  "file_hash": "de841954321193e3409a0196bbdf29804a758c75",
+  "updated_at": "2025-12-26T17:34:19.964285",
+  "symbols": {
+    "function_generateFeatureList_22": {
+      "name": "generateFeatureList",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 55,
+      "content_hash": "2f4e832ad019c2e8bf63ac463f063ede0149058d",
+      "content": "export function generateFeatureList(taskDescription: string): Feature[] {\n  // This is a placeholder - in real usage, Claude should decompose the task\n  // and pass the features explicitly via existingFeatures parameter\n\n  const lines = taskDescription.split(\"\\n\").filter(line => {\n    const trimmed = line.trim();\n    // Look for numbered items, bullet points, or feature-like descriptions\n    return (\n      trimmed.match(/^\\d+[\\.\\)]\\s*/) ||  // 1. or 1) - space optional\n      trimmed.match(/^[-*]\\s*/) ||        // - or * - space optional\n      trimmed.match(/^(?:feature|implement|add|create|build|fix|update):/i)\n    );\n  });\n\n  if (lines.length > 0) {\n    return lines.map((line, i) => ({\n      id: `feature-${i + 1}`,\n      description: line\n        .replace(/^[\\d\\.\\)\\-\\*\\s]+/, \"\")  // Remove numbers, bullets\n        .replace(/^(?:feature|implement|add|create|build|fix|update):\\s*/i, \"\")  // Remove keyword prefixes\n        .trim(),\n      status: \"pending\" as const,\n      attempts: 0,\n    }));\n  }\n\n  // If no structured features found, create a single feature for the whole task\n  return [{\n    id: \"feature-1\",\n    description: taskDescription.slice(0, 200) + (taskDescription.length > 200 ? \"...\" : \"\"),\n    status: \"pending\" as const,\n    attempts: 0,\n  }];\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

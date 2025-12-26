@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/config/providers/test_helpers.go",
+  "file_hash": "6e38bb6279957845bbf8b4093215e8af769befee",
+  "updated_at": "2025-12-26T17:34:22.245552",
+  "symbols": {
+    "function_requireValidProvider_11": {
+      "name": "requireValidProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 18,
+      "content_hash": "7bc8a6c51e9adb9ac3981e2749fd8d51c8d219ba",
+      "content": "func requireValidProvider(t *testing.T, p catwalk.Provider) {\n\tt.Helper()\n\trequire.NotEmpty(t, p.ID, \"Provider must have ID\")\n\trequire.NotEmpty(t, p.Name, \"Provider must have Name\")\n\trequire.NotEmpty(t, p.Type, \"Provider must have Type\")\n}\n\n// requireUniqueModelIDs ensures all model IDs are unique within provider.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_requireUniqueModelIDs_19": {
+      "name": "requireUniqueModelIDs",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 28,
+      "content_hash": "1393d4933c351862daa3513bdf31e09ac34797a9",
+      "content": "func requireUniqueModelIDs(t *testing.T, p catwalk.Provider) {\n\tt.Helper()\n\tseen := make(map[string]bool)\n\tfor _, m := range p.Models {\n\t\trequire.False(t, seen[m.ID], \"Duplicate model ID: %s\", m.ID)\n\t\tseen[m.ID] = true\n\t}\n}\n\n// requireAllModelsHaveMetadata ensures each model has required fields.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_requireAllModelsHaveMetadata_29": {
+      "name": "requireAllModelsHaveMetadata",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 36,
+      "content_hash": "2c4f345eeb6d92f9e707c295314f068d9ecb2cde",
+      "content": "func requireAllModelsHaveMetadata(t *testing.T, p catwalk.Provider) {\n\tt.Helper()\n\tfor _, m := range p.Models {\n\t\trequire.NotEmpty(t, m.ID, \"Model must have ID\")\n\t\trequire.NotEmpty(t, m.Name, \"Model must have Name\")\n\t\trequire.NotZero(t, m.ContextWindow, \"Model must have ContextWindow\")\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

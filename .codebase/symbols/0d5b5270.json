@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/reranker/adapters/mod.rs",
+  "file_hash": "8af5a836064b196531326eca2f07c2370d6dbe9e",
+  "updated_at": "2025-12-26T17:34:22.245080",
+  "symbols": {
+    "struct_RerankIterator_24": {
+      "name": "RerankIterator",
+      "type": "struct",
+      "start_line": 24,
+      "end_line": 30,
+      "content_hash": "d8f0df0cd79aea59516bdd261101e8bd051c246f",
+      "content": "pub struct RerankIterator<'arena, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>> {\n    iter: I,\n}\n\nimpl<'arena, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>> Iterator for RerankIterator<'arena, I> {\n    type Item = Result<TraversalValue<'arena>, GraphError>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_next_31": {
+      "name": "next",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 36,
+      "content_hash": "b0b967f1495a488c54ed38ff20cdbdc5fb2bdc97",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        self.iter.next()\n    }\n}\n\n/// Trait that adds reranking capability to traversal iterators.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_RerankAdapter_37": {
+      "name": "RerankAdapter",
+      "type": "trait",
+      "start_line": 37,
+      "end_line": 66,
+      "content_hash": "ace7059faa966821122465ed9146bfa48f1eee97",
+      "content": "pub trait RerankAdapter<'arena, 'db, 'txn>: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\nwhere\n    'db: 'arena,\n    'arena: 'txn,\n{\n    /// Apply a reranker to the current traversal results.\n    ///\n    /// # Arguments\n    /// * `reranker` - The reranker implementation to use\n    /// * `query` - Optional query text for relevance-based reranking\n    ///\n    /// # Returns\n    /// A new traversal iterator with reranked results\n    ///\n    /// # Example\n    /// ```ignore\n    /// use helix_db::helix_engine::reranker::fusion::MMRReranker;\n    ///\n    /// let results = storage.search_v(query, 100, \"doc\", None)\n    ///     .rerank(MMRReranker::new(0.7).unwrap(), Some(\"search query\"))\n    ///     .take(20)\n    ///     .collect_to::<Vec<_>>();\n    /// ```\n    fn rerank<R: Reranker>(\n        self,\n        reranker: R,\n        query: Option<&str>,\n    ) -> RoTraversalIterator<'db, 'arena, 'txn, impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>;\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_RerankAdapter_67": {
+      "name": "RerankAdapter",
+      "type": "impl",
+      "start_line": 67,
+      "end_line": 111,
+      "content_hash": "b2e9622aed46683a81d6a305d944fbff9ef3e4a7",
+      "content": "impl<'db, 'arena, 'txn, I> RerankAdapter<'arena, 'db, 'txn>\n    for RoTraversalIterator<'db, 'arena, 'txn, I>\nwhere\n    'db: 'arena,\n    'arena: 'txn,\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>> + 'arena,\n{\n    fn rerank<R: Reranker>(\n        self,\n        reranker: R,\n        query: Option<&str>,\n    ) -> RoTraversalIterator<'db, 'arena, 'txn, impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>> {\n        // Collect all items from the iterator\n        let items = self.inner.filter_map(|item| item.ok());\n\n        // Apply reranking\n        let reranked = match reranker.rerank(items, query) {\n            Ok(results) => results\n                .into_iter()\n                .map(Ok::<TraversalValue<'arena>, GraphError>)\n                .collect::<Vec<_>>()\n                .into_iter(),\n            Err(e) => {\n                let error = GraphError::RerankerError(e.to_string());\n                once(Err(error)).collect::<Vec<_>>().into_iter()\n            }\n        };\n\n        let iter = RerankIterator { iter: reranked };\n\n        RoTraversalIterator {\n            inner: iter,\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n        }\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use crate::helix_engine::{reranker::fusion::RRFReranker, vector_core::vector::HVector};\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_rerank_adapter_trait_112": {
+      "name": "test_rerank_adapter_trait",
+      "type": "method",
+      "start_line": 112,
+      "end_line": 119,
+      "content_hash": "959fff39615fe0989451b54b57a29f66c00d6ec5",
+      "content": "    fn test_rerank_adapter_trait() {\n        // This test verifies that the trait compiles correctly\n        // Actual integration tests would need a full storage setup\n        let reranker = RRFReranker::new();\n        assert_eq!(reranker.name(), \"RRF\");\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_rerank_iterator_120": {
+      "name": "test_rerank_iterator",
+      "type": "method",
+      "start_line": 120,
+      "end_line": 137,
+      "content_hash": "7e6e0d337b1ccf41e69b925aa661dd644cd817c2",
+      "content": "    fn test_rerank_iterator() {\n        let arena = bumpalo::Bump::new();\n        let data1 = arena.alloc_slice_copy(&[1.0]);\n        let data2 = arena.alloc_slice_copy(&[2.0]);\n        let items = vec![\n            Ok(TraversalValue::Vector(HVector::from_slice(\"test\", 0, data1))),\n            Ok(TraversalValue::Vector(HVector::from_slice(\"test\", 0, data2))),\n        ];\n\n        let mut iter = RerankIterator {\n            iter: items.into_iter(),\n        };\n\n        assert!(iter.next().is_some());\n        assert!(iter.next().is_some());\n        assert!(iter.next().is_none());\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/tui/components/lsp/lsp.go",
+  "file_hash": "7fd9766391e68d0977bc92b62419c94cdb7768ed",
+  "updated_at": "2025-12-26T17:34:20.343798",
+  "symbols": {
+    "struct_RenderOptions_18": {
+      "name": "RenderOptions",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 25,
+      "content_hash": "04b128199b3705082bdc1a3ff372cdb221475487",
+      "content": "type RenderOptions struct {\n\tMaxWidth    int\n\tMaxItems    int\n\tShowSection bool\n\tSectionName string\n}\n\n// RenderLSPList renders a list of LSP status items with the given options.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RenderLSPList_26": {
+      "name": "RenderLSPList",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 111,
+      "content_hash": "ccaf76ae75b017b0db42f095db9e4c1f014bb678",
+      "content": "func RenderLSPList(lspClients *csync.Map[string, *lsp.Client], opts RenderOptions) []string {\n\tt := styles.CurrentTheme()\n\tlspList := []string{}\n\n\tif opts.ShowSection {\n\t\tsectionName := opts.SectionName\n\t\tif sectionName == \"\" {\n\t\t\tsectionName = \"LSPs\"\n\t\t}\n\t\tsection := t.S().Subtle.Render(sectionName)\n\t\tlspList = append(lspList, section, \"\")\n\t}\n\n\tlspConfigs := config.Get().LSP.Sorted()\n\tif len(lspConfigs) == 0 {\n\t\tlspList = append(lspList, t.S().Base.Foreground(t.Border).Render(\"None\"))\n\t\treturn lspList\n\t}\n\n\t// Get LSP states\n\tlspStates := app.GetLSPStates()\n\n\t// Determine how many items to show\n\tmaxItems := len(lspConfigs)\n\tif opts.MaxItems > 0 {\n\t\tmaxItems = min(opts.MaxItems, len(lspConfigs))\n\t}\n\n\tfor i, l := range lspConfigs {\n\t\tif i >= maxItems {\n\t\t\tbreak\n\t\t}\n\n\t\ticon, description := iconAndDescription(l, t, lspStates)\n\n\t\t// Calculate diagnostic counts if we have LSP clients\n\t\tvar extraContent string\n\t\tif lspClients != nil {\n\t\t\tlspErrs := map[protocol.DiagnosticSeverity]int{\n\t\t\t\tprotocol.SeverityError:       0,\n\t\t\t\tprotocol.SeverityWarning:     0,\n\t\t\t\tprotocol.SeverityHint:        0,\n\t\t\t\tprotocol.SeverityInformation: 0,\n\t\t\t}\n\t\t\tif client, ok := lspClients.Get(l.Name); ok {\n\t\t\t\tfor _, diagnostics := range client.GetDiagnostics() {\n\t\t\t\t\tfor _, diagnostic := range diagnostics {\n\t\t\t\t\t\tif severity, ok := lspErrs[diagnostic.Severity]; ok {\n\t\t\t\t\t\t\tlspErrs[diagnostic.Severity] = severity + 1\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\terrs := []string{}\n\t\t\tif lspErrs[protocol.SeverityError] > 0 {\n\t\t\t\terrs = append(errs, t.S().Base.Foreground(t.Error).Render(fmt.Sprintf(\"%s %d\", styles.ErrorIcon, lspErrs[protocol.SeverityError])))\n\t\t\t}\n\t\t\tif lspErrs[protocol.SeverityWarning] > 0 {\n\t\t\t\terrs = append(errs, t.S().Base.Foreground(t.Warning).Render(fmt.Sprintf(\"%s %d\", styles.WarningIcon, lspErrs[protocol.SeverityWarning])))\n\t\t\t}\n\t\t\tif lspErrs[protocol.SeverityHint] > 0 {\n\t\t\t\terrs = append(errs, t.S().Base.Foreground(t.FgHalfMuted).Render(fmt.Sprintf(\"%s %d\", styles.HintIcon, lspErrs[protocol.SeverityHint])))\n\t\t\t}\n\t\t\tif lspErrs[protocol.SeverityInformation] > 0 {\n\t\t\t\terrs = append(errs, t.S().Base.Foreground(t.FgHalfMuted).Render(fmt.Sprintf(\"%s %d\", styles.InfoIcon, lspErrs[protocol.SeverityInformation])))\n\t\t\t}\n\t\t\textraContent = strings.Join(errs, \" \")\n\t\t}\n\n\t\tlspList = append(lspList,\n\t\t\tcore.Status(\n\t\t\t\tcore.StatusOpts{\n\t\t\t\t\tIcon:         icon.String(),\n\t\t\t\t\tTitle:        l.Name,\n\t\t\t\t\tDescription:  description,\n\t\t\t\t\tExtraContent: extraContent,\n\t\t\t\t},\n\t\t\t\topts.MaxWidth,\n\t\t\t),\n\t\t)\n\t}\n\n\treturn lspList\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_iconAndDescription_112": {
+      "name": "iconAndDescription",
+      "type": "function",
+      "start_line": 112,
+      "end_line": 136,
+      "content_hash": "700b82c0abb59dd59ec8c915ad4c88777e59627b",
+      "content": "func iconAndDescription(l config.LSP, t *styles.Theme, states map[string]app.LSPClientInfo) (lipgloss.Style, string) {\n\tif l.LSP.Disabled {\n\t\treturn t.ItemOfflineIcon.Foreground(t.FgMuted), t.S().Subtle.Render(\"disabled\")\n\t}\n\n\tinfo := states[l.Name]\n\tswitch info.State {\n\tcase lsp.StateStarting:\n\t\treturn t.ItemBusyIcon, t.S().Subtle.Render(\"starting...\")\n\tcase lsp.StateReady:\n\t\treturn t.ItemOnlineIcon, \"\"\n\tcase lsp.StateError:\n\t\tdescription := t.S().Subtle.Render(\"error\")\n\t\tif info.Error != nil {\n\t\t\tdescription = t.S().Subtle.Render(fmt.Sprintf(\"error: %s\", info.Error.Error()))\n\t\t}\n\t\treturn t.ItemErrorIcon, description\n\tcase lsp.StateDisabled:\n\t\treturn t.ItemOfflineIcon.Foreground(t.FgMuted), t.S().Subtle.Render(\"inactive\")\n\tdefault:\n\t\treturn t.ItemOfflineIcon, \"\"\n\t}\n}\n\n// RenderLSPBlock renders a complete LSP block with optional truncation indicator.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RenderLSPBlock_137": {
+      "name": "RenderLSPBlock",
+      "type": "function",
+      "start_line": 137,
+      "end_line": 161,
+      "content_hash": "d11a61d8b2600ee64400408cf38fec61eac6a4d0",
+      "content": "func RenderLSPBlock(lspClients *csync.Map[string, *lsp.Client], opts RenderOptions, showTruncationIndicator bool) string {\n\tt := styles.CurrentTheme()\n\tlspList := RenderLSPList(lspClients, opts)\n\n\t// Add truncation indicator if needed\n\tif showTruncationIndicator && opts.MaxItems > 0 {\n\t\tlspConfigs := config.Get().LSP.Sorted()\n\t\tif len(lspConfigs) > opts.MaxItems {\n\t\t\tremaining := len(lspConfigs) - opts.MaxItems\n\t\t\tif remaining == 1 {\n\t\t\t\tlspList = append(lspList, t.S().Base.Foreground(t.FgMuted).Render(\"\u2026\"))\n\t\t\t} else {\n\t\t\t\tlspList = append(lspList,\n\t\t\t\t\tt.S().Base.Foreground(t.FgSubtle).Render(fmt.Sprintf(\"\u2026and %d more\", remaining)),\n\t\t\t\t)\n\t\t\t}\n\t\t}\n\t}\n\n\tcontent := lipgloss.JoinVertical(lipgloss.Left, lspList...)\n\tif opts.MaxWidth > 0 {\n\t\treturn lipgloss.NewStyle().Width(opts.MaxWidth).Render(content)\n\t}\n\treturn content\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/mistral_devstral.go",
+  "file_hash": "ed8bd70299ddb29c6e470e5d61f53cd31885d47b",
+  "updated_at": "2025-12-26T17:34:20.846833",
+  "symbols": {
+    "function_MistralDevstralProvider_11": {
+      "name": "MistralDevstralProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 57,
+      "content_hash": "f18a94780cc20dfafa6389e404c821885deb90cc",
+      "content": "func MistralDevstralProvider(providers []catwalk.Provider) catwalk.Provider {\n\t// Check if mistral-devstral already exists\n\tfor _, provider := range providers {\n\t\tif provider.ID == \"mistral-devstral\" {\n\t\t\treturn catwalk.Provider{}\n\t\t}\n\t}\n\n\tmistralProvider := catwalk.Provider{\n\t\tName:                \"Mistral (Devstral)\",\n\t\tID:                  \"mistral-devstral\",\n\t\tAPIKey:              \"$MISTRAL_API_KEY\",\n\t\tAPIEndpoint:         cmp.Or(os.Getenv(\"MISTRAL_API_ENDPOINT\"), \"https://api.mistral.ai/v1\"),\n\t\tType:                \"openai-compat\",\n\t\tDefaultLargeModelID: \"devstral-2512\",\n\t\tDefaultSmallModelID: \"devstral-small-2512\",\n\t\tModels: []catwalk.Model{\n\t\t\t// Devstral 2 - Code understanding and agentic tasks\n\t\t\t{\n\t\t\t\tID:               \"devstral-2512\",\n\t\t\t\tName:             \"Devstral 2 (123B)\",\n\t\t\t\tCostPer1MIn:      0.0, // FREE during beta\n\t\t\t\tCostPer1MOut:     0.0, // FREE during beta\n\t\t\t\tContextWindow:    262144,\n\t\t\t\tDefaultMaxTokens: 16000,\n\t\t\t\tCanReason:        true,\n\t\t\t\tSupportsImages:   false,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t\t// Devstral Small 2 - Lightweight code tasks\n\t\t\t{\n\t\t\t\tID:               \"devstral-small-2512\",\n\t\t\t\tName:             \"Devstral Small 2 (24B)\",\n\t\t\t\tCostPer1MIn:      0.0, // FREE during beta\n\t\t\t\tCostPer1MOut:     0.0, // FREE during beta\n\t\t\t\tContextWindow:    262144,\n\t\t\t\tDefaultMaxTokens: 8000,\n\t\t\t\tCanReason:        true,\n\t\t\t\tSupportsImages:   false,\n\t\t\t\tOptions:          catwalk.ModelOptions{},\n\t\t\t},\n\t\t},\n\t\tDefaultHeaders: map[string]string{},\n\t}\n\n\treturn mistralProvider\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

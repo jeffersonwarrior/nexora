@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/internal/agent/tools/rg.go",
+  "file_hash": "c4c7bfba1803ecc944df1769506d0cdd8b1a9219",
+  "updated_at": "2025-12-26T17:34:21.191289",
+  "symbols": {
+    "function_getRgCmd_22": {
+      "name": "getRgCmd",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 36,
+      "content_hash": "d055152b4a4a64e368493777eff1047ff0a50014",
+      "content": "func getRgCmd(ctx context.Context, globPattern string) *exec.Cmd {\n\tname := getRg()\n\tif name == \"\" {\n\t\treturn nil\n\t}\n\targs := []string{\"--files\", \"-L\", \"--null\"}\n\tif globPattern != \"\" {\n\t\tif !filepath.IsAbs(globPattern) && !strings.HasPrefix(globPattern, \"/\") {\n\t\t\tglobPattern = \"/\" + globPattern\n\t\t}\n\t\targs = append(args, \"--glob\", globPattern)\n\t}\n\treturn exec.CommandContext(ctx, name, args...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getRgSearchCmd_37": {
+      "name": "getRgSearchCmd",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 50,
+      "content_hash": "6b86b0ddc13ea93dbd06110b9d4cbaf5a9e31c05",
+      "content": "func getRgSearchCmd(ctx context.Context, pattern, path, include string) *exec.Cmd {\n\tname := getRg()\n\tif name == \"\" {\n\t\treturn nil\n\t}\n\t// Use -n to show line numbers, -0 for null separation to handle Windows paths\n\targs := []string{\"--json\", \"-H\", \"-n\", \"-0\", pattern}\n\tif include != \"\" {\n\t\targs = append(args, \"--glob\", include)\n\t}\n\targs = append(args, path)\n\n\treturn exec.CommandContext(ctx, name, args...)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

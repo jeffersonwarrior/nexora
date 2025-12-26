@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/worker/BranchManager.ts",
+  "file_hash": "c622aea9d39f415fc8e124a8454a3db70739c2a9",
+  "updated_at": "2025-12-26T17:34:22.732517",
+  "symbols": {
+    "function_isValidBranchName_20": {
+      "name": "isValidBranchName",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 29,
+      "content_hash": "bb96ef5b2f6360d60e03b4223865ffbf3f8573b6",
+      "content": "function isValidBranchName(branchName: string): boolean {\n  if (!branchName || typeof branchName !== 'string') {\n    return false;\n  }\n  // Git branch name validation: alphanumeric, hyphen, underscore, slash, dot\n  // Must not start with dot, hyphen, or slash\n  // Must not contain double dots (..)\n  const validBranchRegex = /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/;\n  return validBranchRegex.test(branchName) && !branchName.includes('..');\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_execGit_56": {
+      "name": "execGit",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 74,
+      "content_hash": "542605a641613f7c89efe336efc9111bb9e18662",
+      "content": "function execGit(args: string[]): string {\n  const result = spawnSync('git', args, {\n    cwd: INSTALLED_PLUGIN_PATH,\n    encoding: 'utf-8',\n    timeout: GIT_COMMAND_TIMEOUT_MS,\n    windowsHide: true,\n    shell: false  // CRITICAL: Never use shell with user input\n  });\n\n  if (result.error) {\n    throw result.error;\n  }\n\n  if (result.status !== 0) {\n    throw new Error(result.stderr || result.stdout || 'Git command failed');\n  }\n\n  return result.stdout.trim();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_execNpm_80": {
+      "name": "execNpm",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 101,
+      "content_hash": "9142af3bae8f5c85f68845a4672b1a376b73c57d",
+      "content": "function execNpm(args: string[], timeoutMs: number = NPM_INSTALL_TIMEOUT_MS): string {\n  const isWindows = process.platform === 'win32';\n  const npmCmd = isWindows ? 'npm.cmd' : 'npm';\n\n  const result = spawnSync(npmCmd, args, {\n    cwd: INSTALLED_PLUGIN_PATH,\n    encoding: 'utf-8',\n    timeout: timeoutMs,\n    windowsHide: true,\n    shell: false  // CRITICAL: Never use shell with user input\n  });\n\n  if (result.error) {\n    throw result.error;\n  }\n\n  if (result.status !== 0) {\n    throw new Error(result.stderr || result.stdout || 'npm command failed');\n  }\n\n  return result.stdout.trim();\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBranchInfo_106": {
+      "name": "getBranchInfo",
+      "type": "function",
+      "start_line": 106,
+      "end_line": 149,
+      "content_hash": "a2a40322aca6152dae6d9a98ec75acb72c0c60ae",
+      "content": "export function getBranchInfo(): BranchInfo {\n  // Check if git repo exists\n  const gitDir = join(INSTALLED_PLUGIN_PATH, '.git');\n  if (!existsSync(gitDir)) {\n    return {\n      branch: null,\n      isBeta: false,\n      isGitRepo: false,\n      isDirty: false,\n      canSwitch: false,\n      error: 'Installed plugin is not a git repository'\n    };\n  }\n\n  try {\n    // Get current branch\n    const branch = execGit(['rev-parse', '--abbrev-ref', 'HEAD']);\n\n    // Check if dirty (has uncommitted changes)\n    const status = execGit(['status', '--porcelain']);\n    const isDirty = status.length > 0;\n\n    // Determine if on beta branch\n    const isBeta = branch.startsWith('beta');\n\n    return {\n      branch,\n      isBeta,\n      isGitRepo: true,\n      isDirty,\n      canSwitch: true // We can always switch (will discard local changes)\n    };\n  } catch (error) {\n    logger.error('BRANCH', 'Failed to get branch info', {}, error as Error);\n    return {\n      branch: null,\n      isBeta: false,\n      isGitRepo: true,\n      isDirty: false,\n      canSwitch: false,\n      error: (error as Error).message\n    };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_switchBranch_162": {
+      "name": "switchBranch",
+      "type": "function",
+      "start_line": 162,
+      "end_line": 251,
+      "content_hash": "4f55af6de8f765395cf765edf86f8960c4c5ed0d",
+      "content": "export async function switchBranch(targetBranch: string): Promise<SwitchResult> {\n  // SECURITY: Validate branch name to prevent command injection\n  if (!isValidBranchName(targetBranch)) {\n    return {\n      success: false,\n      error: `Invalid branch name: ${targetBranch}. Branch names must be alphanumeric with hyphens, underscores, slashes, or dots.`\n    };\n  }\n\n  const info = getBranchInfo();\n\n  if (!info.isGitRepo) {\n    return {\n      success: false,\n      error: 'Installed plugin is not a git repository. Please reinstall.'\n    };\n  }\n\n  if (info.branch === targetBranch) {\n    return {\n      success: true,\n      branch: targetBranch,\n      message: `Already on branch ${targetBranch}`\n    };\n  }\n\n  try {\n    logger.info('BRANCH', 'Starting branch switch', {\n      from: info.branch,\n      to: targetBranch\n    });\n\n    // 1. Discard local changes (safe - user data is at ~/.claude-mem/)\n    logger.debug('BRANCH', 'Discarding local changes');\n    execGit(['checkout', '--', '.']);\n    execGit(['clean', '-fd']); // Remove untracked files too\n\n    // 2. Fetch latest\n    logger.debug('BRANCH', 'Fetching from origin');\n    execGit(['fetch', 'origin']);\n\n    // 3. Checkout target branch\n    logger.debug('BRANCH', 'Checking out branch', { branch: targetBranch });\n    try {\n      execGit(['checkout', targetBranch]);\n    } catch {\n      // Branch might not exist locally, try tracking remote\n      execGit(['checkout', '-b', targetBranch, `origin/${targetBranch}`]);\n    }\n\n    // 4. Pull latest\n    logger.debug('BRANCH', 'Pulling latest');\n    execGit(['pull', 'origin', targetBranch]);\n\n    // 5. Clear install marker and run npm install\n    const installMarker = join(INSTALLED_PLUGIN_PATH, '.install-version');\n    if (existsSync(installMarker)) {\n      unlinkSync(installMarker);\n    }\n\n    logger.debug('BRANCH', 'Running npm install');\n    execNpm(['install'], NPM_INSTALL_TIMEOUT_MS);\n\n    logger.success('BRANCH', 'Branch switch complete', {\n      branch: targetBranch\n    });\n\n    return {\n      success: true,\n      branch: targetBranch,\n      message: `Switched to ${targetBranch}. Worker will restart automatically.`\n    };\n  } catch (error) {\n    logger.error('BRANCH', 'Branch switch failed', { targetBranch }, error as Error);\n\n    // Try to recover by checking out original branch\n    try {\n      if (info.branch && isValidBranchName(info.branch)) {\n        execGit(['checkout', info.branch]);\n      }\n    } catch {\n      // Recovery failed, user needs manual intervention\n    }\n\n    return {\n      success: false,\n      error: `Branch switch failed: ${(error as Error).message}`\n    };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_pullUpdates_256": {
+      "name": "pullUpdates",
+      "type": "function",
+      "start_line": 256,
+      "end_line": 305,
+      "content_hash": "10adb5c059ab7f45dbf6a1ca5f0002b0964d0f86",
+      "content": "export async function pullUpdates(): Promise<SwitchResult> {\n  const info = getBranchInfo();\n\n  if (!info.isGitRepo || !info.branch) {\n    return {\n      success: false,\n      error: 'Cannot pull updates: not a git repository'\n    };\n  }\n\n  try {\n    // SECURITY: Validate branch name before use\n    if (!isValidBranchName(info.branch)) {\n      return {\n        success: false,\n        error: `Invalid current branch name: ${info.branch}`\n      };\n    }\n\n    logger.info('BRANCH', 'Pulling updates', { branch: info.branch });\n\n    // Discard local changes first\n    execGit(['checkout', '--', '.']);\n\n    // Fetch and pull\n    execGit(['fetch', 'origin']);\n    execGit(['pull', 'origin', info.branch]);\n\n    // Clear install marker and reinstall\n    const installMarker = join(INSTALLED_PLUGIN_PATH, '.install-version');\n    if (existsSync(installMarker)) {\n      unlinkSync(installMarker);\n    }\n    execNpm(['install'], NPM_INSTALL_TIMEOUT_MS);\n\n    logger.success('BRANCH', 'Updates pulled', { branch: info.branch });\n\n    return {\n      success: true,\n      branch: info.branch,\n      message: `Updated ${info.branch}. Worker will restart automatically.`\n    };\n  } catch (error) {\n    logger.error('BRANCH', 'Pull failed', {}, error as Error);\n    return {\n      success: false,\n      error: `Pull failed: ${(error as Error).message}`\n    };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getInstalledPluginPath_310": {
+      "name": "getInstalledPluginPath",
+      "type": "function",
+      "start_line": 310,
+      "end_line": 312,
+      "content_hash": "0df984ebd3485ff2bf48eebebcd83f8218709540",
+      "content": "export function getInstalledPluginPath(): string {\n  return INSTALLED_PLUGIN_PATH;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

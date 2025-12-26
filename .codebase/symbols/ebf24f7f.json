@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/deploy/kubernetes/code-models-pvc.yaml",
+  "file_hash": "e74c253f1c26ed3f523e5cf2b2735cfba2144128",
+  "updated_at": "2025-12-26T17:34:22.788256",
+  "symbols": {
+    "key_apiVersion_3": {
+      "name": "apiVersion",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 3,
+      "content_hash": "c0a550963fd5e81041b9eaca5adf04e3017a866d",
+      "content": "apiVersion: v1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_kind_4": {
+      "name": "kind",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 4,
+      "content_hash": "e8ed58f86aae6faa018d6ff31a93d8987bc84119",
+      "content": "kind: PersistentVolumeClaim",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata_5": {
+      "name": "metadata",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 11,
+      "content_hash": "645fc12421d2bdf8186d8f607dc5ad6ed56bf630",
+      "content": "metadata:\n  name: code-models-pvc\n  namespace: context-engine\n  labels:\n    app: context-engine\n    component: llamacpp\n    type: storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.name_6": {
+      "name": "metadata.name",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 6,
+      "content_hash": "660c092059f2a17284b83126fa5e2d6290fb5cfa",
+      "content": "  name: code-models-pvc",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.namespace_7": {
+      "name": "metadata.namespace",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 7,
+      "content_hash": "1a68fd2e6c59390f3813b7e9d5ff5c156e377737",
+      "content": "  namespace: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels_8": {
+      "name": "metadata.labels",
+      "type": "key",
+      "start_line": 8,
+      "end_line": 11,
+      "content_hash": "a1856873157e15a0f49b2b3953f362b1e0fecf87",
+      "content": "  labels:\n    app: context-engine\n    component: llamacpp\n    type: storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels.app_9": {
+      "name": "metadata.labels.app",
+      "type": "key",
+      "start_line": 9,
+      "end_line": 9,
+      "content_hash": "d0283716b7840d82a58152046f9f70a9b1d33c35",
+      "content": "    app: context-engine",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels.component_10": {
+      "name": "metadata.labels.component",
+      "type": "key",
+      "start_line": 10,
+      "end_line": 10,
+      "content_hash": "7a94ca08ca2d12be44e4f0fb1ed0b820d73d46b5",
+      "content": "    component: llamacpp",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_metadata.labels.type_11": {
+      "name": "metadata.labels.type",
+      "type": "key",
+      "start_line": 11,
+      "end_line": 11,
+      "content_hash": "d9866e21817da282bc70fafafd7f04135667d1bf",
+      "content": "    type: storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec_12": {
+      "name": "spec",
+      "type": "key",
+      "start_line": 12,
+      "end_line": 19,
+      "content_hash": "9c18cafa15790062e9070ab48901e7be24f2c76c",
+      "content": "spec:\n  accessModes:\n    - ReadWriteMany  # CephFS supports RWX for multiple pods\n  storageClassName: ceph-filesystem  # Adjust based on your storage class\n  resources:\n    requests:\n      storage: 20Gi  # Adjust size based on expected model footprint\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.accessModes_13": {
+      "name": "spec.accessModes",
+      "type": "key",
+      "start_line": 13,
+      "end_line": 14,
+      "content_hash": "6b67c8e839d152b68d0cf3591d7f07dbbf0b2b03",
+      "content": "  accessModes:\n    - ReadWriteMany  # CephFS supports RWX for multiple pods",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.storageClassName_15": {
+      "name": "spec.storageClassName",
+      "type": "key",
+      "start_line": 15,
+      "end_line": 15,
+      "content_hash": "edd820135bf90b52da09b35f5dbe2787cbd06adb",
+      "content": "  storageClassName: ceph-filesystem  # Adjust based on your storage class",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.resources_16": {
+      "name": "spec.resources",
+      "type": "key",
+      "start_line": 16,
+      "end_line": 19,
+      "content_hash": "cbbb083c40786a2dd20c030fd9de6ecd40d57e03",
+      "content": "  resources:\n    requests:\n      storage: 20Gi  # Adjust size based on expected model footprint\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.resources.requests_17": {
+      "name": "spec.resources.requests",
+      "type": "key",
+      "start_line": 17,
+      "end_line": 19,
+      "content_hash": "7e9ddfd6cba67766c6027f86474ebb6cb01ea33f",
+      "content": "    requests:\n      storage: 20Gi  # Adjust size based on expected model footprint\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_spec.resources.requests.storage_18": {
+      "name": "spec.resources.requests.storage",
+      "type": "key",
+      "start_line": 18,
+      "end_line": 18,
+      "content_hash": "223848f5384f647e4e49d2b8c8fa407959a7d531",
+      "content": "      storage: 20Gi  # Adjust size based on expected model footprint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

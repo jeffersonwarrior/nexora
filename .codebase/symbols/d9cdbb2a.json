@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/format/native_spinner_test.go",
+  "file_hash": "697bbbc765121f0ca0211afa65b56c1006a929bc",
+  "updated_at": "2025-12-26T17:34:24.005746",
+  "symbols": {
+    "function_TestNewNativeSpinner_13": {
+      "name": "TestNewNativeSpinner",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 38,
+      "content_hash": "16cf1e492f88928b11c6b03fd6c85db7272964a7",
+      "content": "func TestNewNativeSpinner(t *testing.T) {\n\tt.Run(\"creates spinner successfully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tctx, cancel := context.WithCancel(context.Background())\n\t\tdefer cancel()\n\n\t\tsettings := NativeSettings{\n\t\t\tSize:       10,\n\t\t\tLabel:      \"Loading...\",\n\t\t\tLabelColor: \"cyan\",\n\t\t\tColorStart: \"magenta\",\n\t\t\tColorEnd:   \"blue\",\n\t\t}\n\n\t\t// Act\n\t\tspinner := NewNativeSpinner(ctx, cancel, settings)\n\n\t\t// Assert\n\t\tassert.NotNil(t, spinner)\n\t\tassert.NotNil(t, spinner.done)\n\t\tassert.NotNil(t, spinner.anim)\n\t\tassert.NotNil(t, spinner.ctx)\n\t\tassert.NotNil(t, spinner.cancel)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewNativeAnim_39": {
+      "name": "TestNewNativeAnim",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 93,
+      "content_hash": "d01c7b17e538008a5cad1c8dd7f1c3384839d143",
+      "content": "func TestNewNativeAnim(t *testing.T) {\n\tt.Run(\"creates animation with default settings\", func(t *testing.T) {\n\t\t// Arrange\n\t\tsettings := NativeSettings{\n\t\t\tLabel: \"Test\",\n\t\t}\n\n\t\t// Act\n\t\tanim := NewNativeAnim(settings)\n\n\t\t// Assert\n\t\tassert.NotNil(t, anim)\n\t\tassert.Equal(t, 10, anim.width) // default size\n\t\tassert.Equal(t, \"Test\", anim.label)\n\t\tassert.Equal(t, defaultLabelColor, anim.settings.LabelColor)\n\t\tassert.Len(t, anim.runes, len(defaultRunes))\n\t\tassert.Len(t, anim.ellipsisFrames, len(defaultEllipsis))\n\t})\n\n\tt.Run(\"creates animation with custom settings\", func(t *testing.T) {\n\t\t// Arrange\n\t\tsettings := NativeSettings{\n\t\t\tSize:       5,\n\t\t\tLabel:      \"Custom\",\n\t\t\tLabelColor: \"red\",\n\t\t\tColorStart: \"green\",\n\t\t\tColorEnd:   \"blue\",\n\t\t}\n\n\t\t// Act\n\t\tanim := NewNativeAnim(settings)\n\n\t\t// Assert\n\t\tassert.NotNil(t, anim)\n\t\tassert.Equal(t, 5, anim.width)\n\t\tassert.Equal(t, \"Custom\", anim.label)\n\t\tassert.Equal(t, \"red\", anim.settings.LabelColor)\n\t})\n\n\tt.Run(\"handles invalid size gracefully\", func(t *testing.T) {\n\t\t// Arrange\n\t\tsettings := NativeSettings{\n\t\t\tSize:  0, // Invalid size\n\t\t\tLabel: \"Test\",\n\t\t}\n\n\t\t// Act\n\t\tanim := NewNativeAnim(settings)\n\n\t\t// Assert\n\t\tassert.NotNil(t, anim)\n\t\tassert.Equal(t, 10, anim.width) // Should default to 10\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNativeSpinner_StartStop_94": {
+      "name": "TestNativeSpinner_StartStop",
+      "type": "function",
+      "start_line": 94,
+      "end_line": 137,
+      "content_hash": "d43228083b0ecfc60af938baa4681d8ac76a0f58",
+      "content": "func TestNativeSpinner_StartStop(t *testing.T) {\n\tt.Run(\"starts and stops cleanly\", func(t *testing.T) {\n\t\t// Arrange\n\t\tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\t\tdefer cancel()\n\n\t\tsettings := NativeSettings{\n\t\t\tSize:  5,\n\t\t\tLabel: \"Test\",\n\t\t}\n\n\t\tspinner := NewNativeSpinner(ctx, cancel, settings)\n\n\t\t// Act\n\t\tspinner.Start()\n\t\ttime.Sleep(150 * time.Millisecond) // Let it animate briefly\n\t\tspinner.Stop()\n\n\t\t// Assert - should complete without hanging\n\t\tassert.True(t, true)\n\t})\n\n\tt.Run(\"handles context cancellation\", func(t *testing.T) {\n\t\t// Arrange\n\t\tctx, cancel := context.WithCancel(context.Background())\n\n\t\tsettings := NativeSettings{\n\t\t\tSize:  5,\n\t\t\tLabel: \"Test\",\n\t\t}\n\n\t\tspinner := NewNativeSpinner(ctx, cancel, settings)\n\n\t\t// Act\n\t\tspinner.Start()\n\t\ttime.Sleep(50 * time.Millisecond)\n\t\tcancel() // Cancel context\n\t\tspinner.Stop()\n\n\t\t// Assert - should handle cancellation gracefully\n\t\tassert.True(t, true)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNativeSpinner_SetLabel_138": {
+      "name": "TestNativeSpinner_SetLabel",
+      "type": "function",
+      "start_line": 138,
+      "end_line": 158,
+      "content_hash": "626c42eceaf48e7dc16bf1f5ee68c4c1e4c9b393",
+      "content": "func TestNativeSpinner_SetLabel(t *testing.T) {\n\tt.Run(\"updates label dynamically\", func(t *testing.T) {\n\t\t// Arrange\n\t\tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)\n\t\tdefer cancel()\n\n\t\tsettings := NativeSettings{\n\t\t\tSize:  5,\n\t\t\tLabel: \"Original\",\n\t\t}\n\n\t\tspinner := NewNativeSpinner(ctx, cancel, settings)\n\n\t\t// Act\n\t\tspinner.SetLabel(\"Updated\")\n\n\t\t// Assert\n\t\tassert.Equal(t, \"Updated\", spinner.anim.label)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNativeAnim_View_159": {
+      "name": "TestNativeAnim_View",
+      "type": "function",
+      "start_line": 159,
+      "end_line": 194,
+      "content_hash": "ae0c18cd5bd0e4986b6049c3179298fbcf2bf7ff",
+      "content": "func TestNativeAnim_View(t *testing.T) {\n\tt.Run(\"generates view with content\", func(t *testing.T) {\n\t\t// Arrange\n\t\tsettings := NativeSettings{\n\t\t\tSize:  5,\n\t\t\tLabel: \"Test\",\n\t\t}\n\n\t\tanim := NewNativeAnim(settings)\n\t\tanim.step.Store(1)\n\n\t\t// Act\n\t\tview := anim.View()\n\n\t\t// Assert\n\t\tassert.NotEmpty(t, view)\n\t\tassert.Contains(t, view, \"Test\")\n\t\tassert.True(t, len(view) > 10) // Should include spinner characters\n\t})\n\n\tt.Run(\"handles empty label\", func(t *testing.T) {\n\t\t// Arrange\n\t\tsettings := NativeSettings{\n\t\t\tSize: 5,\n\t\t}\n\n\t\tanim := NewNativeAnim(settings)\n\n\t\t// Act\n\t\tview := anim.View()\n\n\t\t// Assert\n\t\tassert.NotNil(t, view)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNativeAnim_Ellipsis_195": {
+      "name": "TestNativeAnim_Ellipsis",
+      "type": "function",
+      "start_line": 195,
+      "end_line": 213,
+      "content_hash": "3beebf1d228623885fb7295faa8b5f85dd6bc89a",
+      "content": "func TestNativeAnim_Ellipsis(t *testing.T) {\n\tt.Run(\"generates ellipsis animation\", func(t *testing.T) {\n\t\t// Arrange\n\t\tsettings := NativeSettings{Size: 5}\n\t\tanim := NewNativeAnim(settings)\n\n\t\t// Act & Assert - test the ellipsis frames directly\n\t\tassert.NotNil(t, anim.ellipsisFrames)\n\t\tassert.Equal(t, defaultEllipsis, anim.ellipsisFrames)\n\n\t\t// Test each ellipsis step\n\t\tfor i := 0; i < 4; i++ {\n\t\t\tanim.ellipsisStep.Store(int64(i))\n\t\t\tstep := anim.ellipsisStep.Load()\n\t\t\tassert.Equal(t, int64(i), step)\n\t\t}\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNativeSpinner_WithCustomOutput_214": {
+      "name": "TestNativeSpinner_WithCustomOutput",
+      "type": "function",
+      "start_line": 214,
+      "end_line": 249,
+      "content_hash": "47e3dee3b272079169d13e24c8e1b768640ef313",
+      "content": "func TestNativeSpinner_WithCustomOutput(t *testing.T) {\n\tt.Run(\"writes to custom output\", func(t *testing.T) {\n\t\t// Arrange\n\t\tvar buf bytes.Buffer\n\t\tctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)\n\t\tdefer cancel()\n\n\t\tsettings := NativeSettings{\n\t\t\tSize:  5,\n\t\t\tLabel: \"Test\",\n\t\t}\n\n\t\tspinner := NewNativeSpinner(ctx, cancel, settings)\n\t\tspinner.output = &buf // Override output to capture\n\n\t\t// Act\n\t\tspinner.Start()\n\t\ttime.Sleep(150 * time.Millisecond) // Let it animate\n\t\tspinner.Stop()\n\n\t\t// Assert\n\t\toutput := buf.String()\n\t\tassert.NotEmpty(t, output)\n\t\tassert.Contains(t, output, \"Test\")\n\n\t\t// Should contain spinner characters\n\t\tfoundSpinnerChars := false\n\t\tfor _, char := range defaultRunes {\n\t\t\tif strings.Contains(output, char) {\n\t\t\t\tfoundSpinnerChars = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.True(t, foundSpinnerChars, \"Output should contain spinner characters\")\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

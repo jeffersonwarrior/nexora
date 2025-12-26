@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_utils.py",
+  "file_hash": "4bf8cab3172d60ca48ffcfb6ec27eac1245781df",
+  "updated_at": "2025-12-26T17:34:22.039162",
+  "symbols": {
+    "function_test_sanitize_vector_name_bge_alias_5": {
+      "name": "test_sanitize_vector_name_bge_alias",
+      "type": "function",
+      "start_line": 5,
+      "end_line": 7,
+      "content_hash": "73dbb1f4c8e1d95f6d6dd9645132ac344a1c3f18",
+      "content": "def test_sanitize_vector_name_bge_alias():\n    assert sanitize_vector_name(\"BAAI/bge-base-en-v1.5\") == \"fast-bge-base-en-v1.5\"\n    assert sanitize_vector_name(\"baai/BGE-BASE-en-v1.5\") == \"fast-bge-base-en-v1.5\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sanitize_vector_name_minilm_alias_10": {
+      "name": "test_sanitize_vector_name_minilm_alias",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 16,
+      "content_hash": "c1b9411027f85a896f728e23ccde36a7b64edd0f",
+      "content": "def test_sanitize_vector_name_minilm_alias():\n    for name in (\n        \"sentence-transformers/all-MiniLM-L6-v2\",\n        \"sentence-transformers/all-minilm-l6-v2\",\n        \"sentence-transformers/all-minilm-l-6-v2\",\n    ):\n        assert sanitize_vector_name(name) == \"fast-all-minilm-l6-v2\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_sanitize_vector_name_fallback_rules_19": {
+      "name": "test_sanitize_vector_name_fallback_rules",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 24,
+      "content_hash": "6d065d9e9f93c36d6eaeeec96e4dc1abc77a7ee7",
+      "content": "def test_sanitize_vector_name_fallback_rules():\n    out = sanitize_vector_name(\"org/model_name__v2\")\n    assert \"/\" not in out\n    assert \"_\" not in out\n    assert len(out) <= 64\n    assert re.match(r\"^[a-z0-9\\-]+$\", out)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/testutil/timeout.go",
+  "file_hash": "aa280e724a979e802f58b2aec553b14046defba6",
+  "updated_at": "2025-12-26T17:34:23.597585",
+  "symbols": {
+    "function_GetShortTestTimeout_25": {
+      "name": "GetShortTestTimeout",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 29,
+      "content_hash": "bdad4330eb4ec5f3e02d07928dec137ad555cb21",
+      "content": "func GetShortTestTimeout() time.Duration {\n\treturn getTimeoutFromEnv(EnvShortTestTimeout, DefaultShortTestTimeout)\n}\n\n// GetMediumTestTimeout returns the timeout for medium tests, configurable via environment",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetMediumTestTimeout_30": {
+      "name": "GetMediumTestTimeout",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 34,
+      "content_hash": "71169cff5da3eb991f8ec3b8775dca29c1291fb8",
+      "content": "func GetMediumTestTimeout() time.Duration {\n\treturn getTimeoutFromEnv(EnvMediumTestTimeout, DefaultMediumTestTimeout)\n}\n\n// GetLongTestTimeout returns the timeout for long tests, configurable via environment",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetLongTestTimeout_35": {
+      "name": "GetLongTestTimeout",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 39,
+      "content_hash": "37dd9be53bc365cbc01c96b9c008cfa35bbf443b",
+      "content": "func GetLongTestTimeout() time.Duration {\n\treturn getTimeoutFromEnv(EnvLongTestTimeout, DefaultLongTestTimeout)\n}\n\n// GetQATestTimeout returns the timeout for QA tests, configurable via environment",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetQATestTimeout_40": {
+      "name": "GetQATestTimeout",
+      "type": "function",
+      "start_line": 40,
+      "end_line": 44,
+      "content_hash": "ff20c4451e84676ff67b0e154251640f41a1d195",
+      "content": "func GetQATestTimeout() time.Duration {\n\treturn getTimeoutFromEnv(EnvQATestTimeout, DefaultQATestTimeout)\n}\n\n// getTimeoutFromEnv parses a timeout duration from an environment variable",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getTimeoutFromEnv_45": {
+      "name": "getTimeoutFromEnv",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 52,
+      "content_hash": "b1ccea99ffb456b4a38cd46326345a78bebb09a6",
+      "content": "func getTimeoutFromEnv(envVar string, defaultValue time.Duration) time.Duration {\n\tif s := os.Getenv(envVar); s != \"\" {\n\t\tif d, err := time.ParseDuration(s); err == nil {\n\t\t\treturn d\n\t\t}\n\t}\n\treturn defaultValue\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

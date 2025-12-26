@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/utils/logger.ts",
+  "file_hash": "1bc8fc4cb50867924f437ae6b22949051018dec6",
+  "updated_at": "2025-12-26T17:34:20.879500",
+  "symbols": {
+    "class_Logger_25": {
+      "name": "Logger",
+      "type": "class",
+      "start_line": 25,
+      "end_line": 333,
+      "content_hash": "b121fe44bcf6b29500962a7314301c5d4b980bf6",
+      "content": "class Logger {\n  private level: LogLevel | null = null;\n  private useColor: boolean;\n\n  constructor() {\n    // Disable colors when output is not a TTY (e.g., PM2 logs)\n    this.useColor = process.stdout.isTTY ?? false;\n  }\n\n  /**\n   * Lazy-load log level from settings (breaks circular dependency with SettingsDefaultsManager)\n   */\n  private getLevel(): LogLevel {\n    if (this.level === null) {\n      const envLevel = SettingsDefaultsManager.get('CLAUDE_MEM_LOG_LEVEL').toUpperCase();\n      this.level = LogLevel[envLevel as keyof typeof LogLevel] ?? LogLevel.INFO;\n    }\n    return this.level;\n  }\n\n  /**\n   * Create correlation ID for tracking an observation through the pipeline\n   */\n  correlationId(sessionId: number, observationNum: number): string {\n    return `obs-${sessionId}-${observationNum}`;\n  }\n\n  /**\n   * Create session correlation ID\n   */\n  sessionId(sessionId: number): string {\n    return `session-${sessionId}`;\n  }\n\n  /**\n   * Format data for logging - create compact summaries instead of full dumps\n   */\n  private formatData(data: any): string {\n    if (data === null || data === undefined) return '';\n    if (typeof data === 'string') return data;\n    if (typeof data === 'number') return data.toString();\n    if (typeof data === 'boolean') return data.toString();\n\n    // For objects, create compact summaries\n    if (typeof data === 'object') {\n      // If it's an error, show message and stack in debug mode\n      if (data instanceof Error) {\n        return this.getLevel() === LogLevel.DEBUG\n          ? `${data.message}\\n${data.stack}`\n          : data.message;\n      }\n\n      // For arrays, show count\n      if (Array.isArray(data)) {\n        return `[${data.length} items]`;\n      }\n\n      // For objects, show key count\n      const keys = Object.keys(data);\n      if (keys.length === 0) return '{}';\n      if (keys.length <= 3) {\n        // Show small objects inline\n        return JSON.stringify(data);\n      }\n      return `{${keys.length} keys: ${keys.slice(0, 3).join(', ')}...}`;\n    }\n\n    return String(data);\n  }\n\n  /**\n   * Format a tool name and input for compact display\n   */\n  formatTool(toolName: string, toolInput?: any): string {\n    if (!toolInput) return toolName;\n\n    const input = typeof toolInput === 'string' ? JSON.parse(toolInput) : toolInput;\n\n    // Bash: show full command\n    if (toolName === 'Bash' && input.command) {\n      return `${toolName}(${input.command})`;\n    }\n\n    // File operations: show full path\n    if (input.file_path) {\n      return `${toolName}(${input.file_path})`;\n    }\n\n    // NotebookEdit: show full notebook path\n    if (input.notebook_path) {\n      return `${toolName}(${input.notebook_path})`;\n    }\n\n    // Glob: show full pattern\n    if (toolName === 'Glob' && input.pattern) {\n      return `${toolName}(${input.pattern})`;\n    }\n\n    // Grep: show full pattern\n    if (toolName === 'Grep' && input.pattern) {\n      return `${toolName}(${input.pattern})`;\n    }\n\n    // WebFetch/WebSearch: show full URL or query\n    if (input.url) {\n      return `${toolName}(${input.url})`;\n    }\n\n    if (input.query) {\n      return `${toolName}(${input.query})`;\n    }\n\n    // Task: show subagent_type or full description\n    if (toolName === 'Task') {\n      if (input.subagent_type) {\n        return `${toolName}(${input.subagent_type})`;\n      }\n      if (input.description) {\n        return `${toolName}(${input.description})`;\n      }\n    }\n\n    // Skill: show skill name\n    if (toolName === 'Skill' && input.skill) {\n      return `${toolName}(${input.skill})`;\n    }\n\n    // LSP: show operation type\n    if (toolName === 'LSP' && input.operation) {\n      return `${toolName}(${input.operation})`;\n    }\n\n    // Default: just show tool name\n    return toolName;\n  }\n\n  /**\n   * Format timestamp in local timezone (YYYY-MM-DD HH:MM:SS.mmm)\n   */\n  private formatTimestamp(date: Date): string {\n    const year = date.getFullYear();\n    const month = String(date.getMonth() + 1).padStart(2, '0');\n    const day = String(date.getDate()).padStart(2, '0');\n    const hours = String(date.getHours()).padStart(2, '0');\n    const minutes = String(date.getMinutes()).padStart(2, '0');\n    const seconds = String(date.getSeconds()).padStart(2, '0');\n    const ms = String(date.getMilliseconds()).padStart(3, '0');\n    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${ms}`;\n  }\n\n  /**\n   * Core logging method\n   */\n  private log(\n    level: LogLevel,\n    component: Component,\n    message: string,\n    context?: LogContext,\n    data?: any\n  ): void {\n    if (level < this.getLevel()) return;\n\n    const timestamp = this.formatTimestamp(new Date());\n    const levelStr = LogLevel[level].padEnd(5);\n    const componentStr = component.padEnd(6);\n\n    // Build correlation ID part\n    let correlationStr = '';\n    if (context?.correlationId) {\n      correlationStr = `[${context.correlationId}] `;\n    } else if (context?.sessionId) {\n      correlationStr = `[session-${context.sessionId}] `;\n    }\n\n    // Build data part\n    let dataStr = '';\n    if (data !== undefined && data !== null) {\n      if (this.getLevel() === LogLevel.DEBUG && typeof data === 'object') {\n        // In debug mode, show full JSON for objects\n        dataStr = '\\n' + JSON.stringify(data, null, 2);\n      } else {\n        dataStr = ' ' + this.formatData(data);\n      }\n    }\n\n    // Build additional context\n    let contextStr = '';\n    if (context) {\n      const { sessionId, sdkSessionId, correlationId, ...rest } = context;\n      if (Object.keys(rest).length > 0) {\n        const pairs = Object.entries(rest).map(([k, v]) => `${k}=${v}`);\n        contextStr = ` {${pairs.join(', ')}}`;\n      }\n    }\n\n    const logLine = `[${timestamp}] [${levelStr}] [${componentStr}] ${correlationStr}${message}${contextStr}${dataStr}`;\n\n    // Output to appropriate stream\n    if (level === LogLevel.ERROR) {\n      console.error(logLine);\n    } else {\n      console.log(logLine);\n    }\n  }\n\n  // Public logging methods\n  debug(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.DEBUG, component, message, context, data);\n  }\n\n  info(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.INFO, component, message, context, data);\n  }\n\n  warn(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.WARN, component, message, context, data);\n  }\n\n  error(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.ERROR, component, message, context, data);\n  }\n\n  /**\n   * Log data flow: input \u2192 processing\n   */\n  dataIn(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.info(component, `\u2192 ${message}`, context, data);\n  }\n\n  /**\n   * Log data flow: processing \u2192 output\n   */\n  dataOut(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.info(component, `\u2190 ${message}`, context, data);\n  }\n\n  /**\n   * Log successful completion\n   */\n  success(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.info(component, `\u2713 ${message}`, context, data);\n  }\n\n  /**\n   * Log failure\n   */\n  failure(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.error(component, `\u2717 ${message}`, context, data);\n  }\n\n  /**\n   * Log timing information\n   */\n  timing(component: Component, message: string, durationMs: number, context?: LogContext): void {\n    this.info(component, `\u23f1 ${message}`, context, { duration: `${durationMs}ms` });\n  }\n\n  /**\n   * Happy Path Error - logs when the expected \"happy path\" fails but we have a fallback\n   *\n   * Semantic meaning: \"When the happy path fails, this is an error, but we have a fallback.\"\n   *\n   * Use for:\n   * \u2705 Unexpected null/undefined values that should theoretically never happen\n   * \u2705 Defensive coding where silent fallback is acceptable\n   * \u2705 Situations where you want to track unexpected nulls without breaking execution\n   *\n   * DO NOT use for:\n   * \u274c Nullable fields with valid default behavior (use direct || defaults)\n   * \u274c Critical validation failures (use logger.warn or throw Error)\n   * \u274c Try-catch blocks where error is already logged (redundant)\n   *\n   * @param component - Component where error occurred\n   * @param message - Error message describing what went wrong\n   * @param context - Optional context (sessionId, correlationId, etc)\n   * @param data - Optional data to include\n   * @param fallback - Value to return (defaults to empty string)\n   * @returns The fallback value\n   */\n  happyPathError<T = string>(\n    component: Component,\n    message: string,\n    context?: LogContext,\n    data?: any,\n    fallback: T = '' as T\n  ): T {\n    // Capture stack trace to get caller location\n    const stack = new Error().stack || '';\n    const stackLines = stack.split('\\n');\n    // Line 0: \"Error\"\n    // Line 1: \"at happyPathError ...\"\n    // Line 2: \"at <CALLER> ...\" <- We want this one\n    const callerLine = stackLines[2] || '';\n    const callerMatch = callerLine.match(/at\\s+(?:.*\\s+)?\\(?([^:]+):(\\d+):(\\d+)\\)?/);\n    const location = callerMatch\n      ? `${callerMatch[1].split('/').pop()}:${callerMatch[2]}`\n      : 'unknown';\n\n    // Log as a warning with location info\n    const enhancedContext = {\n      ...context,\n      location\n    };\n\n    this.warn(component, `[HAPPY-PATH] ${message}`, enhancedContext, data);\n\n    return fallback;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_constructor_29": {
+      "name": "constructor",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 32,
+      "content_hash": "1aec64dfdabed44ffb23cc49834ecca0b5f8afbb",
+      "content": "  constructor() {\n    // Disable colors when output is not a TTY (e.g., PM2 logs)\n    this.useColor = process.stdout.isTTY ?? false;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getLevel_37": {
+      "name": "getLevel",
+      "type": "method",
+      "start_line": 37,
+      "end_line": 43,
+      "content_hash": "ff43329c0abe2c85401ab7b0cdb26c5dfff871f2",
+      "content": "  private getLevel(): LogLevel {\n    if (this.level === null) {\n      const envLevel = SettingsDefaultsManager.get('CLAUDE_MEM_LOG_LEVEL').toUpperCase();\n      this.level = LogLevel[envLevel as keyof typeof LogLevel] ?? LogLevel.INFO;\n    }\n    return this.level;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_correlationId_48": {
+      "name": "correlationId",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 50,
+      "content_hash": "0e4642963a78c9a12a833f35f76b24664bb466fd",
+      "content": "  correlationId(sessionId: number, observationNum: number): string {\n    return `obs-${sessionId}-${observationNum}`;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_sessionId_55": {
+      "name": "sessionId",
+      "type": "method",
+      "start_line": 55,
+      "end_line": 57,
+      "content_hash": "4f9cdf566760a4968857f4c1d5238a1fe01e8aad",
+      "content": "  sessionId(sessionId: number): string {\n    return `session-${sessionId}`;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatData_62": {
+      "name": "formatData",
+      "type": "method",
+      "start_line": 62,
+      "end_line": 93,
+      "content_hash": "784a3321752d2b5f45c8c2fd34225760348385f6",
+      "content": "  private formatData(data: any): string {\n    if (data === null || data === undefined) return '';\n    if (typeof data === 'string') return data;\n    if (typeof data === 'number') return data.toString();\n    if (typeof data === 'boolean') return data.toString();\n\n    // For objects, create compact summaries\n    if (typeof data === 'object') {\n      // If it's an error, show message and stack in debug mode\n      if (data instanceof Error) {\n        return this.getLevel() === LogLevel.DEBUG\n          ? `${data.message}\\n${data.stack}`\n          : data.message;\n      }\n\n      // For arrays, show count\n      if (Array.isArray(data)) {\n        return `[${data.length} items]`;\n      }\n\n      // For objects, show key count\n      const keys = Object.keys(data);\n      if (keys.length === 0) return '{}';\n      if (keys.length <= 3) {\n        // Show small objects inline\n        return JSON.stringify(data);\n      }\n      return `{${keys.length} keys: ${keys.slice(0, 3).join(', ')}...}`;\n    }\n\n    return String(data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatTool_98": {
+      "name": "formatTool",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 159,
+      "content_hash": "a90ffb1e350976c2daa87f5f9b24ffcf6bd90920",
+      "content": "  formatTool(toolName: string, toolInput?: any): string {\n    if (!toolInput) return toolName;\n\n    const input = typeof toolInput === 'string' ? JSON.parse(toolInput) : toolInput;\n\n    // Bash: show full command\n    if (toolName === 'Bash' && input.command) {\n      return `${toolName}(${input.command})`;\n    }\n\n    // File operations: show full path\n    if (input.file_path) {\n      return `${toolName}(${input.file_path})`;\n    }\n\n    // NotebookEdit: show full notebook path\n    if (input.notebook_path) {\n      return `${toolName}(${input.notebook_path})`;\n    }\n\n    // Glob: show full pattern\n    if (toolName === 'Glob' && input.pattern) {\n      return `${toolName}(${input.pattern})`;\n    }\n\n    // Grep: show full pattern\n    if (toolName === 'Grep' && input.pattern) {\n      return `${toolName}(${input.pattern})`;\n    }\n\n    // WebFetch/WebSearch: show full URL or query\n    if (input.url) {\n      return `${toolName}(${input.url})`;\n    }\n\n    if (input.query) {\n      return `${toolName}(${input.query})`;\n    }\n\n    // Task: show subagent_type or full description\n    if (toolName === 'Task') {\n      if (input.subagent_type) {\n        return `${toolName}(${input.subagent_type})`;\n      }\n      if (input.description) {\n        return `${toolName}(${input.description})`;\n      }\n    }\n\n    // Skill: show skill name\n    if (toolName === 'Skill' && input.skill) {\n      return `${toolName}(${input.skill})`;\n    }\n\n    // LSP: show operation type\n    if (toolName === 'LSP' && input.operation) {\n      return `${toolName}(${input.operation})`;\n    }\n\n    // Default: just show tool name\n    return toolName;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatTimestamp_164": {
+      "name": "formatTimestamp",
+      "type": "method",
+      "start_line": 164,
+      "end_line": 173,
+      "content_hash": "2cb04c34204d7c25ba72ed1c406a33ca76694bd4",
+      "content": "  private formatTimestamp(date: Date): string {\n    const year = date.getFullYear();\n    const month = String(date.getMonth() + 1).padStart(2, '0');\n    const day = String(date.getDate()).padStart(2, '0');\n    const hours = String(date.getHours()).padStart(2, '0');\n    const minutes = String(date.getMinutes()).padStart(2, '0');\n    const seconds = String(date.getSeconds()).padStart(2, '0');\n    const ms = String(date.getMilliseconds()).padStart(3, '0');\n    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${ms}`;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_log_178": {
+      "name": "log",
+      "type": "method",
+      "start_line": 178,
+      "end_line": 228,
+      "content_hash": "75c8056e202c7851bee6cc1742bac6870e823518",
+      "content": "  private log(\n    level: LogLevel,\n    component: Component,\n    message: string,\n    context?: LogContext,\n    data?: any\n  ): void {\n    if (level < this.getLevel()) return;\n\n    const timestamp = this.formatTimestamp(new Date());\n    const levelStr = LogLevel[level].padEnd(5);\n    const componentStr = component.padEnd(6);\n\n    // Build correlation ID part\n    let correlationStr = '';\n    if (context?.correlationId) {\n      correlationStr = `[${context.correlationId}] `;\n    } else if (context?.sessionId) {\n      correlationStr = `[session-${context.sessionId}] `;\n    }\n\n    // Build data part\n    let dataStr = '';\n    if (data !== undefined && data !== null) {\n      if (this.getLevel() === LogLevel.DEBUG && typeof data === 'object') {\n        // In debug mode, show full JSON for objects\n        dataStr = '\\n' + JSON.stringify(data, null, 2);\n      } else {\n        dataStr = ' ' + this.formatData(data);\n      }\n    }\n\n    // Build additional context\n    let contextStr = '';\n    if (context) {\n      const { sessionId, sdkSessionId, correlationId, ...rest } = context;\n      if (Object.keys(rest).length > 0) {\n        const pairs = Object.entries(rest).map(([k, v]) => `${k}=${v}`);\n        contextStr = ` {${pairs.join(', ')}}`;\n      }\n    }\n\n    const logLine = `[${timestamp}] [${levelStr}] [${componentStr}] ${correlationStr}${message}${contextStr}${dataStr}`;\n\n    // Output to appropriate stream\n    if (level === LogLevel.ERROR) {\n      console.error(logLine);\n    } else {\n      console.log(logLine);\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_debug_231": {
+      "name": "debug",
+      "type": "method",
+      "start_line": 231,
+      "end_line": 233,
+      "content_hash": "45c8b336583dbeda28e4bfe92c16b09375afbc0b",
+      "content": "  debug(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.DEBUG, component, message, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_info_235": {
+      "name": "info",
+      "type": "method",
+      "start_line": 235,
+      "end_line": 237,
+      "content_hash": "267f14fa788a4399feb83a3f08e4833d323c4d5d",
+      "content": "  info(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.INFO, component, message, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_warn_239": {
+      "name": "warn",
+      "type": "method",
+      "start_line": 239,
+      "end_line": 241,
+      "content_hash": "ffbf8eac50f96751a31a75b9d6b4cc6660ca8213",
+      "content": "  warn(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.WARN, component, message, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_error_243": {
+      "name": "error",
+      "type": "method",
+      "start_line": 243,
+      "end_line": 245,
+      "content_hash": "d97a7676229426bf92f921b230ac3d95ddad07c7",
+      "content": "  error(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.log(LogLevel.ERROR, component, message, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_dataIn_250": {
+      "name": "dataIn",
+      "type": "method",
+      "start_line": 250,
+      "end_line": 252,
+      "content_hash": "3ff023c074a44fbd3db8acca34dc8a2665a604fd",
+      "content": "  dataIn(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.info(component, `\u2192 ${message}`, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_dataOut_257": {
+      "name": "dataOut",
+      "type": "method",
+      "start_line": 257,
+      "end_line": 259,
+      "content_hash": "8f234d0e9709faf1c0cec2743854c6dc6f2062b9",
+      "content": "  dataOut(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.info(component, `\u2190 ${message}`, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_success_264": {
+      "name": "success",
+      "type": "method",
+      "start_line": 264,
+      "end_line": 266,
+      "content_hash": "fbdce95110a981c39f3e0c723941fecddcfb8448",
+      "content": "  success(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.info(component, `\u2713 ${message}`, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_failure_271": {
+      "name": "failure",
+      "type": "method",
+      "start_line": 271,
+      "end_line": 273,
+      "content_hash": "24b5c1401573b3056fd1d8763abcaa51d86d2f83",
+      "content": "  failure(component: Component, message: string, context?: LogContext, data?: any): void {\n    this.error(component, `\u2717 ${message}`, context, data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_timing_278": {
+      "name": "timing",
+      "type": "method",
+      "start_line": 278,
+      "end_line": 280,
+      "content_hash": "f5b4d5bdad0a090e9b42d41aab1f175a1d56f518",
+      "content": "  timing(component: Component, message: string, durationMs: number, context?: LogContext): void {\n    this.info(component, `\u23f1 ${message}`, context, { duration: `${durationMs}ms` });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_happyPathError_304": {
+      "name": "happyPathError",
+      "type": "method",
+      "start_line": 304,
+      "end_line": 332,
+      "content_hash": "52322c4a032526db31bf6e859eec66ae35645401",
+      "content": "  happyPathError<T = string>(\n    component: Component,\n    message: string,\n    context?: LogContext,\n    data?: any,\n    fallback: T = '' as T\n  ): T {\n    // Capture stack trace to get caller location\n    const stack = new Error().stack || '';\n    const stackLines = stack.split('\\n');\n    // Line 0: \"Error\"\n    // Line 1: \"at happyPathError ...\"\n    // Line 2: \"at <CALLER> ...\" <- We want this one\n    const callerLine = stackLines[2] || '';\n    const callerMatch = callerLine.match(/at\\s+(?:.*\\s+)?\\(?([^:]+):(\\d+):(\\d+)\\)?/);\n    const location = callerMatch\n      ? `${callerMatch[1].split('/').pop()}:${callerMatch[2]}`\n      : 'unknown';\n\n    // Log as a warning with location info\n    const enhancedContext = {\n      ...context,\n      location\n    };\n\n    this.warn(component, `[HAPPY-PATH] ${message}`, enhancedContext, data);\n\n    return fallback;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

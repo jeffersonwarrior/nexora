@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/agents/agents_test.go",
+  "file_hash": "d2209ea337d7562eaaca9d77d22383ec5e80909f",
+  "updated_at": "2025-12-26T17:34:21.828285",
+  "symbols": {
+    "function_TestAgentParser_11": {
+      "name": "TestAgentParser",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 37,
+      "content_hash": "5edf8f93aab0a97862db3680de300cd4a9fe8518",
+      "content": "func TestAgentParser(t *testing.T) {\n\tt.Parallel()\n\n\tregistry := NewAgentRegistry()\n\n\t// Test loading from directory\n\terr := registry.LoadAgentsFromDirectory(\".\")\n\trequire.NoError(t, err)\n\n\t// Check that agents were loaded\n\tagents := registry.ListAgents()\n\trequire.Greater(t, len(agents), 0)\n\n\t// Test getting specific agents\n\tcodeArchitect, exists := registry.GetAgent(\"code-architect\")\n\trequire.True(t, exists)\n\trequire.Equal(t, \"code-architect\", codeArchitect.Name)\n\trequire.Equal(t, \"blue\", codeArchitect.Color)\n\trequire.Contains(t, codeArchitect.Triggers, \"architecture\")\n\n\tbugSpecialist, exists := registry.GetAgent(\"bug-specialist\")\n\trequire.True(t, exists)\n\trequire.Equal(t, \"bug-specialist\", bugSpecialist.Name)\n\trequire.Equal(t, \"red\", bugSpecialist.Color)\n\trequire.Contains(t, bugSpecialist.Triggers, \"bug\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAgentMatching_38": {
+      "name": "TestAgentMatching",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 81,
+      "content_hash": "9cdcd481ac5210e6ed9f1254f2be009d26433bbe",
+      "content": "func TestAgentMatching(t *testing.T) {\n\tt.Parallel()\n\n\tregistry := NewAgentRegistry()\n\terr := registry.LoadAgentsFromDirectory(\".\")\n\trequire.NoError(t, err)\n\n\t// Test trigger matching\n\ttestCases := []struct {\n\t\tinput       string\n\t\texpected    string\n\t\tdescription string\n\t}{\n\t\t{\n\t\t\tinput:       \"I need help with system architecture\",\n\t\t\texpected:    \"code-architect\",\n\t\t\tdescription: \"Should match architecture trigger\",\n\t\t},\n\t\t{\n\t\t\tinput:       \"There's a bug in my code\",\n\t\t\texpected:    \"bug-specialist\",\n\t\t\tdescription: \"Should match bug trigger\",\n\t\t},\n\t\t{\n\t\t\tinput:       \"This is running very slow\",\n\t\t\texpected:    \"performance-optimizer\",\n\t\t\tdescription: \"Should match performance trigger\",\n\t\t},\n\t\t{\n\t\t\tinput:       \"hello world\",\n\t\t\texpected:    \"\", // Any agent is fine for no clear triggers\n\t\t\tdescription: \"Input with no clear triggers\",\n\t\t},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tagent := registry.MatchAgent(tc.input)\n\t\trequire.NotNil(t, agent, tc.description+\": no agent matched\")\n\t\tif tc.expected != \"\" {\n\t\t\trequire.Equal(t, tc.expected, agent.Name, tc.description)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAgentExecution_82": {
+      "name": "TestAgentExecution",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 108,
+      "content_hash": "b285917bb6d74deb0f468b315d29ca25879dd3b3",
+      "content": "func TestAgentExecution(t *testing.T) {\n\tt.Parallel()\n\n\tregistry := NewAgentRegistry()\n\terr := registry.LoadAgentsFromDirectory(\".\")\n\trequire.NoError(t, err)\n\n\texecutor := NewAgentExecutor(registry)\n\n\t// Test executing with architecture query\n\tinput := \"help me design a microservices architecture\"\n\ttools := []string{\"View\", \"Glob\", \"Grep\", \"LS\"}\n\n\tagent, prompt, err := executor.ExecuteForInput(context.Background(), input, tools)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, agent)\n\trequire.Equal(t, \"code-architect\", agent.Name)\n\trequire.Contains(t, prompt, agent.SystemPrompt)\n\trequire.Contains(t, prompt, input)\n\n\t// Test that tool permissions are enforced\n\trestrictedTools := []string{\"Bash\"} // Not in code-architect's tools\n\t_, _, err = executor.ExecuteForInput(context.Background(), input, restrictedTools)\n\trequire.Error(t, err)\n\trequire.Contains(t, strings.ToLower(err.Error()), \"not allowed to use tool\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAgentValidation_109": {
+      "name": "TestAgentValidation",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 165,
+      "content_hash": "77cc58a8f5e3ed32d6a54d7c7f8cf38b864ed3cb",
+      "content": "func TestAgentValidation(t *testing.T) {\n\tt.Parallel()\n\n\t// Test valid agent\n\tvalidAgent := &AgentConfig{\n\t\tName:         \"test-agent\",\n\t\tDescription:  \"Test agent\",\n\t\tModel:        \"inherit\",\n\t\tColor:        \"blue\",\n\t\tTools:        []string{\"View\"},\n\t\tTriggers:     []string{\"test\"},\n\t\tSystemPrompt: \"You are a test agent\",\n\t}\n\n\trequire.NoError(t, ValidateAgent(validAgent))\n\n\t// Test invalid agents\n\tinvalidAgents := []struct {\n\t\tname   string\n\t\tagent  *AgentConfig\n\t\treason string\n\t}{\n\t\t{\n\t\t\tname: \"no name\",\n\t\t\tagent: &AgentConfig{\n\t\t\t\tDescription:  \"Test agent\",\n\t\t\t\tTriggers:     []string{\"test\"},\n\t\t\t\tSystemPrompt: \"You are a test agent\",\n\t\t\t},\n\t\t\treason: \"should require name\",\n\t\t},\n\t\t{\n\t\t\tname: \"no triggers\",\n\t\t\tagent: &AgentConfig{\n\t\t\t\tName:         \"test-agent\",\n\t\t\t\tDescription:  \"Test agent\",\n\t\t\t\tSystemPrompt: \"You are a test agent\",\n\t\t\t},\n\t\t\treason: \"should require triggers\",\n\t\t},\n\t\t{\n\t\t\tname: \"no system prompt\",\n\t\t\tagent: &AgentConfig{\n\t\t\t\tName:        \"test-agent\",\n\t\t\t\tDescription: \"Test agent\",\n\t\t\t\tTriggers:    []string{\"test\"},\n\t\t\t},\n\t\t\treason: \"should require system prompt\",\n\t\t},\n\t}\n\n\tfor _, tc := range invalidAgents {\n\t\terr := ValidateAgent(tc.agent)\n\t\trequire.Error(t, err, tc.reason)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestExplainTriggering_166": {
+      "name": "TestExplainTriggering",
+      "type": "function",
+      "start_line": 166,
+      "end_line": 184,
+      "content_hash": "3451098f0ffbf8a98634937cbdf8130af6a778e2",
+      "content": "func TestExplainTriggering(t *testing.T) {\n\tt.Parallel()\n\n\tregistry := NewAgentRegistry()\n\terr := registry.LoadAgentsFromDirectory(\".\")\n\trequire.NoError(t, err)\n\n\texecutor := NewAgentExecutor(registry)\n\n\t// Test clear trigger match\n\texplanation := executor.ExplainTriggering(\"I have a performance bottleneck\")\n\trequire.Contains(t, strings.ToLower(explanation), \"performance-optimizer\")\n\trequire.Contains(t, strings.ToLower(explanation), \"performance\")\n\n\t// Test multiple potential matches\n\texplanation = executor.ExplainTriggering(\"help me fix this bug\")\n\trequire.Contains(t, strings.ToLower(explanation), \"bug-specialist\")\n\trequire.Contains(t, strings.ToLower(explanation), \"bug\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/lsp/rootmarkers_test.go",
+  "file_hash": "dbbdfaccc2a82aa44c7b16d3a0d919a884675822",
+  "updated_at": "2025-12-26T17:34:23.706315",
+  "symbols": {
+    "function_TestHasRootMarkers_11": {
+      "name": "TestHasRootMarkers",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 37,
+      "content_hash": "506aa415940ad20d0da7e10b119ce0b521ac0768",
+      "content": "func TestHasRootMarkers(t *testing.T) {\n\tt.Parallel()\n\n\t// Create a temporary directory for testing\n\ttmpDir := t.TempDir()\n\n\t// Test with empty root markers (should return true)\n\trequire.True(t, HasRootMarkers(tmpDir, []string{}))\n\n\t// Test with non-existent markers\n\trequire.False(t, HasRootMarkers(tmpDir, []string{\"go.mod\", \"package.json\"}))\n\n\t// Create a go.mod file\n\tgoModPath := filepath.Join(tmpDir, \"go.mod\")\n\terr := os.WriteFile(goModPath, []byte(\"module test\"), 0o644)\n\trequire.NoError(t, err)\n\n\t// Test with existing marker\n\trequire.True(t, HasRootMarkers(tmpDir, []string{\"go.mod\", \"package.json\"}))\n\n\t// Test with only non-existent markers\n\trequire.False(t, HasRootMarkers(tmpDir, []string{\"package.json\", \"Cargo.toml\"}))\n\n\t// Test with glob patterns\n\trequire.True(t, HasRootMarkers(tmpDir, []string{\"*.mod\"}))\n\trequire.False(t, HasRootMarkers(tmpDir, []string{\"*.json\"}))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

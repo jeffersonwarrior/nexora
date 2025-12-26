@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/agent/tools/bash_monitored_test.go",
+  "file_hash": "bd3fe50af87723bf420516abf6bc0d2d54153af7",
+  "updated_at": "2025-12-26T17:34:23.439416",
+  "symbols": {
+    "function_TestNewBashMonitoredTool_Placeholder_13": {
+      "name": "TestNewBashMonitoredTool_Placeholder",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 18,
+      "content_hash": "191837db24e18c5533d94966a81614dd00bdc3ae",
+      "content": "func TestNewBashMonitoredTool_Placeholder(t *testing.T) {\n\t// This is a placeholder test to maintain test file presence\n\t// Full testing requires shell.ShellMonitor which has complex dependencies\n\t// The actual tool functionality is tested through integration tests\n\tassert.True(t, true)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

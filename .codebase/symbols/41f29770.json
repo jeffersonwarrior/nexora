@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/errors.go",
+  "file_hash": "e0548594b4e20d2bf0b54f1f93e1e58986c9b389",
+  "updated_at": "2025-12-26T17:34:20.442586",
+  "symbols": {
+    "struct_ToolError_4": {
+      "name": "ToolError",
+      "type": "struct",
+      "start_line": 4,
+      "end_line": 8,
+      "content_hash": "153b7cea0605f010523759970c6ff72e06cedc62",
+      "content": "type ToolError struct {\n\tMessage string\n}\n\n// Error implements the error interface",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Error_9": {
+      "name": "Error",
+      "type": "method",
+      "start_line": 9,
+      "end_line": 13,
+      "content_hash": "fb2a5fd51ef9790bc7d7255db0d729ce346c49d4",
+      "content": "func (e *ToolError) Error() string {\n\treturn e.Message\n}\n\n// NewToolError creates a new ToolError",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewToolError_14": {
+      "name": "NewToolError",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 16,
+      "content_hash": "373eee8f8ea20b8564cdee730f7c9bfb93c77f58",
+      "content": "func NewToolError(message string) *ToolError {\n\treturn &ToolError{Message: message}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

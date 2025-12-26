@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_reranker_verification.py",
+  "file_hash": "d2a8c70b90bbf78281a05330d2caad18060ab99d",
+  "updated_at": "2025-12-26T17:34:21.491379",
+  "symbols": {
+    "class__FastMCP_12": {
+      "name": "_FastMCP",
+      "type": "class",
+      "start_line": 12,
+      "end_line": 18,
+      "content_hash": "092d7e5f884ac2e94a3100f74d886ec430d1b20d",
+      "content": "class _FastMCP:\n    def __init__(self, *args, **kwargs):\n        pass\n    def tool(self, *args, **kwargs):\n        def _decorator(fn):\n            return fn\n        return _decorator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___13": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 13,
+      "end_line": 14,
+      "content_hash": "a02ce2e47f3ef754e7eb937c1ba5ea7d4fb0d73a",
+      "content": "    def __init__(self, *args, **kwargs):\n        pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tool_15": {
+      "name": "tool",
+      "type": "method",
+      "start_line": 15,
+      "end_line": 18,
+      "content_hash": "f113c9f9316a12abe1bab7d1b0be745fa703293f",
+      "content": "    def tool(self, *args, **kwargs):\n        def _decorator(fn):\n            return fn\n        return _decorator",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__decorator_16": {
+      "name": "_decorator",
+      "type": "method",
+      "start_line": 16,
+      "end_line": 17,
+      "content_hash": "9aad9d8b5cd6dcec490fc32a4d07e326f515cea8",
+      "content": "        def _decorator(fn):\n            return fn",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class__Context_20": {
+      "name": "_Context",
+      "type": "class",
+      "start_line": 20,
+      "end_line": 22,
+      "content_hash": "9febced9a1e7fed4166e83ff71a0eef4519ab70d",
+      "content": "class _Context:\n    def __init__(self, *args, **kwargs):\n        self.session = kwargs.get(\"session\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___21": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 22,
+      "content_hash": "01a796b7ae11439bceac9c496bdf06c4cf9424dd",
+      "content": "    def __init__(self, *args, **kwargs):\n        self.session = kwargs.get(\"session\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__make_hybrid_stub_33": {
+      "name": "_make_hybrid_stub",
+      "type": "function",
+      "start_line": 33,
+      "end_line": 40,
+      "content_hash": "1c90e1f42999de64327cf1aebaf7af56033e366c",
+      "content": "def _make_hybrid_stub(fake_run):\n    mod = types.ModuleType(\"scripts.hybrid_search\")\n    mod.run_hybrid_search = fake_run\n    mod.lang_matches_path = lambda path, lang=None: True\n    mod._merge_and_budget_spans = lambda spans, *args, **kwargs: spans\n    mod.TextEmbedding = object\n    mod.QdrantClient = object\n    return mod",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__fake_embedding_model_43": {
+      "name": "_fake_embedding_model",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 44,
+      "content_hash": "373106b680332ecde7ddd6caadae606b9c01b0a5",
+      "content": "def _fake_embedding_model(*args, **kwargs):\n    return object()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_rerank_inproc_changes_order_49": {
+      "name": "test_rerank_inproc_changes_order",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 108,
+      "content_hash": "4f1ca7dabdc3d5eaa3db867e3e80027457e8dac4",
+      "content": "async def test_rerank_inproc_changes_order(monkeypatch):\n    # Force in-process hybrid + in-process rerank paths\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"1\")\n    monkeypatch.setenv(\"RERANK_IN_PROCESS\", \"1\")\n\n    # Baseline hybrid results (JSON structured items); A before B\n    def fake_run_hybrid_search(**kwargs):\n        return [\n            {\n                \"score\": 0.6,\n                \"path\": \"/work/a.py\",\n                \"symbol\": \"\",\n                \"start_line\": 1,\n                \"end_line\": 3,\n            },\n            {\n                \"score\": 0.5,\n                \"path\": \"/work/b.py\",\n                \"symbol\": \"\",\n                \"start_line\": 10,\n                \"end_line\": 12,\n            },\n        ]\n\n    # Reranker returns higher score for B than A to force reordering\n    def fake_rerank_local(pairs):\n        # pairs order corresponds to hybrid results; return scores [A,B] -> [0.10, 0.90]\n        return [0.10, 0.90]\n\n    # Patch hybrid and rerank\n    monkeypatch.setenv(\"EMBEDDING_MODEL\", \"BAAI/bge-base-en-v1.5\")\n    monkeypatch.setitem(sys.modules, \"scripts.hybrid_search\", _make_hybrid_stub(fake_run_hybrid_search))\n    monkeypatch.delitem(sys.modules, \"scripts.mcp_indexer_server\", raising=False)\n    server = importlib.import_module(\"scripts.mcp_indexer_server\")\n    monkeypatch.setattr(\n        server,\n        \"_get_embedding_model\",\n        _fake_embedding_model,\n    )\n    monkeypatch.setattr(\n        server,\n        \"run_hybrid_search\",\n        fake_run_hybrid_search,\n        raising=False,\n    )\n    monkeypatch.setattr(\n        importlib.import_module(\"scripts.rerank_local\"),\n        \"rerank_local\",\n        fake_rerank_local,\n    )\n\n    # Baseline (rerank disabled) preserves hybrid order A then B\n    base = await server.repo_search(query=\"q\", limit=2, per_path=2, rerank_enabled=False, compact=True)\n    assert [r[\"path\"] for r in base[\"results\"]] == [\"/work/a.py\", \"/work/b.py\"]\n\n    # With rerank enabled, order should flip to B then A; counters should show inproc_hybrid\n    rr = await server.repo_search(query=\"q\", limit=2, per_path=2, rerank_enabled=True, compact=True)\n    assert rr.get(\"used_rerank\") is True\n    assert rr.get(\"rerank_counters\", {}).get(\"inproc_hybrid\", 0) >= 1\n    assert [r[\"path\"] for r in rr[\"results\"]] == [\"/work/b.py\", \"/work/a.py\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_hybrid_search_55": {
+      "name": "fake_run_hybrid_search",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 71,
+      "content_hash": "de24a211a3ffba0bf4fdcc76f46c81ff26dab4fc",
+      "content": "    def fake_run_hybrid_search(**kwargs):\n        return [\n            {\n                \"score\": 0.6,\n                \"path\": \"/work/a.py\",\n                \"symbol\": \"\",\n                \"start_line\": 1,\n                \"end_line\": 3,\n            },\n            {\n                \"score\": 0.5,\n                \"path\": \"/work/b.py\",\n                \"symbol\": \"\",\n                \"start_line\": 10,\n                \"end_line\": 12,\n            },\n        ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_rerank_local_74": {
+      "name": "fake_rerank_local",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 76,
+      "content_hash": "576697f6035a1ab24f68e7bf23991f135eaac93c",
+      "content": "    def fake_rerank_local(pairs):\n        # pairs order corresponds to hybrid results; return scores [A,B] -> [0.10, 0.90]\n        return [0.10, 0.90]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_rerank_inproc_dense_respects_collection_argument_113": {
+      "name": "test_rerank_inproc_dense_respects_collection_argument",
+      "type": "function",
+      "start_line": 113,
+      "end_line": 147,
+      "content_hash": "c234c1cf91673e4e5de65db8ceae7a78c54988d1",
+      "content": "async def test_rerank_inproc_dense_respects_collection_argument(monkeypatch):\n    # Drive the in-process dense rerank fallback path by returning no hybrid candidates.\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"1\")\n    monkeypatch.setenv(\"RERANK_IN_PROCESS\", \"1\")\n\n    def fake_run_hybrid_search(**kwargs):\n        return []\n\n    monkeypatch.setitem(sys.modules, \"scripts.hybrid_search\", _make_hybrid_stub(fake_run_hybrid_search))\n    monkeypatch.delitem(sys.modules, \"scripts.mcp_indexer_server\", raising=False)\n    server = importlib.import_module(\"scripts.mcp_indexer_server\")\n    monkeypatch.setattr(server, \"_get_embedding_model\", _fake_embedding_model)\n\n    captured = {}\n\n    def fake_rerank_in_process(**kwargs):\n        captured.update(kwargs)\n        return []\n\n    monkeypatch.setattr(\n        importlib.import_module(\"scripts.rerank_local\"),\n        \"rerank_in_process\",\n        fake_rerank_in_process,\n    )\n\n    await server.repo_search(\n        query=\"q\",\n        limit=2,\n        per_path=2,\n        rerank_enabled=True,\n        compact=True,\n        collection=\"other-collection\",\n    )\n\n    assert captured.get(\"collection\") == \"other-collection\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_hybrid_search_118": {
+      "name": "fake_run_hybrid_search",
+      "type": "function",
+      "start_line": 118,
+      "end_line": 119,
+      "content_hash": "4f1adc414afd3346be5361ba5ba0cc8045625ff0",
+      "content": "    def fake_run_hybrid_search(**kwargs):\n        return []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_rerank_in_process_128": {
+      "name": "fake_rerank_in_process",
+      "type": "function",
+      "start_line": 128,
+      "end_line": 130,
+      "content_hash": "d771edb9a578328b4f0ab6f1d9d5e401cbafb2d4",
+      "content": "    def fake_rerank_in_process(**kwargs):\n        captured.update(kwargs)\n        return []",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_rerank_subprocess_timeout_fallback_152": {
+      "name": "test_rerank_subprocess_timeout_fallback",
+      "type": "function",
+      "start_line": 152,
+      "end_line": 194,
+      "content_hash": "6c212bd442ef0b72ee339806557217df921d1bfa",
+      "content": "async def test_rerank_subprocess_timeout_fallback(monkeypatch):\n    # Force hybrid via subprocess output (doesn't matter which) and disable inproc rerank\n    monkeypatch.setenv(\"HYBRID_IN_PROCESS\", \"1\")\n    monkeypatch.setenv(\"RERANK_IN_PROCESS\", \"0\")\n\n    def fake_run_hybrid_search(**kwargs):\n        return [\n            {\"score\": 0.6, \"path\": \"/work/a.py\", \"symbol\": \"\", \"start_line\": 1, \"end_line\": 3},\n            {\"score\": 0.5, \"path\": \"/work/b.py\", \"symbol\": \"\", \"start_line\": 10, \"end_line\": 12},\n        ]\n\n    async def fake_run_async(cmd, env=None, timeout=None):\n        # Ensure explicit collection is forwarded to subprocess reranker\n        assert \"--collection\" in cmd\n        idx = cmd.index(\"--collection\")\n        assert cmd[idx + 1] == \"test-coll\"\n        # Simulate subprocess reranker timing out\n        return {\"ok\": False, \"code\": -1, \"stdout\": \"\", \"stderr\": f\"Command timed out after {timeout}s\"}\n\n    monkeypatch.setitem(sys.modules, \"scripts.hybrid_search\", _make_hybrid_stub(fake_run_hybrid_search))\n    monkeypatch.delitem(sys.modules, \"scripts.mcp_indexer_server\", raising=False)\n    server = importlib.import_module(\"scripts.mcp_indexer_server\")\n    monkeypatch.setattr(\n        server,\n        \"run_hybrid_search\",\n        fake_run_hybrid_search,\n        raising=False,\n    )\n    monkeypatch.setattr(server, \"_get_embedding_model\", _fake_embedding_model)\n    monkeypatch.setattr(server, \"_run_async\", fake_run_async)\n\n    rr = await server.repo_search(\n        query=\"q\",\n        limit=2,\n        per_path=2,\n        rerank_enabled=True,\n        compact=True,\n        collection=\"test-coll\",\n    )\n    # Fallback should keep original order from hybrid; timeout counter incremented\n    assert rr.get(\"used_rerank\") is False\n    assert rr.get(\"rerank_counters\", {}).get(\"timeout\", 0) >= 1\n    assert [r[\"path\"] for r in rr[\"results\"]] == [\"/work/a.py\", \"/work/b.py\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_hybrid_search_157": {
+      "name": "fake_run_hybrid_search",
+      "type": "function",
+      "start_line": 157,
+      "end_line": 161,
+      "content_hash": "532ae1246acb7254813cf87b7ee4fc06ceda0c14",
+      "content": "    def fake_run_hybrid_search(**kwargs):\n        return [\n            {\"score\": 0.6, \"path\": \"/work/a.py\", \"symbol\": \"\", \"start_line\": 1, \"end_line\": 3},\n            {\"score\": 0.5, \"path\": \"/work/b.py\", \"symbol\": \"\", \"start_line\": 10, \"end_line\": 12},\n        ]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_run_async_163": {
+      "name": "fake_run_async",
+      "type": "function",
+      "start_line": 163,
+      "end_line": 169,
+      "content_hash": "79413b16913a197f7562abedb6d048ffd0721366",
+      "content": "    async def fake_run_async(cmd, env=None, timeout=None):\n        # Ensure explicit collection is forwarded to subprocess reranker\n        assert \"--collection\" in cmd\n        idx = cmd.index(\"--collection\")\n        assert cmd[idx + 1] == \"test-coll\"\n        # Simulate subprocess reranker timing out\n        return {\"ok\": False, \"code\": -1, \"stdout\": \"\", \"stderr\": f\"Command timed out after {timeout}s\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/internal/agent/tools/download_test.go",
+  "file_hash": "b1fc770b842bab252c180e082c4563fdf7f4a616",
+  "updated_at": "2025-12-26T17:34:21.825196",
+  "symbols": {
+    "function_TestNewDownloadTool_18": {
+      "name": "TestNewDownloadTool",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 26,
+      "content_hash": "5ef2204bbb72b01ff3ef7cd01657fb2dd92eb6e0",
+      "content": "func TestNewDownloadTool(t *testing.T) {\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, \"/tmp\", nil)\n\n\tassert.NotNil(t, tool)\n\tassert.Equal(t, DownloadToolName, tool.Info().Name)\n\tassert.NotEmpty(t, tool.Info().Description)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewDownloadTool_WithCustomClient_27": {
+      "name": "TestNewDownloadTool_WithCustomClient",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 34,
+      "content_hash": "731f654204817e4dcb11777c10c00c7c8f03529a",
+      "content": "func TestNewDownloadTool_WithCustomClient(t *testing.T) {\n\tmockPermissions := &mockPermissionService{}\n\tcustomClient := &http.Client{}\n\ttool := NewDownloadTool(mockPermissions, \"/tmp\", customClient)\n\n\tassert.NotNil(t, tool)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_MissingURL_35": {
+      "name": "TestDownloadTool_MissingURL",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 56,
+      "content_hash": "898742b0f2976877f9a8caa5f34a674eb8e40dd7",
+      "content": "func TestDownloadTool_MissingURL(t *testing.T) {\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, \"/tmp\", nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tFilePath: \"/tmp/test.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-1\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.True(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"URL parameter is required\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_MissingFilePath_57": {
+      "name": "TestDownloadTool_MissingFilePath",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 78,
+      "content_hash": "6dff9431be2593a150d289733665074c08338a19",
+      "content": "func TestDownloadTool_MissingFilePath(t *testing.T) {\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, \"/tmp\", nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL: \"https://example.com/file.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-2\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.True(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"file_path parameter is required\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_InvalidURL_79": {
+      "name": "TestDownloadTool_InvalidURL",
+      "type": "function",
+      "start_line": 79,
+      "end_line": 101,
+      "content_hash": "513b2ec85eac3a06a3f7d89c4446e595fc8185c1",
+      "content": "func TestDownloadTool_InvalidURL(t *testing.T) {\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, \"/tmp\", nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      \"ftp://example.com/file.txt\",\n\t\tFilePath: \"/tmp/test.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-3\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.True(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"URL must start with http:// or https://\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_MissingSessionID_102": {
+      "name": "TestDownloadTool_MissingSessionID",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 123,
+      "content_hash": "c27f8fea38bed71b4c35421526a1e5a5b78b016d",
+      "content": "func TestDownloadTool_MissingSessionID(t *testing.T) {\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, \"/tmp\", nil)\n\n\tctx := context.Background() // No session ID\n\tparams := DownloadParams{\n\t\tURL:      \"https://example.com/file.txt\",\n\t\tFilePath: \"/tmp/test.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-4\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\t_, err := tool.Run(ctx, toolCall)\n\n\trequire.Error(t, err)\n\tassert.Contains(t, err.Error(), \"session ID is required\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_SuccessfulDownload_124": {
+      "name": "TestDownloadTool_SuccessfulDownload",
+      "type": "function",
+      "start_line": 124,
+      "end_line": 164,
+      "content_hash": "3d6bd588e85f26b477b645002bcdf8a28a72a9a7",
+      "content": "func TestDownloadTool_SuccessfulDownload(t *testing.T) {\n\t// Create a test server\n\ttestContent := \"test file content\"\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"text/plain\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(testContent))\n\t}))\n\tdefer server.Close()\n\n\t// Create temp directory for test\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/test.txt\",\n\t\tFilePath: \"test.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-5\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.False(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"Successfully downloaded\")\n\tassert.Contains(t, resp.Content, \"test.txt\")\n\n\t// Verify file was created and has correct content\n\tcontent, err := os.ReadFile(filepath.Join(tmpDir, \"test.txt\"))\n\trequire.NoError(t, err)\n\tassert.Equal(t, testContent, string(content))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_PermissionHandling_165": {
+      "name": "TestDownloadTool_PermissionHandling",
+      "type": "function",
+      "start_line": 165,
+      "end_line": 171,
+      "content_hash": "1bc60e717402d7a8517c40de8e443f8102e1c43c",
+      "content": "func TestDownloadTool_PermissionHandling(t *testing.T) {\n\t// Note: Permission testing requires permission.Service mock with denial logic\n\t// The existing mockPermissionService always grants permission\n\t// Full permission testing is covered in integration tests\n\tt.Skip(\"Permission denial testing requires custom mock\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_HTTPError_172": {
+      "name": "TestDownloadTool_HTTPError",
+      "type": "function",
+      "start_line": 172,
+      "end_line": 201,
+      "content_hash": "f2ce97c6f0bc86fd604d7ba351a073fef646558d",
+      "content": "func TestDownloadTool_HTTPError(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusNotFound)\n\t}))\n\tdefer server.Close()\n\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/notfound.txt\",\n\t\tFilePath: \"test.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-7\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.True(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"404\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_WithTimeout_202": {
+      "name": "TestDownloadTool_WithTimeout",
+      "type": "function",
+      "start_line": 202,
+      "end_line": 233,
+      "content_hash": "16b0c6f070276fb7649e0fc1d30f66f3a1a467ea",
+      "content": "func TestDownloadTool_WithTimeout(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"text/plain\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(\"test\"))\n\t}))\n\tdefer server.Close()\n\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/test.txt\",\n\t\tFilePath: \"test.txt\",\n\t\tTimeout:  30,\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-8\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.False(t, resp.IsError)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_MaxTimeoutCap_234": {
+      "name": "TestDownloadTool_MaxTimeoutCap",
+      "type": "function",
+      "start_line": 234,
+      "end_line": 264,
+      "content_hash": "3ae7b90ab5a0018bd50585647e424ecb5c010eff",
+      "content": "func TestDownloadTool_MaxTimeoutCap(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(\"test\"))\n\t}))\n\tdefer server.Close()\n\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/test.txt\",\n\t\tFilePath: \"test.txt\",\n\t\tTimeout:  1000, // Should be capped at 600\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-9\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.False(t, resp.IsError)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_LargeFile_265": {
+      "name": "TestDownloadTool_LargeFile",
+      "type": "function",
+      "start_line": 265,
+      "end_line": 298,
+      "content_hash": "288d14e7272fab8154eea66f65e3b0cea052a848",
+      "content": "func TestDownloadTool_LargeFile(t *testing.T) {\n\t// Create large content (> 100MB would be rejected)\n\tlargeContent := strings.Repeat(\"x\", 101*1024*1024)\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Length\", \"105906176\") // > 100MB\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(largeContent))\n\t}))\n\tdefer server.Close()\n\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/largefile.bin\",\n\t\tFilePath: \"large.bin\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-10\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.True(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"File too large\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_CreatesDirectories_299": {
+      "name": "TestDownloadTool_CreatesDirectories",
+      "type": "function",
+      "start_line": 299,
+      "end_line": 332,
+      "content_hash": "30d33d4c6f7dae60d8f40c7ca12160c6ec03e46c",
+      "content": "func TestDownloadTool_CreatesDirectories(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(\"test\"))\n\t}))\n\tdefer server.Close()\n\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/test.txt\",\n\t\tFilePath: \"subdir/nested/test.txt\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-11\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.False(t, resp.IsError)\n\n\t// Verify directories were created\n\t_, err = os.Stat(filepath.Join(tmpDir, \"subdir\", \"nested\"))\n\tassert.NoError(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDownloadTool_WithContentType_333": {
+      "name": "TestDownloadTool_WithContentType",
+      "type": "function",
+      "start_line": 333,
+      "end_line": 363,
+      "content_hash": "a00240474b93168ac7afc7060398ec665cceb60a",
+      "content": "func TestDownloadTool_WithContentType(t *testing.T) {\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\tw.WriteHeader(http.StatusOK)\n\t\tw.Write([]byte(`{\"test\": true}`))\n\t}))\n\tdefer server.Close()\n\n\ttmpDir := t.TempDir()\n\n\tmockPermissions := &mockPermissionService{}\n\ttool := NewDownloadTool(mockPermissions, tmpDir, nil)\n\n\tctx := context.WithValue(context.Background(), SessionIDContextKey, \"test-session\")\n\tparams := DownloadParams{\n\t\tURL:      server.URL + \"/data.json\",\n\t\tFilePath: \"data.json\",\n\t}\n\tparamsJSON, _ := json.Marshal(params)\n\ttoolCall := fantasy.ToolCall{\n\t\tID:    \"test-12\",\n\t\tName:  DownloadToolName,\n\t\tInput: string(paramsJSON),\n\t}\n\n\tresp, err := tool.Run(ctx, toolCall)\n\n\trequire.NoError(t, err)\n\tassert.False(t, resp.IsError)\n\tassert.Contains(t, resp.Content, \"Content-Type: application/json\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

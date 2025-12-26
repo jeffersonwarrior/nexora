@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/metrics.rs",
+  "file_hash": "877c7e27a66c8aaf802efc078abf6b28ddf3e29a",
+  "updated_at": "2025-12-26T17:34:24.528041",
+  "symbols": {
+    "function_ask_for_email_95": {
+      "name": "ask_for_email",
+      "type": "function",
+      "start_line": 95,
+      "end_line": 106,
+      "content_hash": "1a649b69116f4c2431ee947ed6161ac3f1b1fd62",
+      "content": "fn ask_for_email() -> String {\n    print_line(\"Please enter your email address:\");\n    let mut email = String::new();\n    io::stdin().read_line(&mut email).unwrap();\n    let email = email.trim().to_string();\n    // validate email\n    if !EMAIL_REGEX.is_match(&email) {\n        print_line(\"Invalid email address\");\n        return ask_for_email();\n    }\n    email\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

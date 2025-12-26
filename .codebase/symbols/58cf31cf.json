@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/generator/tsdisplay.rs",
+  "file_hash": "71caccb94d62f98df9798f0b1601ba91e81711f2",
+  "updated_at": "2025-12-26T17:34:21.257163",
+  "symbols": {
+    "trait_ToTypeScript_1": {
+      "name": "ToTypeScript",
+      "type": "trait",
+      "start_line": 1,
+      "end_line": 1,
+      "content_hash": "a81279fc79a496d455d2393df921c8ed3877dcd0",
+      "content": "pub trait ToTypeScript {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_to_typescript_2": {
+      "name": "to_typescript",
+      "type": "function",
+      "start_line": 2,
+      "end_line": 3,
+      "content_hash": "fc9db4d686d69d27d3fc9dde048a6658523bc1f8",
+      "content": "    fn to_typescript(&self) -> String;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

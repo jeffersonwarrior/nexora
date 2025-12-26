@@ -1,0 +1,227 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/models.go",
+  "file_hash": "a72609e17dd93fc9f6a927f50022540de63e1bc4",
+  "updated_at": "2025-12-26T17:34:21.185514",
+  "symbols": {
+    "struct_ModelSelectedMsg_39": {
+      "name": "ModelSelectedMsg",
+      "type": "struct",
+      "start_line": 39,
+      "end_line": 44,
+      "content_hash": "160754cc5dedd2d5baf2b534734f10c017164ca7",
+      "content": "type ModelSelectedMsg struct {\n\tModel     config.SelectedModel\n\tModelType config.SelectedModelType\n}\n\n// CloseModelDialogMsg is sent when a model is selected",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CloseModelDialogMsg_45": {
+      "name": "CloseModelDialogMsg",
+      "type": "struct",
+      "start_line": 45,
+      "end_line": 47,
+      "content_hash": "9a99208b28e7ed94de770a14c05edf4f981230b1",
+      "content": "type CloseModelDialogMsg struct{}\n\n// ModelDialog interface for the model selection dialog",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_ModelDialog_48": {
+      "name": "ModelDialog",
+      "type": "interface",
+      "start_line": 48,
+      "end_line": 51,
+      "content_hash": "2208800a84f4b04a51944766f83716ffd832d37b",
+      "content": "type ModelDialog interface {\n\tdialogs.DialogModel\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ModelOption_52": {
+      "name": "ModelOption",
+      "type": "struct",
+      "start_line": 52,
+      "end_line": 56,
+      "content_hash": "74d38fa7c778662b68422a13c69458a3b14d728b",
+      "content": "type ModelOption struct {\n\tProvider catwalk.Provider\n\tModel    catwalk.Model\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_modelDialogCmp_57": {
+      "name": "modelDialogCmp",
+      "type": "struct",
+      "start_line": 57,
+      "end_line": 84,
+      "content_hash": "535441006a012c72e6a02d4145b6c1fec26dcfd0",
+      "content": "type modelDialogCmp struct {\n\twidth   int\n\twWidth  int\n\twHeight int\n\n\tmodelList *ModelListComponent\n\tkeyMap    KeyMap\n\thelp      help.Model\n\n\t// API key state\n\tneedsAPIKey       bool\n\tapiKeyInput       *APIKeyInput\n\tselectedModel     *ModelOption\n\tselectedModelType config.SelectedModelType\n\tisAPIKeyValid     bool\n\tapiKeyValue       string\n\n\t// Claude state\n\tclaudeAuthMethodChooser     *claude.AuthMethodChooser\n\tclaudeOAuth2                *claude.OAuth2\n\tshowClaudeAuthMethodChooser bool\n\tshowClaudeOAuth2            bool\n\n\t// Local Models state\n\tlocalModelsDialog *LocalModelsDialog\n\tshowLocalModels   bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewModelDialogCmp_85": {
+      "name": "NewModelDialogCmp",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 115,
+      "content_hash": "4a76e53ecfce95541561bb6dec90f7682ed341de",
+      "content": "func NewModelDialogCmp() ModelDialog {\n\tkeyMap := DefaultKeyMap()\n\n\tlistKeyMap := list.DefaultKeyMap()\n\tlistKeyMap.Down.SetEnabled(false)\n\tlistKeyMap.Up.SetEnabled(false)\n\tlistKeyMap.DownOneItem = keyMap.Next\n\tlistKeyMap.UpOneItem = keyMap.Previous\n\n\tt := styles.CurrentTheme()\n\tmodelList := NewModelListComponent(listKeyMap, largeModelInputPlaceholder, true)\n\tapiKeyInput := NewAPIKeyInput()\n\tapiKeyInput.SetShowTitle(false)\n\thelp := help.New()\n\thelp.Styles = t.S().Help\n\n\treturn &modelDialogCmp{\n\t\tmodelList:   modelList,\n\t\tapiKeyInput: apiKeyInput,\n\t\twidth:       defaultWidth,\n\t\tkeyMap:      DefaultKeyMap(),\n\t\thelp:        help,\n\n\t\tclaudeAuthMethodChooser: claude.NewAuthMethodChooser(),\n\t\tclaudeOAuth2:            claude.NewOAuth2(),\n\n\t\t// Initialize local models dialog\n\t\tlocalModelsDialog: NewLocalModelsDialog(),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_116": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 116,
+      "end_line": 125,
+      "content_hash": "5a62d31c110b7cc0a70c6bde062be0bfca052550",
+      "content": "func (m *modelDialogCmp) Init() tea.Cmd {\n\treturn tea.Batch(\n\t\tm.modelList.Init(),\n\t\tm.apiKeyInput.Init(),\n\t\tm.claudeAuthMethodChooser.Init(),\n\t\tm.claudeOAuth2.Init(),\n\t\tm.localModelsDialog.Init(),\n\t)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_126": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 126,
+      "end_line": 454,
+      "content_hash": "cdc9e02d4ebe7478c2d6fa5fba3687dda665577f",
+      "content": "func (m *modelDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\t// Pre-emptively check for local models message first\n\tif msg, ok := msg.(ShowLocalModelsMsg); ok {\n\t\t_ = msg // consume message\n\t\tm.showLocalModels = true\n\t\treturn m, m.localModelsDialog.Init()\n\t}\n\n\tswitch msg := msg.(type) {\n\tcase LocalModelsDetectComplete:\n\t\t// Handle successful detection from local dialog\n\t\tm.showLocalModels = false\n\t\tif len(msg.Models) > 0 {\n\t\t\t// Save the local provider to config\n\t\t\tlocalProvider := &providers.LocalProvider{\n\t\t\t\tType:     msg.ServerType,\n\t\t\t\tEndpoint: msg.Endpoint,\n\t\t\t\tAPIKey:   msg.APIKey,\n\t\t\t\tModels:   msg.Models,\n\t\t\t\tName:     \"Local Models\",\n\t\t\t\tBaseURL:  msg.Endpoint,\n\t\t\t}\n\n\t\t\tif err := config.AddLocalProvider(localProvider); err != nil {\n\t\t\t\treturn m, util.ReportError(fmt.Errorf(\"failed to save local provider: %v\", err))\n\t\t\t}\n\n\t\t\t// Close dialog and emit ModelSelectedMsg (in that order, like regular model selection)\n\t\t\t// The model list will be refreshed when the dialog is reopened\n\t\t\treturn m, tea.Sequence(\n\t\t\t\tutil.CmdHandler(dialogs.CloseDialogMsg{}),\n\t\t\t\tutil.CmdHandler(ModelSelectedMsg{\n\t\t\t\t\tModel: config.SelectedModel{\n\t\t\t\t\t\tModel:    msg.Models[0].ID,\n\t\t\t\t\t\tProvider: \"local\",\n\t\t\t\t\t},\n\t\t\t\t\tModelType: config.SelectedModelTypeLarge,\n\t\t\t\t}),\n\t\t\t)\n\t\t}\n\t\treturn m, nil\n\tcase LocalModelsDetectErrorMsg:\n\t\t// Handle detection error - keep dialog open to show error\n\t\tif m.showLocalModels {\n\t\t\tu, cmd := m.localModelsDialog.Update(msg)\n\t\t\tm.localModelsDialog = u.(*LocalModelsDialog)\n\t\t\treturn m, cmd\n\t\t}\n\t\treturn m, nil\n\tcase LocalModelsDetectCompleteMsg:\n\t\tm.showLocalModels = false\n\t\tif msg.Error == nil && msg.Provider != \"\" {\n\t\t\t// Emit ModelSelectedMsg with local provider\n\t\t\treturn m, util.CmdHandler(ModelSelectedMsg{\n\t\t\t\tModel: config.SelectedModel{\n\t\t\t\t\tModel:    \"local-model\",\n\t\t\t\t\tProvider: \"local\",\n\t\t\t\t},\n\t\t\t\tModelType: config.SelectedModelTypeLarge,\n\t\t\t})\n\t\t}\n\t\treturn m, nil\n\tcase tea.WindowSizeMsg:\n\t\tm.wWidth = msg.Width\n\t\tm.wHeight = msg.Height\n\t\tm.apiKeyInput.SetWidth(m.width - 2)\n\t\tm.help.SetWidth(m.width - 2)\n\t\tm.claudeAuthMethodChooser.SetWidth(m.width - 2)\n\t\treturn m, m.modelList.SetSize(m.listWidth(), m.listHeight())\n\tcase APIKeyStateChangeMsg:\n\t\tu, cmd := m.apiKeyInput.Update(msg)\n\t\tm.apiKeyInput = u.(*APIKeyInput)\n\t\treturn m, cmd\n\tcase claude.ValidationCompletedMsg:\n\t\tvar cmds []tea.Cmd\n\t\tu, cmd := m.claudeOAuth2.Update(msg)\n\t\tm.claudeOAuth2 = u.(*claude.OAuth2)\n\t\tcmds = append(cmds, cmd)\n\n\t\tif msg.State == claude.OAuthValidationStateValid {\n\t\t\tcmds = append(cmds, m.saveAPIKeyAndContinue(msg.Token, false))\n\t\t\tm.keyMap.isClaudeOAuthHelpComplete = true\n\t\t}\n\n\t\treturn m, tea.Batch(cmds...)\n\tcase claude.AuthenticationCompleteMsg:\n\t\treturn m, util.CmdHandler(dialogs.CloseDialogMsg{})\n\tcase tea.KeyPressMsg:\n\t\tswitch {\n\t\tcase key.Matches(msg, key.NewBinding(key.WithKeys(\"c\", \"C\"))) && m.showClaudeOAuth2 && m.claudeOAuth2.State == claude.OAuthStateURL:\n\t\t\treturn m, tea.Sequence(\n\t\t\t\ttea.SetClipboard(m.claudeOAuth2.URL),\n\t\t\t\tfunc() tea.Msg {\n\t\t\t\t\t_ = clipboard.WriteAll(m.claudeOAuth2.URL)\n\t\t\t\t\treturn nil\n\t\t\t\t},\n\t\t\t\tutil.ReportInfo(\"URL copied to clipboard\"),\n\t\t\t)\n\t\tcase key.Matches(msg, m.keyMap.Choose) && m.showClaudeAuthMethodChooser:\n\t\t\tm.claudeAuthMethodChooser.ToggleChoice()\n\t\t\treturn m, nil\n\t\tcase key.Matches(msg, m.keyMap.Select):\n\t\t\t// Forward to local models dialog if it's showing\n\t\t\tif m.showLocalModels {\n\t\t\t\tu, cmd := m.localModelsDialog.Update(msg)\n\t\t\t\tm.localModelsDialog = u.(*LocalModelsDialog)\n\t\t\t\treturn m, cmd\n\t\t\t}\n\n\t\t\tselectedItem := m.modelList.SelectedModel()\n\n\t\t\t// Check if \"Configure Local Models...\" was selected\n\t\t\tif selectedItem != nil && selectedItem.Model.ID == \"local-models\" {\n\t\t\t\tm.showLocalModels = true\n\t\t\t\treturn m, m.localModelsDialog.Init()\n\t\t\t}\n\n\t\t\tmodelType := config.SelectedModelTypeLarge\n\t\t\tif m.modelList.GetModelType() == SmallModelType {\n\t\t\t\tmodelType = config.SelectedModelTypeSmall\n\t\t\t}\n\n\t\t\taskForApiKey := func() {\n\t\t\t\tm.keyMap.isClaudeAuthChoiseHelp = false\n\t\t\t\tm.keyMap.isClaudeOAuthHelp = false\n\t\t\t\tm.keyMap.isAPIKeyHelp = true\n\t\t\t\tm.showClaudeAuthMethodChooser = false\n\t\t\t\tm.needsAPIKey = true\n\t\t\t\tm.selectedModel = selectedItem\n\t\t\t\tm.selectedModelType = modelType\n\t\t\t\tm.apiKeyInput.SetProviderName(selectedItem.Provider.Name)\n\t\t\t}\n\n\t\t\tif m.showClaudeAuthMethodChooser {\n\t\t\t\tswitch m.claudeAuthMethodChooser.State {\n\t\t\t\tcase claude.AuthMethodAPIKey:\n\t\t\t\t\taskForApiKey()\n\t\t\t\tcase claude.AuthMethodOAuth2:\n\t\t\t\t\tm.selectedModel = selectedItem\n\t\t\t\t\tm.selectedModelType = modelType\n\t\t\t\t\tm.showClaudeAuthMethodChooser = false\n\t\t\t\t\tm.showClaudeOAuth2 = true\n\t\t\t\t\tm.keyMap.isClaudeAuthChoiseHelp = false\n\t\t\t\t\tm.keyMap.isClaudeOAuthHelp = true\n\t\t\t\t}\n\t\t\t\treturn m, nil\n\t\t\t}\n\t\t\tif m.showClaudeOAuth2 {\n\t\t\t\tm2, cmd2 := m.claudeOAuth2.ValidationConfirm()\n\t\t\t\tm.claudeOAuth2 = m2.(*claude.OAuth2)\n\t\t\t\treturn m, cmd2\n\t\t\t}\n\t\t\tif m.isAPIKeyValid {\n\t\t\t\treturn m, m.saveAPIKeyAndContinue(m.apiKeyValue, true)\n\t\t\t}\n\t\t\tif m.needsAPIKey {\n\t\t\t\t// Handle API key submission\n\t\t\t\tm.apiKeyValue = m.apiKeyInput.Value()\n\t\t\t\tprovider, err := m.getProvider(m.selectedModel.Provider.ID)\n\t\t\t\tif err != nil || provider == nil {\n\t\t\t\t\treturn m, util.ReportError(fmt.Errorf(\"provider %s not found\", m.selectedModel.Provider.ID))\n\t\t\t\t}\n\t\t\t\tproviderConfig := config.ProviderConfig{\n\t\t\t\t\tID:      string(m.selectedModel.Provider.ID),\n\t\t\t\t\tName:    m.selectedModel.Provider.Name,\n\t\t\t\t\tAPIKey:  m.apiKeyValue,\n\t\t\t\t\tType:    provider.Type,\n\t\t\t\t\tBaseURL: provider.APIEndpoint,\n\t\t\t\t}\n\t\t\t\treturn m, tea.Sequence(\n\t\t\t\t\tutil.CmdHandler(APIKeyStateChangeMsg{\n\t\t\t\t\t\tState: APIKeyInputStateVerifying,\n\t\t\t\t\t}),\n\t\t\t\t\tfunc() tea.Msg {\n\t\t\t\t\t\tstart := time.Now()\n\t\t\t\t\t\terr := providerConfig.TestConnection(config.Get().Resolver())\n\t\t\t\t\t\t// intentionally wait for at least 750ms to make sure the user sees the spinner\n\t\t\t\t\t\telapsed := time.Since(start)\n\t\t\t\t\t\tif elapsed < 750*time.Millisecond {\n\t\t\t\t\t\t\ttime.Sleep(750*time.Millisecond - elapsed)\n\t\t\t\t\t\t}\n\t\t\t\t\t\tif err == nil {\n\t\t\t\t\t\t\tm.isAPIKeyValid = true\n\t\t\t\t\t\t\treturn APIKeyStateChangeMsg{\n\t\t\t\t\t\t\t\tState: APIKeyInputStateVerified,\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t\treturn APIKeyStateChangeMsg{\n\t\t\t\t\t\t\tState: APIKeyInputStateError,\n\t\t\t\t\t\t}\n\t\t\t\t\t},\n\t\t\t\t)\n\t\t\t}\n\n\t\t\t// Check if provider is configured\n\t\t\tif m.isProviderConfigured(string(selectedItem.Provider.ID)) {\n\t\t\t\treturn m, tea.Sequence(\n\t\t\t\t\tutil.CmdHandler(dialogs.CloseDialogMsg{}),\n\t\t\t\t\tutil.CmdHandler(ModelSelectedMsg{\n\t\t\t\t\t\tModel: config.SelectedModel{\n\t\t\t\t\t\t\tModel:           selectedItem.Model.ID,\n\t\t\t\t\t\t\tProvider:        string(selectedItem.Provider.ID),\n\t\t\t\t\t\t\tReasoningEffort: selectedItem.Model.DefaultReasoningEffort,\n\t\t\t\t\t\t\tMaxTokens:       selectedItem.Model.DefaultMaxTokens,\n\t\t\t\t\t\t},\n\t\t\t\t\t\tModelType: modelType,\n\t\t\t\t\t}),\n\t\t\t\t)\n\t\t\t} else {\n\t\t\t\tif selectedItem.Provider.ID == catwalk.InferenceProviderAnthropic {\n\t\t\t\t\tm.showClaudeAuthMethodChooser = true\n\t\t\t\t\tm.keyMap.isClaudeAuthChoiseHelp = true\n\t\t\t\t\treturn m, nil\n\t\t\t\t}\n\t\t\t\taskForApiKey()\n\t\t\t\treturn m, nil\n\t\t\t}\n\t\tcase key.Matches(msg, m.keyMap.Tab):\n\t\t\t// Don't handle Tab if local models dialog is showing\n\t\t\tif m.showLocalModels {\n\t\t\t\tu, cmd := m.localModelsDialog.Update(msg)\n\t\t\t\tm.localModelsDialog = u.(*LocalModelsDialog)\n\t\t\t\treturn m, cmd\n\t\t\t}\n\t\t\tswitch {\n\t\t\tcase m.showClaudeAuthMethodChooser:\n\t\t\t\tm.claudeAuthMethodChooser.ToggleChoice()\n\t\t\t\treturn m, nil\n\t\t\tcase m.needsAPIKey:\n\t\t\t\tu, cmd := m.apiKeyInput.Update(msg)\n\t\t\t\tm.apiKeyInput = u.(*APIKeyInput)\n\t\t\t\treturn m, cmd\n\t\t\tcase m.modelList.GetModelType() == LargeModelType:\n\t\t\t\tm.modelList.SetInputPlaceholder(smallModelInputPlaceholder)\n\t\t\t\treturn m, m.modelList.SetModelType(SmallModelType)\n\t\t\tdefault:\n\t\t\t\tm.modelList.SetInputPlaceholder(largeModelInputPlaceholder)\n\t\t\t\treturn m, m.modelList.SetModelType(LargeModelType)\n\t\t\t}\n\t\tcase key.Matches(msg, m.keyMap.Close):\n\t\t\t// Handle local models dialog close\n\t\t\tif m.showLocalModels {\n\t\t\t\t// Escape closes the local models dialog and returns to main list\n\t\t\t\tm.showLocalModels = false\n\t\t\t\treturn m, nil\n\t\t\t}\n\t\t\tif m.showClaudeAuthMethodChooser {\n\t\t\t\tm.claudeAuthMethodChooser.SetDefaults()\n\t\t\t\tm.showClaudeAuthMethodChooser = false\n\t\t\t\tm.keyMap.isClaudeAuthChoiseHelp = false\n\t\t\t\tm.keyMap.isClaudeOAuthHelp = false\n\t\t\t\treturn m, nil\n\t\t\t}\n\t\t\tif m.needsAPIKey {\n\t\t\t\tif m.isAPIKeyValid {\n\t\t\t\t\treturn m, nil\n\t\t\t\t}\n\t\t\t\t// Go back to model selection\n\t\t\t\tm.needsAPIKey = false\n\t\t\t\tm.selectedModel = nil\n\t\t\t\tm.isAPIKeyValid = false\n\t\t\t\tm.apiKeyValue = \"\"\n\t\t\t\tm.apiKeyInput.Reset()\n\t\t\t\treturn m, nil\n\t\t\t}\n\t\t\treturn m, util.CmdHandler(dialogs.CloseDialogMsg{})\n\t\tdefault:\n\t\t\tif m.showClaudeAuthMethodChooser {\n\t\t\t\tu, cmd := m.claudeAuthMethodChooser.Update(msg)\n\t\t\t\tm.claudeAuthMethodChooser = u.(*claude.AuthMethodChooser)\n\t\t\t\treturn m, cmd\n\t\t\t} else if m.showClaudeOAuth2 {\n\t\t\t\tu, cmd := m.claudeOAuth2.Update(msg)\n\t\t\t\tm.claudeOAuth2 = u.(*claude.OAuth2)\n\t\t\t\treturn m, cmd\n\t\t\t} else if m.needsAPIKey {\n\t\t\t\tu, cmd := m.apiKeyInput.Update(msg)\n\t\t\t\tm.apiKeyInput = u.(*APIKeyInput)\n\t\t\t\treturn m, cmd\n\t\t\t} else if m.showLocalModels {\n\t\t\t\tu, cmd := m.localModelsDialog.Update(msg)\n\t\t\t\tm.localModelsDialog = u.(*LocalModelsDialog)\n\t\t\t\treturn m, cmd\n\t\t\t} else {\n\t\t\t\tu, cmd := m.modelList.Update(msg)\n\t\t\t\tm.modelList = u\n\t\t\t\treturn m, cmd\n\t\t\t}\n\t\t}\n\tcase tea.PasteMsg:\n\t\tif m.showClaudeOAuth2 {\n\t\t\tu, cmd := m.claudeOAuth2.Update(msg)\n\t\t\tm.claudeOAuth2 = u.(*claude.OAuth2)\n\t\t\treturn m, cmd\n\t\t} else if m.needsAPIKey {\n\t\t\tu, cmd := m.apiKeyInput.Update(msg)\n\t\t\tm.apiKeyInput = u.(*APIKeyInput)\n\t\t\treturn m, cmd\n\t\t} else if m.showLocalModels {\n\t\t\tu, cmd := m.localModelsDialog.Update(msg)\n\t\t\tm.localModelsDialog = u.(*LocalModelsDialog)\n\t\t\treturn m, cmd\n\t\t} else {\n\t\t\tvar cmd tea.Cmd\n\t\t\tm.modelList, cmd = m.modelList.Update(msg)\n\t\t\treturn m, cmd\n\t\t}\n\tcase spinner.TickMsg:\n\t\tif m.showClaudeOAuth2 {\n\t\t\tu, cmd := m.claudeOAuth2.Update(msg)\n\t\t\tm.claudeOAuth2 = u.(*claude.OAuth2)\n\t\t\treturn m, cmd\n\t\t} else if m.needsAPIKey {\n\t\t\tu, cmd := m.apiKeyInput.Update(msg)\n\t\t\tm.apiKeyInput = u.(*APIKeyInput)\n\t\t\treturn m, cmd\n\t\t} else if m.showLocalModels {\n\t\t\tu, cmd := m.localModelsDialog.Update(msg)\n\t\t\tm.localModelsDialog = u.(*LocalModelsDialog)\n\t\t\treturn m, cmd\n\t\t} else {\n\t\t\tu, cmd := m.modelList.Update(msg)\n\t\t\tm.modelList = u\n\t\t\treturn m, cmd\n\t\t}\n\t}\n\treturn m, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_455": {
+      "name": "View",
+      "type": "method",
+      "start_line": 455,
+      "end_line": 514,
+      "content_hash": "838ea75e49cb4ac767b95aee2d966725b726b1dc",
+      "content": "func (m *modelDialogCmp) View() string {\n\tt := styles.CurrentTheme()\n\n\tswitch {\n\tcase m.showClaudeAuthMethodChooser:\n\t\tchooserView := m.claudeAuthMethodChooser.View()\n\t\tcontent := lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\tt.S().Base.Padding(0, 1, 1, 1).Render(core.Title(\"Let's Auth Anthropic\", m.width-4)),\n\t\t\tchooserView,\n\t\t\t\"\",\n\t\t\tt.S().Base.Width(m.width-2).PaddingLeft(1).AlignHorizontal(lipgloss.Left).Render(m.help.View(m.keyMap)),\n\t\t)\n\t\treturn m.style().Render(content)\n\tcase m.showClaudeOAuth2:\n\t\tm.keyMap.isClaudeOAuthURLState = m.claudeOAuth2.State == claude.OAuthStateURL\n\t\toauth2View := m.claudeOAuth2.View()\n\t\tcontent := lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\tt.S().Base.Padding(0, 1, 1, 1).Render(core.Title(\"Let's Auth Anthropic\", m.width-4)),\n\t\t\toauth2View,\n\t\t\t\"\",\n\t\t\tt.S().Base.Width(m.width-2).PaddingLeft(1).AlignHorizontal(lipgloss.Left).Render(m.help.View(m.keyMap)),\n\t\t)\n\t\treturn m.style().Render(content)\n\tcase m.needsAPIKey:\n\t\t// Show API key input\n\t\tm.keyMap.isAPIKeyHelp = true\n\t\tm.keyMap.isAPIKeyValid = m.isAPIKeyValid\n\t\tapiKeyView := m.apiKeyInput.View()\n\t\tapiKeyView = t.S().Base.Width(m.width - 3).Height(lipgloss.Height(apiKeyView)).PaddingLeft(1).Render(apiKeyView)\n\t\tcontent := lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\tt.S().Base.Padding(0, 1, 1, 1).Render(core.Title(m.apiKeyInput.GetTitle(), m.width-4)),\n\t\t\tapiKeyView,\n\t\t\t\"\",\n\t\t\tt.S().Base.Width(m.width-2).PaddingLeft(1).AlignHorizontal(lipgloss.Left).Render(m.help.View(m.keyMap)),\n\t\t)\n\t\treturn m.style().Render(content)\n\t}\n\n\t// Check if showing local models dialog\n\tif m.showLocalModels && m.localModelsDialog != nil {\n\t\tlocalView := m.localModelsDialog.View()\n\t\treturn localView.Content\n\t}\n\n\t// Show model selection\n\tlistView := m.modelList.View()\n\tradio := m.modelTypeRadio()\n\tcontent := lipgloss.JoinVertical(\n\t\tlipgloss.Left,\n\t\tt.S().Base.Padding(0, 1, 1, 1).Render(core.Title(\"Switch Model\", m.width-lipgloss.Width(radio)-5)+\" \"+radio),\n\t\tlistView,\n\t\t\"\",\n\t\tt.S().Base.Width(m.width-2).PaddingLeft(1).AlignHorizontal(lipgloss.Left).Render(m.help.View(m.keyMap)),\n\t)\n\treturn m.style().Render(content)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_515": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 515,
+      "end_line": 550,
+      "content_hash": "48e0df5e23035eea00d2280fb2a7157886d3bc35",
+      "content": "func (m *modelDialogCmp) Cursor() *tea.Cursor {\n\tif m.showClaudeAuthMethodChooser {\n\t\treturn nil\n\t}\n\tif m.showClaudeOAuth2 {\n\t\tif cursor := m.claudeOAuth2.CodeInput.Cursor(); cursor != nil {\n\t\t\tcursor.Y += 2 // Cursor positioning adjustment for visual alignment\n\t\t\t// This offset ensures the cursor appears correctly positioned in the UI\n\t\t\t// May be needed due to border/margin spacing in the input component rendering\n\t\t\treturn m.moveCursor(cursor)\n\t\t}\n\t\treturn nil\n\t}\n\tif m.needsAPIKey {\n\t\tcursor := m.apiKeyInput.Cursor()\n\t\tif cursor != nil {\n\t\t\tcursor = m.moveCursor(cursor)\n\t\t\treturn cursor\n\t\t}\n\t}\n\tif m.showLocalModels {\n\t\tcursor := m.localModelsDialog.Cursor()\n\t\tif cursor != nil {\n\t\t\tcursor = m.moveCursor(cursor)\n\t\t\treturn cursor\n\t\t}\n\t} else {\n\t\tcursor := m.modelList.Cursor()\n\t\tif cursor != nil {\n\t\t\tcursor = m.moveCursor(cursor)\n\t\t\treturn cursor\n\t\t}\n\t}\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_style_551": {
+      "name": "style",
+      "type": "method",
+      "start_line": 551,
+      "end_line": 558,
+      "content_hash": "5690a6697092eefc2760580cad76429d0b15ab62",
+      "content": "func (m *modelDialogCmp) style() lipgloss.Style {\n\tt := styles.CurrentTheme()\n\treturn t.S().Base.\n\t\tWidth(m.width).\n\t\tBorder(lipgloss.RoundedBorder()).\n\t\tBorderForeground(t.BorderFocus)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_listWidth_559": {
+      "name": "listWidth",
+      "type": "method",
+      "start_line": 559,
+      "end_line": 562,
+      "content_hash": "9931f9d1b492fde078e8cbbb9ea3e6047374cad5",
+      "content": "func (m *modelDialogCmp) listWidth() int {\n\treturn m.width - 2\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_listHeight_563": {
+      "name": "listHeight",
+      "type": "method",
+      "start_line": 563,
+      "end_line": 566,
+      "content_hash": "9c73b1597328d1ebffa39845fb887c3d812bab5c",
+      "content": "func (m *modelDialogCmp) listHeight() int {\n\treturn m.wHeight / 2\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Position_567": {
+      "name": "Position",
+      "type": "method",
+      "start_line": 567,
+      "end_line": 573,
+      "content_hash": "4856aedd67bf4030417f7169ec1273acaefb9a03",
+      "content": "func (m *modelDialogCmp) Position() (int, int) {\n\trow := m.wHeight/4 - 2 // just a bit above the center\n\tcol := m.wWidth / 2\n\tcol -= m.width / 2\n\treturn row, col\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_moveCursor_574": {
+      "name": "moveCursor",
+      "type": "method",
+      "start_line": 574,
+      "end_line": 591,
+      "content_hash": "beb20a3d8402278692d9acd279679e3d88c1cf1e",
+      "content": "func (m *modelDialogCmp) moveCursor(cursor *tea.Cursor) *tea.Cursor {\n\trow, col := m.Position()\n\tif m.needsAPIKey {\n\t\toffset := row + 3 // Border + title + API key input offset\n\t\tcursor.Y += offset\n\t\tcursor.X = cursor.X + col + 2\n\t} else if m.showLocalModels {\n\t\toffset := row + 3 // Border + title + local models dialog offset\n\t\tcursor.Y += offset\n\t\tcursor.X = cursor.X + col + 2\n\t} else {\n\t\toffset := row + 3 // Border + title\n\t\tcursor.Y += offset\n\t\tcursor.X = cursor.X + col + 2\n\t}\n\treturn cursor\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ID_592": {
+      "name": "ID",
+      "type": "method",
+      "start_line": 592,
+      "end_line": 595,
+      "content_hash": "da311943b372e7f8b85b649b412f6f30bb7d9fbd",
+      "content": "func (m *modelDialogCmp) ID() dialogs.DialogID {\n\treturn ModelsDialogID\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_modelTypeRadio_596": {
+      "name": "modelTypeRadio",
+      "type": "method",
+      "start_line": 596,
+      "end_line": 606,
+      "content_hash": "eed7422088d9d4838eabef036f5e6ccc20df3fc5",
+      "content": "func (m *modelDialogCmp) modelTypeRadio() string {\n\tt := styles.CurrentTheme()\n\tchoices := []string{\"Large Task\", \"Small Task\"}\n\ticonSelected := \"\u25c9\"\n\ticonUnselected := \"\u25cb\"\n\tif m.modelList.GetModelType() == LargeModelType {\n\t\treturn t.S().Base.Foreground(t.FgHalfMuted).Render(iconSelected + \" \" + choices[0] + \"  \" + iconUnselected + \" \" + choices[1])\n\t}\n\treturn t.S().Base.Foreground(t.FgHalfMuted).Render(iconUnselected + \" \" + choices[0] + \"  \" + iconSelected + \" \" + choices[1])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isProviderConfigured_607": {
+      "name": "isProviderConfigured",
+      "type": "method",
+      "start_line": 607,
+      "end_line": 614,
+      "content_hash": "e658ada669255a9ce0ef2825debc4d583fef5c5e",
+      "content": "func (m *modelDialogCmp) isProviderConfigured(providerID string) bool {\n\tcfg := config.Get()\n\tif _, ok := cfg.Providers.Get(providerID); ok {\n\t\treturn true\n\t}\n\treturn false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getProvider_615": {
+      "name": "getProvider",
+      "type": "method",
+      "start_line": 615,
+      "end_line": 628,
+      "content_hash": "879a27d5d8a649a847e3c9acee85940ef00361f3",
+      "content": "func (m *modelDialogCmp) getProvider(providerID catwalk.InferenceProvider) (*catwalk.Provider, error) {\n\tcfg := config.Get()\n\tproviders, err := config.Providers(cfg)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tfor _, p := range providers {\n\t\tif p.ID == providerID {\n\t\t\treturn &p, nil\n\t\t}\n\t}\n\treturn nil, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_saveAPIKeyAndContinue_629": {
+      "name": "saveAPIKeyAndContinue",
+      "type": "method",
+      "start_line": 629,
+      "end_line": 711,
+      "content_hash": "59afb9218fd04ec0c601d426f0d0dc33ae39cb92",
+      "content": "func (m *modelDialogCmp) saveAPIKeyAndContinue(apiKey any, close bool) tea.Cmd {\n\tif m.selectedModel == nil {\n\t\treturn util.ReportError(fmt.Errorf(\"no model selected\"))\n\t}\n\n\tcfg := config.Get()\n\terr := cfg.SetProviderAPIKey(string(m.selectedModel.Provider.ID), apiKey)\n\tif err != nil {\n\t\treturn util.ReportError(fmt.Errorf(\"failed to save API key: %w\", err))\n\t}\n\n\t// Auto-configure Z.ai MCP servers when ZAI key is set\n\tif string(m.selectedModel.Provider.ID) == \"zai\" {\n\t\tzaiAPIKey := apiKey.(string)\n\t\tzaiAuthHeader := fmt.Sprintf(\"Bearer %s\", zaiAPIKey)\n\n\t\t// Add web-reader MCP\n\t\tcfg.SetConfigField(\"mcp.web-reader\", map[string]interface{}{\n\t\t\t\"url\":     \"https://api.z.ai/api/mcp/web_reader/mcp\",\n\t\t\t\"type\":    \"http\",\n\t\t\t\"timeout\": 30,\n\t\t\t\"headers\": map[string]interface{}{\n\t\t\t\t\"Authorization\": zaiAuthHeader,\n\t\t\t},\n\t\t})\n\n\t\t// Add web-search-prime MCP\n\t\tcfg.SetConfigField(\"mcp.web-search-prime\", map[string]interface{}{\n\t\t\t\"url\":     \"https://api.z.ai/api/mcp/web_search_prime/mcp\",\n\t\t\t\"type\":    \"http\",\n\t\t\t\"timeout\": 30,\n\t\t\t\"headers\": map[string]interface{}{\n\t\t\t\t\"Authorization\": zaiAuthHeader,\n\t\t\t},\n\t\t})\n\n\t\t// Add vision MCP (stdio npx)\n\t\tcfg.SetConfigField(\"mcp.vision\", map[string]interface{}{\n\t\t\t\"type\":    \"stdio\",\n\t\t\t\"command\": \"npx\",\n\t\t\t\"args\":    []string{\"-y\", \"@z_ai/mcp-server@latest\"},\n\t\t\t\"env\": map[string]interface{}{\n\t\t\t\t\"Z_AI_MODE\":    \"ZAI\",\n\t\t\t\t\"Z_AI_API_KEY\": zaiAPIKey,\n\t\t\t},\n\t\t\t\"timeout\": 30,\n\t\t})\n\n\t\t// Add vision tools to allowed_tools (ensure they exist)\n\t\tvisionTools := []string{\n\t\t\t\"mcp_vision_analyze_data_visualization\",\n\t\t\t\"mcp_vision_analyze_image\",\n\t\t\t\"mcp_vision_extract_text_from_screenshot\",\n\t\t\t\"mcp_vision_ui_to_artifact\",\n\t\t\t\"mcp_vision_diagnose_error_screenshot\",\n\t\t\t\"mcp_vision_understand_technical_diagram\",\n\t\t\t\"mcp_vision_ui_diff_check\",\n\t\t\t\"mcp_vision_analyze_video\",\n\t\t}\n\t\t// Append vision tools to existing allowed_tools\n\t\tcfg.SetConfigField(\"permissions.allowed_tools.append\", visionTools)\n\t}\n\n\t// Reset API key state and continue with model selection\n\tselectedModel := *m.selectedModel\n\tvar cmds []tea.Cmd\n\tif close {\n\t\tcmds = append(cmds, util.CmdHandler(dialogs.CloseDialogMsg{}))\n\t}\n\tcmds = append(\n\t\tcmds,\n\t\tutil.CmdHandler(ModelSelectedMsg{\n\t\t\tModel: config.SelectedModel{\n\t\t\t\tModel:           selectedModel.Model.ID,\n\t\t\t\tProvider:        string(selectedModel.Provider.ID),\n\t\t\t\tReasoningEffort: selectedModel.Model.DefaultReasoningEffort,\n\t\t\t\tMaxTokens:       selectedModel.Model.DefaultMaxTokens,\n\t\t\t},\n\t\t\tModelType: m.selectedModelType,\n\t\t}),\n\t)\n\treturn tea.Sequence(cmds...)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

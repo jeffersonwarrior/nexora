@@ -1,0 +1,282 @@
+{
+  "file_path": "/work/context-engine/scripts/async_subprocess_manager.py",
+  "file_hash": "658ff5f4abd73ffdd93f2fd641ff2d8458e282e2",
+  "updated_at": "2025-12-26T17:34:22.664184",
+  "symbols": {
+    "class_AsyncSubprocessManager_22": {
+      "name": "AsyncSubprocessManager",
+      "type": "class",
+      "start_line": 22,
+      "end_line": 415,
+      "content_hash": "08c537180a5248b1faff439b71d5fbf1b437269a",
+      "content": "class AsyncSubprocessManager:\n    \"\"\"\n    Async subprocess manager with proper resource cleanup and non-blocking execution.\n    \n    Features:\n    - Async subprocess execution with proper resource cleanup\n    - Context manager support for automatic cleanup\n    - Process tracking and statistics\n    - Timeout handling and graceful cancellation\n    - Thread pool for CPU-bound operations\n    \"\"\"\n    \n    def __init__(self, timeout: float = 30.0, max_workers: int = 10):\n        self.timeout = timeout\n        self.max_workers = max_workers\n        self._active_processes: Dict[str, asyncio.subprocess.Process] = {}\n        self._process_lock = asyncio.Lock()\n        self._executor = ThreadPoolExecutor(max_workers=max_workers)\n        self._stats = {\n            'started': 0,\n            'completed': 0,\n            'failed': 0,\n            'timeout': 0,\n            'cancelled': 0,\n            'active_count': 0\n        }\n        \n        # Set up signal handlers for graceful shutdown\n        self._setup_signal_handlers()\n        \n        logger.debug(f\"Initialized AsyncSubprocessManager with timeout={timeout}s, max_workers={max_workers}\")\n    \n    def _setup_signal_handlers(self) -> None:\n        \"\"\"Set up signal handlers for graceful process cleanup.\"\"\"\n        def signal_handler(signum, frame):\n            logger.info(f\"Received signal {signum}, cleaning up processes...\")\n            asyncio.create_task(self.cleanup_all_processes())\n        \n        # Register signal handlers\n        try:\n            signal.signal(signal.SIGTERM, signal_handler)\n            signal.signal(signal.SIGINT, signal_handler)\n        except (ValueError, OSError) as e:\n            logger.warning(f\"Could not register signal handlers: {e}\")\n    \n    async def run_async(\n        self,\n        cmd: Union[List[str], str],\n        env: Optional[Dict[str, str]] = None,\n        cwd: Optional[str] = None,\n        input_data: Optional[Union[str, bytes]] = None,\n        capture_output: bool = True,\n        shell: bool = False\n    ) -> Dict[str, Any]:\n        \"\"\"\n        Run subprocess asynchronously with proper resource cleanup.\n\n        Args:\n            cmd: Command to execute (list for exec, string or list for shell)\n            env: Environment variables\n            cwd: Working directory\n            input_data: Input data for subprocess\n            capture_output: Whether to capture stdout/stderr\n            shell: Whether to use shell\n\n        Returns:\n            Dictionary with execution results\n        \"\"\"\n        import shlex\n        process_id = f\"proc_{len(self._active_processes)}_{id(cmd)}\"\n\n        try:\n            # Choose correct creation API: shell vs exec\n            if shell:\n                # Ensure command is a string for shell\n                if isinstance(cmd, list):\n                    cmd_str = ' '.join(shlex.quote(str(x)) for x in cmd)\n                else:\n                    cmd_str = str(cmd)\n                process = await asyncio.create_subprocess_shell(\n                    cmd_str,\n                    env=env or os.environ,\n                    cwd=cwd,\n                    stdin=asyncio.subprocess.PIPE if input_data else None,\n                    stdout=asyncio.subprocess.PIPE if capture_output else None,\n                    stderr=asyncio.subprocess.PIPE if capture_output else None,\n                )\n            else:\n                # Ensure command is a list for exec\n                if isinstance(cmd, str):\n                    exec_args = shlex.split(cmd)\n                else:\n                    exec_args = cmd\n                process = await asyncio.create_subprocess_exec(\n                    *exec_args,\n                    env=env or os.environ,\n                    cwd=cwd,\n                    stdin=asyncio.subprocess.PIPE if input_data else None,\n                    stdout=asyncio.subprocess.PIPE if capture_output else None,\n                    stderr=asyncio.subprocess.PIPE if capture_output else None,\n                )\n\n            # Track process\n            async with self._process_lock:\n                self._active_processes[process_id] = process\n                self._stats['started'] += 1\n                self._stats['active_count'] = len(self._active_processes)\n\n            logger.debug(f\"Started async subprocess {process_id}: {cmd}\")\n\n            # Handle input data if provided\n            if input_data and process.stdin:\n                if isinstance(input_data, str):\n                    input_data = input_data.encode('utf-8')\n                process.stdin.write(input_data)\n                await process.stdin.drain()\n                process.stdin.close()\n\n            # Wait for completion with timeout\n            try:\n                stdout, stderr = await asyncio.wait_for(\n                    process.communicate(),\n                    timeout=self.timeout\n                )\n\n                # Update statistics\n                async with self._process_lock:\n                    if process_id in self._active_processes:\n                        del self._active_processes[process_id]\n                        self._stats['completed'] += 1\n                        self._stats['active_count'] = len(self._active_processes)\n\n                return {\n                    \"ok\": process.returncode == 0,\n                    \"code\": process.returncode,\n                    \"stdout\": stdout.decode('utf-8', errors='ignore') if stdout else \"\",\n                    \"stderr\": stderr.decode('utf-8', errors='ignore') if stderr else \"\",\n                    \"process_id\": process_id,\n                }\n\n            except asyncio.TimeoutError:\n                logger.warning(f\"Async subprocess {process_id} timed out after {self.timeout}s\")\n\n                # Terminate the process\n                try:\n                    process.terminate()\n                    await asyncio.wait_for(process.wait(), timeout=5.0)\n                except asyncio.TimeoutError:\n                    logger.warning(f\"Process {process_id} did not terminate, killing\")\n                    process.kill()\n                    await process.wait()\n\n                # Update statistics\n                async with self._process_lock:\n                    if process_id in self._active_processes:\n                        del self._active_processes[process_id]\n                        self._stats['timeout'] += 1\n                        self._stats['active_count'] = len(self._active_processes)\n\n                return {\n                    \"ok\": False,\n                    \"code\": -1,\n                    \"stdout\": \"\",\n                    \"stderr\": f\"Process timed out after {self.timeout}s\",\n                    \"process_id\": process_id,\n                    \"timeout\": True,\n                }\n\n        except Exception as e:\n            logger.error(f\"Error running async subprocess {process_id}: {e}\")\n\n            # Clean up on error\n            async with self._process_lock:\n                if process_id in self._active_processes:\n                    del self._active_processes[process_id]\n                    self._stats['failed'] += 1\n                    self._stats['active_count'] = len(self._active_processes)\n\n            return {\n                \"ok\": False,\n                \"code\": -1,\n                \"stdout\": \"\",\n                \"stderr\": str(e),\n                \"process_id\": process_id,\n                \"error\": str(e),\n            }\n\n    async def run_sync_in_executor(\n        self,\n        cmd: List[str],\n        env: Optional[Dict[str, str]] = None,\n        cwd: Optional[str] = None,\n        input_data: Optional[Union[str, bytes]] = None,\n        shell: bool = False,\n    ) -> Dict[str, Any]:\n        \"\"\"\n        Run synchronous subprocess in thread pool for CPU-bound operations.\n        \n        This is useful for operations that don't benefit from true async I/O\n        but need to run without blocking the event loop.\n        \"\"\"\n        loop = asyncio.get_event_loop()\n        \n        try:\n            # Run in thread pool\n            result = await loop.run_in_executor(\n                self._executor,\n                self._run_sync_subprocess,\n                cmd, env, cwd, input_data, shell\n            )\n            \n            self._stats['completed'] += 1\n            return result\n            \n        except Exception as e:\n            logger.error(f\"Error in executor subprocess: {e}\")\n            self._stats['failed'] += 1\n            return {\n                \"ok\": False,\n                \"code\": -1,\n                \"stdout\": \"\",\n                \"stderr\": str(e),\n                \"error\": str(e),\n            }\n    \n    def _run_sync_subprocess(\n        self,\n        cmd: Union[List[str], str],\n        env: Optional[Dict[str, str]],\n        cwd: Optional[str],\n        input_data: Optional[Union[str, bytes]],\n        shell: bool,\n    ) -> Dict[str, Any]:\n        \"\"\"Internal method to run synchronous subprocess.\"\"\"\n        try:\n            import shlex\n            # Normalize command based on shell flag\n            if shell:\n                if isinstance(cmd, list):\n                    cmd_str = ' '.join(shlex.quote(str(x)) for x in cmd)\n                else:\n                    cmd_str = str(cmd)\n                popen_args = cmd_str\n            else:\n                exec_args = shlex.split(cmd) if isinstance(cmd, str) else cmd\n                popen_args = exec_args\n\n            process = _subprocess.Popen(\n                popen_args,\n                env=env or os.environ,\n                cwd=cwd,\n                stdin=_subprocess.PIPE if input_data else None,\n                stdout=_subprocess.PIPE,\n                stderr=_subprocess.PIPE,\n                shell=shell,\n                text=True,\n            )\n\n            # Handle input data\n            if input_data and process.stdin:\n                if isinstance(input_data, bytes):\n                    input_str = input_data.decode('utf-8', errors='ignore')\n                else:\n                    input_str = input_data\n                process.stdin.write(input_str)\n                process.stdin.close()\n\n            # Wait for completion\n            stdout, stderr = process.communicate()\n            \n            return {\n                \"ok\": process.returncode == 0,\n                \"code\": process.returncode,\n                \"stdout\": stdout,\n                \"stderr\": stderr,\n            }\n            \n        except Exception as e:\n            logger.error(f\"Error in sync subprocess: {e}\")\n            return {\n                \"ok\": False,\n                \"code\": -1,\n                \"stdout\": \"\",\n                \"stderr\": str(e),\n                \"error\": str(e),\n            }\n    \n    async def cancel_process(self, process_id: str) -> bool:\n        \"\"\"\n        Cancel a running subprocess by ID.\n        \n        Args:\n            process_id: ID of process to cancel\n            \n        Returns:\n            True if process was cancelled, False if not found\n        \"\"\"\n        async with self._process_lock:\n            if process_id not in self._active_processes:\n                return False\n            \n            process = self._active_processes[process_id]\n            \n            try:\n                process.terminate()\n                await asyncio.wait_for(process.wait(), timeout=5.0)\n                logger.info(f\"Cancelled subprocess {process_id}\")\n                \n                # Update statistics\n                self._stats['cancelled'] += 1\n                \n                return True\n                \n            except asyncio.TimeoutError:\n                logger.warning(f\"Process {process_id} did not terminate, killing\")\n                process.kill()\n                await process.wait()\n                \n                self._stats['cancelled'] += 1\n                return True\n                \n            except Exception as e:\n                logger.error(f\"Error cancelling subprocess {process_id}: {e}\")\n                return False\n            \n            finally:\n                if process_id in self._active_processes:\n                    del self._active_processes[process_id]\n                    self._stats['active_count'] = len(self._active_processes)\n    \n    async def cleanup_all_processes(self) -> None:\n        \"\"\"Clean up all active subprocesses.\"\"\"\n        process_ids = list(self._active_processes.keys())\n        \n        for process_id in process_ids:\n            await self.cancel_process(process_id)\n        \n        logger.info(f\"Cleaned up {len(process_ids)} subprocesses\")\n    \n    async def get_process_status(self, process_id: str) -> Optional[Dict[str, Any]]:\n        \"\"\"\n        Get status of a running subprocess.\n        \n        Args:\n            process_id: ID of process to check\n            \n        Returns:\n            Status information or None if not found\n        \"\"\"\n        async with self._process_lock:\n            if process_id not in self._active_processes:\n                return None\n            \n            process = self._active_processes[process_id]\n            \n            try:\n                returncode = process.returncode\n                \n                return {\n                    \"process_id\": process_id,\n                    \"running\": returncode is None,\n                    \"returncode\": returncode,\n                    \"pid\": process.pid,\n                }\n                \n            except Exception as e:\n                logger.error(f\"Error getting process status: {e}\")\n                return None\n    \n    def get_stats(self) -> Dict[str, Any]:\n        \"\"\"Get subprocess execution statistics.\"\"\"\n        return {\n            **self._stats,\n            \"active_processes\": len(self._active_processes),\n            \"max_workers\": self.max_workers,\n        }\n    \n    async def __aenter__(self):\n        \"\"\"Async context manager entry.\"\"\"\n        return self\n    \n    async def __aexit__(self, exc_type, exc_val, exc_tb):\n        \"\"\"Async context manager exit with cleanup.\"\"\"\n        await self.cleanup_all_processes()\n    \n    def __del__(self):\n        \"\"\"Destructor to ensure cleanup.\"\"\"\n        try:\n            # Clean up remaining processes\n            loop = asyncio.get_event_loop()\n            if loop and not loop.is_closed():\n                loop.create_task(self.cleanup_all_processes())\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___34": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 52,
+      "content_hash": "75686ab573a6a05d674e46929e50d83615dac876",
+      "content": "    def __init__(self, timeout: float = 30.0, max_workers: int = 10):\n        self.timeout = timeout\n        self.max_workers = max_workers\n        self._active_processes: Dict[str, asyncio.subprocess.Process] = {}\n        self._process_lock = asyncio.Lock()\n        self._executor = ThreadPoolExecutor(max_workers=max_workers)\n        self._stats = {\n            'started': 0,\n            'completed': 0,\n            'failed': 0,\n            'timeout': 0,\n            'cancelled': 0,\n            'active_count': 0\n        }\n        \n        # Set up signal handlers for graceful shutdown\n        self._setup_signal_handlers()\n        \n        logger.debug(f\"Initialized AsyncSubprocessManager with timeout={timeout}s, max_workers={max_workers}\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__setup_signal_handlers_54": {
+      "name": "_setup_signal_handlers",
+      "type": "method",
+      "start_line": 54,
+      "end_line": 65,
+      "content_hash": "9111b5cc5a34106faf23b48c9c0375e22bd7c09d",
+      "content": "    def _setup_signal_handlers(self) -> None:\n        \"\"\"Set up signal handlers for graceful process cleanup.\"\"\"\n        def signal_handler(signum, frame):\n            logger.info(f\"Received signal {signum}, cleaning up processes...\")\n            asyncio.create_task(self.cleanup_all_processes())\n        \n        # Register signal handlers\n        try:\n            signal.signal(signal.SIGTERM, signal_handler)\n            signal.signal(signal.SIGINT, signal_handler)\n        except (ValueError, OSError) as e:\n            logger.warning(f\"Could not register signal handlers: {e}\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_signal_handler_56": {
+      "name": "signal_handler",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 58,
+      "content_hash": "f581c11618a00c9e9cf32aa447a179ad240394bf",
+      "content": "        def signal_handler(signum, frame):\n            logger.info(f\"Received signal {signum}, cleaning up processes...\")\n            asyncio.create_task(self.cleanup_all_processes())",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_run_async_67": {
+      "name": "run_async",
+      "type": "method",
+      "start_line": 67,
+      "end_line": 207,
+      "content_hash": "d9eebc7719b1178e740b6ad391b8d3cab01bb985",
+      "content": "    async def run_async(\n        self,\n        cmd: Union[List[str], str],\n        env: Optional[Dict[str, str]] = None,\n        cwd: Optional[str] = None,\n        input_data: Optional[Union[str, bytes]] = None,\n        capture_output: bool = True,\n        shell: bool = False\n    ) -> Dict[str, Any]:\n        \"\"\"\n        Run subprocess asynchronously with proper resource cleanup.\n\n        Args:\n            cmd: Command to execute (list for exec, string or list for shell)\n            env: Environment variables\n            cwd: Working directory\n            input_data: Input data for subprocess\n            capture_output: Whether to capture stdout/stderr\n            shell: Whether to use shell\n\n        Returns:\n            Dictionary with execution results\n        \"\"\"\n        import shlex\n        process_id = f\"proc_{len(self._active_processes)}_{id(cmd)}\"\n\n        try:\n            # Choose correct creation API: shell vs exec\n            if shell:\n                # Ensure command is a string for shell\n                if isinstance(cmd, list):\n                    cmd_str = ' '.join(shlex.quote(str(x)) for x in cmd)\n                else:\n                    cmd_str = str(cmd)\n                process = await asyncio.create_subprocess_shell(\n                    cmd_str,\n                    env=env or os.environ,\n                    cwd=cwd,\n                    stdin=asyncio.subprocess.PIPE if input_data else None,\n                    stdout=asyncio.subprocess.PIPE if capture_output else None,\n                    stderr=asyncio.subprocess.PIPE if capture_output else None,\n                )\n            else:\n                # Ensure command is a list for exec\n                if isinstance(cmd, str):\n                    exec_args = shlex.split(cmd)\n                else:\n                    exec_args = cmd\n                process = await asyncio.create_subprocess_exec(\n                    *exec_args,\n                    env=env or os.environ,\n                    cwd=cwd,\n                    stdin=asyncio.subprocess.PIPE if input_data else None,\n                    stdout=asyncio.subprocess.PIPE if capture_output else None,\n                    stderr=asyncio.subprocess.PIPE if capture_output else None,\n                )\n\n            # Track process\n            async with self._process_lock:\n                self._active_processes[process_id] = process\n                self._stats['started'] += 1\n                self._stats['active_count'] = len(self._active_processes)\n\n            logger.debug(f\"Started async subprocess {process_id}: {cmd}\")\n\n            # Handle input data if provided\n            if input_data and process.stdin:\n                if isinstance(input_data, str):\n                    input_data = input_data.encode('utf-8')\n                process.stdin.write(input_data)\n                await process.stdin.drain()\n                process.stdin.close()\n\n            # Wait for completion with timeout\n            try:\n                stdout, stderr = await asyncio.wait_for(\n                    process.communicate(),\n                    timeout=self.timeout\n                )\n\n                # Update statistics\n                async with self._process_lock:\n                    if process_id in self._active_processes:\n                        del self._active_processes[process_id]\n                        self._stats['completed'] += 1\n                        self._stats['active_count'] = len(self._active_processes)\n\n                return {\n                    \"ok\": process.returncode == 0,\n                    \"code\": process.returncode,\n                    \"stdout\": stdout.decode('utf-8', errors='ignore') if stdout else \"\",\n                    \"stderr\": stderr.decode('utf-8', errors='ignore') if stderr else \"\",\n                    \"process_id\": process_id,\n                }\n\n            except asyncio.TimeoutError:\n                logger.warning(f\"Async subprocess {process_id} timed out after {self.timeout}s\")\n\n                # Terminate the process\n                try:\n                    process.terminate()\n                    await asyncio.wait_for(process.wait(), timeout=5.0)\n                except asyncio.TimeoutError:\n                    logger.warning(f\"Process {process_id} did not terminate, killing\")\n                    process.kill()\n                    await process.wait()\n\n                # Update statistics\n                async with self._process_lock:\n                    if process_id in self._active_processes:\n                        del self._active_processes[process_id]\n                        self._stats['timeout'] += 1\n                        self._stats['active_count'] = len(self._active_processes)\n\n                return {\n                    \"ok\": False,\n                    \"code\": -1,\n                    \"stdout\": \"\",\n                    \"stderr\": f\"Process timed out after {self.timeout}s\",\n                    \"process_id\": process_id,\n                    \"timeout\": True,\n                }\n\n        except Exception as e:\n            logger.error(f\"Error running async subprocess {process_id}: {e}\")\n\n            # Clean up on error\n            async with self._process_lock:\n                if process_id in self._active_processes:\n                    del self._active_processes[process_id]\n                    self._stats['failed'] += 1\n                    self._stats['active_count'] = len(self._active_processes)\n\n            return {\n                \"ok\": False,\n                \"code\": -1,\n                \"stdout\": \"\",\n                \"stderr\": str(e),\n                \"process_id\": process_id,\n                \"error\": str(e),\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_run_sync_in_executor_209": {
+      "name": "run_sync_in_executor",
+      "type": "method",
+      "start_line": 209,
+      "end_line": 245,
+      "content_hash": "f0a5448ba9d01aebed35a63c285cc83ae93d3d2e",
+      "content": "    async def run_sync_in_executor(\n        self,\n        cmd: List[str],\n        env: Optional[Dict[str, str]] = None,\n        cwd: Optional[str] = None,\n        input_data: Optional[Union[str, bytes]] = None,\n        shell: bool = False,\n    ) -> Dict[str, Any]:\n        \"\"\"\n        Run synchronous subprocess in thread pool for CPU-bound operations.\n        \n        This is useful for operations that don't benefit from true async I/O\n        but need to run without blocking the event loop.\n        \"\"\"\n        loop = asyncio.get_event_loop()\n        \n        try:\n            # Run in thread pool\n            result = await loop.run_in_executor(\n                self._executor,\n                self._run_sync_subprocess,\n                cmd, env, cwd, input_data, shell\n            )\n            \n            self._stats['completed'] += 1\n            return result\n            \n        except Exception as e:\n            logger.error(f\"Error in executor subprocess: {e}\")\n            self._stats['failed'] += 1\n            return {\n                \"ok\": False,\n                \"code\": -1,\n                \"stdout\": \"\",\n                \"stderr\": str(e),\n                \"error\": str(e),\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method__run_sync_subprocess_247": {
+      "name": "_run_sync_subprocess",
+      "type": "method",
+      "start_line": 247,
+      "end_line": 307,
+      "content_hash": "5b323fa2808fa028392d8c753164611b2646c485",
+      "content": "    def _run_sync_subprocess(\n        self,\n        cmd: Union[List[str], str],\n        env: Optional[Dict[str, str]],\n        cwd: Optional[str],\n        input_data: Optional[Union[str, bytes]],\n        shell: bool,\n    ) -> Dict[str, Any]:\n        \"\"\"Internal method to run synchronous subprocess.\"\"\"\n        try:\n            import shlex\n            # Normalize command based on shell flag\n            if shell:\n                if isinstance(cmd, list):\n                    cmd_str = ' '.join(shlex.quote(str(x)) for x in cmd)\n                else:\n                    cmd_str = str(cmd)\n                popen_args = cmd_str\n            else:\n                exec_args = shlex.split(cmd) if isinstance(cmd, str) else cmd\n                popen_args = exec_args\n\n            process = _subprocess.Popen(\n                popen_args,\n                env=env or os.environ,\n                cwd=cwd,\n                stdin=_subprocess.PIPE if input_data else None,\n                stdout=_subprocess.PIPE,\n                stderr=_subprocess.PIPE,\n                shell=shell,\n                text=True,\n            )\n\n            # Handle input data\n            if input_data and process.stdin:\n                if isinstance(input_data, bytes):\n                    input_str = input_data.decode('utf-8', errors='ignore')\n                else:\n                    input_str = input_data\n                process.stdin.write(input_str)\n                process.stdin.close()\n\n            # Wait for completion\n            stdout, stderr = process.communicate()\n            \n            return {\n                \"ok\": process.returncode == 0,\n                \"code\": process.returncode,\n                \"stdout\": stdout,\n                \"stderr\": stderr,\n            }\n            \n        except Exception as e:\n            logger.error(f\"Error in sync subprocess: {e}\")\n            return {\n                \"ok\": False,\n                \"code\": -1,\n                \"stdout\": \"\",\n                \"stderr\": str(e),\n                \"error\": str(e),\n            }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_cancel_process_309": {
+      "name": "cancel_process",
+      "type": "method",
+      "start_line": 309,
+      "end_line": 350,
+      "content_hash": "8d0f4720d85c13c7311ba80ac54f3ce8fafc337b",
+      "content": "    async def cancel_process(self, process_id: str) -> bool:\n        \"\"\"\n        Cancel a running subprocess by ID.\n        \n        Args:\n            process_id: ID of process to cancel\n            \n        Returns:\n            True if process was cancelled, False if not found\n        \"\"\"\n        async with self._process_lock:\n            if process_id not in self._active_processes:\n                return False\n            \n            process = self._active_processes[process_id]\n            \n            try:\n                process.terminate()\n                await asyncio.wait_for(process.wait(), timeout=5.0)\n                logger.info(f\"Cancelled subprocess {process_id}\")\n                \n                # Update statistics\n                self._stats['cancelled'] += 1\n                \n                return True\n                \n            except asyncio.TimeoutError:\n                logger.warning(f\"Process {process_id} did not terminate, killing\")\n                process.kill()\n                await process.wait()\n                \n                self._stats['cancelled'] += 1\n                return True\n                \n            except Exception as e:\n                logger.error(f\"Error cancelling subprocess {process_id}: {e}\")\n                return False\n            \n            finally:\n                if process_id in self._active_processes:\n                    del self._active_processes[process_id]\n                    self._stats['active_count'] = len(self._active_processes)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_cleanup_all_processes_352": {
+      "name": "cleanup_all_processes",
+      "type": "method",
+      "start_line": 352,
+      "end_line": 359,
+      "content_hash": "aac78bcff2295e1d8c4957d1eb2548dafb00b91d",
+      "content": "    async def cleanup_all_processes(self) -> None:\n        \"\"\"Clean up all active subprocesses.\"\"\"\n        process_ids = list(self._active_processes.keys())\n        \n        for process_id in process_ids:\n            await self.cancel_process(process_id)\n        \n        logger.info(f\"Cleaned up {len(process_ids)} subprocesses\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_process_status_361": {
+      "name": "get_process_status",
+      "type": "method",
+      "start_line": 361,
+      "end_line": 389,
+      "content_hash": "24e8382f73ef6259a29ff67d93acb2c29076cc96",
+      "content": "    async def get_process_status(self, process_id: str) -> Optional[Dict[str, Any]]:\n        \"\"\"\n        Get status of a running subprocess.\n        \n        Args:\n            process_id: ID of process to check\n            \n        Returns:\n            Status information or None if not found\n        \"\"\"\n        async with self._process_lock:\n            if process_id not in self._active_processes:\n                return None\n            \n            process = self._active_processes[process_id]\n            \n            try:\n                returncode = process.returncode\n                \n                return {\n                    \"process_id\": process_id,\n                    \"running\": returncode is None,\n                    \"returncode\": returncode,\n                    \"pid\": process.pid,\n                }\n                \n            except Exception as e:\n                logger.error(f\"Error getting process status: {e}\")\n                return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_get_stats_391": {
+      "name": "get_stats",
+      "type": "method",
+      "start_line": 391,
+      "end_line": 397,
+      "content_hash": "bbac242bab6ad9201055145ff5e21f6c28ce852b",
+      "content": "    def get_stats(self) -> Dict[str, Any]:\n        \"\"\"Get subprocess execution statistics.\"\"\"\n        return {\n            **self._stats,\n            \"active_processes\": len(self._active_processes),\n            \"max_workers\": self.max_workers,\n        }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___aenter___399": {
+      "name": "__aenter__",
+      "type": "method",
+      "start_line": 399,
+      "end_line": 401,
+      "content_hash": "85d36c7e3daa62302cf6875b745183a5c996e629",
+      "content": "    async def __aenter__(self):\n        \"\"\"Async context manager entry.\"\"\"\n        return self",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___aexit___403": {
+      "name": "__aexit__",
+      "type": "method",
+      "start_line": 403,
+      "end_line": 405,
+      "content_hash": "8f830cd63725b640f2157d82bfbcfe40435d14f4",
+      "content": "    async def __aexit__(self, exc_type, exc_val, exc_tb):\n        \"\"\"Async context manager exit with cleanup.\"\"\"\n        await self.cleanup_all_processes()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___del___407": {
+      "name": "__del__",
+      "type": "method",
+      "start_line": 407,
+      "end_line": 415,
+      "content_hash": "df9638b1d9df233ee83d0629662a8804bed8e208",
+      "content": "    def __del__(self):\n        \"\"\"Destructor to ensure cleanup.\"\"\"\n        try:\n            # Clean up remaining processes\n            loop = asyncio.get_event_loop()\n            if loop and not loop.is_closed():\n                loop.create_task(self.cleanup_all_processes())\n        except Exception:\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_async_subprocess_manager_423": {
+      "name": "get_async_subprocess_manager",
+      "type": "function",
+      "start_line": 423,
+      "end_line": 439,
+      "content_hash": "59b230df30618203db14dfefeb88046f8a033f7b",
+      "content": "async def get_async_subprocess_manager(timeout: float = 30.0, max_workers: int = 10) -> AsyncSubprocessManager:\n    \"\"\"Get or create the global async subprocess manager.\"\"\"\n    global _async_manager\n\n    def _create_manager():\n        global _async_manager\n        if _async_manager is None:\n            _async_manager = AsyncSubprocessManager(\n                timeout=timeout,\n                max_workers=max_workers\n            )\n            logger.debug(\"Created global async subprocess manager\")\n        return _async_manager\n\n    # Use regular lock (threading.Lock supports context manager)\n    with _manager_lock:\n        return _create_manager()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__create_manager_427": {
+      "name": "_create_manager",
+      "type": "function",
+      "start_line": 427,
+      "end_line": 435,
+      "content_hash": "dda541d6914beea95e9b8436df49adea840c3631",
+      "content": "    def _create_manager():\n        global _async_manager\n        if _async_manager is None:\n            _async_manager = AsyncSubprocessManager(\n                timeout=timeout,\n                max_workers=max_workers\n            )\n            logger.debug(\"Created global async subprocess manager\")\n        return _async_manager",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_run_subprocess_async_442": {
+      "name": "run_subprocess_async",
+      "type": "function",
+      "start_line": 442,
+      "end_line": 475,
+      "content_hash": "2ed99d0f1b679fe82b03c6b4bb6f386d4c924cbd",
+      "content": "async def run_subprocess_async(\n    cmd: List[str],\n    env: Optional[Dict[str, str]] = None,\n    cwd: Optional[str] = None,\n    input_data: Optional[Union[str, bytes]] = None,\n    timeout: Optional[float] = None,\n    shell: bool = False,\n) -> Dict[str, Any]:\n    \"\"\"\n    Convenience function to run subprocess asynchronously.\n    \n    Args:\n        cmd: Command to execute\n        env: Environment variables\n        cwd: Working directory\n        input_data: Input data for subprocess\n        timeout: Custom timeout (overrides manager default)\n        shell: Whether to use shell\n        \n    Returns:\n        Dictionary with execution results\n    \"\"\"\n    manager = await get_async_subprocess_manager()\n    \n    if timeout is not None:\n        # Create a temporary manager with custom timeout\n        temp_manager = AsyncSubprocessManager(timeout=timeout)\n        return await temp_manager.run_async(\n            cmd, env=env, cwd=cwd, input_data=input_data, shell=shell\n        )\n    else:\n        return await manager.run_async(\n            cmd, env=env, cwd=cwd, input_data=input_data, shell=shell\n        )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_run_subprocess_sync_in_executor_478": {
+      "name": "run_subprocess_sync_in_executor",
+      "type": "function",
+      "start_line": 478,
+      "end_line": 493,
+      "content_hash": "68446f6fee1f378ee32f46fa7375ed6225cfea3c",
+      "content": "async def run_subprocess_sync_in_executor(\n    cmd: List[str],\n    env: Optional[Dict[str, str]] = None,\n    cwd: Optional[str] = None,\n    input_data: Optional[Union[str, bytes]] = None,\n    shell: bool = False,\n) -> Dict[str, Any]:\n    \"\"\"\n    Convenience function to run synchronous subprocess in thread pool.\n    \n    This is useful for CPU-bound operations that don't benefit from true async I/O.\n    \"\"\"\n    manager = await get_async_subprocess_manager()\n    return await manager.run_sync_in_executor(\n        cmd, env=env, cwd=cwd, input_data=input_data, shell=shell\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cancel_subprocess_496": {
+      "name": "cancel_subprocess",
+      "type": "function",
+      "start_line": 496,
+      "end_line": 507,
+      "content_hash": "7f266ac185d358644d1b006bfbb8bc6243e2d35d",
+      "content": "async def cancel_subprocess(process_id: str) -> bool:\n    \"\"\"\n    Convenience function to cancel a running subprocess.\n    \n    Args:\n        process_id: ID of process to cancel\n        \n    Returns:\n        True if process was cancelled, False if not found\n    \"\"\"\n    manager = await get_async_subprocess_manager()\n    return await manager.cancel_process(process_id)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_subprocess_status_510": {
+      "name": "get_subprocess_status",
+      "type": "function",
+      "start_line": 510,
+      "end_line": 521,
+      "content_hash": "9abb465473b23454cc63f8a41775d3e8e547edcb",
+      "content": "async def get_subprocess_status(process_id: str) -> Optional[Dict[str, Any]]:\n    \"\"\"\n    Convenience function to get status of a running subprocess.\n    \n    Args:\n        process_id: ID of process to check\n        \n    Returns:\n        Status information or None if not found\n    \"\"\"\n    manager = await get_async_subprocess_manager()\n    return await manager.get_process_status(process_id)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_subprocess_stats_524": {
+      "name": "get_subprocess_stats",
+      "type": "function",
+      "start_line": 524,
+      "end_line": 532,
+      "content_hash": "78576d39ddfadb3643e1fb69e1b29899847db7ac",
+      "content": "async def get_subprocess_stats() -> Dict[str, Any]:\n    \"\"\"\n    Convenience function to get subprocess execution statistics.\n    \n    Returns:\n        Statistics dictionary\n    \"\"\"\n    manager = await get_async_subprocess_manager()\n    return manager.get_stats()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_AsyncSubprocessContext_536": {
+      "name": "AsyncSubprocessContext",
+      "type": "class",
+      "start_line": 536,
+      "end_line": 555,
+      "content_hash": "8eba98efef37ad0c2a1a07eb0dfa70e62b3f6471",
+      "content": "class AsyncSubprocessContext:\n    \"\"\"Context manager for async subprocess operations.\"\"\"\n    \n    def __init__(self, timeout: Optional[float] = None, max_workers: int = 10):\n        self.timeout = timeout\n        self.max_workers = max_workers\n        self._manager = None\n    \n    async def __aenter__(self):\n        \"\"\"Context manager entry.\"\"\"\n        self._manager = await get_async_subprocess_manager(\n            timeout=self.timeout or 30.0,\n            max_workers=self.max_workers\n        )\n        return self._manager\n    \n    async def __aexit__(self, exc_type, exc_val, exc_tb):\n        \"\"\"Context manager exit with cleanup.\"\"\"\n        if self._manager:\n            await self._manager.cleanup_all_processes()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___539": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 539,
+      "end_line": 542,
+      "content_hash": "23c31783e44f896c013ac6307b3a6ee58727618a",
+      "content": "    def __init__(self, timeout: Optional[float] = None, max_workers: int = 10):\n        self.timeout = timeout\n        self.max_workers = max_workers\n        self._manager = None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___aenter___544": {
+      "name": "__aenter__",
+      "type": "method",
+      "start_line": 544,
+      "end_line": 550,
+      "content_hash": "5284a07ed95f0690b16c299217f655805b14f54b",
+      "content": "    async def __aenter__(self):\n        \"\"\"Context manager entry.\"\"\"\n        self._manager = await get_async_subprocess_manager(\n            timeout=self.timeout or 30.0,\n            max_workers=self.max_workers\n        )\n        return self._manager",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___aexit___552": {
+      "name": "__aexit__",
+      "type": "method",
+      "start_line": 552,
+      "end_line": 555,
+      "content_hash": "cacfbbc9ab15a8a48a043734bd71d30ef90aa516",
+      "content": "    async def __aexit__(self, exc_type, exc_val, exc_tb):\n        \"\"\"Context manager exit with cleanup.\"\"\"\n        if self._manager:\n            await self._manager.cleanup_all_processes()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

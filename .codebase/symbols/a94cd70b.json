@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/components/SummaryCard.tsx",
+  "file_hash": "5d3a5ed9c5d808a1e95b8485cd834572f7dc6751",
+  "updated_at": "2025-12-26T17:34:20.576500",
+  "symbols": {
+    "function_SummaryCard_9": {
+      "name": "SummaryCard",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 62,
+      "content_hash": "b33b66fc75c77281280769666582c07f8173aeda",
+      "content": "export function SummaryCard({ summary }: SummaryCardProps) {\n  const date = formatDate(summary.created_at_epoch);\n\n  const sections = [\n    { key: \"investigated\", label: \"Investigated\", content: summary.investigated, icon: \"/icon-thick-investigated.svg\" },\n    { key: \"learned\", label: \"Learned\", content: summary.learned, icon: \"/icon-thick-learned.svg\" },\n    { key: \"completed\", label: \"Completed\", content: summary.completed, icon: \"/icon-thick-completed.svg\" },\n    { key: \"next_steps\", label: \"Next Steps\", content: summary.next_steps, icon: \"/icon-thick-next-steps.svg\" },\n  ].filter((section) => section.content);\n\n  return (\n    <article className=\"card summary-card\">\n      <header className=\"summary-card-header\">\n        <div className=\"summary-badge-row\">\n          <span className=\"card-type summary-badge\">Session Summary</span>\n          <span className=\"summary-project-badge\">{summary.project}</span>\n        </div>\n        {summary.request && (\n          <h2 className=\"summary-title\">{summary.request}</h2>\n        )}\n      </header>\n\n      <div className=\"summary-sections\">\n        {sections.map((section, index) => (\n          <section\n            key={section.key}\n            className=\"summary-section\"\n            style={{ animationDelay: `${index * 50}ms` }}\n          >\n            <div className=\"summary-section-header\">\n              <img\n                src={section.icon}\n                alt={section.label}\n                className={`summary-section-icon summary-section-icon--${section.key}`}\n              />\n              <h3 className=\"summary-section-label\">{section.label}</h3>\n            </div>\n            <div className=\"summary-section-content\">\n              {section.content}\n            </div>\n          </section>\n        ))}\n      </div>\n\n      <footer className=\"summary-card-footer\">\n        <span className=\"summary-meta-id\">Session #{summary.id}</span>\n        <span className=\"summary-meta-divider\">\u2022</span>\n        <time className=\"summary-meta-date\" dateTime={new Date(summary.created_at_epoch).toISOString()}>\n          {date}\n        </time>\n      </footer>\n    </article>\n  );\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

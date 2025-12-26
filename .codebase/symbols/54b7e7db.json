@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/internal/agent/tools/job_test.go",
+  "file_hash": "72319d6126e9de98f37566c6bf8fee13efd14622",
+  "updated_at": "2025-12-26T17:34:22.574310",
+  "symbols": {
+    "function_TestBackgroundShell_Integration_12": {
+      "name": "TestBackgroundShell_Integration",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 38,
+      "content_hash": "f89acc0cab2c7cf9a957e0918e1dd99cf00bdafe",
+      "content": "func TestBackgroundShell_Integration(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a background shell\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"echo 'hello background' && echo 'done'\", \"\")\n\trequire.NoError(t, err)\n\trequire.NotEmpty(t, bgShell.ID)\n\n\t// Wait for completion\n\tbgShell.Wait()\n\n\t// Check final output\n\tstdout, stderr, done, err := bgShell.GetOutput()\n\trequire.NoError(t, err)\n\trequire.Contains(t, stdout, \"hello background\")\n\trequire.Contains(t, stdout, \"done\")\n\trequire.True(t, done)\n\trequire.Empty(t, stderr)\n\n\t// Clean up\n\tbgManager.Kill(bgShell.ID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_Kill_39": {
+      "name": "TestBackgroundShell_Kill",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 61,
+      "content_hash": "d534c8e944bd0b8b09abd92d918d50f55c8c254b",
+      "content": "func TestBackgroundShell_Kill(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a long-running background shell\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"sleep 100\", \"\")\n\trequire.NoError(t, err)\n\n\t// Kill it\n\terr = bgManager.Kill(bgShell.ID)\n\trequire.NoError(t, err)\n\n\t// Verify it's gone\n\t_, ok := bgManager.Get(bgShell.ID)\n\trequire.False(t, ok)\n\n\t// Verify the shell is done\n\trequire.True(t, bgShell.IsDone())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_MultipleOutputCalls_62": {
+      "name": "TestBackgroundShell_MultipleOutputCalls",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 97,
+      "content_hash": "f86e8d8cbf5dcd0668d1dafd91ef93178ddca54c",
+      "content": "func TestBackgroundShell_MultipleOutputCalls(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a background shell\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"echo 'step 1' && echo 'step 2' && echo 'step 3'\", \"\")\n\trequire.NoError(t, err)\n\tdefer bgManager.Kill(bgShell.ID)\n\n\t// Check that we can call GetOutput multiple times while running\n\tfor range 5 {\n\t\t_, _, done, _ := bgShell.GetOutput()\n\t\tif done {\n\t\t\tbreak\n\t\t}\n\t\ttime.Sleep(10 * time.Millisecond)\n\t}\n\n\t// Wait for completion\n\tbgShell.Wait()\n\n\t// Multiple calls after completion should return the same result\n\tstdout1, _, done1, _ := bgShell.GetOutput()\n\trequire.True(t, done1)\n\trequire.Contains(t, stdout1, \"step 1\")\n\trequire.Contains(t, stdout1, \"step 2\")\n\trequire.Contains(t, stdout1, \"step 3\")\n\n\tstdout2, _, done2, _ := bgShell.GetOutput()\n\trequire.True(t, done2)\n\trequire.Equal(t, stdout1, stdout2, \"Multiple GetOutput calls should return same result\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_EmptyOutput_98": {
+      "name": "TestBackgroundShell_EmptyOutput",
+      "type": "function",
+      "start_line": 98,
+      "end_line": 119,
+      "content_hash": "dd91a427f5253a25f4cf1a0db6c5228f725c3af3",
+      "content": "func TestBackgroundShell_EmptyOutput(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a background shell with no output\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"sleep 0.1\", \"\")\n\trequire.NoError(t, err)\n\tdefer bgManager.Kill(bgShell.ID)\n\n\t// Wait for completion\n\tbgShell.Wait()\n\n\tstdout, stderr, done, err := bgShell.GetOutput()\n\trequire.NoError(t, err)\n\trequire.Empty(t, stdout)\n\trequire.Empty(t, stderr)\n\trequire.True(t, done)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_ExitCode_120": {
+      "name": "TestBackgroundShell_ExitCode",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 143,
+      "content_hash": "b505eb84d903a2aa2b6d6e69d3b96ca35636f289",
+      "content": "func TestBackgroundShell_ExitCode(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a background shell that exits with non-zero code\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"echo 'failing' && exit 42\", \"\")\n\trequire.NoError(t, err)\n\tdefer bgManager.Kill(bgShell.ID)\n\n\t// Wait for completion\n\tbgShell.Wait()\n\n\tstdout, _, done, execErr := bgShell.GetOutput()\n\trequire.True(t, done)\n\trequire.Contains(t, stdout, \"failing\")\n\trequire.Error(t, execErr)\n\n\texitCode := shell.ExitCode(execErr)\n\trequire.Equal(t, 42, exitCode)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_WithBlockFuncs_144": {
+      "name": "TestBackgroundShell_WithBlockFuncs",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 176,
+      "content_hash": "4e4d8379f57c89dab6987230d41d42da15a75f61",
+      "content": "func TestBackgroundShell_WithBlockFuncs(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\tblockFuncs := []shell.BlockFunc{\n\t\tshell.CommandsBlocker([]string{\"curl\", \"wget\"}),\n\t}\n\n\t// Start a background shell with a blocked command\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, blockFuncs, \"curl example.com\", \"\")\n\trequire.NoError(t, err)\n\tdefer bgManager.Kill(bgShell.ID)\n\n\t// Wait for completion\n\tbgShell.Wait()\n\n\tstdout, stderr, done, execErr := bgShell.GetOutput()\n\trequire.True(t, done)\n\n\t// The command should have been blocked, check stderr or error\n\tif execErr != nil {\n\t\t// Error might contain the message\n\t\trequire.Contains(t, execErr.Error(), \"not allowed\")\n\t} else {\n\t\t// Or it might be in stderr\n\t\toutput := stdout + stderr\n\t\trequire.Contains(t, output, \"not allowed\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_StdoutAndStderr_177": {
+      "name": "TestBackgroundShell_StdoutAndStderr",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 198,
+      "content_hash": "c775f686ce8ff47b68818dc081d8b8f9e7d9b280",
+      "content": "func TestBackgroundShell_StdoutAndStderr(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a background shell with both stdout and stderr\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"echo 'stdout message' && echo 'stderr message' >&2\", \"\")\n\trequire.NoError(t, err)\n\tdefer bgManager.Kill(bgShell.ID)\n\n\t// Wait for completion\n\tbgShell.Wait()\n\n\tstdout, stderr, done, err := bgShell.GetOutput()\n\trequire.NoError(t, err)\n\trequire.True(t, done)\n\trequire.Contains(t, stdout, \"stdout message\")\n\trequire.Contains(t, stderr, \"stderr message\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_ConcurrentAccess_199": {
+      "name": "TestBackgroundShell_ConcurrentAccess",
+      "type": "function",
+      "start_line": 199,
+      "end_line": 248,
+      "content_hash": "cf8a7fc40dd3f9db445176ccab31326241a81222",
+      "content": "func TestBackgroundShell_ConcurrentAccess(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Start a background shell\n\tbgManager := shell.GetBackgroundShellManager()\n\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"for i in 1 2 3 4 5; do echo \\\"line $i\\\"; sleep 0.05; done\", \"\")\n\trequire.NoError(t, err)\n\tdefer bgManager.Kill(bgShell.ID)\n\n\t// Access output concurrently from multiple goroutines\n\tdone := make(chan struct{})\n\terrors := make(chan error, 10)\n\n\tfor range 10 {\n\t\tgo func() {\n\t\t\tfor {\n\t\t\t\tselect {\n\t\t\t\tcase <-done:\n\t\t\t\t\treturn\n\t\t\t\tdefault:\n\t\t\t\t\t_, _, _, err := bgShell.GetOutput()\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\terrors <- err\n\t\t\t\t\t}\n\t\t\t\t\tdir := bgShell.WorkingDir\n\t\t\t\t\tif dir == \"\" {\n\t\t\t\t\t\terrors <- err\n\t\t\t\t\t}\n\t\t\t\t\ttime.Sleep(10 * time.Millisecond)\n\t\t\t\t}\n\t\t\t}\n\t\t}()\n\t}\n\n\t// Let it run for a bit\n\ttime.Sleep(300 * time.Millisecond)\n\tclose(done)\n\n\t// Check for any errors\n\tselect {\n\tcase err := <-errors:\n\t\tt.Fatalf(\"Concurrent access caused error: %v\", err)\n\tcase <-time.After(100 * time.Millisecond):\n\t\t// No errors - success\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_List_249": {
+      "name": "TestBackgroundShell_List",
+      "type": "function",
+      "start_line": 249,
+      "end_line": 278,
+      "content_hash": "995c8a04469b2404f056c0c765bc8daebe3855e4",
+      "content": "func TestBackgroundShell_List(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\tbgManager := shell.GetBackgroundShellManager()\n\n\t// Start multiple background shells\n\tshells := make([]*shell.BackgroundShell, 3)\n\tfor i := range 3 {\n\t\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"sleep 1\", \"\")\n\t\trequire.NoError(t, err)\n\t\tshells[i] = bgShell\n\t}\n\n\t// Get the list\n\tids := bgManager.List()\n\n\t// Verify all our shells are in the list\n\tfor _, sh := range shells {\n\t\trequire.Contains(t, ids, sh.ID, \"Shell %s not found in list\", sh.ID)\n\t}\n\n\t// Clean up\n\tfor _, sh := range shells {\n\t\tbgManager.Kill(sh.ID)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestBackgroundShell_AutoBackground_279": {
+      "name": "TestBackgroundShell_AutoBackground",
+      "type": "function",
+      "start_line": 279,
+      "end_line": 329,
+      "content_hash": "73157577b7fc3b053fa9ed1ae2e1ba81effee599",
+      "content": "func TestBackgroundShell_AutoBackground(t *testing.T) {\n\tt.Parallel()\n\n\tworkingDir := t.TempDir()\n\tctx := context.Background()\n\n\t// Test that a quick command completes synchronously\n\tt.Run(\"quick command completes synchronously\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\tbgManager := shell.GetBackgroundShellManager()\n\t\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"echo 'quick'\", \"\")\n\t\trequire.NoError(t, err)\n\n\t\t// Wait threshold time\n\t\ttime.Sleep(5 * time.Second)\n\n\t\t// Should be done by now\n\t\tstdout, stderr, done, err := bgShell.GetOutput()\n\t\trequire.NoError(t, err)\n\t\trequire.True(t, done, \"Quick command should be done\")\n\t\trequire.Contains(t, stdout, \"quick\")\n\t\trequire.Empty(t, stderr)\n\n\t\t// Clean up\n\t\tbgManager.Kill(bgShell.ID)\n\t})\n\n\t// Test that a long command stays in background\n\tt.Run(\"long command stays in background\", func(t *testing.T) {\n\t\tt.Parallel()\n\t\tbgManager := shell.GetBackgroundShellManager()\n\t\tbgShell, err := bgManager.Start(ctx, workingDir, nil, \"sleep 20 && echo '20 seconds completed'\", \"\")\n\t\trequire.NoError(t, err)\n\t\tdefer bgManager.Kill(bgShell.ID)\n\n\t\t// Wait threshold time\n\t\ttime.Sleep(5 * time.Second)\n\n\t\t// Should still be running\n\t\tstdout, stderr, done, err := bgShell.GetOutput()\n\t\trequire.NoError(t, err)\n\t\trequire.False(t, done, \"Long command should still be running\")\n\t\trequire.Empty(t, stdout, \"No output yet from sleep command\")\n\t\trequire.Empty(t, stderr)\n\n\t\t// Verify we can get the shell from manager\n\t\tretrieved, ok := bgManager.Get(bgShell.ID)\n\t\trequire.True(t, ok, \"Should be able to retrieve background shell\")\n\t\trequire.Equal(t, bgShell.ID, retrieved.ID)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

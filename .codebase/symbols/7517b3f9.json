@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/agent/utils/text_tool_calls.go",
+  "file_hash": "03917835cb1fda729ec546dc1887aecf482d82c1",
+  "updated_at": "2025-12-26T17:34:21.310129",
+  "symbols": {
+    "struct_TextToolCall_9": {
+      "name": "TextToolCall",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 23,
+      "content_hash": "2965500a3da1879db60bf8dde8f9d1a9f3547445",
+      "content": "type TextToolCall struct {\n\tID        string\n\tName      string\n\tArguments string\n}\n\n// ParseTextToolCalls extracts tool calls from text that contains malformed tool call patterns.\n// Some models (like MiniMax M2 via Synthetic, x.ai Grok) output tool calls as text instead of proper JSON,\n// using formats like:\n//   - minimax:tool_call /path 30 310 </minimax:tool_call>\n//   - <tool_call>{\"name\": \"view\", \"arguments\": {...}}</tool_call>\n//   - <function_call name=\"view\">...</function_call>\n//   - <xai:function_call name=\"view\">...</xai:function_call>\n//\n// This function detects and parses these patterns to enable conversation continuation.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ParseTextToolCalls_24": {
+      "name": "ParseTextToolCalls",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 153,
+      "content_hash": "2eaa68ec57410795b230f8cda3edaad9ef9d4a56",
+      "content": "func ParseTextToolCalls(text string) []TextToolCall {\n\tvar calls []TextToolCall\n\n\t// Pattern 1: minimax:tool_call format (e.g., \"minimax:tool_call /path 30 310 </minimax:tool_call>\")\n\t// This appears to be a view tool call with path, limit, offset\n\tif idx := strings.Index(text, \"minimax:tool_call\"); idx != -1 {\n\t\tendIdx := strings.Index(text[idx:], \"</minimax:tool_call>\")\n\t\tif endIdx != -1 {\n\t\t\tcontent := strings.TrimSpace(text[idx+len(\"minimax:tool_call\") : idx+endIdx])\n\t\t\t// Parse the content - appears to be space-separated: path limit offset\n\t\t\tparts := strings.Fields(content)\n\t\t\tif len(parts) >= 1 {\n\t\t\t\t// Construct a view tool call\n\t\t\t\tcall := TextToolCall{\n\t\t\t\t\tID:   GenerateToolCallID(\"openai\"),\n\t\t\t\t\tName: \"view\",\n\t\t\t\t}\n\t\t\t\t// Build arguments JSON\n\t\t\t\targs := map[string]any{\"file_path\": parts[0]}\n\t\t\t\tif len(parts) >= 2 {\n\t\t\t\t\tif limit, err := parseInt(parts[1]); err == nil {\n\t\t\t\t\t\targs[\"limit\"] = limit\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif len(parts) >= 3 {\n\t\t\t\t\tif offset, err := parseInt(parts[2]); err == nil {\n\t\t\t\t\t\targs[\"offset\"] = offset\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tcall.Arguments = mapToJSON(args)\n\t\t\t\tcalls = append(calls, call)\n\t\t\t}\n\t\t}\n\t}\n\n\t// Pattern 2: <tool_call> JSON format\n\ttoolCallStart := \"<tool_call>\"\n\ttoolCallEnd := \"</tool_call>\"\n\tsearchText := text\n\tfor {\n\t\tstartIdx := strings.Index(searchText, toolCallStart)\n\t\tif startIdx == -1 {\n\t\t\tbreak\n\t\t}\n\t\tendIdx := strings.Index(searchText[startIdx:], toolCallEnd)\n\t\tif endIdx == -1 {\n\t\t\tbreak\n\t\t}\n\t\tcontent := strings.TrimSpace(searchText[startIdx+len(toolCallStart) : startIdx+endIdx])\n\t\tif call := parseJSONToolCall(content); call != nil {\n\t\t\tcalls = append(calls, *call)\n\t\t}\n\t\tsearchText = searchText[startIdx+endIdx+len(toolCallEnd):]\n\t}\n\n\t// Pattern 3: <function_call name=\"...\"> format\n\tfuncCallPattern := \"<function_call\"\n\tfuncCallEnd := \"</function_call>\"\n\tsearchText = text\n\tfor {\n\t\tstartIdx := strings.Index(searchText, funcCallPattern)\n\t\tif startIdx == -1 {\n\t\t\tbreak\n\t\t}\n\t\t// Find the closing >\n\t\ttagEnd := strings.Index(searchText[startIdx:], \">\")\n\t\tif tagEnd == -1 {\n\t\t\tbreak\n\t\t}\n\t\t// Extract name attribute\n\t\ttagContent := searchText[startIdx : startIdx+tagEnd+1]\n\t\tname := extractAttribute(tagContent, \"name\")\n\t\tif name == \"\" {\n\t\t\tsearchText = searchText[startIdx+tagEnd+1:]\n\t\t\tcontinue\n\t\t}\n\n\t\tendIdx := strings.Index(searchText[startIdx:], funcCallEnd)\n\t\tif endIdx == -1 {\n\t\t\tbreak\n\t\t}\n\t\targuments := strings.TrimSpace(searchText[startIdx+tagEnd+1 : startIdx+endIdx])\n\t\tcalls = append(calls, TextToolCall{\n\t\t\tID:        GenerateToolCallID(\"openai\"),\n\t\t\tName:      name,\n\t\t\tArguments: arguments,\n\t\t})\n\t\tsearchText = searchText[startIdx+endIdx+len(funcCallEnd):]\n\t}\n\n\t// Pattern 4: <xai:function_call name=\"...\"> format (x.ai Grok models)\n\txaiCallPattern := \"<xai:function_call\"\n\txaiCallEnd := \"</xai:function_call>\"\n\tsearchText = text\n\tfor {\n\t\tstartIdx := strings.Index(searchText, xaiCallPattern)\n\t\tif startIdx == -1 {\n\t\t\tbreak\n\t\t}\n\t\t// Find the closing >\n\t\ttagEnd := strings.Index(searchText[startIdx:], \">\")\n\t\tif tagEnd == -1 {\n\t\t\tbreak\n\t\t}\n\t\t// Extract name attribute\n\t\ttagContent := searchText[startIdx : startIdx+tagEnd+1]\n\t\tname := extractAttribute(tagContent, \"name\")\n\t\tif name == \"\" {\n\t\t\tsearchText = searchText[startIdx+tagEnd+1:]\n\t\t\tcontinue\n\t\t}\n\n\t\tendIdx := strings.Index(searchText[startIdx:], xaiCallEnd)\n\t\tif endIdx == -1 {\n\t\t\tbreak\n\t\t}\n\t\targuments := strings.TrimSpace(searchText[startIdx+tagEnd+1 : startIdx+endIdx])\n\t\tcalls = append(calls, TextToolCall{\n\t\t\tID:        GenerateToolCallID(\"openai\"),\n\t\t\tName:      name,\n\t\t\tArguments: arguments,\n\t\t})\n\t\t// Fix x.ai indexing: match function_call pattern exactly\n\t\tsearchText = searchText[startIdx+endIdx+len(xaiCallEnd):]\n\t}\n\n\treturn calls\n}\n\n// HasTextToolCalls returns true if the text contains any recognizable tool call patterns",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_HasTextToolCalls_154": {
+      "name": "HasTextToolCalls",
+      "type": "function",
+      "start_line": 154,
+      "end_line": 173,
+      "content_hash": "6cd10adafbe96f464796e9b79c4174d748a01421",
+      "content": "func HasTextToolCalls(text string) bool {\n\tpatterns := []string{\n\t\t\"minimax:tool_call\",\n\t\t\"</minimax:tool_call>\",\n\t\t\"<tool_call>\",\n\t\t\"</tool_call>\",\n\t\t\"<function_call\",\n\t\t\"</function_call>\",\n\t\t\"<xai:function_call\",\n\t\t\"</xai:function_call>\",\n\t}\n\tfor _, p := range patterns {\n\t\tif strings.Contains(text, p) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// parseInt parses a string to int, used for parsing tool call arguments",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parseInt_174": {
+      "name": "parseInt",
+      "type": "function",
+      "start_line": 174,
+      "end_line": 180,
+      "content_hash": "4497bf21ab6b9f0f53cd3e775204518268b56f6e",
+      "content": "func parseInt(s string) (int, error) {\n\tvar n int\n\t_, err := fmt.Sscanf(s, \"%d\", &n)\n\treturn n, err\n}\n\n// mapToJSON converts a map to a simple JSON string",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_mapToJSON_181": {
+      "name": "mapToJSON",
+      "type": "function",
+      "start_line": 181,
+      "end_line": 196,
+      "content_hash": "d7c9464a3a0fadb557efebf05a1f2f438b445111",
+      "content": "func mapToJSON(m map[string]any) string {\n\tvar parts []string\n\tfor k, v := range m {\n\t\tswitch val := v.(type) {\n\t\tcase string:\n\t\t\tparts = append(parts, fmt.Sprintf(`\"%s\":\"%s\"`, k, val))\n\t\tcase int:\n\t\t\tparts = append(parts, fmt.Sprintf(`\"%s\":%d`, k, val))\n\t\tdefault:\n\t\t\tparts = append(parts, fmt.Sprintf(`\"%s\":\"%v\"`, k, val))\n\t\t}\n\t}\n\treturn \"{\" + strings.Join(parts, \",\") + \"}\"\n}\n\n// extractAttribute extracts an attribute value from an XML-like tag",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractAttribute_197": {
+      "name": "extractAttribute",
+      "type": "function",
+      "start_line": 197,
+      "end_line": 218,
+      "content_hash": "0719b2b2fcbff278ff3990c4b0cb2071392db7c6",
+      "content": "func extractAttribute(tag, attr string) string {\n\t// Look for attr=\"value\" or attr='value'\n\tpatterns := []string{\n\t\tfmt.Sprintf(`%s=\"`, attr),\n\t\tfmt.Sprintf(`%s='`, attr),\n\t}\n\tfor _, p := range patterns {\n\t\tidx := strings.Index(tag, p)\n\t\tif idx == -1 {\n\t\t\tcontinue\n\t\t}\n\t\tstart := idx + len(p)\n\t\tquote := tag[start-1]\n\t\tend := strings.IndexByte(tag[start:], quote)\n\t\tif end != -1 {\n\t\t\treturn tag[start : start+end]\n\t\t}\n\t}\n\treturn \"\"\n}\n\n// parseJSONToolCall attempts to parse a JSON tool call from content",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parseJSONToolCall_219": {
+      "name": "parseJSONToolCall",
+      "type": "function",
+      "start_line": 219,
+      "end_line": 240,
+      "content_hash": "de69435fa94aa9498a41af70bb34ed93328a6df2",
+      "content": "func parseJSONToolCall(content string) *TextToolCall {\n\t// Simple JSON parsing - look for \"name\" and \"arguments\" fields\n\t// This is intentionally simple to avoid heavy dependencies\n\tname := extractJSONString(content, \"name\")\n\tif name == \"\" {\n\t\treturn nil\n\t}\n\n\t// Try to extract arguments as a nested object or string\n\targs := extractJSONValue(content, \"arguments\")\n\tif args == \"\" {\n\t\targs = \"{}\"\n\t}\n\n\treturn &TextToolCall{\n\t\tID:        GenerateToolCallID(\"openai\"),\n\t\tName:      name,\n\t\tArguments: args,\n\t}\n}\n\n// extractJSONString extracts a string value from JSON content",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractJSONString_241": {
+      "name": "extractJSONString",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 261,
+      "content_hash": "23055848249aeb436f5b6e70e394fc1a6d4057fa",
+      "content": "func extractJSONString(json, key string) string {\n\t// Look for \"key\": \"value\" or \"key\":\"value\"\n\tpatterns := []string{\n\t\tfmt.Sprintf(`\"%s\": \"`, key),\n\t\tfmt.Sprintf(`\"%s\":\"`, key),\n\t}\n\tfor _, p := range patterns {\n\t\tidx := strings.Index(json, p)\n\t\tif idx == -1 {\n\t\t\tcontinue\n\t\t}\n\t\tstart := idx + len(p)\n\t\tend := strings.IndexByte(json[start:], '\"')\n\t\tif end != -1 {\n\t\t\treturn json[start : start+end]\n\t\t}\n\t}\n\treturn \"\"\n}\n\n// extractJSONValue extracts a JSON value (object or string) from content",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractJSONValue_262": {
+      "name": "extractJSONValue",
+      "type": "function",
+      "start_line": 262,
+      "end_line": 290,
+      "content_hash": "425cd2050774e1cbcbc2feeb6711b1173ce6423e",
+      "content": "func extractJSONValue(json, key string) string {\n\t// Look for \"key\": { or \"key\":{\n\tpatterns := []string{\n\t\tfmt.Sprintf(`\"%s\": {`, key),\n\t\tfmt.Sprintf(`\"%s\":{`, key),\n\t}\n\tfor _, p := range patterns {\n\t\tidx := strings.Index(json, p)\n\t\tif idx == -1 {\n\t\t\tcontinue\n\t\t}\n\t\tstart := idx + len(p) - 1 // Include the opening brace\n\t\t// Find matching closing brace\n\t\tdepth := 1\n\t\tfor i := start + 1; i < len(json); i++ {\n\t\t\tswitch json[i] {\n\t\t\tcase '{':\n\t\t\t\tdepth++\n\t\t\tcase '}':\n\t\t\t\tdepth--\n\t\t\t\tif depth == 0 {\n\t\t\t\t\treturn json[start : i+1]\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\t// Try string value\n\treturn extractJSONString(json, key)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

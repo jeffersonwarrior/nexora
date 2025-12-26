@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/ansiext/ansi_test.go",
+  "file_hash": "ebd76211af2f15f2217fb0eb8959bf61a21166ed",
+  "updated_at": "2025-12-26T17:34:20.907816",
+  "symbols": {
+    "function_TestEscape_10": {
+      "name": "TestEscape",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 113,
+      "content_hash": "fab08568a7d81a84ec51f45e276ddc3047901c5e",
+      "content": "func TestEscape(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected string\n\t}{\n\t\t{\n\t\t\tname:     \"regular text\",\n\t\t\tinput:    \"Hello, World!\",\n\t\t\texpected: \"Hello, World!\",\n\t\t},\n\t\t{\n\t\t\tname:     \"empty string\",\n\t\t\tinput:    \"\",\n\t\t\texpected: \"\",\n\t\t},\n\t\t{\n\t\t\tname:     \"null character\",\n\t\t\tinput:    \"Hello\\x00World\",\n\t\t\texpected: \"Hello\\u2400World\",\n\t\t},\n\t\t{\n\t\t\tname:     \"tab character\",\n\t\t\tinput:    \"Hello\\tWorld\",\n\t\t\texpected: \"Hello\\u2409World\",\n\t\t},\n\t\t{\n\t\t\tname:     \"newline character\",\n\t\t\tinput:    \"Hello\\nWorld\",\n\t\t\texpected: \"Hello\\u240AWorld\",\n\t\t},\n\t\t{\n\t\t\tname:     \"carriage return\",\n\t\t\tinput:    \"Hello\\rWorld\",\n\t\t\texpected: \"Hello\\u240DWorld\",\n\t\t},\n\t\t{\n\t\t\tname:     \"escape character\",\n\t\t\tinput:    \"Hello\\x1bWorld\",\n\t\t\texpected: \"Hello\\u241BWorld\",\n\t\t},\n\t\t{\n\t\t\tname:     \"delete character\",\n\t\t\tinput:    string([]byte{'H', 'e', 'l', 'l', 'o', ansi.DEL, 'W', 'o', 'r', 'l', 'd'}),\n\t\t\texpected: \"Hello\\u2421World\",\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple control characters\",\n\t\t\tinput:    \"\\x00\\x01\\x02\\x03\\x04\\x05\",\n\t\t\texpected: \"\\u2400\\u2401\\u2402\\u2403\\u2404\\u2405\",\n\t\t},\n\t\t{\n\t\t\tname:     \"all control characters 0x00-0x1F\",\n\t\t\tinput:    string([]byte{0x00, 0x01, 0x02, 0x1E, 0x1F}),\n\t\t\texpected: \"\\u2400\\u2401\\u2402\\u241E\\u241F\",\n\t\t},\n\t\t{\n\t\t\tname:     \"bell character\",\n\t\t\tinput:    \"Alert\\x07!\",\n\t\t\texpected: \"Alert\\u2407!\",\n\t\t},\n\t\t{\n\t\t\tname:     \"backspace character\",\n\t\t\tinput:    \"Test\\x08ing\",\n\t\t\texpected: \"Test\\u2408ing\",\n\t\t},\n\t\t{\n\t\t\tname:     \"vertical tab\",\n\t\t\tinput:    \"Line1\\x0BLine2\",\n\t\t\texpected: \"Line1\\u240BLine2\",\n\t\t},\n\t\t{\n\t\t\tname:     \"form feed\",\n\t\t\tinput:    \"Page1\\x0CPage2\",\n\t\t\texpected: \"Page1\\u240CPage2\",\n\t\t},\n\t\t{\n\t\t\tname:     \"mixed text and control chars\",\n\t\t\tinput:    \"Normal text\\x00\\x01\\x02 more text\\x1F\",\n\t\t\texpected: \"Normal text\\u2400\\u2401\\u2402 more text\\u241F\",\n\t\t},\n\t\t{\n\t\t\tname:     \"unicode characters preserved\",\n\t\t\tinput:    \"Hello \u4e16\u754c \ud83c\udf0d\",\n\t\t\texpected: \"Hello \u4e16\u754c \ud83c\udf0d\",\n\t\t},\n\t\t{\n\t\t\tname:     \"unicode with control chars\",\n\t\t\tinput:    \"\u4e16\u754c\\x00\ud83c\udf0d\\x01\",\n\t\t\texpected: \"\u4e16\u754c\\u2400\ud83c\udf0d\\u2401\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := Escape(tt.input)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"Escape(%q) = %q, want %q\", tt.input, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n\n// TestEscapeAllControlCharacters tests all control characters from 0x00 to 0x1F",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestEscapeAllControlCharacters_114": {
+      "name": "TestEscapeAllControlCharacters",
+      "type": "function",
+      "start_line": 114,
+      "end_line": 125,
+      "content_hash": "3d5a27ae883cfb43edae9fbf44481e1404648c8f",
+      "content": "func TestEscapeAllControlCharacters(t *testing.T) {\n\tfor i := 0; i <= 0x1F; i++ {\n\t\tinput := string(rune(i))\n\t\texpected := string(rune(0x2400 + i))\n\t\tresult := Escape(input)\n\t\tif result != expected {\n\t\t\tt.Errorf(\"Escape(0x%02X) = %q, want %q\", i, result, expected)\n\t\t}\n\t}\n}\n\n// TestEscapeDelCharacter tests the DEL character (0x7F)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestEscapeDelCharacter_126": {
+      "name": "TestEscapeDelCharacter",
+      "type": "function",
+      "start_line": 126,
+      "end_line": 135,
+      "content_hash": "b21e5a49bff0a385fdf701f21ca18bab7d8805e2",
+      "content": "func TestEscapeDelCharacter(t *testing.T) {\n\tinput := string(rune(ansi.DEL))\n\texpected := \"\\u2421\"\n\tresult := Escape(input)\n\tif result != expected {\n\t\tt.Errorf(\"Escape(DEL) = %q, want %q\", result, expected)\n\t}\n}\n\n// TestEscapeLength ensures proper string builder growth",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestEscapeLength_136": {
+      "name": "TestEscapeLength",
+      "type": "function",
+      "start_line": 136,
+      "end_line": 162,
+      "content_hash": "39413631f8cdc651279596aa80b0b94b02640967",
+      "content": "func TestEscapeLength(t *testing.T) {\n\ttests := []struct {\n\t\tname  string\n\t\tinput string\n\t}{\n\t\t{\"short\", \"test\"},\n\t\t{\"empty\", \"\"},\n\t\t{\"long\", strings.Repeat(\"a\", 1000)},\n\t\t{\"long with controls\", strings.Repeat(\"a\\x00b\\x01c\", 100)},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := Escape(tt.input)\n\t\t\t// Result should have same number of runes as input\n\t\t\t// (control chars are replaced with single unicode chars)\n\t\t\tinputRunes := []rune(tt.input)\n\t\t\tresultRunes := []rune(result)\n\t\t\tif len(inputRunes) != len(resultRunes) {\n\t\t\t\tt.Errorf(\"Escape changed rune count: input=%d, result=%d\",\n\t\t\t\t\tlen(inputRunes), len(resultRunes))\n\t\t\t}\n\t\t})\n\t}\n}\n\n// BenchmarkEscape tests performance of the Escape function",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkEscape_163": {
+      "name": "BenchmarkEscape",
+      "type": "function",
+      "start_line": 163,
+      "end_line": 182,
+      "content_hash": "9c503f93f2bf1e3f80b005064fd2439734aca0fc",
+      "content": "func BenchmarkEscape(b *testing.B) {\n\ttestCases := []struct {\n\t\tname  string\n\t\tinput string\n\t}{\n\t\t{\"plain text\", \"Hello, World! This is a test string with no control characters.\"},\n\t\t{\"with controls\", \"Hello\\x00World\\x01Test\\x02String\\x03\"},\n\t\t{\"many controls\", strings.Repeat(\"\\x00\\x01\\x02\\x03\\x04\\x05\", 10)},\n\t\t{\"large plain\", strings.Repeat(\"abcdefghij\", 100)},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tb.Run(tc.name, func(b *testing.B) {\n\t\t\tb.ResetTimer()\n\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\tEscape(tc.input)\n\t\t\t}\n\t\t})\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

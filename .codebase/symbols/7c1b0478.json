@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/context-engine/scripts/ingest/chunking.py",
+  "file_hash": "53f4ccb3baea9b5dd913ce2408db7562014947a5",
+  "updated_at": "2025-12-26T17:34:20.578854",
+  "symbols": {
+    "function_chunk_lines_25": {
+      "name": "chunk_lines",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 38,
+      "content_hash": "9bb264ae5effdcad22b395884781811bf355dbf0",
+      "content": "def chunk_lines(text: str, max_lines: int = 120, overlap: int = 20) -> List[Dict]:\n    \"\"\"Chunk text into overlapping line-based segments.\"\"\"\n    lines = text.splitlines()\n    chunks = []\n    i = 0\n    n = len(lines)\n    while i < n:\n        j = min(n, i + max_lines)\n        chunk = \"\\n\".join(lines[i:j])\n        chunks.append({\"text\": chunk, \"start\": i + 1, \"end\": j})\n        if j == n:\n            break\n        i = max(j - overlap, i + 1)\n    return chunks",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_chunk_semantic_41": {
+      "name": "chunk_semantic",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 122,
+      "content_hash": "3ae7c03c283bd64bd6f1f0a3b07006900bc5c5dd",
+      "content": "def chunk_semantic(\n    text: str, language: str, max_lines: int = 120, overlap: int = 20\n) -> List[Dict]:\n    \"\"\"AST-aware chunking that tries to keep complete functions/classes together.\"\"\"\n    # Import here to avoid circular imports\n    from scripts.ingest.symbols import _extract_symbols\n    \n    # Try enhanced AST analyzer first (if available)\n    # Note: ast_analyzer can use Python's built-in ast module even without tree-sitter\n    use_enhanced = os.environ.get(\"INDEX_USE_ENHANCED_AST\", \"1\").lower() in {\"1\", \"true\", \"yes\", \"on\"}\n    _ast_supported = language in _TS_LANGUAGES or language == \"python\"  # Python has built-in ast fallback\n    if use_enhanced and _AST_ANALYZER_AVAILABLE and _ast_supported:\n        try:\n            chunks = chunk_code_semantically(text, language, max_lines, overlap)\n            # Convert to expected format\n            return [\n                {\n                    \"text\": c[\"text\"],\n                    \"start\": c[\"start\"],\n                    \"end\": c[\"end\"],\n                    \"is_semantic\": c.get(\"is_semantic\", True)\n                }\n                for c in chunks\n            ]\n        except Exception as e:\n            if os.environ.get(\"DEBUG_INDEXING\"):\n                print(f\"[DEBUG] Enhanced AST chunking failed, falling back: {e}\")\n    \n    if not _use_tree_sitter() or language not in _TS_LANGUAGES:\n        # Fallback to line-based chunking\n        return chunk_lines(text, max_lines, overlap)\n\n    lines = text.splitlines()\n    n = len(lines)\n\n    # Extract symbols with line ranges\n    symbols = _extract_symbols(language, text)\n    if not symbols:\n        return chunk_lines(text, max_lines, overlap)\n\n    # Sort symbols by start line\n    symbols.sort(key=lambda s: s.start)\n\n    chunks = []\n    i = 0  # Current line index (0-based)\n\n    while i < n:\n        chunk_start = i + 1  # 1-based for output\n        chunk_end = min(n, i + max_lines)  # 1-based\n\n        # Try to find a symbol that starts within our current window\n        best_symbol = None\n        for sym in symbols:\n            if sym.start >= chunk_start and sym.start <= chunk_end:\n                # Check if the entire symbol fits within max_lines from current position\n                symbol_size = sym.end - sym.start + 1\n                if symbol_size <= max_lines and sym.end <= i + max_lines:\n                    best_symbol = sym\n                    break\n\n        if best_symbol:\n            # Chunk this complete symbol\n            chunk_text = \"\\n\".join(lines[best_symbol.start - 1 : best_symbol.end])\n            chunks.append(\n                {\n                    \"text\": chunk_text,\n                    \"start\": best_symbol.start,\n                    \"end\": best_symbol.end,\n                    \"symbol\": best_symbol.name,\n                    \"kind\": best_symbol.kind,\n                }\n            )\n            # Move past this symbol with minimal overlap\n            i = max(best_symbol.end - overlap, i + 1)\n        else:\n            # No suitable symbol found, fall back to line-based chunking\n            chunk_text = \"\\n\".join(lines[i : i + max_lines])\n            actual_end = min(n, i + max_lines)\n            chunks.append({\"text\": chunk_text, \"start\": i + 1, \"end\": actual_end})\n            i = max(actual_end - overlap, i + 1)\n\n    return chunks",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_chunk_by_tokens_125": {
+      "name": "chunk_by_tokens",
+      "type": "function",
+      "start_line": 125,
+      "end_line": 237,
+      "content_hash": "d3183a0dc8a6d8eb88951571f4673aef94118aef",
+      "content": "def chunk_by_tokens(\n    text: str, k_tokens: int = None, stride_tokens: int = None\n) -> List[Dict]:\n    \"\"\"Token-based micro-chunking (ReFRAG-lite).\n    \n    Produces tiny fixed-size token windows with stride, maps back to original line ranges.\n    \"\"\"\n    try:\n        from tokenizers import Tokenizer  # lightweight, already in requirements\n    except Exception:\n        Tokenizer = None  # type: ignore\n\n    # Prefer explicit function arguments when provided; fall back to env/defaults.\n    try:\n        if k_tokens is not None:\n            k = int(k_tokens)\n        else:\n            k = int(os.environ.get(\"MICRO_CHUNK_TOKENS\", \"16\") or 16)\n    except Exception:\n        k = 16\n    try:\n        if stride_tokens is not None:\n            s = int(stride_tokens)\n        else:\n            s = int(os.environ.get(\"MICRO_CHUNK_STRIDE\", \"\") or max(1, k // 2))\n    except Exception:\n        s = max(1, k // 2)\n\n    # Helper: simple regex-based token offsets when HF tokenizer JSON is unavailable\n    def _simple_offsets(txt: str):\n        import re\n        offs = []\n        for m in re.finditer(r\"\\S+\", txt):\n            offs.append((m.start(), m.end()))\n        return offs\n\n    offsets = []\n    # Load tokenizer; default to local model file if present\n    tok_path = os.environ.get(\n        \"TOKENIZER_JSON\", str((ROOT_DIR / \"models\" / \"tokenizer.json\"))\n    )\n    if Tokenizer is not None:\n        try:\n            tokenizer = Tokenizer.from_file(tok_path)\n            try:\n                enc = tokenizer.encode(text)\n                offsets = getattr(enc, \"offsets\", None) or []\n            except Exception:\n                offsets = []\n        except Exception:\n            offsets = []\n\n    if not offsets:\n        # Fallback to simple regex tokenization; avoids degrading to 120-line chunks\n        if os.environ.get(\"DEBUG_CHUNKING\"):\n            print(\"[ingest] tokenizers missing/unusable -> using simple regex tokenization\")\n        offsets = _simple_offsets(text)\n\n    if not offsets:\n        return chunk_lines(text, max_lines=120, overlap=20)\n\n    # Precompute line starts for fast char->line mapping\n    lines = text.splitlines(keepends=True)\n    line_starts = []\n    pos = 0\n    for ln in lines:\n        line_starts.append(pos)\n        pos += len(ln)\n    total_chars = len(text)\n\n    def char_to_line(c: int) -> int:\n        # Binary search line_starts to find 1-based line number\n        lo, hi = 0, len(line_starts) - 1\n        if c <= 0:\n            return 1\n        if c >= total_chars:\n            return len(lines)\n        ans = 0\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if line_starts[mid] <= c:\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return ans + 1  # 1-based\n\n    chunks: List[Dict] = []\n    i = 0\n    n = len(offsets)\n    while i < n:\n        j = min(n, i + k)\n        start_char = offsets[i][0]\n        end_char = offsets[j - 1][1] if j - 1 < n else offsets[-1][1]\n        start_char = max(0, start_char)\n        end_char = min(total_chars, max(start_char, end_char))\n        chunk_text = text[start_char:end_char]\n        if chunk_text:\n            start_line = char_to_line(start_char)\n            end_line = (\n                char_to_line(end_char - 1) if end_char > start_char else start_line\n            )\n            chunks.append(\n                {\n                    \"text\": chunk_text,\n                    \"start\": start_line,\n                    \"end\": end_line,\n                }\n            )\n        if j == n:\n            break\n        i = i + s if s > 0 else i + 1\n    return chunks",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__simple_offsets_154": {
+      "name": "_simple_offsets",
+      "type": "function",
+      "start_line": 154,
+      "end_line": 159,
+      "content_hash": "89afb2635541acd20aaf764d980875a6ca176b01",
+      "content": "    def _simple_offsets(txt: str):\n        import re\n        offs = []\n        for m in re.finditer(r\"\\S+\", txt):\n            offs.append((m.start(), m.end()))\n        return offs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_char_to_line_195": {
+      "name": "char_to_line",
+      "type": "function",
+      "start_line": 195,
+      "end_line": 210,
+      "content_hash": "5456894d6c9f162288a477ca0d79508b47525fcf",
+      "content": "    def char_to_line(c: int) -> int:\n        # Binary search line_starts to find 1-based line number\n        lo, hi = 0, len(line_starts) - 1\n        if c <= 0:\n            return 1\n        if c >= total_chars:\n            return len(lines)\n        ans = 0\n        while lo <= hi:\n            mid = (lo + hi) // 2\n            if line_starts[mid] <= c:\n                ans = mid\n                lo = mid + 1\n            else:\n                hi = mid - 1\n        return ans + 1  # 1-based",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

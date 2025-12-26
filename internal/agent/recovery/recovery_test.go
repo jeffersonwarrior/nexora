@@ -23,8 +23,17 @@ func TestRecoveryStrategies(t *testing.T) {
 	t.Run("FileOutdatedStrategy", func(t *testing.T) {
 		strategy := &FileOutdatedStrategy{}
 
+		// Create a temp file for testing
+		tmpFile := "/tmp/test_recovery_file.txt"
+		defer os.Remove(tmpFile)
+		
+		// Create the file
+		if err := os.WriteFile(tmpFile, []byte("test content"), 0644); err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+
 		// Test CanRecover
-		err := NewFileOutdatedError(errors.New("file modified"), "/tmp/test.txt")
+		err := NewFileOutdatedError(errors.New("file modified"), tmpFile)
 		if !strategy.CanRecover(err) {
 			t.Error("FileOutdatedStrategy should recover from file outdated errors")
 		}
@@ -35,7 +44,7 @@ func TestRecoveryStrategies(t *testing.T) {
 			t.Error("FileOutdatedStrategy should recover from generic file modified errors")
 		}
 
-		// Test recovery
+		// Test recovery with existing file
 		recoveryErr := strategy.Recover(ctx, err, execCtx)
 		if recoveryErr != nil {
 			t.Errorf("FileOutdatedStrategy recovery failed: %v", recoveryErr)
@@ -154,16 +163,16 @@ func TestRecoveryRegistry(t *testing.T) {
 	})
 
 	t.Run("AttemptRecovery", func(t *testing.T) {
-		// Test successful recovery
-		fileErr := NewFileOutdatedError(errors.New("file modified"), "/tmp/test.txt")
-
-		// Create temporary file for testing
+		// Test successful recovery - create temp file first
 		tmpFile := "/tmp/test_recovery.txt"
 		err := []byte("test content")
-		if err := os.WriteFile(tmpFile, err, 0644); err != nil {
-			t.Fatalf("Failed to create test file: %v", err)
+		if writeErr := os.WriteFile(tmpFile, err, 0644); writeErr != nil {
+			t.Fatalf("Failed to create test file: %v", writeErr)
 		}
 		defer os.Remove(tmpFile)
+
+		// Use the same file path in the error
+		fileErr := NewFileOutdatedError(errors.New("file modified"), tmpFile)
 
 		ctx := context.Background()
 		recoveryErr := registry.AttemptRecovery(ctx, fileErr, execCtx)

@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/cmd/run.go",
+  "file_hash": "70cbb50df7396a14b5ccf8cec239d2e32605ed74",
+  "updated_at": "2025-12-26T17:34:24.254410",
+  "symbols": {
+    "function_init_66": {
+      "name": "init",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 68,
+      "content_hash": "be7ce934c5071a9b054fd23b1907abf11f9a80d2",
+      "content": "func init() {\n\trunCmd.Flags().BoolP(\"quiet\", \"q\", false, \"Hide spinner\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

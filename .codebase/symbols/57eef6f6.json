@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/agent/tools/file.go",
+  "file_hash": "1c60fb82db09aee67d5efb2c42f584dc1faecf9c",
+  "updated_at": "2025-12-26T17:34:23.421933",
+  "symbols": {
+    "struct_fileRecord_9": {
+      "name": "fileRecord",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 19,
+      "content_hash": "fd553d29626c07a9147ab2bcc4a18178d5336e47",
+      "content": "type fileRecord struct {\n\tpath      string\n\treadTime  time.Time\n\twriteTime time.Time\n}\n\nvar (\n\tfileRecords     = make(map[string]fileRecord)\n\tfileRecordMutex sync.RWMutex\n)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_recordFileRead_20": {
+      "name": "recordFileRead",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 31,
+      "content_hash": "b312a2c6fae48baedc9038491f8cada513cb6a0f",
+      "content": "func recordFileRead(path string) {\n\tfileRecordMutex.Lock()\n\tdefer fileRecordMutex.Unlock()\n\n\trecord, exists := fileRecords[path]\n\tif !exists {\n\t\trecord = fileRecord{path: path}\n\t}\n\trecord.readTime = time.Now()\n\tfileRecords[path] = record\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getLastReadTime_32": {
+      "name": "getLastReadTime",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 42,
+      "content_hash": "a12525234679996cbc9f2e56ed3b8d24034c3202",
+      "content": "func getLastReadTime(path string) time.Time {\n\tfileRecordMutex.RLock()\n\tdefer fileRecordMutex.RUnlock()\n\n\trecord, exists := fileRecords[path]\n\tif !exists {\n\t\treturn time.Time{}\n\t}\n\treturn record.readTime\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_recordFileWrite_43": {
+      "name": "recordFileWrite",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 53,
+      "content_hash": "a5e5d66d1154ed96c883c09906ae6d092be16c47",
+      "content": "func recordFileWrite(path string) {\n\tfileRecordMutex.Lock()\n\tdefer fileRecordMutex.Unlock()\n\n\trecord, exists := fileRecords[path]\n\tif !exists {\n\t\trecord = fileRecord{path: path}\n\t}\n\trecord.writeTime = time.Now()\n\tfileRecords[path] = record\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

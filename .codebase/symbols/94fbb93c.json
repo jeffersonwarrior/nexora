@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/internal/config/providers/minimax_test.go",
+  "file_hash": "f008757d6235e0f7da0a791671ae6a4dc4d332c9",
+  "updated_at": "2025-12-26T17:34:19.711576",
+  "symbols": {
+    "function_TestMiniMaxProvider_ReturnsValidProvider_10": {
+      "name": "TestMiniMaxProvider_ReturnsValidProvider",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 19,
+      "content_hash": "6f66f89ef8db0c4230905f5ef2f0cd59452107b5",
+      "content": "func TestMiniMaxProvider_ReturnsValidProvider(t *testing.T) {\n\tt.Parallel()\n\tprovider := MiniMaxProvider(nil)\n\n\trequire.NotEmpty(t, provider.ID)\n\trequire.Equal(t, \"minimax\", string(provider.ID))\n\trequire.Equal(t, \"MiniMax\", provider.Name)\n\trequireValidProvider(t, provider)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMiniMaxProvider_HasTwoModels_20": {
+      "name": "TestMiniMaxProvider_HasTwoModels",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 26,
+      "content_hash": "66062ad9cdbfe634f25e1e6fa08dcbd7132bf014",
+      "content": "func TestMiniMaxProvider_HasTwoModels(t *testing.T) {\n\tt.Parallel()\n\tprovider := MiniMaxProvider(nil)\n\n\trequire.Len(t, provider.Models, 2)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMiniMaxProvider_UsesAnthropicType_27": {
+      "name": "TestMiniMaxProvider_UsesAnthropicType",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 33,
+      "content_hash": "86749c5bc5bfa888188d41e30b996b6617526c1c",
+      "content": "func TestMiniMaxProvider_UsesAnthropicType(t *testing.T) {\n\tt.Parallel()\n\tprovider := MiniMaxProvider(nil)\n\n\trequire.Equal(t, \"anthropic\", string(provider.Type))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMiniMaxProvider_SkipsIfAlreadyExists_34": {
+      "name": "TestMiniMaxProvider_SkipsIfAlreadyExists",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 43,
+      "content_hash": "8c572ac9104466a2a3252007b5b76c71f499ba24",
+      "content": "func TestMiniMaxProvider_SkipsIfAlreadyExists(t *testing.T) {\n\tt.Parallel()\n\tprovider := MiniMaxProvider(nil)\n\trequire.NotEmpty(t, provider.ID)\n\n\tminimaxInList := []catwalk.Provider{provider}\n\tresult := MiniMaxProvider(minimaxInList)\n\trequire.Empty(t, result.ID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMiniMaxProvider_ModelIDs_44": {
+      "name": "TestMiniMaxProvider_ModelIDs",
+      "type": "function",
+      "start_line": 44,
+      "end_line": 56,
+      "content_hash": "6a0cb2a159284c78cfd39d1e88cef2670cbd66fe",
+      "content": "func TestMiniMaxProvider_ModelIDs(t *testing.T) {\n\tt.Parallel()\n\tprovider := MiniMaxProvider(nil)\n\n\tmodelIDs := make(map[string]bool)\n\tfor _, m := range provider.Models {\n\t\tmodelIDs[string(m.ID)] = true\n\t}\n\n\trequire.True(t, modelIDs[\"MiniMax-M2\"])\n\trequire.True(t, modelIDs[\"MiniMax-M2-Stable\"])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMiniMaxProvider_DefaultAPIEndpoint_57": {
+      "name": "TestMiniMaxProvider_DefaultAPIEndpoint",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 63,
+      "content_hash": "e19b0571f0156fea7ecbb29e12de7197e7aecf66",
+      "content": "func TestMiniMaxProvider_DefaultAPIEndpoint(t *testing.T) {\n\tt.Setenv(\"MINIMAX_API_ENDPOINT\", \"\")\n\n\tprovider := MiniMaxProvider(nil)\n\trequire.Equal(t, \"https://api.minimax.io/anthropic\", provider.APIEndpoint)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMiniMaxProvider_RespectEnvVarEndpoint_64": {
+      "name": "TestMiniMaxProvider_RespectEnvVarEndpoint",
+      "type": "function",
+      "start_line": 64,
+      "end_line": 70,
+      "content_hash": "ef86b328f77804db9be5e6077523ef7e7450ba33",
+      "content": "func TestMiniMaxProvider_RespectEnvVarEndpoint(t *testing.T) {\n\tcustomEndpoint := \"https://custom.minimax.endpoint/anthropic\"\n\tt.Setenv(\"MINIMAX_API_ENDPOINT\", customEndpoint)\n\n\tprovider := MiniMaxProvider(nil)\n\trequire.Equal(t, customEndpoint, provider.APIEndpoint)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/worker/SessionManager.ts",
+  "file_hash": "48fe01ac865e19093b30f021bb39c4f81d3243f9",
+  "updated_at": "2025-12-26T17:34:23.704241",
+  "symbols": {
+    "class_SessionManager_17": {
+      "name": "SessionManager",
+      "type": "class",
+      "start_line": 17,
+      "end_line": 478,
+      "content_hash": "f85fa04dce30eefb24266ed971332efcdabaf758",
+      "content": "export class SessionManager {\n  private dbManager: DatabaseManager;\n  private sessions: Map<number, ActiveSession> = new Map();\n  private sessionQueues: Map<number, EventEmitter> = new Map();\n  private onSessionDeletedCallback?: () => void;\n  private pendingStore: PendingMessageStore | null = null;\n\n  constructor(dbManager: DatabaseManager) {\n    this.dbManager = dbManager;\n  }\n\n  /**\n   * Get or create PendingMessageStore (lazy initialization to avoid circular dependency)\n   */\n  private getPendingStore(): PendingMessageStore {\n    if (!this.pendingStore) {\n      const sessionStore = this.dbManager.getSessionStore();\n      this.pendingStore = new PendingMessageStore(sessionStore.db, 3);\n    }\n    return this.pendingStore;\n  }\n\n  /**\n   * Set callback to be called when a session is deleted (for broadcasting status)\n   */\n  setOnSessionDeleted(callback: () => void): void {\n    this.onSessionDeletedCallback = callback;\n  }\n\n  /**\n   * Initialize a new session or return existing one\n   */\n  initializeSession(sessionDbId: number, currentUserPrompt?: string, promptNumber?: number): ActiveSession {\n    // Check if already active\n    let session = this.sessions.get(sessionDbId);\n    if (session) {\n      // Refresh project from database in case it was updated by new-hook\n      // This fixes the bug where sessions created with empty project get updated\n      // in the database but the in-memory session still has the stale empty value\n      const dbSession = this.dbManager.getSessionById(sessionDbId);\n      if (dbSession.project && dbSession.project !== session.project) {\n        logger.debug('SESSION', 'Updating project from database', {\n          sessionDbId,\n          oldProject: session.project,\n          newProject: dbSession.project\n        });\n        session.project = dbSession.project;\n      }\n\n      // Update userPrompt for continuation prompts\n      if (currentUserPrompt) {\n        logger.debug('SESSION', 'Updating userPrompt for continuation', {\n          sessionDbId,\n          promptNumber,\n          oldPrompt: session.userPrompt.substring(0, 80),\n          newPrompt: currentUserPrompt.substring(0, 80)\n        });\n        session.userPrompt = currentUserPrompt;\n        session.lastPromptNumber = promptNumber || session.lastPromptNumber;\n      } else {\n        logger.debug('SESSION', 'No currentUserPrompt provided for existing session', {\n          sessionDbId,\n          promptNumber,\n          usingCachedPrompt: session.userPrompt.substring(0, 80)\n        });\n      }\n      return session;\n    }\n\n    // Fetch from database\n    const dbSession = this.dbManager.getSessionById(sessionDbId);\n\n    // Use currentUserPrompt if provided, otherwise fall back to database (first prompt)\n    const userPrompt = currentUserPrompt || dbSession.user_prompt;\n\n    if (!currentUserPrompt) {\n      logger.debug('SESSION', 'No currentUserPrompt provided for new session, using database', {\n        sessionDbId,\n        promptNumber,\n        dbPrompt: dbSession.user_prompt.substring(0, 80)\n      });\n    } else {\n      logger.debug('SESSION', 'Initializing session with fresh userPrompt', {\n        sessionDbId,\n        promptNumber,\n        userPrompt: currentUserPrompt.substring(0, 80)\n      });\n    }\n\n    // Create active session\n    session = {\n      sessionDbId,\n      claudeSessionId: dbSession.claude_session_id,\n      sdkSessionId: null,\n      project: dbSession.project,\n      userPrompt,\n      pendingMessages: [],\n      abortController: new AbortController(),\n      generatorPromise: null,\n      lastPromptNumber: promptNumber || this.dbManager.getSessionStore().getPromptCounter(sessionDbId),\n      startTime: Date.now(),\n      cumulativeInputTokens: 0,\n      cumulativeOutputTokens: 0,\n      pendingProcessingIds: new Set()\n    };\n\n    this.sessions.set(sessionDbId, session);\n\n    // Create event emitter for queue notifications\n    const emitter = new EventEmitter();\n    this.sessionQueues.set(sessionDbId, emitter);\n\n    logger.info('SESSION', 'Session initialized', {\n      sessionId: sessionDbId,\n      project: session.project,\n      claudeSessionId: session.claudeSessionId,\n      queueDepth: 0,\n      hasGenerator: false\n    });\n\n    return session;\n  }\n\n  /**\n   * Get active session by ID\n   */\n  getSession(sessionDbId: number): ActiveSession | undefined {\n    return this.sessions.get(sessionDbId);\n  }\n\n  /**\n   * Queue an observation for processing (zero-latency notification)\n   * Auto-initializes session if not in memory but exists in database\n   *\n   * CRITICAL: Persists to database FIRST before adding to in-memory queue.\n   * This ensures observations survive worker crashes.\n   */\n  queueObservation(sessionDbId: number, data: ObservationData): void {\n    // Auto-initialize from database if needed (handles worker restarts)\n    let session = this.sessions.get(sessionDbId);\n    if (!session) {\n      session = this.initializeSession(sessionDbId);\n    }\n\n    const beforeDepth = session.pendingMessages.length;\n\n    // CRITICAL: Persist to database FIRST\n    const message: PendingMessage = {\n      type: 'observation',\n      tool_name: data.tool_name,\n      tool_input: data.tool_input,\n      tool_response: data.tool_response,\n      prompt_number: data.prompt_number,\n      cwd: data.cwd\n    };\n\n    try {\n      const messageId = this.getPendingStore().enqueue(sessionDbId, session.claudeSessionId, message);\n      logger.debug('SESSION', `Observation persisted to DB`, {\n        sessionId: sessionDbId,\n        messageId,\n        tool: data.tool_name\n      });\n    } catch (error) {\n      logger.error('SESSION', 'Failed to persist observation to DB', {\n        sessionId: sessionDbId,\n        tool: data.tool_name\n      }, error);\n      throw error; // Don't continue if we can't persist\n    }\n\n    // Add to in-memory queue (for backward compatibility with existing iterator)\n    session.pendingMessages.push(message);\n\n    const afterDepth = session.pendingMessages.length;\n\n    // Notify generator immediately (zero latency)\n    const emitter = this.sessionQueues.get(sessionDbId);\n    emitter?.emit('message');\n\n    // Format tool name for logging\n    const toolSummary = logger.formatTool(data.tool_name, data.tool_input);\n\n    logger.info('SESSION', `Observation queued (${beforeDepth}\u2192${afterDepth})`, {\n      sessionId: sessionDbId,\n      tool: toolSummary,\n      hasGenerator: !!session.generatorPromise\n    });\n  }\n\n  /**\n   * Queue a summarize request (zero-latency notification)\n   * Auto-initializes session if not in memory but exists in database\n   *\n   * CRITICAL: Persists to database FIRST before adding to in-memory queue.\n   * This ensures summarize requests survive worker crashes.\n   */\n  queueSummarize(sessionDbId: number, lastUserMessage: string, lastAssistantMessage?: string): void {\n    // Auto-initialize from database if needed (handles worker restarts)\n    let session = this.sessions.get(sessionDbId);\n    if (!session) {\n      session = this.initializeSession(sessionDbId);\n    }\n\n    const beforeDepth = session.pendingMessages.length;\n\n    // CRITICAL: Persist to database FIRST\n    const message: PendingMessage = {\n      type: 'summarize',\n      last_user_message: lastUserMessage,\n      last_assistant_message: lastAssistantMessage\n    };\n\n    try {\n      const messageId = this.getPendingStore().enqueue(sessionDbId, session.claudeSessionId, message);\n      logger.debug('SESSION', `Summarize persisted to DB`, {\n        sessionId: sessionDbId,\n        messageId\n      });\n    } catch (error) {\n      logger.error('SESSION', 'Failed to persist summarize to DB', {\n        sessionId: sessionDbId\n      }, error);\n      throw error; // Don't continue if we can't persist\n    }\n\n    // Add to in-memory queue (for backward compatibility with existing iterator)\n    session.pendingMessages.push(message);\n\n    const afterDepth = session.pendingMessages.length;\n\n    const emitter = this.sessionQueues.get(sessionDbId);\n    emitter?.emit('message');\n\n    logger.info('SESSION', `Summarize queued (${beforeDepth}\u2192${afterDepth})`, {\n      sessionId: sessionDbId,\n      hasGenerator: !!session.generatorPromise\n    });\n  }\n\n  /**\n   * Delete a session (abort SDK agent and cleanup)\n   */\n  async deleteSession(sessionDbId: number): Promise<void> {\n    const session = this.sessions.get(sessionDbId);\n    if (!session) {\n      return; // Already deleted\n    }\n\n    const sessionDuration = Date.now() - session.startTime;\n\n    // Abort the SDK agent\n    session.abortController.abort();\n\n    // Wait for generator to finish\n    if (session.generatorPromise) {\n      await session.generatorPromise.catch(() => {});\n    }\n\n    // Cleanup\n    this.sessions.delete(sessionDbId);\n    this.sessionQueues.delete(sessionDbId);\n\n    logger.info('SESSION', 'Session deleted', {\n      sessionId: sessionDbId,\n      duration: `${(sessionDuration / 1000).toFixed(1)}s`,\n      project: session.project\n    });\n\n    // Trigger callback to broadcast status update (spinner may need to stop)\n    if (this.onSessionDeletedCallback) {\n      this.onSessionDeletedCallback();\n    }\n  }\n\n  /**\n   * Shutdown all active sessions\n   */\n  async shutdownAll(): Promise<void> {\n    const sessionIds = Array.from(this.sessions.keys());\n    await Promise.all(sessionIds.map(id => this.deleteSession(id)));\n  }\n\n  /**\n   * Check if any session has pending messages (for spinner tracking)\n   */\n  hasPendingMessages(): boolean {\n    return Array.from(this.sessions.values()).some(\n      session => session.pendingMessages.length > 0\n    );\n  }\n\n  /**\n   * Get number of active sessions (for stats)\n   */\n  getActiveSessionCount(): number {\n    return this.sessions.size;\n  }\n\n  /**\n   * Get total queue depth across all sessions (for activity indicator)\n   */\n  getTotalQueueDepth(): number {\n    let total = 0;\n    for (const session of this.sessions.values()) {\n      total += session.pendingMessages.length;\n    }\n    return total;\n  }\n\n  /**\n   * Get total active work (queued + currently processing)\n   * Counts both pending messages and items actively being processed by SDK agents\n   */\n  getTotalActiveWork(): number {\n    let total = 0;\n    for (const session of this.sessions.values()) {\n      // Count queued messages\n      total += session.pendingMessages.length;\n      // Count currently processing item (1 per active generator)\n      if (session.generatorPromise !== null) {\n        total += 1;\n      }\n    }\n    return total;\n  }\n\n  /**\n   * Check if any session is actively processing (has pending messages OR active generator)\n   * Used for activity indicator to prevent spinner from stopping while SDK is processing\n   */\n  isAnySessionProcessing(): boolean {\n    for (const session of this.sessions.values()) {\n      // Has queued messages waiting to be processed\n      if (session.pendingMessages.length > 0) {\n        return true;\n      }\n      // Has active SDK generator running (processing dequeued messages)\n      if (session.generatorPromise !== null) {\n        return true;\n      }\n    }\n    return false;\n  }\n\n  /**\n   * Get message iterator for SDKAgent to consume (event-driven, no polling)\n   * Auto-initializes session if not in memory but exists in database\n   *\n   * CRITICAL: Uses PendingMessageStore for crash-safe message persistence.\n   * Messages are marked as 'processing' when yielded and must be marked 'processed'\n   * by the SDK agent after successful completion.\n   */\n  async *getMessageIterator(sessionDbId: number): AsyncIterableIterator<PendingMessageWithId> {\n    // Auto-initialize from database if needed (handles worker restarts)\n    let session = this.sessions.get(sessionDbId);\n    if (!session) {\n      session = this.initializeSession(sessionDbId);\n    }\n\n    const emitter = this.sessionQueues.get(sessionDbId);\n    if (!emitter) {\n      throw new Error(`No emitter for session ${sessionDbId}`);\n    }\n\n    // Linger timeout: how long to wait for new messages before exiting\n    // This keeps the agent alive between messages, reducing \"No active agent\" windows\n    const LINGER_TIMEOUT_MS = 5000; // 5 seconds\n\n    while (!session.abortController.signal.aborted) {\n      // Check for pending messages in persistent store\n      const persistentMessage = this.getPendingStore().peekPending(sessionDbId);\n\n      if (!persistentMessage) {\n        // Wait for new messages with timeout\n        const gotMessage = await new Promise<boolean>(resolve => {\n          let resolved = false;\n\n          const messageHandler = () => {\n            if (!resolved) {\n              resolved = true;\n              clearTimeout(timeoutId);\n              resolve(true);\n            }\n          };\n\n          const timeoutHandler = () => {\n            if (!resolved) {\n              resolved = true;\n              emitter.off('message', messageHandler);\n              resolve(false);\n            }\n          };\n\n          const timeoutId = setTimeout(timeoutHandler, LINGER_TIMEOUT_MS);\n\n          emitter.once('message', messageHandler);\n\n          // Also listen for abort\n          session.abortController.signal.addEventListener('abort', () => {\n            if (!resolved) {\n              resolved = true;\n              clearTimeout(timeoutId);\n              emitter.off('message', messageHandler);\n              resolve(false);\n            }\n          }, { once: true });\n        });\n\n        // Re-check for messages after waking up (handles race condition)\n        const recheckMessage = this.getPendingStore().peekPending(sessionDbId);\n        if (recheckMessage) {\n          // Got a message, continue processing\n          continue;\n        }\n\n        if (!gotMessage) {\n          // Timeout or abort - exit the loop\n          logger.info('SESSION', `Generator exiting after linger timeout`, { sessionId: sessionDbId });\n          return;\n        }\n\n        continue;\n      }\n\n      // Mark as processing BEFORE yielding (status: pending -> processing)\n      this.getPendingStore().markProcessing(persistentMessage.id);\n\n      // Track this message ID for completion marking\n      session.pendingProcessingIds.add(persistentMessage.id);\n\n      // Convert to PendingMessageWithId and yield\n      // Include original timestamp for accurate observation timestamps (survives stuck processing)\n      const message: PendingMessageWithId = {\n        _persistentId: persistentMessage.id,\n        _originalTimestamp: persistentMessage.created_at_epoch,\n        ...this.getPendingStore().toPendingMessage(persistentMessage)\n      };\n\n      // Also add to in-memory queue for backward compatibility (status tracking)\n      session.pendingMessages.push(message);\n\n      yield message;\n\n      // Remove from in-memory queue after yielding\n      session.pendingMessages.shift();\n\n      // If we just yielded a summary, that's the end of this batch - stop the iterator\n      if (message.type === 'summarize') {\n        logger.info('SESSION', `Summary yielded - ending generator`, { sessionId: sessionDbId });\n        return;\n      }\n    }\n  }\n\n  /**\n   * Get the PendingMessageStore (for SDKAgent to mark messages as processed)\n   */\n  getPendingMessageStore(): PendingMessageStore {\n    return this.getPendingStore();\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_constructor_24": {
+      "name": "constructor",
+      "type": "method",
+      "start_line": 24,
+      "end_line": 26,
+      "content_hash": "51881cca1eb9c7b452bb76cee9333b7066487920",
+      "content": "  constructor(dbManager: DatabaseManager) {\n    this.dbManager = dbManager;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getPendingStore_31": {
+      "name": "getPendingStore",
+      "type": "method",
+      "start_line": 31,
+      "end_line": 37,
+      "content_hash": "4f32c26834ae126bf06e8dba3e372617150b1ab1",
+      "content": "  private getPendingStore(): PendingMessageStore {\n    if (!this.pendingStore) {\n      const sessionStore = this.dbManager.getSessionStore();\n      this.pendingStore = new PendingMessageStore(sessionStore.db, 3);\n    }\n    return this.pendingStore;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setOnSessionDeleted_42": {
+      "name": "setOnSessionDeleted",
+      "type": "method",
+      "start_line": 42,
+      "end_line": 44,
+      "content_hash": "cfc6876b46b467bc93b4203d66a381d8c2793ebc",
+      "content": "  setOnSessionDeleted(callback: () => void): void {\n    this.onSessionDeletedCallback = callback;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_initializeSession_49": {
+      "name": "initializeSession",
+      "type": "method",
+      "start_line": 49,
+      "end_line": 138,
+      "content_hash": "46f921dcf7402499b135e1bc7eb61baed4376304",
+      "content": "  initializeSession(sessionDbId: number, currentUserPrompt?: string, promptNumber?: number): ActiveSession {\n    // Check if already active\n    let session = this.sessions.get(sessionDbId);\n    if (session) {\n      // Refresh project from database in case it was updated by new-hook\n      // This fixes the bug where sessions created with empty project get updated\n      // in the database but the in-memory session still has the stale empty value\n      const dbSession = this.dbManager.getSessionById(sessionDbId);\n      if (dbSession.project && dbSession.project !== session.project) {\n        logger.debug('SESSION', 'Updating project from database', {\n          sessionDbId,\n          oldProject: session.project,\n          newProject: dbSession.project\n        });\n        session.project = dbSession.project;\n      }\n\n      // Update userPrompt for continuation prompts\n      if (currentUserPrompt) {\n        logger.debug('SESSION', 'Updating userPrompt for continuation', {\n          sessionDbId,\n          promptNumber,\n          oldPrompt: session.userPrompt.substring(0, 80),\n          newPrompt: currentUserPrompt.substring(0, 80)\n        });\n        session.userPrompt = currentUserPrompt;\n        session.lastPromptNumber = promptNumber || session.lastPromptNumber;\n      } else {\n        logger.debug('SESSION', 'No currentUserPrompt provided for existing session', {\n          sessionDbId,\n          promptNumber,\n          usingCachedPrompt: session.userPrompt.substring(0, 80)\n        });\n      }\n      return session;\n    }\n\n    // Fetch from database\n    const dbSession = this.dbManager.getSessionById(sessionDbId);\n\n    // Use currentUserPrompt if provided, otherwise fall back to database (first prompt)\n    const userPrompt = currentUserPrompt || dbSession.user_prompt;\n\n    if (!currentUserPrompt) {\n      logger.debug('SESSION', 'No currentUserPrompt provided for new session, using database', {\n        sessionDbId,\n        promptNumber,\n        dbPrompt: dbSession.user_prompt.substring(0, 80)\n      });\n    } else {\n      logger.debug('SESSION', 'Initializing session with fresh userPrompt', {\n        sessionDbId,\n        promptNumber,\n        userPrompt: currentUserPrompt.substring(0, 80)\n      });\n    }\n\n    // Create active session\n    session = {\n      sessionDbId,\n      claudeSessionId: dbSession.claude_session_id,\n      sdkSessionId: null,\n      project: dbSession.project,\n      userPrompt,\n      pendingMessages: [],\n      abortController: new AbortController(),\n      generatorPromise: null,\n      lastPromptNumber: promptNumber || this.dbManager.getSessionStore().getPromptCounter(sessionDbId),\n      startTime: Date.now(),\n      cumulativeInputTokens: 0,\n      cumulativeOutputTokens: 0,\n      pendingProcessingIds: new Set()\n    };\n\n    this.sessions.set(sessionDbId, session);\n\n    // Create event emitter for queue notifications\n    const emitter = new EventEmitter();\n    this.sessionQueues.set(sessionDbId, emitter);\n\n    logger.info('SESSION', 'Session initialized', {\n      sessionId: sessionDbId,\n      project: session.project,\n      claudeSessionId: session.claudeSessionId,\n      queueDepth: 0,\n      hasGenerator: false\n    });\n\n    return session;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getSession_143": {
+      "name": "getSession",
+      "type": "method",
+      "start_line": 143,
+      "end_line": 145,
+      "content_hash": "b335d9ee8727e624ccff309aa3b604ef13e8805a",
+      "content": "  getSession(sessionDbId: number): ActiveSession | undefined {\n    return this.sessions.get(sessionDbId);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_queueObservation_154": {
+      "name": "queueObservation",
+      "type": "method",
+      "start_line": 154,
+      "end_line": 205,
+      "content_hash": "2845b7c821670096b9995af54542adb2462234fe",
+      "content": "  queueObservation(sessionDbId: number, data: ObservationData): void {\n    // Auto-initialize from database if needed (handles worker restarts)\n    let session = this.sessions.get(sessionDbId);\n    if (!session) {\n      session = this.initializeSession(sessionDbId);\n    }\n\n    const beforeDepth = session.pendingMessages.length;\n\n    // CRITICAL: Persist to database FIRST\n    const message: PendingMessage = {\n      type: 'observation',\n      tool_name: data.tool_name,\n      tool_input: data.tool_input,\n      tool_response: data.tool_response,\n      prompt_number: data.prompt_number,\n      cwd: data.cwd\n    };\n\n    try {\n      const messageId = this.getPendingStore().enqueue(sessionDbId, session.claudeSessionId, message);\n      logger.debug('SESSION', `Observation persisted to DB`, {\n        sessionId: sessionDbId,\n        messageId,\n        tool: data.tool_name\n      });\n    } catch (error) {\n      logger.error('SESSION', 'Failed to persist observation to DB', {\n        sessionId: sessionDbId,\n        tool: data.tool_name\n      }, error);\n      throw error; // Don't continue if we can't persist\n    }\n\n    // Add to in-memory queue (for backward compatibility with existing iterator)\n    session.pendingMessages.push(message);\n\n    const afterDepth = session.pendingMessages.length;\n\n    // Notify generator immediately (zero latency)\n    const emitter = this.sessionQueues.get(sessionDbId);\n    emitter?.emit('message');\n\n    // Format tool name for logging\n    const toolSummary = logger.formatTool(data.tool_name, data.tool_input);\n\n    logger.info('SESSION', `Observation queued (${beforeDepth}\u2192${afterDepth})`, {\n      sessionId: sessionDbId,\n      tool: toolSummary,\n      hasGenerator: !!session.generatorPromise\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_queueSummarize_214": {
+      "name": "queueSummarize",
+      "type": "method",
+      "start_line": 214,
+      "end_line": 255,
+      "content_hash": "daa5109aaae305d2453bb8071b2096cca61d0c3e",
+      "content": "  queueSummarize(sessionDbId: number, lastUserMessage: string, lastAssistantMessage?: string): void {\n    // Auto-initialize from database if needed (handles worker restarts)\n    let session = this.sessions.get(sessionDbId);\n    if (!session) {\n      session = this.initializeSession(sessionDbId);\n    }\n\n    const beforeDepth = session.pendingMessages.length;\n\n    // CRITICAL: Persist to database FIRST\n    const message: PendingMessage = {\n      type: 'summarize',\n      last_user_message: lastUserMessage,\n      last_assistant_message: lastAssistantMessage\n    };\n\n    try {\n      const messageId = this.getPendingStore().enqueue(sessionDbId, session.claudeSessionId, message);\n      logger.debug('SESSION', `Summarize persisted to DB`, {\n        sessionId: sessionDbId,\n        messageId\n      });\n    } catch (error) {\n      logger.error('SESSION', 'Failed to persist summarize to DB', {\n        sessionId: sessionDbId\n      }, error);\n      throw error; // Don't continue if we can't persist\n    }\n\n    // Add to in-memory queue (for backward compatibility with existing iterator)\n    session.pendingMessages.push(message);\n\n    const afterDepth = session.pendingMessages.length;\n\n    const emitter = this.sessionQueues.get(sessionDbId);\n    emitter?.emit('message');\n\n    logger.info('SESSION', `Summarize queued (${beforeDepth}\u2192${afterDepth})`, {\n      sessionId: sessionDbId,\n      hasGenerator: !!session.generatorPromise\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_deleteSession_260": {
+      "name": "deleteSession",
+      "type": "method",
+      "start_line": 260,
+      "end_line": 290,
+      "content_hash": "c1838aedc0f5238a8501d382d021106f90e61d13",
+      "content": "  async deleteSession(sessionDbId: number): Promise<void> {\n    const session = this.sessions.get(sessionDbId);\n    if (!session) {\n      return; // Already deleted\n    }\n\n    const sessionDuration = Date.now() - session.startTime;\n\n    // Abort the SDK agent\n    session.abortController.abort();\n\n    // Wait for generator to finish\n    if (session.generatorPromise) {\n      await session.generatorPromise.catch(() => {});\n    }\n\n    // Cleanup\n    this.sessions.delete(sessionDbId);\n    this.sessionQueues.delete(sessionDbId);\n\n    logger.info('SESSION', 'Session deleted', {\n      sessionId: sessionDbId,\n      duration: `${(sessionDuration / 1000).toFixed(1)}s`,\n      project: session.project\n    });\n\n    // Trigger callback to broadcast status update (spinner may need to stop)\n    if (this.onSessionDeletedCallback) {\n      this.onSessionDeletedCallback();\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_shutdownAll_295": {
+      "name": "shutdownAll",
+      "type": "method",
+      "start_line": 295,
+      "end_line": 298,
+      "content_hash": "0a1f2880de37a4287407f5d41c26f8f1de1a01e1",
+      "content": "  async shutdownAll(): Promise<void> {\n    const sessionIds = Array.from(this.sessions.keys());\n    await Promise.all(sessionIds.map(id => this.deleteSession(id)));\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_hasPendingMessages_303": {
+      "name": "hasPendingMessages",
+      "type": "method",
+      "start_line": 303,
+      "end_line": 307,
+      "content_hash": "ba6ea22cbbfb7114a7f199f91e999241a7bcd950",
+      "content": "  hasPendingMessages(): boolean {\n    return Array.from(this.sessions.values()).some(\n      session => session.pendingMessages.length > 0\n    );\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getActiveSessionCount_312": {
+      "name": "getActiveSessionCount",
+      "type": "method",
+      "start_line": 312,
+      "end_line": 314,
+      "content_hash": "93c383e30caf68751534414acb369c53ced014fe",
+      "content": "  getActiveSessionCount(): number {\n    return this.sessions.size;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getTotalQueueDepth_319": {
+      "name": "getTotalQueueDepth",
+      "type": "method",
+      "start_line": 319,
+      "end_line": 325,
+      "content_hash": "d903f8d7a6448c0b64609f33a50b964b76b5c6b8",
+      "content": "  getTotalQueueDepth(): number {\n    let total = 0;\n    for (const session of this.sessions.values()) {\n      total += session.pendingMessages.length;\n    }\n    return total;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getTotalActiveWork_331": {
+      "name": "getTotalActiveWork",
+      "type": "method",
+      "start_line": 331,
+      "end_line": 342,
+      "content_hash": "414714e789ef33c6036937e7502c9276b15aa118",
+      "content": "  getTotalActiveWork(): number {\n    let total = 0;\n    for (const session of this.sessions.values()) {\n      // Count queued messages\n      total += session.pendingMessages.length;\n      // Count currently processing item (1 per active generator)\n      if (session.generatorPromise !== null) {\n        total += 1;\n      }\n    }\n    return total;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isAnySessionProcessing_348": {
+      "name": "isAnySessionProcessing",
+      "type": "method",
+      "start_line": 348,
+      "end_line": 360,
+      "content_hash": "0f59d4e00d54c3fb0a4370967817a2969c078748",
+      "content": "  isAnySessionProcessing(): boolean {\n    for (const session of this.sessions.values()) {\n      // Has queued messages waiting to be processed\n      if (session.pendingMessages.length > 0) {\n        return true;\n      }\n      // Has active SDK generator running (processing dequeued messages)\n      if (session.generatorPromise !== null) {\n        return true;\n      }\n    }\n    return false;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getMessageIterator_370": {
+      "name": "getMessageIterator",
+      "type": "method",
+      "start_line": 370,
+      "end_line": 470,
+      "content_hash": "96aa9e9198eee70138f8e0c835679f9a2bd82cb7",
+      "content": "  async *getMessageIterator(sessionDbId: number): AsyncIterableIterator<PendingMessageWithId> {\n    // Auto-initialize from database if needed (handles worker restarts)\n    let session = this.sessions.get(sessionDbId);\n    if (!session) {\n      session = this.initializeSession(sessionDbId);\n    }\n\n    const emitter = this.sessionQueues.get(sessionDbId);\n    if (!emitter) {\n      throw new Error(`No emitter for session ${sessionDbId}`);\n    }\n\n    // Linger timeout: how long to wait for new messages before exiting\n    // This keeps the agent alive between messages, reducing \"No active agent\" windows\n    const LINGER_TIMEOUT_MS = 5000; // 5 seconds\n\n    while (!session.abortController.signal.aborted) {\n      // Check for pending messages in persistent store\n      const persistentMessage = this.getPendingStore().peekPending(sessionDbId);\n\n      if (!persistentMessage) {\n        // Wait for new messages with timeout\n        const gotMessage = await new Promise<boolean>(resolve => {\n          let resolved = false;\n\n          const messageHandler = () => {\n            if (!resolved) {\n              resolved = true;\n              clearTimeout(timeoutId);\n              resolve(true);\n            }\n          };\n\n          const timeoutHandler = () => {\n            if (!resolved) {\n              resolved = true;\n              emitter.off('message', messageHandler);\n              resolve(false);\n            }\n          };\n\n          const timeoutId = setTimeout(timeoutHandler, LINGER_TIMEOUT_MS);\n\n          emitter.once('message', messageHandler);\n\n          // Also listen for abort\n          session.abortController.signal.addEventListener('abort', () => {\n            if (!resolved) {\n              resolved = true;\n              clearTimeout(timeoutId);\n              emitter.off('message', messageHandler);\n              resolve(false);\n            }\n          }, { once: true });\n        });\n\n        // Re-check for messages after waking up (handles race condition)\n        const recheckMessage = this.getPendingStore().peekPending(sessionDbId);\n        if (recheckMessage) {\n          // Got a message, continue processing\n          continue;\n        }\n\n        if (!gotMessage) {\n          // Timeout or abort - exit the loop\n          logger.info('SESSION', `Generator exiting after linger timeout`, { sessionId: sessionDbId });\n          return;\n        }\n\n        continue;\n      }\n\n      // Mark as processing BEFORE yielding (status: pending -> processing)\n      this.getPendingStore().markProcessing(persistentMessage.id);\n\n      // Track this message ID for completion marking\n      session.pendingProcessingIds.add(persistentMessage.id);\n\n      // Convert to PendingMessageWithId and yield\n      // Include original timestamp for accurate observation timestamps (survives stuck processing)\n      const message: PendingMessageWithId = {\n        _persistentId: persistentMessage.id,\n        _originalTimestamp: persistentMessage.created_at_epoch,\n        ...this.getPendingStore().toPendingMessage(persistentMessage)\n      };\n\n      // Also add to in-memory queue for backward compatibility (status tracking)\n      session.pendingMessages.push(message);\n\n      yield message;\n\n      // Remove from in-memory queue after yielding\n      session.pendingMessages.shift();\n\n      // If we just yielded a summary, that's the end of this batch - stop the iterator\n      if (message.type === 'summarize') {\n        logger.info('SESSION', `Summary yielded - ending generator`, { sessionId: sessionDbId });\n        return;\n      }\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_messageHandler_395": {
+      "name": "messageHandler",
+      "type": "function",
+      "start_line": 395,
+      "end_line": 401,
+      "content_hash": "73ccb331ddee5e11c90a8e6d9393d4dbc2a3c3df",
+      "content": "          const messageHandler = () => {\n            if (!resolved) {\n              resolved = true;\n              clearTimeout(timeoutId);\n              resolve(true);\n            }\n          };",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_timeoutHandler_403": {
+      "name": "timeoutHandler",
+      "type": "function",
+      "start_line": 403,
+      "end_line": 409,
+      "content_hash": "ee30e310a504f2d8ef4fd1ddd407c356cffe9e93",
+      "content": "          const timeoutHandler = () => {\n            if (!resolved) {\n              resolved = true;\n              emitter.off('message', messageHandler);\n              resolve(false);\n            }\n          };",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getPendingMessageStore_475": {
+      "name": "getPendingMessageStore",
+      "type": "method",
+      "start_line": 475,
+      "end_line": 477,
+      "content_hash": "d09b4c106e2a9334030be9459aa1b36a83629aa6",
+      "content": "  getPendingMessageStore(): PendingMessageStore {\n    return this.getPendingStore();\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

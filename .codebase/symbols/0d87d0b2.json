@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/util/update.rs",
+  "file_hash": "ae0e58b10db55f14cdae6e4e86d99e1e0202c1a5",
+  "updated_at": "2025-12-26T17:34:25.055617",
+  "symbols": {
+    "struct_Update_13": {
+      "name": "Update",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 16,
+      "content_hash": "bd24ea11b2fe71b59ff27154d709179035792f43",
+      "content": "pub struct Update<I> {\n    iter: I,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_17": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 17,
+      "end_line": 22,
+      "content_hash": "5d4612b1c057db02cbdc580d70c2a137bce4896d",
+      "content": "impl<'arena, I> Iterator for Update<I>\nwhere\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n{\n    type Item = Result<TraversalValue<'arena>, GraphError>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_23": {
+      "name": "next",
+      "type": "method",
+      "start_line": 23,
+      "end_line": 27,
+      "content_hash": "d258580f7a868d34a4600b6c490c118542bfa73e",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        self.iter.next()\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_UpdateAdapter_28": {
+      "name": "UpdateAdapter",
+      "type": "trait",
+      "start_line": 28,
+      "end_line": 28,
+      "content_hash": "fb359923e64bbab36be0d177f766a0d7c61cbd14",
+      "content": "pub trait UpdateAdapter<'db, 'arena, 'txn>: Iterator {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_update_29": {
+      "name": "update",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 35,
+      "content_hash": "585d249e5f3f8aaeac6fee0c8728a0820703276b",
+      "content": "    fn update(\n        self,\n        props: &[(&'static str, Value)],\n    ) -> RwTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_36": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 36,
+      "end_line": 42,
+      "content_hash": "61092422277eee5111d33586c6701172cd51a947",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    UpdateAdapter<'db, 'arena, 'txn> for RwTraversalIterator<'db, 'arena, 'txn, I>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_update_43": {
+      "name": "update",
+      "type": "method",
+      "start_line": 43,
+      "end_line": 49,
+      "content_hash": "585d249e5f3f8aaeac6fee0c8728a0820703276b",
+      "content": "    fn update(\n        self,\n        props: &[(&'static str, Value)],\n    ) -> RwTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_50": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 50,
+      "end_line": 257,
+      "content_hash": "ef3745d6fda218677bb94b8300b6b404dc1c8f5b",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        // TODO: use a non-contiguous arena vec to avoid copying stuff\n        // around when we run out of capacity\n        let mut results = bumpalo::collections::Vec::new_in(self.arena);\n\n        for item in self.inner {\n            match item {\n                Ok(value) => match value {\n                    TraversalValue::Node(mut node) => {\n                        match node.properties {\n                            None => {\n                                // Insert secondary indices\n                                for (k, v) in props.iter() {\n                                    let Some(db) = self.storage.secondary_indices.get(*k) else {\n                                        continue;\n                                    };\n\n                                    match bincode::serialize(v) {\n                                        Ok(v_serialized) => {\n                                            if let Err(e) = db.put_with_flags(\n                                                self.txn,\n                                                PutFlags::APPEND_DUP,\n                                                &v_serialized,\n                                                &node.id,\n                                            ) {\n                                                results.push(Err(GraphError::from(e)));\n                                            }\n                                        }\n                                        Err(e) => results.push(Err(GraphError::from(e))),\n                                    }\n                                }\n\n                                // Create properties map and insert node\n                                let map = ImmutablePropertiesMap::new(\n                                    props.len(),\n                                    props.iter().map(|(k, v)| (*k, v.clone())),\n                                    self.arena,\n                                );\n\n                                node.properties = Some(map);\n                            }\n                            Some(old) => {\n                                for (k, v) in props.iter() {\n                                    let Some(db) = self.storage.secondary_indices.get(*k) else {\n                                        continue;\n                                    };\n\n                                    // delete secondary indexes for the props changed\n                                    let Some(old_value) = old.get(k) else {\n                                        continue;\n                                    };\n\n                                    match bincode::serialize(old_value) {\n                                        Ok(old_serialized) => {\n                                            if let Err(e) = db.delete_one_duplicate(\n                                                self.txn,\n                                                &old_serialized,\n                                                &node.id,\n                                            ) {\n                                                results.push(Err(GraphError::from(e)));\n                                                continue;\n                                            }\n                                        }\n                                        Err(e) => {\n                                            results.push(Err(GraphError::from(e)));\n                                            continue;\n                                        }\n                                    }\n\n                                    // create new secondary indexes for the props changed\n                                    match bincode::serialize(v) {\n                                        Ok(v_serialized) => {\n                                            if let Err(e) = db.put_with_flags(\n                                                self.txn,\n                                                PutFlags::APPEND_DUP,\n                                                &v_serialized,\n                                                &node.id,\n                                            ) {\n                                                results.push(Err(GraphError::from(e)));\n                                            }\n                                        }\n                                        Err(e) => results.push(Err(GraphError::from(e))),\n                                    }\n                                }\n\n                                let diff = props.iter().filter(|(k, _)| {\n                                    !old.iter().map(|(old_k, _)| old_k).contains(k)\n                                });\n\n                                // find out how many new properties we'll need space for\n                                let len_diff = diff.clone().count();\n\n                                let merged = old\n                                    .iter()\n                                    .map(|(old_k, old_v)| {\n                                        props\n                                            .iter()\n                                            .find_map(|(k, v)| old_k.eq(*k).then_some(v))\n                                            .map_or_else(\n                                                || (old_k, old_v.clone()),\n                                                |v| (old_k, v.clone()),\n                                            )\n                                    })\n                                    .chain(diff.cloned());\n\n                                // make new props, updated by current props\n                                let new_map = ImmutablePropertiesMap::new(\n                                    old.len() + len_diff,\n                                    merged,\n                                    self.arena,\n                                );\n\n                                node.properties = Some(new_map);\n                            }\n                        }\n\n                        match bincode::serialize(&node) {\n                            Ok(serialized_node) => {\n                                match self.storage.nodes_db.put(\n                                    self.txn,\n                                    &node.id,\n                                    &serialized_node,\n                                ) {\n                                    Ok(_) => results.push(Ok(TraversalValue::Node(node))),\n                                    Err(e) => results.push(Err(GraphError::from(e))),\n                                }\n                            }\n                            Err(e) => results.push(Err(GraphError::from(e))),\n                        }\n                    }\n                    TraversalValue::Edge(mut edge) => {\n                        match edge.properties {\n                            None => {\n                                // Create properties map and insert edge\n                                let map = ImmutablePropertiesMap::new(\n                                    props.len(),\n                                    props.iter().map(|(k, v)| (*k, v.clone())),\n                                    self.arena,\n                                );\n\n                                edge.properties = Some(map);\n                            }\n                            Some(old) => {\n                                let diff = props.iter().filter(|(k, _)| {\n                                    !old.iter().map(|(old_k, _)| old_k).contains(k)\n                                });\n\n                                // find out how many new properties we'll need space for\n                                let len_diff = diff.clone().count();\n\n                                let merged = old\n                                    .iter()\n                                    .map(|(old_k, old_v)| {\n                                        props\n                                            .iter()\n                                            .find_map(|(k, v)| old_k.eq(*k).then_some(v))\n                                            .map_or_else(\n                                                || (old_k, old_v.clone()),\n                                                |v| (old_k, v.clone()),\n                                            )\n                                    })\n                                    .chain(diff.cloned());\n\n                                // make new props, updated by current props\n                                let new_map = ImmutablePropertiesMap::new(\n                                    old.len() + len_diff,\n                                    merged,\n                                    self.arena,\n                                );\n\n                                edge.properties = Some(new_map);\n                            }\n                        }\n\n                        match bincode::serialize(&edge) {\n                            Ok(serialized_edge) => {\n                                match self.storage.edges_db.put(\n                                    self.txn,\n                                    &edge.id,\n                                    &serialized_edge,\n                                ) {\n                                    Ok(_) => results.push(Ok(TraversalValue::Edge(edge))),\n                                    Err(e) => results.push(Err(GraphError::from(e))),\n                                }\n                            }\n                            Err(e) => results.push(Err(GraphError::from(e))),\n                        }\n                    }\n                    // TODO: Implement update properties for Vectors:\n                    // TraversalValue::Vector(hvector) => todo!(),\n                    // TraversalValue::VectorNodeWithoutVectorData(vector_without_data) => todo!(),\n                    _ => results.push(Err(GraphError::New(\"Unsupported value type\".to_string()))),\n                },\n                Err(e) => results.push(Err(e)),\n            }\n        }\n\n        RwTraversalIterator {\n            inner: Update {\n                iter: results.into_iter(),\n            },\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

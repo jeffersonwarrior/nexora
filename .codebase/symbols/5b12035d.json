@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/.local/tools/modelscan/config/config_test.go",
+  "file_hash": "63df2a1b7c99675e34a5c48201ee0861954aecea",
+  "updated_at": "2025-12-26T17:34:25.005977",
+  "symbols": {
+    "function_TestLoadConfig_9": {
+      "name": "TestLoadConfig",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 40,
+      "content_hash": "d097a061a868ab0df28ffa3193c9e3ebacef8f35",
+      "content": "func TestLoadConfig(t *testing.T) {\n\t// Set environment variables for testing\n\tos.Setenv(\"MISTRAL_API_KEY\", \"test-mistral-key\")\n\tos.Setenv(\"OPENAI_API_KEY\", \"test-openai-key\")\n\tos.Setenv(\"ANTHROPIC_API_KEY\", \"test-anthropic-key\")\n\tdefer func() {\n\t\tos.Unsetenv(\"MISTRAL_API_KEY\")\n\t\tos.Unsetenv(\"OPENAI_API_KEY\")\n\t\tos.Unsetenv(\"ANTHROPIC_API_KEY\")\n\t}()\n\n\tcfg, err := LoadConfig()\n\tif err != nil {\n\t\tt.Fatalf(\"LoadConfig() failed: %v\", err)\n\t}\n\n\tif cfg == nil {\n\t\tt.Fatal(\"LoadConfig() returned nil config\")\n\t}\n\n\t// Check that providers were loaded from environment\n\tif _, exists := cfg.Providers[\"mistral\"]; !exists {\n\t\tt.Error(\"Expected mistral provider to be loaded from environment\")\n\t}\n\tif _, exists := cfg.Providers[\"openai\"]; !exists {\n\t\tt.Error(\"Expected openai provider to be loaded from environment\")\n\t}\n\tif _, exists := cfg.Providers[\"anthropic\"]; !exists {\n\t\tt.Error(\"Expected anthropic provider to be loaded from environment\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetAPIKey_41": {
+      "name": "TestGetAPIKey",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 74,
+      "content_hash": "4a29dcb060f0205fee7d948b01700b117ec2d105",
+      "content": "func TestGetAPIKey(t *testing.T) {\n\tcfg := &Config{\n\t\tProviders: map[string]ProviderConfig{\n\t\t\t\"test\": {\n\t\t\t\tAPIKey:      \"test-api-key\",\n\t\t\t\tEndpoint:    \"https://api.test.com\",\n\t\t\t\tDescription: \"Test provider\",\n\t\t\t},\n\t\t},\n\t}\n\n\ttests := []struct {\n\t\tname     string\n\t\tprovider string\n\t\twantErr  bool\n\t}{\n\t\t{\"Valid provider\", \"test\", false},\n\t\t{\"Invalid provider\", \"nonexistent\", true},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tkey, err := cfg.GetAPIKey(tt.provider)\n\t\t\tif (err != nil) != tt.wantErr {\n\t\t\t\tt.Errorf(\"GetAPIKey() error = %v, wantErr %v\", err, tt.wantErr)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !tt.wantErr && key == \"\" {\n\t\t\t\tt.Error(\"GetAPIKey() returned empty key for valid provider\")\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHasProvider_75": {
+      "name": "TestHasProvider",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 101,
+      "content_hash": "3d2644d0408cee2ab65b87651590ed9046345188",
+      "content": "func TestHasProvider(t *testing.T) {\n\tcfg := &Config{\n\t\tProviders: map[string]ProviderConfig{\n\t\t\t\"test\": {\n\t\t\t\tAPIKey: \"test-key\",\n\t\t\t},\n\t\t},\n\t}\n\n\ttests := []struct {\n\t\tname     string\n\t\tprovider string\n\t\twant     bool\n\t}{\n\t\t{\"Existing provider\", \"test\", true},\n\t\t{\"Non-existing provider\", \"nonexistent\", false},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := cfg.HasProvider(tt.provider); got != tt.want {\n\t\t\t\tt.Errorf(\"HasProvider() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestListProviders_102": {
+      "name": "TestListProviders",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 130,
+      "content_hash": "11a8de65972dfbae8b185867ea1432493337f338",
+      "content": "func TestListProviders(t *testing.T) {\n\tcfg := &Config{\n\t\tProviders: map[string]ProviderConfig{\n\t\t\t\"provider1\": {APIKey: \"key1\"},\n\t\t\t\"provider2\": {APIKey: \"key2\"},\n\t\t\t\"provider3\": {APIKey: \"key3\"},\n\t\t},\n\t}\n\n\tproviders := cfg.ListProviders()\n\n\tif len(providers) != 3 {\n\t\tt.Errorf(\"ListProviders() returned %d providers, want 3\", len(providers))\n\t}\n\n\t// Check that all providers are present\n\tproviderMap := make(map[string]bool)\n\tfor _, p := range providers {\n\t\tproviderMap[p] = true\n\t}\n\n\texpected := []string{\"provider1\", \"provider2\", \"provider3\"}\n\tfor _, exp := range expected {\n\t\tif !providerMap[exp] {\n\t\t\tt.Errorf(\"ListProviders() missing provider %q\", exp)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLoadFromEnvironment_131": {
+      "name": "TestLoadFromEnvironment",
+      "type": "function",
+      "start_line": 131,
+      "end_line": 154,
+      "content_hash": "e8307a29538b209b7ac6d6613bc9c813b6391c23",
+      "content": "func TestLoadFromEnvironment(t *testing.T) {\n\t// Set override environment variables\n\tos.Setenv(\"MODELSCAN_MISTRAL_KEY\", \"override-mistral\")\n\tos.Setenv(\"MODELSCAN_OPENAI_KEY\", \"override-openai\")\n\tdefer func() {\n\t\tos.Unsetenv(\"MODELSCAN_MISTRAL_KEY\")\n\t\tos.Unsetenv(\"MODELSCAN_OPENAI_KEY\")\n\t}()\n\n\tcfg := &Config{\n\t\tProviders: make(map[string]ProviderConfig),\n\t}\n\n\tloadFromEnvironment(cfg)\n\n\t// Check that override variables were loaded\n\tif mistral, exists := cfg.Providers[\"mistral\"]; !exists || mistral.APIKey != \"override-mistral\" {\n\t\tt.Error(\"MODELSCAN_MISTRAL_KEY should override mistral API key\")\n\t}\n\tif openai, exists := cfg.Providers[\"openai\"]; !exists || openai.APIKey != \"override-openai\" {\n\t\tt.Error(\"MODELSCAN_OPENAI_KEY should override openai API key\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSaveAndLoadConfig_155": {
+      "name": "TestSaveAndLoadConfig",
+      "type": "function",
+      "start_line": 155,
+      "end_line": 181,
+      "content_hash": "dd06a02ee1f13d4ead1dd3bf02e97ac0cf2d1d51",
+      "content": "func TestSaveAndLoadConfig(t *testing.T) {\n\t// Create a temporary directory for testing\n\ttmpDir := t.TempDir()\n\tconfigPath := filepath.Join(tmpDir, \"test-config.json\")\n\n\t// Create a test config\n\ttestConfig := &Config{\n\t\tProviders: map[string]ProviderConfig{\n\t\t\t\"test-provider\": {\n\t\t\t\tAPIKey:      \"test-key-123\",\n\t\t\t\tEndpoint:    \"https://api.test.com\",\n\t\t\t\tDescription: \"Test provider for unit testing\",\n\t\t\t},\n\t\t},\n\t}\n\n\t// Save the config\n\tif err := saveConfig(testConfig, configPath); err != nil {\n\t\tt.Fatalf(\"saveConfig() failed: %v\", err)\n\t}\n\n\t// Check that file was created\n\tif _, err := os.Stat(configPath); os.IsNotExist(err) {\n\t\tt.Error(\"Config file was not created\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestProviderConfigStructure_182": {
+      "name": "TestProviderConfigStructure",
+      "type": "function",
+      "start_line": 182,
+      "end_line": 199,
+      "content_hash": "405a0af73eb54bcda902fb3a09d127d7fa9a9243",
+      "content": "func TestProviderConfigStructure(t *testing.T) {\n\tconfig := ProviderConfig{\n\t\tAPIKey:      \"test-key\",\n\t\tEndpoint:    \"https://api.test.com\",\n\t\tDescription: \"Test description\",\n\t}\n\n\tif config.APIKey == \"\" {\n\t\tt.Error(\"APIKey should not be empty\")\n\t}\n\tif config.Endpoint == \"\" {\n\t\tt.Error(\"Endpoint should not be empty\")\n\t}\n\tif config.Description == \"\" {\n\t\tt.Error(\"Description should not be empty\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConfigMerging_200": {
+      "name": "TestConfigMerging",
+      "type": "function",
+      "start_line": 200,
+      "end_line": 228,
+      "content_hash": "6c8653f15bf2bafaae81007b6de881bebec27c5d",
+      "content": "func TestConfigMerging(t *testing.T) {\n\tcfg := &Config{\n\t\tProviders: map[string]ProviderConfig{\n\t\t\t\"existing\": {\n\t\t\t\tAPIKey:      \"existing-key\",\n\t\t\t\tDescription: \"Existing provider\",\n\t\t\t},\n\t\t},\n\t}\n\n\t// Simulate loading from environment\n\tos.Setenv(\"MISTRAL_API_KEY\", \"env-mistral-key\")\n\tdefer os.Unsetenv(\"MISTRAL_API_KEY\")\n\n\tloadFromNexoraConfig(cfg)\n\n\t// Check that existing provider is not overwritten\n\tif cfg.Providers[\"existing\"].APIKey != \"existing-key\" {\n\t\tt.Error(\"Existing provider should not be overwritten\")\n\t}\n\n\t// Check that new provider from environment was added\n\tif mistral, exists := cfg.Providers[\"mistral\"]; !exists {\n\t\tt.Error(\"Mistral provider should be added from environment\")\n\t} else if mistral.APIKey != \"env-mistral-key\" {\n\t\tt.Errorf(\"Mistral API key = %q, want %q\", mistral.APIKey, \"env-mistral-key\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkLoadConfig_229": {
+      "name": "BenchmarkLoadConfig",
+      "type": "function",
+      "start_line": 229,
+      "end_line": 238,
+      "content_hash": "5d855a1818abfe833da82976855b70a2d037824c",
+      "content": "func BenchmarkLoadConfig(b *testing.B) {\n\t// Set up environment\n\tos.Setenv(\"MISTRAL_API_KEY\", \"test-key\")\n\tdefer os.Unsetenv(\"MISTRAL_API_KEY\")\n\n\tb.ResetTimer()\n\tfor i := 0; i < b.N; i++ {\n\t\t_, _ = LoadConfig()\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

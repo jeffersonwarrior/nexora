@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/bug-report/collector.ts",
+  "file_hash": "4e353c4fff656c6d58eb0c834b756271d99eb72d",
+  "updated_at": "2025-12-26T17:34:22.831092",
+  "symbols": {
+    "function_sanitizePath_57": {
+      "name": "sanitizePath",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 60,
+      "content_hash": "45c498856ed0e3e2f4ab6c8672581a720e317046",
+      "content": "function sanitizePath(filePath: string): string {\n  const homeDir = os.homedir();\n  return filePath.replace(homeDir, \"~\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getClaudememVersion_62": {
+      "name": "getClaudememVersion",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 71,
+      "content_hash": "58cb0ab4e8396be89a29c74e76e16fad760fb701",
+      "content": "async function getClaudememVersion(): Promise<string> {\n  try {\n    const packageJsonPath = path.join(process.cwd(), \"package.json\");\n    const content = await fs.readFile(packageJsonPath, \"utf-8\");\n    const pkg = JSON.parse(content);\n    return pkg.version || \"unknown\";\n  } catch (error) {\n    return \"unknown\";\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getClaudeCodeVersion_73": {
+      "name": "getClaudeCodeVersion",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 80,
+      "content_hash": "588423b9fba5a9d0803f7ad270bb9880b4ff4a19",
+      "content": "async function getClaudeCodeVersion(): Promise<string> {\n  try {\n    const { stdout } = await execAsync(\"claude --version\");\n    return stdout.trim();\n  } catch (error) {\n    return \"not installed or not in PATH\";\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getBunVersion_82": {
+      "name": "getBunVersion",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 89,
+      "content_hash": "bf4c302304fa109469800a9b3cfdbfac940acd4f",
+      "content": "async function getBunVersion(): Promise<string> {\n  try {\n    const { stdout } = await execAsync(\"bun --version\");\n    return stdout.trim();\n  } catch (error) {\n    return \"not installed\";\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getOsVersion_91": {
+      "name": "getOsVersion",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 107,
+      "content_hash": "cd1e5a60c80bd193d70d7f23103d7bd581da65c0",
+      "content": "async function getOsVersion(): Promise<string> {\n  try {\n    if (process.platform === \"darwin\") {\n      const { stdout } = await execAsync(\"sw_vers -productVersion\");\n      return `macOS ${stdout.trim()}`;\n    } else if (process.platform === \"linux\") {\n      const { stdout } = await execAsync(\"uname -sr\");\n      return stdout.trim();\n    } else if (process.platform === \"win32\") {\n      const { stdout } = await execAsync(\"ver\");\n      return stdout.trim();\n    }\n    return \"unknown\";\n  } catch (error) {\n    return \"unknown\";\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_checkWorkerHealth_109": {
+      "name": "checkWorkerHealth",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 118,
+      "content_hash": "67a90a601315d629c4da4be3c15207d7be93d4e1",
+      "content": "async function checkWorkerHealth(port: number): Promise<any> {\n  try {\n    const response = await fetch(`http://127.0.0.1:${port}/health`, {\n      signal: AbortSignal.timeout(2000),\n    });\n    return await response.json();\n  } catch (error) {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getWorkerStats_120": {
+      "name": "getWorkerStats",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 129,
+      "content_hash": "6b714e3ba8ba11230f542465f3434bc1d0611107",
+      "content": "async function getWorkerStats(port: number): Promise<any> {\n  try {\n    const response = await fetch(`http://127.0.0.1:${port}/api/stats`, {\n      signal: AbortSignal.timeout(2000),\n    });\n    return await response.json();\n  } catch (error) {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_readPidFile_131": {
+      "name": "readPidFile",
+      "type": "function",
+      "start_line": 131,
+      "end_line": 139,
+      "content_hash": "156d62922ec548570a47729277dec74f28538a15",
+      "content": "async function readPidFile(dataDir: string): Promise<any> {\n  try {\n    const pidPath = path.join(dataDir, \"worker.pid\");\n    const content = await fs.readFile(pidPath, \"utf-8\");\n    return JSON.parse(content);\n  } catch (error) {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_readLogLines_141": {
+      "name": "readLogLines",
+      "type": "function",
+      "start_line": 141,
+      "end_line": 149,
+      "content_hash": "4dfc7b46eabb5482d1d7d314c1a7f3edf2e2d2d6",
+      "content": "async function readLogLines(logPath: string, lines: number): Promise<string[]> {\n  try {\n    const content = await fs.readFile(logPath, \"utf-8\");\n    const allLines = content.split(\"\\n\").filter((line) => line.trim());\n    return allLines.slice(-lines);\n  } catch (error) {\n    return [];\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getSettings_151": {
+      "name": "getSettings",
+      "type": "function",
+      "start_line": 151,
+      "end_line": 162,
+      "content_hash": "29143d7baed161856cb5e5ab247f984bc0202227",
+      "content": "async function getSettings(\n  dataDir: string\n): Promise<{ exists: boolean; settings?: Record<string, any> }> {\n  try {\n    const settingsPath = path.join(dataDir, \"settings.json\");\n    const content = await fs.readFile(settingsPath, \"utf-8\");\n    const settings = JSON.parse(content);\n    return { exists: true, settings };\n  } catch (error) {\n    return { exists: false };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getDatabaseInfo_164": {
+      "name": "getDatabaseInfo",
+      "type": "function",
+      "start_line": 164,
+      "end_line": 174,
+      "content_hash": "92076b029e30af99f324f78030cd2e18e4f4cb32",
+      "content": "async function getDatabaseInfo(\n  dataDir: string\n): Promise<{ exists: boolean; size?: number }> {\n  try {\n    const dbPath = path.join(dataDir, \"claude-mem.db\");\n    const stats = await fs.stat(dbPath);\n    return { exists: true, size: stats.size };\n  } catch (error) {\n    return { exists: false };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_collectDiagnostics_176": {
+      "name": "collectDiagnostics",
+      "type": "function",
+      "start_line": 176,
+      "end_line": 284,
+      "content_hash": "68bc064953aa9df579bdc199dfe27185b4abf4e6",
+      "content": "export async function collectDiagnostics(\n  options: { includeLogs?: boolean } = {}\n): Promise<SystemDiagnostics> {\n  const homeDir = os.homedir();\n  const dataDir = path.join(homeDir, \".claude-mem\");\n  const pluginPath = path.join(\n    homeDir,\n    \".claude\",\n    \"plugins\",\n    \"marketplaces\",\n    \"thedotmack\"\n  );\n  const cwd = process.cwd();\n  const isDevMode = cwd.includes(\"claude-mem\") && !cwd.includes(\".claude\");\n\n  // Collect version information\n  const [claudeMem, claudeCode, bun, osVersion] = await Promise.all([\n    getClaudememVersion(),\n    getClaudeCodeVersion(),\n    getBunVersion(),\n    getOsVersion(),\n  ]);\n\n  const versions = {\n    claudeMem,\n    claudeCode,\n    node: process.version,\n    bun,\n  };\n\n  const platform = {\n    os: process.platform,\n    osVersion,\n    arch: process.arch,\n  };\n\n  const paths = {\n    pluginPath: sanitizePath(pluginPath),\n    dataDir: sanitizePath(dataDir),\n    cwd: sanitizePath(cwd),\n    isDevMode,\n  };\n\n  // Check worker status\n  const pidInfo = await readPidFile(dataDir);\n  const workerPort = pidInfo?.port || 37777;\n\n  const [health, stats] = await Promise.all([\n    checkWorkerHealth(workerPort),\n    getWorkerStats(workerPort),\n  ]);\n\n  const worker = {\n    running: health !== null,\n    pid: pidInfo?.pid,\n    port: workerPort,\n    uptime: stats?.worker?.uptime,\n    version: stats?.worker?.version,\n    health,\n    stats,\n  };\n\n  // Collect logs if requested\n  let workerLog: string[] = [];\n  let silentLog: string[] = [];\n\n  if (options.includeLogs !== false) {\n    const today = new Date().toISOString().split(\"T\")[0];\n    const workerLogPath = path.join(dataDir, \"logs\", `worker-${today}.log`);\n    const silentLogPath = path.join(dataDir, \"silent.log\");\n\n    [workerLog, silentLog] = await Promise.all([\n      readLogLines(workerLogPath, 50),\n      readLogLines(silentLogPath, 50),\n    ]);\n  }\n\n  const logs = {\n    workerLog: workerLog.map(sanitizePath),\n    silentLog: silentLog.map(sanitizePath),\n  };\n\n  // Database info\n  const dbInfo = await getDatabaseInfo(dataDir);\n  const database = {\n    path: sanitizePath(path.join(dataDir, \"claude-mem.db\")),\n    exists: dbInfo.exists,\n    size: dbInfo.size,\n    // TODO: Add table counts if we want to query the database\n  };\n\n  // Configuration\n  const settingsInfo = await getSettings(dataDir);\n  const config = {\n    settingsPath: sanitizePath(path.join(dataDir, \"settings.json\")),\n    settingsExist: settingsInfo.exists,\n    settings: settingsInfo.settings,\n  };\n\n  return {\n    versions,\n    platform,\n    paths,\n    worker,\n    logs,\n    database,\n    config,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDiagnostics_286": {
+      "name": "formatDiagnostics",
+      "type": "function",
+      "start_line": 286,
+      "end_line": 364,
+      "content_hash": "0e331e99f662281dafe4cae9634723b3f3ab4d02",
+      "content": "export function formatDiagnostics(diagnostics: SystemDiagnostics): string {\n  let output = \"\";\n\n  output += \"## Environment\\n\\n\";\n  output += `- **Claude-mem**: ${diagnostics.versions.claudeMem}\\n`;\n  output += `- **Claude Code**: ${diagnostics.versions.claudeCode}\\n`;\n  output += `- **Node.js**: ${diagnostics.versions.node}\\n`;\n  output += `- **Bun**: ${diagnostics.versions.bun}\\n`;\n  output += `- **OS**: ${diagnostics.platform.osVersion} (${diagnostics.platform.arch})\\n`;\n  output += `- **Platform**: ${diagnostics.platform.os}\\n\\n`;\n\n  output += \"## Paths\\n\\n\";\n  output += `- **Plugin**: ${diagnostics.paths.pluginPath}\\n`;\n  output += `- **Data Directory**: ${diagnostics.paths.dataDir}\\n`;\n  output += `- **Current Directory**: ${diagnostics.paths.cwd}\\n`;\n  output += `- **Dev Mode**: ${diagnostics.paths.isDevMode ? \"Yes\" : \"No\"}\\n\\n`;\n\n  output += \"## Worker Status\\n\\n\";\n  output += `- **Running**: ${diagnostics.worker.running ? \"Yes\" : \"No\"}\\n`;\n  if (diagnostics.worker.running) {\n    output += `- **PID**: ${diagnostics.worker.pid || \"unknown\"}\\n`;\n    output += `- **Port**: ${diagnostics.worker.port}\\n`;\n    if (diagnostics.worker.uptime !== undefined) {\n      const uptimeMinutes = Math.floor(diagnostics.worker.uptime / 60);\n      output += `- **Uptime**: ${uptimeMinutes} minutes\\n`;\n    }\n    if (diagnostics.worker.stats) {\n      output += `- **Active Sessions**: ${diagnostics.worker.stats.worker?.activeSessions || 0}\\n`;\n      output += `- **SSE Clients**: ${diagnostics.worker.stats.worker?.sseClients || 0}\\n`;\n    }\n  }\n  output += \"\\n\";\n\n  output += \"## Database\\n\\n\";\n  output += `- **Path**: ${diagnostics.database.path}\\n`;\n  output += `- **Exists**: ${diagnostics.database.exists ? \"Yes\" : \"No\"}\\n`;\n  if (diagnostics.database.size) {\n    const sizeKB = (diagnostics.database.size / 1024).toFixed(2);\n    output += `- **Size**: ${sizeKB} KB\\n`;\n  }\n  output += \"\\n\";\n\n  output += \"## Configuration\\n\\n\";\n  output += `- **Settings File**: ${diagnostics.config.settingsPath}\\n`;\n  output += `- **Settings Exist**: ${diagnostics.config.settingsExist ? \"Yes\" : \"No\"}\\n`;\n  if (diagnostics.config.settings) {\n    output += \"- **Key Settings**:\\n\";\n    const keySettings = [\n      \"CLAUDE_MEM_MODEL\",\n      \"CLAUDE_MEM_WORKER_PORT\",\n      \"CLAUDE_MEM_WORKER_HOST\",\n      \"CLAUDE_MEM_LOG_LEVEL\",\n      \"CLAUDE_MEM_CONTEXT_OBSERVATIONS\",\n    ];\n    for (const key of keySettings) {\n      if (diagnostics.config.settings[key]) {\n        output += `  - ${key}: ${diagnostics.config.settings[key]}\\n`;\n      }\n    }\n  }\n  output += \"\\n\";\n\n  // Add logs if present\n  if (diagnostics.logs.workerLog.length > 0) {\n    output += \"## Recent Worker Logs (Last 50 Lines)\\n\\n\";\n    output += \"```\\n\";\n    output += diagnostics.logs.workerLog.join(\"\\n\");\n    output += \"\\n```\\n\\n\";\n  }\n\n  if (diagnostics.logs.silentLog.length > 0) {\n    output += \"## Silent Debug Log (Last 50 Lines)\\n\\n\";\n    output += \"```\\n\";\n    output += diagnostics.logs.silentLog.join(\"\\n\");\n    output += \"\\n```\\n\\n\";\n  }\n\n  return output;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

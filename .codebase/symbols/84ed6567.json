@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/util/filter_mut.rs",
+  "file_hash": "afbcd3ab83fd3235cbc0039fa4d42d399601ad20",
+  "updated_at": "2025-12-26T17:34:24.243035",
+  "symbols": {
+    "struct_FilterMut_5": {
+      "name": "FilterMut",
+      "type": "struct",
+      "start_line": 5,
+      "end_line": 10,
+      "content_hash": "8708ab11afda64e520debac3b478bf8112d6e39d",
+      "content": "pub struct FilterMut<'db, 'txn, I, F> {\n    iter: I,\n    txn: &'txn mut RwTxn<'db>,\n    f: F,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_11": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 11,
+      "end_line": 17,
+      "content_hash": "b8bbde2869058f6084ad889737d7ee7cc4f1c5cb",
+      "content": "impl<'db, 'arena, 'txn, I, F> Iterator for FilterMut<'db, 'txn, I, F>\nwhere\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    F: FnMut(&mut I::Item, &mut RwTxn) -> bool,\n{\n    type Item = I::Item;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_18": {
+      "name": "next",
+      "type": "method",
+      "start_line": 18,
+      "end_line": 27,
+      "content_hash": "88c4a97fad6ba5bd9e4fbc9390a513aeaff5bc0e",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        match self.iter.next() {\n            Some(mut item) => match (self.f)(&mut item, self.txn) {\n                true => Some(item),\n                false => None,\n            },\n            None => None,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

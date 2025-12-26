@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/indexer/adapters.go",
+  "file_hash": "65ed20eb777039dc504b93caa0890dc5903582ab",
+  "updated_at": "2025-12-26T17:34:23.242580",
+  "symbols": {
+    "struct_EmbeddingGeneratorAdapter_8": {
+      "name": "EmbeddingGeneratorAdapter",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 12,
+      "content_hash": "4a44f2ef1a4fe64a10cff6dd287abb36ca33b27e",
+      "content": "type EmbeddingGeneratorAdapter struct {\n\tprovider EmbeddingProvider\n}\n\n// NewEmbeddingGeneratorAdapter creates an adapter that wraps an EmbeddingProvider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewEmbeddingGeneratorAdapter_13": {
+      "name": "NewEmbeddingGeneratorAdapter",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 16,
+      "content_hash": "038f5f86ae011db10551e96923b0b417d5fb51bf",
+      "content": "func NewEmbeddingGeneratorAdapter(provider EmbeddingProvider) *EmbeddingGeneratorAdapter {\n\treturn &EmbeddingGeneratorAdapter{provider: provider}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GenerateEmbedding_17": {
+      "name": "GenerateEmbedding",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 20,
+      "content_hash": "1d045132161783966d85c8c8bcddcb486d82c32e",
+      "content": "func (a *EmbeddingGeneratorAdapter) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {\n\treturn a.provider.GenerateEmbedding(ctx, text)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GenerateBatchEmbeddings_21": {
+      "name": "GenerateBatchEmbeddings",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 33,
+      "content_hash": "5102a4cbcd5cf4214483d1b25def9011fd01229f",
+      "content": "func (a *EmbeddingGeneratorAdapter) GenerateBatchEmbeddings(ctx context.Context, texts []string) ([][]float32, error) {\n\t// Simple batch implementation - call individual method for each text\n\tembeddings := make([][]float32, len(texts))\n\tfor i, text := range texts {\n\t\tembedding, err := a.provider.GenerateEmbedding(ctx, text)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tembeddings[i] = embedding\n\t}\n\treturn embeddings, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GenerateSymbolEmbeddings_34": {
+      "name": "GenerateSymbolEmbeddings",
+      "type": "method",
+      "start_line": 34,
+      "end_line": 68,
+      "content_hash": "0319e931dfef1338eb0a8a8c2394fdc0a50e46bc",
+      "content": "func (a *EmbeddingGeneratorAdapter) GenerateSymbolEmbeddings(ctx context.Context, symbols []Symbol) ([]Embedding, error) {\n\t// This would require access to the embedding engine, so for now\n\t// we'll delegate to a simple implementation\n\tembeddings := make([]Embedding, 0, len(symbols))\n\n\tfor _, symbol := range symbols {\n\t\ttext := createSimpleEmbeddingText(symbol)\n\t\tif text == \"\" {\n\t\t\tcontinue\n\t\t}\n\n\t\tvector, err := a.provider.GenerateEmbedding(ctx, text)\n\t\tif err != nil {\n\t\t\tcontinue\n\t\t}\n\n\t\tembedding := Embedding{\n\t\t\tID:     symbol.Name,\n\t\t\tType:   symbol.Type,\n\t\t\tText:   text,\n\t\t\tVector: vector,\n\t\t\tMetadata: MetaData{\n\t\t\t\tPackage:    symbol.Package,\n\t\t\t\tFile:       symbol.File,\n\t\t\t\tLine:       symbol.Line,\n\t\t\t\tComplexity: 1,\n\t\t\t\tPublic:     symbol.Public,\n\t\t\t},\n\t\t}\n\t\tembeddings = append(embeddings, embedding)\n\t}\n\n\treturn embeddings, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Name_69": {
+      "name": "Name",
+      "type": "method",
+      "start_line": 69,
+      "end_line": 72,
+      "content_hash": "f39a35e0b037a42e5749e6f197a9eeec3470bfe6",
+      "content": "func (a *EmbeddingGeneratorAdapter) Name() string {\n\treturn a.provider.Name()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ValidateAPIKey_73": {
+      "name": "ValidateAPIKey",
+      "type": "method",
+      "start_line": 73,
+      "end_line": 81,
+      "content_hash": "429e06776fe0258391bb292d22c35c5b719699b2",
+      "content": "func (a *EmbeddingGeneratorAdapter) ValidateAPIKey(ctx context.Context) bool {\n\t// For providers that support this (like Mistral), we can validate\n\tif mistralProv, ok := a.provider.(*MistralProvider); ok {\n\t\treturn mistralProv.ValidateAPIKey(ctx)\n\t}\n\treturn true // Assume valid for other providers\n}\n\n// Helper function for simple embedding text creation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createSimpleEmbeddingText_82": {
+      "name": "createSimpleEmbeddingText",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 87,
+      "content_hash": "4576639ecce0a26949b03a109625e9f65551d376",
+      "content": "func createSimpleEmbeddingText(symbol Symbol) string {\n\tif symbol.Signature != \"\" {\n\t\treturn symbol.Signature\n\t}\n\treturn symbol.Name\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

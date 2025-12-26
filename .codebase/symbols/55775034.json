@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/sdk/openai/client.go",
+  "file_hash": "fba05962c168c63f9b829210219a49730f65b335",
+  "updated_at": "2025-12-26T17:34:24.238894",
+  "symbols": {
+    "struct_Client_12": {
+      "name": "Client",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 16,
+      "content_hash": "5ed0677bf696269285525591880bafcad101fb73",
+      "content": "type Client struct {\n\t*base.Client\n}\n\n// NewClient creates a new OpenAI client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewClient_17": {
+      "name": "NewClient",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 35,
+      "content_hash": "79c8df7050358194e2c364db2b78bd38b5433357",
+      "content": "func NewClient(apiKey string, opts ...base.ClientOption) *Client {\n\t// Create base configuration\n\tconfig := base.DefaultClientConfig\n\tconfig.APIKey = apiKey\n\tconfig.BaseURL = \"https://api.openai.com/v1\"\n\n\t// Apply user options\n\tfor _, opt := range opts {\n\t\topt(&config)\n\t}\n\n\tbaseClient := base.NewClient(config)\n\n\treturn &Client{\n\t\tClient: baseClient,\n\t}\n}\n\n// CreateChatCompletion creates a chat completion",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateChatCompletion_36": {
+      "name": "CreateChatCompletion",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 51,
+      "content_hash": "4430eb344a7f618ccbd1de25ba4efe8e3de7cbc4",
+      "content": "func (c *Client) CreateChatCompletion(ctx context.Context, req base.ChatCompletionRequest) (base.ChatCompletionResponse, error) {\n\tvar response interface{}\n\terr := c.DoRequest(ctx, \"POST\", \"/chat/completions\", req, &response)\n\tif err != nil {\n\t\treturn base.ChatCompletionResponse{}, err\n\t}\n\n\t// Convert interface{} back to response structure\n\tresponseBytes, _ := json.Marshal(response)\n\tvar chatResponse base.ChatCompletionResponse\n\tjson.Unmarshal(responseBytes, &chatResponse)\n\n\treturn chatResponse, nil\n}\n\n// CreateEmbedding creates embeddings",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateEmbedding_52": {
+      "name": "CreateEmbedding",
+      "type": "method",
+      "start_line": 52,
+      "end_line": 67,
+      "content_hash": "a61796998ffebb562c8c57dfa5c0abdb8d65fb98",
+      "content": "func (c *Client) CreateEmbedding(ctx context.Context, req base.EmbeddingRequest) (base.EmbeddingResponse, error) {\n\tvar response interface{}\n\terr := c.DoRequest(ctx, \"POST\", \"/embeddings\", req, &response)\n\tif err != nil {\n\t\treturn base.EmbeddingResponse{}, err\n\t}\n\n\t// Convert interface{} back to response structure\n\tresponseBytes, _ := json.Marshal(response)\n\tvar embedResponse base.EmbeddingResponse\n\tjson.Unmarshal(responseBytes, &embedResponse)\n\n\treturn embedResponse, nil\n}\n\n// ListModels lists available models with pagination support",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListModels_68": {
+      "name": "ListModels",
+      "type": "method",
+      "start_line": 68,
+      "end_line": 103,
+      "content_hash": "fffb3f9487b5d5279a755ccf06a63796b91ffbb9",
+      "content": "func (c *Client) ListModels(ctx context.Context) (*base.PaginatedResponse, error) {\n\t// For OpenAI, models endpoint returns all models in one request\n\tpaginatedResp, err := c.DoRequestWithPagination(ctx, \"GET\", \"/models\", nil, nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Convert the response\n\tresponseBytes, _ := json.Marshal(paginatedResp.Data)\n\tvar modelsPage []struct {\n\t\tID      string `json:\"id\"`\n\t\tObject  string `json:\"object\"`\n\t\tCreated int64  `json:\"created\"`\n\t\tOwnedBy string `json:\"owned_by\"`\n\t}\n\tjson.Unmarshal(responseBytes, &modelsPage)\n\n\t// Convert to BaseModel interfaces\n\tmodels := make([]base.BaseModel, len(modelsPage))\n\tfor i, model := range modelsPage {\n\t\tmodels[i] = model\n\t}\n\n\t// Return as paginated response\n\tresult := &base.PaginatedResponse{\n\t\tData:    models,\n\t\tHasMore: false, // OpenAI returns all in one page\n\t\tObject:  paginatedResp.Object,\n\t\tPage:    1,\n\t\tSize:    len(modelsPage),\n\t}\n\n\treturn result, nil\n}\n\n// GetModel retrieves details for a specific model",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetModel_104": {
+      "name": "GetModel",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 127,
+      "content_hash": "f256e2b8cdaa8397a280cf14705d89d90a550e60",
+      "content": "func (c *Client) GetModel(ctx context.Context, modelID string) (base.BaseModel, error) {\n\t// First try to find it in the model list\n\tlistResp, err := c.ListModels(ctx)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tmodels, ok := listResp.Data.([]base.BaseModel)\n\tif !ok {\n\t\treturn nil, fmt.Errorf(\"models data is not in expected format\")\n\t}\n\n\tfor _, model := range models {\n\t\tif model.GetID() == modelID {\n\t\t\treturn model, nil\n\t\t}\n\t}\n\n\treturn nil, &base.APIError{\n\t\tCode:    base.ErrModelNotFound,\n\t\tMessage: fmt.Sprintf(\"model not found: %s\", modelID),\n\t\tType:    \"model_not_found\",\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

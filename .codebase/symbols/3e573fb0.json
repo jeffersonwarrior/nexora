@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/internal/agent/recovery/recovery_test.go",
+  "file_hash": "b6bdde3033c19b896408ca95db068b5d5cdb2070",
+  "updated_at": "2025-12-26T17:34:21.540031",
+  "symbols": {
+    "function_TestRecoveryStrategies_15": {
+      "name": "TestRecoveryStrategies",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 137,
+      "content_hash": "eaa10f350337af71ef6320355a082e19b7e9cc59",
+      "content": "func TestRecoveryStrategies(t *testing.T) {\n\tctx := context.Background()\n\texecCtx := &state.AgentExecutionContext{\n\t\tRetryCount: 0,\n\t\tErrorCount: 0,\n\t\tLastError:  nil,\n\t}\n\n\tt.Run(\"FileOutdatedStrategy\", func(t *testing.T) {\n\t\tstrategy := &FileOutdatedStrategy{}\n\n\t\t// Create a temp file for testing\n\t\ttmpFile := \"/tmp/test_recovery_file.txt\"\n\t\tdefer os.Remove(tmpFile)\n\t\t\n\t\t// Create the file\n\t\tif err := os.WriteFile(tmpFile, []byte(\"test content\"), 0644); err != nil {\n\t\t\tt.Fatalf(\"Failed to create temp file: %v\", err)\n\t\t}\n\n\t\t// Test CanRecover\n\t\terr := NewFileOutdatedError(errors.New(\"file modified\"), tmpFile)\n\t\tif !strategy.CanRecover(err) {\n\t\t\tt.Error(\"FileOutdatedStrategy should recover from file outdated errors\")\n\t\t}\n\n\t\t// Test generic error detection\n\t\tgenericErr := errors.New(\"file has been modified externally\")\n\t\tif !strategy.CanRecover(genericErr) {\n\t\t\tt.Error(\"FileOutdatedStrategy should recover from generic file modified errors\")\n\t\t}\n\n\t\t// Test recovery with existing file\n\t\trecoveryErr := strategy.Recover(ctx, err, execCtx)\n\t\tif recoveryErr != nil {\n\t\t\tt.Errorf(\"FileOutdatedStrategy recovery failed: %v\", recoveryErr)\n\t\t}\n\t})\n\n\tt.Run(\"EditFailedStrategy\", func(t *testing.T) {\n\t\tstrategy := &EditFailedStrategy{}\n\n\t\t// Test CanRecover\n\t\terr := NewEditFailedError(errors.New(\"whitespace mismatch\"), \"/tmp/test.txt\", \"old\", \"new\")\n\t\tif !strategy.CanRecover(err) {\n\t\t\tt.Error(\"EditFailedStrategy should recover from edit failed errors\")\n\t\t}\n\n\t\t// Test recovery with missing context\n\t\tbadErr := errors.New(\"edit failed\")\n\t\trecoveryErr := strategy.Recover(ctx, badErr, execCtx)\n\t\tif recoveryErr == nil {\n\t\t\tt.Error(\"EditFailedStrategy should fail recovery without context\")\n\t\t}\n\t})\n\n\tt.Run(\"LoopDetectedStrategy\", func(t *testing.T) {\n\t\tstrategy := &LoopDetectedStrategy{}\n\n\t\t// Test CanRecover\n\t\terr := NewLoopDetectedError(\"processing\", 100)\n\t\tif !strategy.CanRecover(err) {\n\t\t\tt.Error(\"LoopDetectedStrategy should recover from loop detected errors\")\n\t\t}\n\n\t\t// Test MaxRetries\n\t\tif strategy.MaxRetries() != 0 {\n\t\t\tt.Error(\"LoopDetectedStrategy should have 0 max retries\")\n\t\t}\n\n\t\t// Test recovery\n\t\trecoveryErr := strategy.Recover(ctx, err, execCtx)\n\t\tif recoveryErr == nil {\n\t\t\tt.Error(\"LoopDetectedStrategy should halt execution\")\n\t\t}\n\t})\n\n\tt.Run(\"TimeoutStrategy\", func(t *testing.T) {\n\t\tstrategy := &TimeoutStrategy{}\n\n\t\t// Test CanRecover\n\t\terr := NewTimeoutError(\"operation\", 30*time.Second)\n\t\tif !strategy.CanRecover(err) {\n\t\t\tt.Error(\"TimeoutStrategy should recover from timeout errors\")\n\t\t}\n\n\t\t// Test MaxRetries\n\t\tif strategy.MaxRetries() != 1 {\n\t\t\tt.Error(\"TimeoutStrategy should have 1 max retry\")\n\t\t}\n\t})\n\n\tt.Run(\"ResourceLimitStrategy\", func(t *testing.T) {\n\t\tstrategy := &ResourceLimitStrategy{}\n\n\t\t// Test CanRecover\n\t\terr := NewResourceLimitError(\"memory\", \"8GB\", \"16GB\")\n\t\tif !strategy.CanRecover(err) {\n\t\t\tt.Error(\"ResourceLimitStrategy should recover from resource limit errors\")\n\t\t}\n\n\t\t// Test MaxRetries\n\t\tif strategy.MaxRetries() != 5 {\n\t\t\tt.Error(\"ResourceLimitStrategy should have 5 max retries\")\n\t\t}\n\t})\n\n\tt.Run(\"PanicStrategy\", func(t *testing.T) {\n\t\tstrategy := &PanicStrategy{}\n\n\t\t// Test CanRecover\n\t\terr := NewPanicError(errors.New(\"runtime panic\"), \"stack trace here\")\n\t\tif !strategy.CanRecover(err) {\n\t\t\tt.Error(\"PanicStrategy should recover from panic errors\")\n\t\t}\n\n\t\t// Test MaxRetries\n\t\tif strategy.MaxRetries() != 1 {\n\t\t\tt.Error(\"PanicStrategy should have 1 max retry\")\n\t\t}\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecoveryRegistry_138": {
+      "name": "TestRecoveryRegistry",
+      "type": "function",
+      "start_line": 138,
+      "end_line": 210,
+      "content_hash": "262358710a7b7b85b05dcb990ca46dbb4120ce22",
+      "content": "func TestRecoveryRegistry(t *testing.T) {\n\tregistry := NewRecoveryRegistry()\n\texecCtx := &state.AgentExecutionContext{\n\t\tRetryCount: 0,\n\t\tErrorCount: 0,\n\t\tLastError:  nil,\n\t}\n\n\tt.Run(\"FindStrategy\", func(t *testing.T) {\n\t\t// Test finding strategy for known error\n\t\teditErr := NewEditFailedError(errors.New(\"edit failed\"), \"/tmp/test.txt\", \"old\", \"new\")\n\t\tstrategy := registry.FindStrategy(editErr)\n\t\tif strategy == nil {\n\t\t\tt.Error(\"Registry should find strategy for edit failed error\")\n\t\t}\n\t\tif strategy.Name() != \"Edit Failed Recovery\" {\n\t\t\tt.Errorf(\"Expected 'Edit Failed Recovery', got '%s'\", strategy.Name())\n\t\t}\n\n\t\t// Test no strategy for unknown error\n\t\tunknownErr := errors.New(\"unknown error\")\n\t\tstrategy = registry.FindStrategy(unknownErr)\n\t\tif strategy != nil {\n\t\t\tt.Error(\"Registry should not find strategy for unknown error\")\n\t\t}\n\t})\n\n\tt.Run(\"AttemptRecovery\", func(t *testing.T) {\n\t\t// Test successful recovery - create temp file first\n\t\ttmpFile := \"/tmp/test_recovery.txt\"\n\t\terr := []byte(\"test content\")\n\t\tif writeErr := os.WriteFile(tmpFile, err, 0644); writeErr != nil {\n\t\t\tt.Fatalf(\"Failed to create test file: %v\", writeErr)\n\t\t}\n\t\tdefer os.Remove(tmpFile)\n\n\t\t// Use the same file path in the error\n\t\tfileErr := NewFileOutdatedError(errors.New(\"file modified\"), tmpFile)\n\n\t\tctx := context.Background()\n\t\trecoveryErr := registry.AttemptRecovery(ctx, fileErr, execCtx)\n\t\tif recoveryErr != nil {\n\t\t\tt.Errorf(\"Recovery failed: %v\", recoveryErr)\n\t\t}\n\n\t\t// Test retry limit enforcement\n\t\texecCtx.RetryCount = 5 // Exceed max retries\n\t\trecoveryErr = registry.AttemptRecovery(ctx, fileErr, execCtx)\n\t\tif recoveryErr == nil {\n\t\t\tt.Error(\"Should fail due to retry limit\")\n\t\t}\n\t})\n\n\tt.Run(\"SetMaxAttempts\", func(t *testing.T) {\n\t\tregistry.SetMaxAttempts(5)\n\t\tif registry.maxAttempts != 5 {\n\t\t\tt.Error(\"SetMaxAttempts failed\")\n\t\t}\n\t})\n\n\tt.Run(\"AddStrategy\", func(t *testing.T) {\n\t\tinitialCount := len(registry.GetAllStrategies())\n\t\tcustomStrategy := &CustomTestStrategy{}\n\t\tregistry.AddStrategy(customStrategy)\n\n\t\tnewCount := len(registry.GetAllStrategies())\n\t\tif newCount != initialCount+1 {\n\t\t\tt.Errorf(\"Expected %d strategies, got %d\", initialCount+1, newCount)\n\t\t}\n\t})\n}\n\n// Custom test strategy for testing AddStrategy",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CustomTestStrategy_211": {
+      "name": "CustomTestStrategy",
+      "type": "struct",
+      "start_line": 211,
+      "end_line": 212,
+      "content_hash": "8e71c5552e529d9a7f43dd68cfb2b9196af9594d",
+      "content": "type CustomTestStrategy struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CanRecover_213": {
+      "name": "CanRecover",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 216,
+      "content_hash": "64beb31a2b658d93ea8a66fcdeb35d0f0444864f",
+      "content": "func (s *CustomTestStrategy) CanRecover(err error) bool {\n\treturn err.Error() == \"custom test error\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Recover_217": {
+      "name": "Recover",
+      "type": "method",
+      "start_line": 217,
+      "end_line": 220,
+      "content_hash": "1a09656e86e3b6e892a1488c71fcc5679992cae5",
+      "content": "func (s *CustomTestStrategy) Recover(ctx context.Context, err error, execCtx *state.AgentExecutionContext) error {\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MaxRetries_221": {
+      "name": "MaxRetries",
+      "type": "method",
+      "start_line": 221,
+      "end_line": 224,
+      "content_hash": "80089a980ea7f7b1f74f6bdcfdd016900c1846d0",
+      "content": "func (s *CustomTestStrategy) MaxRetries() int {\n\treturn 1\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Name_225": {
+      "name": "Name",
+      "type": "method",
+      "start_line": 225,
+      "end_line": 228,
+      "content_hash": "7ed055f282cd5020d4d958b9cd8bfcc80369484a",
+      "content": "func (s *CustomTestStrategy) Name() string {\n\treturn \"Custom Test Recovery\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestRecoverableError_229": {
+      "name": "TestRecoverableError",
+      "type": "function",
+      "start_line": 229,
+      "end_line": 249,
+      "content_hash": "6ddae36a1b196e885271941b5e45ba38e9e24eea",
+      "content": "func TestRecoverableError(t *testing.T) {\n\toriginalErr := errors.New(\"original error\")\n\tcontext := map[string]interface{}{\n\t\t\"key\":       \"value\",\n\t\t\"timestamp\": time.Now(),\n\t}\n\n\trecoverableErr := NewRecoverableError(originalErr, \"test_type\", context)\n\n\t// Test Error method\n\tif !strings.Contains(recoverableErr.Error(), \"test_type\") {\n\t\tt.Error(\"Error string should contain error type\")\n\t}\n\n\t// Test Unwrap method\n\tif errors.Unwrap(recoverableErr) != originalErr {\n\t\tt.Error(\"Unwrap should return original error\")\n\t}\n}\n\n// Benchmark tests for performance validation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkFindStrategy_250": {
+      "name": "BenchmarkFindStrategy",
+      "type": "function",
+      "start_line": 250,
+      "end_line": 259,
+      "content_hash": "0af15f4d49003d7892afcfef569ed2b87fff3ad5",
+      "content": "func BenchmarkFindStrategy(b *testing.B) {\n\tregistry := NewRecoveryRegistry()\n\terr := NewEditFailedError(errors.New(\"test\"), \"/tmp/test\", \"old\", \"new\")\n\n\tb.ResetTimer()\n\tfor i := 0; i < b.N; i++ {\n\t\tregistry.FindStrategy(err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkAttemptRecovery_260": {
+      "name": "BenchmarkAttemptRecovery",
+      "type": "function",
+      "start_line": 260,
+      "end_line": 274,
+      "content_hash": "dc5e23be50467c36ba129420fb36a6d2bc6ba182",
+      "content": "func BenchmarkAttemptRecovery(b *testing.B) {\n\tregistry := NewRecoveryRegistry()\n\tctx := context.Background()\n\texecCtx := &state.AgentExecutionContext{\n\t\tRetryCount: 0,\n\t\tErrorCount: 0,\n\t\tLastError:  nil,\n\t}\n\terr := NewFileOutdatedError(errors.New(\"test\"), \"/tmp/test\")\n\n\tb.ResetTimer()\n\tfor i := 0; i < b.N; i++ {\n\t\tregistry.AttemptRecovery(ctx, err, execCtx)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

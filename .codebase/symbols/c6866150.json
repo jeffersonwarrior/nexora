@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/validation.ts",
+  "file_hash": "5c726e036fa21c6f0bc661f1687394f4a427b963",
+  "updated_at": "2025-12-26T17:34:25.053182",
+  "symbols": {
+    "function_validateFeature_24": {
+      "name": "validateFeature",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 103,
+      "content_hash": "1ed0a23115c3674954ad91a3537240fdbc657007",
+      "content": "export async function validateFeature(\n  feature: Feature,\n  projectDir: string\n): Promise<ValidationResult> {\n  const checks: ValidationCheck[] = [];\n  let overallPassed = true;\n  let errorMessage: string | undefined;\n\n  // Skip validation if not enabled\n  if (!feature.validation?.enabled) {\n    return {\n      passed: true,\n      checks: [],\n      timestamp: new Date().toISOString(),\n    };\n  }\n\n  const config = feature.validation;\n\n  // Check 1: Coverage target\n  if (config.coverageTarget !== undefined && config.coverageTarget > 0) {\n    const coverageCheck = await measureCoverage(\n      projectDir,\n      config.verifyCommand,\n      config.expectedPackages,\n      config.coverageTarget\n    );\n    checks.push(coverageCheck);\n\n    if (!coverageCheck.passed && config.enforceBlocking) {\n      overallPassed = false;\n      errorMessage = coverageCheck.details || \"Coverage below target\";\n    }\n  }\n\n  // Check 2: Tests must pass\n  if (config.testPassRequired) {\n    const testCheck = await runTests(\n      projectDir,\n      config.verifyCommand,\n      config.expectedPackages\n    );\n    checks.push(testCheck);\n\n    if (!testCheck.passed && config.enforceBlocking) {\n      overallPassed = false;\n      errorMessage = testCheck.details || \"Tests failed\";\n    }\n  }\n\n  // Check 3: Git verification - verify changes match expected packages\n  if (\n    feature.gitVerification &&\n    config.expectedPackages &&\n    config.expectedPackages.length > 0\n  ) {\n    const gitCheck = verifyExpectedPackages(\n      feature.gitVerification,\n      config.expectedPackages\n    );\n\n    checks.push({\n      name: \"git-packages\",\n      passed: gitCheck.matched,\n      details: gitCheck.details,\n    });\n\n    if (!gitCheck.matched && config.enforceBlocking) {\n      overallPassed = false;\n      errorMessage = gitCheck.details;\n    }\n  }\n\n  return {\n    passed: overallPassed,\n    checks,\n    error: errorMessage,\n    timestamp: new Date().toISOString(),\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_measureCoverage_108": {
+      "name": "measureCoverage",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 159,
+      "content_hash": "23069e4b12155b895ea473a5761bafca7c8e4cc0",
+      "content": "async function measureCoverage(\n  projectDir: string,\n  verifyCommand: string | undefined,\n  expectedPackages: string[] | undefined,\n  targetCoverage: number\n): Promise<ValidationCheck> {\n  try {\n    // Determine coverage command\n    let command: string;\n    if (verifyCommand) {\n      command = verifyCommand;\n    } else if (expectedPackages && expectedPackages.length > 0) {\n      // Default: go test -cover for specified packages\n      const packages = expectedPackages.join(\" \");\n      command = `go test -cover ${packages}`;\n    } else {\n      command = \"go test -cover ./...\";\n    }\n\n    // Run coverage measurement\n    const output = execSync(command, {\n      cwd: projectDir,\n      encoding: \"utf-8\",\n      timeout: 60000, // 60s timeout\n    });\n\n    // Parse coverage from output\n    const coverage = parseCoverageFromOutput(output);\n\n    const passed = coverage >= targetCoverage;\n\n    return {\n      name: \"coverage\",\n      passed,\n      expected: targetCoverage,\n      actual: coverage,\n      details: passed\n        ? `Coverage ${coverage.toFixed(1)}% meets target ${targetCoverage}%`\n        : `Coverage ${coverage.toFixed(1)}% below target ${targetCoverage}%`,\n    };\n  } catch (error) {\n    const message =\n      error instanceof Error ? error.message : String(error);\n    return {\n      name: \"coverage\",\n      passed: false,\n      expected: targetCoverage,\n      actual: 0,\n      details: `Coverage measurement failed: ${message}`,\n    };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runTests_164": {
+      "name": "runTests",
+      "type": "function",
+      "start_line": 164,
+      "end_line": 209,
+      "content_hash": "bf529c242edb99521231da29ffa10daecb0fe071",
+      "content": "async function runTests(\n  projectDir: string,\n  verifyCommand: string | undefined,\n  expectedPackages: string[] | undefined\n): Promise<ValidationCheck> {\n  try {\n    // Determine test command\n    let command: string;\n    if (verifyCommand) {\n      command = verifyCommand;\n    } else if (expectedPackages && expectedPackages.length > 0) {\n      const packages = expectedPackages.join(\" \");\n      command = `go test ${packages}`;\n    } else {\n      command = \"go test ./...\";\n    }\n\n    // Run tests\n    const output = execSync(command, {\n      cwd: projectDir,\n      encoding: \"utf-8\",\n      timeout: 300000, // 5min timeout\n    });\n\n    // Parse test results\n    const testsPassed = !output.includes(\"FAIL\");\n    const testCount = countTests(output);\n\n    return {\n      name: \"tests\",\n      passed: testsPassed,\n      actual: testCount,\n      details: testsPassed\n        ? `All ${testCount} tests passed`\n        : `Tests failed - see output`,\n    };\n  } catch (error) {\n    const message =\n      error instanceof Error ? error.message : String(error);\n    return {\n      name: \"tests\",\n      passed: false,\n      details: `Test execution failed: ${message}`,\n    };\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parseCoverageFromOutput_215": {
+      "name": "parseCoverageFromOutput",
+      "type": "function",
+      "start_line": 215,
+      "end_line": 243,
+      "content_hash": "fd0ad83ffac19f025970c81738598bd8e9b5fe9e",
+      "content": "function parseCoverageFromOutput(output: string): number {\n  const lines = output.split(\"\\n\");\n\n  // Look for coverage lines\n  const coverageLines = lines.filter((line) =>\n    line.includes(\"coverage:\")\n  );\n\n  if (coverageLines.length === 0) {\n    return 0;\n  }\n\n  // Extract percentages and average them\n  const percentages: number[] = [];\n  for (const line of coverageLines) {\n    const match = line.match(/coverage:\\s+([\\d.]+)%/);\n    if (match) {\n      percentages.push(parseFloat(match[1]));\n    }\n  }\n\n  if (percentages.length === 0) {\n    return 0;\n  }\n\n  // Return average coverage\n  const sum = percentages.reduce((a, b) => a + b, 0);\n  return sum / percentages.length;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_countTests_248": {
+      "name": "countTests",
+      "type": "function",
+      "start_line": 248,
+      "end_line": 260,
+      "content_hash": "2711b4d627442051c11c54a7413b795c64d49427",
+      "content": "function countTests(output: string): number {\n  const lines = output.split(\"\\n\");\n  let count = 0;\n\n  for (const line of lines) {\n    // Match lines like \"--- PASS: TestFoo (0.00s)\"\n    if (line.match(/^---\\s+(PASS|FAIL):/)) {\n      count++;\n    }\n  }\n\n  return count;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createValidationConfig_265": {
+      "name": "createValidationConfig",
+      "type": "function",
+      "start_line": 265,
+      "end_line": 276,
+      "content_hash": "7315d6eec0d7e624b160b2a60839cd05f1b4ed81",
+      "content": "export function createValidationConfig(\n  options: Partial<ValidationConfig> = {}\n): ValidationConfig {\n  return {\n    enabled: options.enabled ?? true,\n    coverageTarget: options.coverageTarget,\n    testPassRequired: options.testPassRequired ?? true,\n    enforceBlocking: options.enforceBlocking ?? true,\n    verifyCommand: options.verifyCommand,\n    expectedPackages: options.expectedPackages,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

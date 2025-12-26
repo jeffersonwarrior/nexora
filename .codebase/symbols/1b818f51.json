@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/format.ts",
+  "file_hash": "598408599ad0314885e9645d5a3ec6e1731823c2",
+  "updated_at": "2025-12-26T17:34:21.745846",
+  "symbols": {
+    "function_formatDuration_8": {
+      "name": "formatDuration",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 25,
+      "content_hash": "f2d3d63d69627621ec45f5519b52bfbb78e900e4",
+      "content": "export function formatDuration(start: Date, end: Date): string {\n  const ms = end.getTime() - start.getTime();\n  const seconds = Math.floor(ms / 1000);\n  const minutes = Math.floor(seconds / 60);\n  const hours = Math.floor(minutes / 60);\n  const days = Math.floor(hours / 24);\n\n  if (days > 0) {\n    return `${days}d ${hours % 24}h ${minutes % 60}m`;\n  }\n  if (hours > 0) {\n    return `${hours}h ${minutes % 60}m`;\n  }\n  if (minutes > 0) {\n    return `${minutes}m ${seconds % 60}s`;\n  }\n  return `${seconds}s`;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_truncate_30": {
+      "name": "truncate",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 33,
+      "content_hash": "c04c8e41462ae79dd9dd6163b64e37330751b8be",
+      "content": "export function truncate(str: string, maxLength: number): string {\n  if (str.length <= maxLength) return str;\n  return str.slice(0, maxLength - 3) + \"...\";\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_progressBar_38": {
+      "name": "progressBar",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 43,
+      "content_hash": "08afc9cbfa1dc752b6b548b9fe71bd6f29753b14",
+      "content": "export function progressBar(current: number, total: number, width: number = 20): string {\n  const percent = total > 0 ? Math.min(current / total, 1) : 0; // Cap at 100%\n  const filled = Math.round(width * percent);\n  const empty = Math.max(width - filled, 0); // Prevent negative\n  return `[${\"\u2588\".repeat(filled)}${\"\u2591\".repeat(empty)}] ${current}/${total}`;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatPercent_48": {
+      "name": "formatPercent",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 51,
+      "content_hash": "d5f4e645a9a395b0ec52c7f94f54036d70174154",
+      "content": "export function formatPercent(value: number, decimals: number = 1): string {\n  if (!isFinite(value)) return \"N/A\";\n  return `${(value * 100).toFixed(decimals)}%`;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_calculateAverage_56": {
+      "name": "calculateAverage",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 59,
+      "content_hash": "8a8f3455049927d3f908b5966b7b8ae7463727c0",
+      "content": "export function calculateAverage(values: number[]): number {\n  if (values.length === 0) return 0;\n  return values.reduce((sum, val) => sum + val, 0) / values.length;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDurationMs_64": {
+      "name": "formatDurationMs",
+      "type": "function",
+      "start_line": 64,
+      "end_line": 82,
+      "content_hash": "d07f49feb167d5034a9acb1f2a6d64f55bfec993",
+      "content": "export function formatDurationMs(ms: number): string {\n  if (ms < 0 || !isFinite(ms)) return \"N/A\";\n\n  const seconds = Math.floor(ms / 1000);\n  const minutes = Math.floor(seconds / 60);\n  const hours = Math.floor(minutes / 60);\n  const days = Math.floor(hours / 24);\n\n  if (days > 0) {\n    return `${days}d ${hours % 24}h ${minutes % 60}m`;\n  }\n  if (hours > 0) {\n    return `${hours}h ${minutes % 60}m`;\n  }\n  if (minutes > 0) {\n    return `${minutes}m ${seconds % 60}s`;\n  }\n  return `${seconds}s`;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

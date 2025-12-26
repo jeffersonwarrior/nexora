@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/csync/versionedmap_test.go",
+  "file_hash": "c3d2892126878c214d5f81f2b905ca162dd2d225",
+  "updated_at": "2025-12-26T17:34:24.033717",
+  "symbols": {
+    "function_TestVersionedMap_Set_9": {
+      "name": "TestVersionedMap_Set",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 22,
+      "content_hash": "9cb038624098576f006f4c57bf2c8a468dfa23d6",
+      "content": "func TestVersionedMap_Set(t *testing.T) {\n\tt.Parallel()\n\n\tvm := NewVersionedMap[string, int]()\n\trequire.Equal(t, uint64(0), vm.Version())\n\n\tvm.Set(\"key1\", 42)\n\trequire.Equal(t, uint64(1), vm.Version())\n\n\tvalue, ok := vm.Get(\"key1\")\n\trequire.True(t, ok)\n\trequire.Equal(t, 42, value)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestVersionedMap_Del_23": {
+      "name": "TestVersionedMap_Del",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 36,
+      "content_hash": "e6d52208bff3a7866c071e5298f782cc290a8dd4",
+      "content": "func TestVersionedMap_Del(t *testing.T) {\n\tt.Parallel()\n\n\tvm := NewVersionedMap[string, int]()\n\tvm.Set(\"key1\", 42)\n\tinitialVersion := vm.Version()\n\n\tvm.Del(\"key1\")\n\trequire.Equal(t, initialVersion+1, vm.Version())\n\n\t_, ok := vm.Get(\"key1\")\n\trequire.False(t, ok)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestVersionedMap_VersionIncrement_37": {
+      "name": "TestVersionedMap_VersionIncrement",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 55,
+      "content_hash": "5abffe611bfbf4c92a6df05115ae6c927a333577",
+      "content": "func TestVersionedMap_VersionIncrement(t *testing.T) {\n\tt.Parallel()\n\n\tvm := NewVersionedMap[string, int]()\n\tinitialVersion := vm.Version()\n\n\t// Setting a value should increment the version\n\tvm.Set(\"key1\", 42)\n\trequire.Equal(t, initialVersion+1, vm.Version())\n\n\t// Deleting a value should increment the version\n\tvm.Del(\"key1\")\n\trequire.Equal(t, initialVersion+2, vm.Version())\n\n\t// Deleting a non-existent key should still increment the version\n\tvm.Del(\"nonexistent\")\n\trequire.Equal(t, initialVersion+3, vm.Version())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestVersionedMap_ConcurrentAccess_56": {
+      "name": "TestVersionedMap_ConcurrentAccess",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 89,
+      "content_hash": "ff88c70677b01eb3b4919d533d2e7e273995429f",
+      "content": "func TestVersionedMap_ConcurrentAccess(t *testing.T) {\n\tt.Parallel()\n\n\tvm := NewVersionedMap[int, int]()\n\tconst numGoroutines = 100\n\tconst numOperations = 100\n\n\t// Initial version\n\tinitialVersion := vm.Version()\n\n\t// Perform concurrent Set and Del operations\n\tfor i := range numGoroutines {\n\t\tgo func(id int) {\n\t\t\tfor j := range numOperations {\n\t\t\t\tkey := id*numOperations + j\n\t\t\t\tvm.Set(key, key*2)\n\t\t\t\tvm.Del(key)\n\t\t\t}\n\t\t}(i)\n\t}\n\n\t// Wait for operations to complete by checking the version\n\t// This is a simplified check - in a real test you might want to use sync.WaitGroup\n\texpectedMinVersion := initialVersion + uint64(numGoroutines*numOperations*2)\n\n\t// Allow some time for operations to complete\n\tfor vm.Version() < expectedMinVersion {\n\t\t// Busy wait - in a real test you'd use proper synchronization\n\t}\n\n\t// Final version should be at least the expected minimum\n\trequire.GreaterOrEqual(t, vm.Version(), expectedMinVersion)\n\trequire.Equal(t, 0, vm.Len())\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/auth.rs",
+  "file_hash": "0bdfa14e11b9647bd3492fe005f36d3d66bdb9ee",
+  "updated_at": "2025-12-26T17:34:21.784940",
+  "symbols": {
+    "struct_Credentials_102": {
+      "name": "Credentials",
+      "type": "struct",
+      "start_line": 102,
+      "end_line": 106,
+      "content_hash": "1a4bac9d18f7216fbbbd42c8a2717b8aff1b0fb9",
+      "content": "pub struct Credentials {\n    pub(crate) user_id: String,\n    pub(crate) helix_admin_key: String,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Credentials_107": {
+      "name": "Credentials",
+      "type": "impl",
+      "start_line": 107,
+      "end_line": 107,
+      "content_hash": "bc7b220ab27282ee54f240c4baa45a2731c017b1",
+      "content": "impl Credentials {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_is_authenticated_108": {
+      "name": "is_authenticated",
+      "type": "method",
+      "start_line": 108,
+      "end_line": 143,
+      "content_hash": "e728cb638086d7d87f2650de0d4712c921bc43e1",
+      "content": "    pub fn is_authenticated(&self) -> bool {\n        !self.user_id.is_empty() && !self.helix_admin_key.is_empty()\n    }\n\n    #[allow(unused)]\n    pub(crate) fn read_from_file(path: &PathBuf) -> Self {\n        let content = fs::read_to_string(path)\n            .unwrap_or_else(|e| panic!(\"Failed to read credentials file at {path:?}: {e}\"));\n        Self::parse_key_value_format(&content)\n            .unwrap_or_else(|e| panic!(\"Failed to parse credentials file at {path:?}: {e}\"))\n    }\n\n    pub(crate) fn try_read_from_file(path: &PathBuf) -> Option<Self> {\n        let content = fs::read_to_string(path).ok()?;\n        Self::parse_key_value_format(&content).ok()\n    }\n\n    pub(crate) fn write_to_file(&self, path: &PathBuf) {\n        let content = format!(\n            \"helix_user_id={}\\nhelix_user_key={}\",\n            self.user_id, self.helix_admin_key\n        );\n        fs::write(path, content)\n            .unwrap_or_else(|e| panic!(\"Failed to write credentials file to {path:?}: {e}\"));\n    }\n\n    #[allow(unused)]\n    pub(crate) fn try_write_to_file(&self, path: &PathBuf) -> Option<()> {\n        let content = format!(\n            \"helix_user_id={}\\nhelix_user_key={}\",\n            self.user_id, self.helix_admin_key\n        );\n        fs::write(path, content).ok()?;\n        Some(())\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_parse_key_value_format_144": {
+      "name": "parse_key_value_format",
+      "type": "method",
+      "start_line": 144,
+      "end_line": 259,
+      "content_hash": "7424e4d6a93f78a06453a5a317f43ecb7630c036",
+      "content": "    fn parse_key_value_format(content: &str) -> Result<Self> {\n        let mut user_id = None;\n        let mut helix_admin_key = None;\n\n        for line in content.lines() {\n            let line = line.trim();\n            if line.is_empty() || line.starts_with('#') {\n                continue;\n            }\n\n            if let Some((key, value)) = line.split_once('=') {\n                match key.trim() {\n                    \"helix_user_id\" => user_id = Some(value.trim().to_string()),\n                    \"helix_user_key\" => helix_admin_key = Some(value.trim().to_string()),\n                    _ => {} // Ignore unknown keys\n                }\n            }\n        }\n\n        Ok(Credentials {\n            user_id: user_id.ok_or_eyre(\"Missing helix_user_id in credentials file\")?,\n            helix_admin_key: helix_admin_key\n                .ok_or_eyre(\"Missing helix_user_key in credentials file\")?,\n        })\n    }\n}\n\n/// Check that the user is authenticated with Helix Cloud.\n/// If not authenticated, prompts the user to login interactively.\n/// Returns credentials if authenticated (or after successful login).\npub async fn require_auth() -> Result<Credentials> {\n    let home = dirs::home_dir().ok_or_eyre(\"Cannot find home directory\")?;\n    let credentials_path = home.join(\".helix\").join(\"credentials\");\n\n    // Check if we have valid credentials\n    if let Some(credentials) = Credentials::try_read_from_file(&credentials_path)\n        && credentials.is_authenticated()\n    {\n        return Ok(credentials);\n    }\n\n    // Not authenticated - prompt user to login\n    print_warning(\"Not authenticated with Helix Cloud\");\n\n    if !crate::prompts::is_interactive() {\n        return Err(eyre!(\"Run 'helix auth login' first.\"));\n    }\n\n    let should_login = crate::prompts::confirm(\"Would you like to login now?\")?;\n\n    if !should_login {\n        return Err(eyre!(\n            \"Authentication required. Run 'helix auth login' to authenticate.\"\n        ));\n    }\n\n    // Run login flow\n    login().await?;\n\n    // Read the newly saved credentials\n    Credentials::try_read_from_file(&credentials_path)\n        .ok_or_else(|| eyre!(\"Login succeeded but failed to read credentials. Please try again.\"))\n}\n\npub async fn github_login() -> Result<(String, String)> {\n    let url = format!(\"https://{}/github-login\", *CLOUD_AUTHORITY);\n    let client = SseClient::new(url).post();\n\n    let mut api_key: Option<String> = None;\n    let mut user_id: Option<String> = None;\n\n    client\n        .connect(|event| {\n            match event {\n                SseEvent::UserVerification {\n                    user_code,\n                    verification_uri,\n                    ..\n                } => {\n                    println!(\n                        \"To Login please go \\x1b]8;;{}\\x1b\\\\here\\x1b]8;;\\x1b\\\\({}),\\nand enter the code: {}\",\n                        verification_uri,\n                        verification_uri,\n                        user_code.bold()\n                    );\n                    Ok(true) // Continue processing events\n                }\n                SseEvent::Success { data } => {\n                    // Extract API key and user_id from success event\n                    if let Some(key) = data.get(\"key\").and_then(|v| v.as_str()) {\n                        api_key = Some(key.to_string());\n                    }\n                    if let Some(id) = data.get(\"user_id\").and_then(|v| v.as_str()) {\n                        user_id = Some(id.to_string());\n                    }\n                    Ok(false) // Stop processing - login complete\n                }\n                SseEvent::DeviceCodeTimeout { message } => {\n                    Err(eyre!(\"Login timeout: {}. Please try again.\", message))\n                }\n                SseEvent::Error { error } => {\n                    Err(eyre!(\"Login error: {}\", error))\n                }\n                _ => {\n                    // Ignore other event types during login\n                    Ok(true)\n                }\n            }\n        })\n        .await?;\n\n    match (api_key, user_id) {\n        (Some(key), Some(id)) => Ok((key, id)),\n        _ => Err(eyre!(\"Login completed but credentials were not received\")),\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/sessionlog/converters.go",
+  "file_hash": "a888cdfb25e7843776b1103f5708dbfbe9f04da1",
+  "updated_at": "2025-12-26T17:34:22.841556",
+  "symbols": {
+    "function_ConvertEditDiagnosticsToLog_8": {
+      "name": "ConvertEditDiagnosticsToLog",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 30,
+      "content_hash": "5f5097c90987eac556ffc0a114b821453b539498",
+      "content": "func ConvertEditDiagnosticsToLog(sessionID, instanceID string, diag tools.EditDiagnosticsInfo, analysis tools.WhitespaceAnalysis) EditOperationLog {\n\treturn EditOperationLog{\n\t\tSessionID:       sessionID,\n\t\tInstanceID:      instanceID,\n\t\tFilePath:        diag.FilePath,\n\t\tStatus:          \"failure\",\n\t\tFailureReason:   diag.FailureReason,\n\t\tOldStringLength: len(diag.OldString),\n\t\tNewStringLength: len(diag.NewString),\n\t\tDurationMS:      0, // Will be set by caller\n\t\tHasTabs:         analysis.ContainsTab,\n\t\tHasMixedIndent:  analysis.HasMixedIndent,\n\t\tFileLineEndings: analysis.LineEndings,\n\t\tMetadata: map[string]interface{}{\n\t\t\t\"old_string_preview\": truncateStringPreview(diag.OldString, 80),\n\t\t\t\"file_size\":          len(diag.FileContent),\n\t\t\t\"old_string_lines\":   countLines(diag.OldString),\n\t\t\t\"context\":            diag.Context,\n\t\t},\n\t}\n}\n\n// ConvertEditSuccessToLog converts a successful edit to a log entry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ConvertEditSuccessToLog_31": {
+      "name": "ConvertEditSuccessToLog",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 49,
+      "content_hash": "29d1b18877fd18bfcf120fd44fcc746fa62b3299",
+      "content": "func ConvertEditSuccessToLog(sessionID, instanceID, filePath string, oldLen, newLen, replacementCount, attemptCount int, durationMS float64) EditOperationLog {\n\treturn EditOperationLog{\n\t\tSessionID:        sessionID,\n\t\tInstanceID:       instanceID,\n\t\tFilePath:         filePath,\n\t\tStatus:           \"success\",\n\t\tOldStringLength:  oldLen,\n\t\tNewStringLength:  newLen,\n\t\tReplacementCount: replacementCount,\n\t\tAttemptCount:     attemptCount,\n\t\tDurationMS:       durationMS,\n\t\tMetadata: map[string]interface{}{\n\t\t\t\"replacement_count\": replacementCount,\n\t\t\t\"attempt_count\":     attemptCount,\n\t\t},\n\t}\n}\n\n// ConvertViewOperationToLog converts view diagnostics to a log entry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ConvertViewOperationToLog_50": {
+      "name": "ConvertViewOperationToLog",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 65,
+      "content_hash": "64c17c1b1203fa0307ab2bcb561185a83c6b7f32",
+      "content": "func ConvertViewOperationToLog(sessionID, instanceID string, diag tools.ViewDiagnosticsInfo, durationMS float64) ViewOperationLog {\n\treturn ViewOperationLog{\n\t\tSessionID:     sessionID,\n\t\tInstanceID:    instanceID,\n\t\tFilePath:      diag.FilePath,\n\t\tOffsetLine:    diag.Offset,\n\t\tLimitLines:    diag.Limit,\n\t\tFileSizeBytes: diag.FileSize,\n\t\tTotalLines:    diag.LineCount,\n\t\tStatus:        \"success\",\n\t\tDurationMS:    durationMS,\n\t\tMetadata:      diag.Context,\n\t}\n}\n\n// ConvertViewErrorToLog converts a view error to a log entry",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ConvertViewErrorToLog_66": {
+      "name": "ConvertViewErrorToLog",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 78,
+      "content_hash": "fb188176215d2aa66d2dc658ed264f17d4a429eb",
+      "content": "func ConvertViewErrorToLog(sessionID, instanceID string, diag tools.ViewDiagnosticsInfo, errorReason string) ViewOperationLog {\n\treturn ViewOperationLog{\n\t\tSessionID:   sessionID,\n\t\tInstanceID:  instanceID,\n\t\tFilePath:    diag.FilePath,\n\t\tOffsetLine:  diag.Offset,\n\t\tLimitLines:  diag.Limit,\n\t\tStatus:      \"error\",\n\t\tErrorReason: errorReason,\n\t}\n}\n\n// Helper function",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_countLines_79": {
+      "name": "countLines",
+      "type": "function",
+      "start_line": 79,
+      "end_line": 101,
+      "content_hash": "f7021aecf857b1aea1dd56335c00d9e42ae47241",
+      "content": "func countLines(s string) int {\n\tif len(s) == 0 {\n\t\treturn 0\n\t}\n\tcount := 1\n\tfor i := 0; i < len(s); i++ {\n\t\tif s[i] == '\\n' {\n\t\t\tcount++\n\t\t}\n\t}\n\treturn count\n}\n\n// TruncatePreview provides a preview of a string for logging\n// (This is a wrapper - the actual function is in tools package)\nvar TruncatePreview = func(s string, maxLen int) string {\n\tif len(s) <= maxLen {\n\t\treturn s[:]\n\t}\n\treturn s[:maxLen] + \"...\"\n}\n\n// truncateStringPreview truncates a string for logging",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_truncateStringPreview_102": {
+      "name": "truncateStringPreview",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 107,
+      "content_hash": "222addaa93ae3e9b880016d98badc309039713b9",
+      "content": "func truncateStringPreview(s string, maxLen int) string {\n\tif len(s) <= maxLen {\n\t\treturn s\n\t}\n\treturn s[:maxLen] + \"...\"\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

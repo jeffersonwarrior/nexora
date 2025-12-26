@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/hooks/useSettings.ts",
+  "file_hash": "d762d76d9df4b82c4e2810a62c9792c9457df4a6",
+  "updated_at": "2025-12-26T17:34:22.428655",
+  "symbols": {
+    "function_useSettings_7": {
+      "name": "useSettings",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 76,
+      "content_hash": "23fefec57cd0c52a443a75f588850b032ac3efdd",
+      "content": "export function useSettings() {\n  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);\n  const [isSaving, setIsSaving] = useState(false);\n  const [saveStatus, setSaveStatus] = useState('');\n\n  useEffect(() => {\n    // Load initial settings\n    fetch(API_ENDPOINTS.SETTINGS)\n      .then(res => res.json())\n      .then(data => {\n        setSettings({\n          CLAUDE_MEM_MODEL: data.CLAUDE_MEM_MODEL || DEFAULT_SETTINGS.CLAUDE_MEM_MODEL,\n          CLAUDE_MEM_CONTEXT_OBSERVATIONS: data.CLAUDE_MEM_CONTEXT_OBSERVATIONS || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_OBSERVATIONS,\n          CLAUDE_MEM_WORKER_PORT: data.CLAUDE_MEM_WORKER_PORT || DEFAULT_SETTINGS.CLAUDE_MEM_WORKER_PORT,\n          CLAUDE_MEM_WORKER_HOST: data.CLAUDE_MEM_WORKER_HOST || DEFAULT_SETTINGS.CLAUDE_MEM_WORKER_HOST,\n\n          // Token Economics Display\n          CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS: data.CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SHOW_READ_TOKENS,\n          CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS: data.CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SHOW_WORK_TOKENS,\n          CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT: data.CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_AMOUNT,\n          CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_PERCENT: data.CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_PERCENT || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SHOW_SAVINGS_PERCENT,\n\n          // Observation Filtering\n          CLAUDE_MEM_CONTEXT_OBSERVATION_TYPES: data.CLAUDE_MEM_CONTEXT_OBSERVATION_TYPES || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_OBSERVATION_TYPES,\n          CLAUDE_MEM_CONTEXT_OBSERVATION_CONCEPTS: data.CLAUDE_MEM_CONTEXT_OBSERVATION_CONCEPTS || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_OBSERVATION_CONCEPTS,\n\n          // Display Configuration\n          CLAUDE_MEM_CONTEXT_FULL_COUNT: data.CLAUDE_MEM_CONTEXT_FULL_COUNT || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_FULL_COUNT,\n          CLAUDE_MEM_CONTEXT_FULL_FIELD: data.CLAUDE_MEM_CONTEXT_FULL_FIELD || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_FULL_FIELD,\n          CLAUDE_MEM_CONTEXT_SESSION_COUNT: data.CLAUDE_MEM_CONTEXT_SESSION_COUNT || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SESSION_COUNT,\n\n          // Feature Toggles\n          CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY: data.CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SHOW_LAST_SUMMARY,\n          CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE: data.CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE || DEFAULT_SETTINGS.CLAUDE_MEM_CONTEXT_SHOW_LAST_MESSAGE,\n        });\n      })\n      .catch(error => {\n        console.error('Failed to load settings:', error);\n      });\n  }, []);\n\n  const saveSettings = async (newSettings: Settings) => {\n    setIsSaving(true);\n    setSaveStatus('Saving...');\n\n    try {\n      const response = await fetch(API_ENDPOINTS.SETTINGS, {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify(newSettings)\n      });\n\n      const result = await response.json();\n\n      if (result.success) {\n        setSettings(newSettings);\n        setSaveStatus('\u2713 Saved');\n        setTimeout(() => setSaveStatus(''), TIMING.SAVE_STATUS_DISPLAY_DURATION_MS);\n      } else {\n        setSaveStatus(`\u2717 Error: ${result.error}`);\n      }\n    } catch (error) {\n      setSaveStatus(`\u2717 Error: ${error instanceof Error ? error.message : 'Unknown error'}`);\n    } finally {\n      setIsSaving(false);\n    }\n  };\n\n  return { settings, saveSettings, isSaving, saveStatus };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_saveSettings_48": {
+      "name": "saveSettings",
+      "type": "function",
+      "start_line": 48,
+      "end_line": 73,
+      "content_hash": "45dd06b70bdd1fef9e5d4175157d448dc273d07c",
+      "content": "  const saveSettings = async (newSettings: Settings) => {\n    setIsSaving(true);\n    setSaveStatus('Saving...');\n\n    try {\n      const response = await fetch(API_ENDPOINTS.SETTINGS, {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify(newSettings)\n      });\n\n      const result = await response.json();\n\n      if (result.success) {\n        setSettings(newSettings);\n        setSaveStatus('\u2713 Saved');\n        setTimeout(() => setSaveStatus(''), TIMING.SAVE_STATUS_DISPLAY_DURATION_MS);\n      } else {\n        setSaveStatus(`\u2717 Error: ${result.error}`);\n      }\n    } catch (error) {\n      setSaveStatus(`\u2717 Error: ${error instanceof Error ? error.message : 'Unknown error'}`);\n    } finally {\n      setIsSaving(false);\n    }\n  };",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

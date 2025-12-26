@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/db/db_test.go",
+  "file_hash": "c8d9fa75b915b69c5bcb8e888e9dc7d9f0bbcdbc",
+  "updated_at": "2025-12-26T17:34:23.921142",
+  "symbols": {
+    "function_createTestSchema_15": {
+      "name": "createTestSchema",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 99,
+      "content_hash": "85a42181aad45b55bf7dfd807dc0bcbdbd3d8ce6",
+      "content": "func createTestSchema(db *sql.DB) error {\n\tschema := `\n-- Sessions\nCREATE TABLE IF NOT EXISTS sessions (\n    id TEXT PRIMARY KEY,\n    parent_session_id TEXT,\n    title TEXT NOT NULL,\n    message_count INTEGER NOT NULL DEFAULT 0 CHECK (message_count >= 0),\n    prompt_tokens  INTEGER NOT NULL DEFAULT 0 CHECK (prompt_tokens >= 0),\n    completion_tokens  INTEGER NOT NULL DEFAULT 0 CHECK (completion_tokens>= 0),\n    cost REAL NOT NULL DEFAULT 0.0 CHECK (cost >= 0.0),\n    summary_message_id TEXT,\n    updated_at INTEGER NOT NULL,  -- Unix timestamp in milliseconds\n    created_at INTEGER NOT NULL   -- Unix timestamp in milliseconds\n);\n\n-- Messages\nCREATE TABLE IF NOT EXISTS messages (\n    id TEXT PRIMARY KEY,\n    session_id TEXT NOT NULL,\n    role TEXT NOT NULL,\n    parts TEXT NOT NULL default '[]',\n    model TEXT,\n    provider TEXT,\n    is_summary_message INTEGER DEFAULT 0 NOT NULL,\n    created_at INTEGER NOT NULL,  -- Unix timestamp in milliseconds\n    updated_at INTEGER NOT NULL,  -- Unix timestamp in milliseconds\n    finished_at INTEGER,  -- Unix timestamp in milliseconds\n    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE\n);\n\n-- Files\nCREATE TABLE IF NOT EXISTS files (\n    id TEXT PRIMARY KEY,\n    session_id TEXT NOT NULL,\n    path TEXT NOT NULL,\n    content TEXT NOT NULL,\n    version INTEGER NOT NULL DEFAULT 0,\n    is_new INTEGER DEFAULT 0 NOT NULL,\n    created_at INTEGER NOT NULL,  -- Unix timestamp in milliseconds\n    updated_at INTEGER NOT NULL,  -- Unix timestamp in milliseconds\n    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,\n    UNIQUE(path, session_id, version)\n);\n\n-- Triggers\nCREATE TRIGGER IF NOT EXISTS update_sessions_updated_at\nAFTER UPDATE ON sessions\nBEGIN\nUPDATE sessions SET updated_at = strftime('%s', 'now')\nWHERE id = new.id;\nEND;\n\nCREATE TRIGGER IF NOT EXISTS update_messages_updated_at\nAFTER UPDATE ON messages\nBEGIN\nUPDATE messages SET updated_at = strftime('%s', 'now')\nWHERE id = new.id;\nEND;\n\nCREATE TRIGGER IF NOT EXISTS update_session_message_count_on_insert\nAFTER INSERT ON messages\nBEGIN\nUPDATE sessions SET\n    message_count = message_count + 1\nWHERE id = new.session_id;\nEND;\n\nCREATE TRIGGER IF NOT EXISTS update_session_message_count_on_delete\nAFTER DELETE ON messages\nBEGIN\nUPDATE sessions SET\n    message_count = message_count - 1\nWHERE id = old.session_id;\nEND;\n`\n\n\tif _, err := db.Exec(schema); err != nil {\n\t\treturn err\n\t}\n\n\treturn nil\n}\n\n// TestCreateSchema tests creating the complete database schema for tests",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCreateSchema_100": {
+      "name": "TestCreateSchema",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 119,
+      "content_hash": "9203a38c83fbcc9c1609f1a5804d93e1dbc6f108",
+      "content": "func TestCreateSchema(t *testing.T) {\n\tdb, err := sql.Open(\"sqlite3\", \":memory:\")\n\trequire.NoError(t, err)\n\tdefer db.Close()\n\n\terr = createTestSchema(db)\n\trequire.NoError(t, err)\n\n\t// Verify tables exist\n\tvar count int\n\terr = db.QueryRow(\"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='sessions'\").Scan(&count)\n\trequire.NoError(t, err)\n\trequire.Equal(t, 1, count)\n\n\terr = db.QueryRow(\"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='messages'\").Scan(&count)\n\trequire.NoError(t, err)\n\trequire.Equal(t, 1, count)\n}\n\n// TestNewCreateClose tests basic operations with queries",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewCreateClose_120": {
+      "name": "TestNewCreateClose",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 138,
+      "content_hash": "add321f960540378fc4792559d736054b90e4737",
+      "content": "func TestNewCreateClose(t *testing.T) {\n\tctx := context.Background()\n\n\tdb, err := sql.Open(\"sqlite3\", \":memory:\")\n\trequire.NoError(t, err)\n\tdefer db.Close()\n\n\terr = createTestSchema(db)\n\trequire.NoError(t, err)\n\n\t// Prepare queries\n\tq, err := Prepare(ctx, db)\n\trequire.NoError(t, err)\n\n\t// Test close\n\terr = q.Close()\n\trequire.NoError(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDatabaseOperations_139": {
+      "name": "TestDatabaseOperations",
+      "type": "function",
+      "start_line": 139,
+      "end_line": 184,
+      "content_hash": "9986f912f0283fe77f63a3c08683f49f340947d4",
+      "content": "func TestDatabaseOperations(t *testing.T) {\n\tctx := context.Background()\n\n\tdb, err := sql.Open(\"sqlite3\", \":memory:\")\n\trequire.NoError(t, err)\n\tdefer db.Close()\n\n\terr = createTestSchema(db)\n\trequire.NoError(t, err)\n\n\tq := New(db)\n\n\t// Create a session\n\tsession, err := q.CreateSession(ctx, CreateSessionParams{\n\t\tID:    \"test-session-1\",\n\t\tTitle: \"Test Session 1\",\n\t})\n\trequire.NoError(t, err)\n\trequire.Equal(t, \"test-session-1\", session.ID)\n\trequire.Equal(t, \"Test Session 1\", session.Title)\n\n\t// Get the session\n\tretrieved, err := q.GetSessionByID(ctx, session.ID)\n\trequire.NoError(t, err)\n\trequire.Equal(t, session.ID, retrieved.ID)\n\trequire.Equal(t, session.Title, retrieved.Title)\n\n\t// Create a message\n\tmessage, err := q.CreateMessage(ctx, CreateMessageParams{\n\t\tID:        \"test-message-1\",\n\t\tSessionID: session.ID,\n\t\tRole:      \"user\",\n\t\tParts:     \"Hello world\",\n\t})\n\trequire.NoError(t, err)\n\trequire.Equal(t, \"test-message-1\", message.ID)\n\trequire.Equal(t, session.ID, message.SessionID)\n\trequire.Equal(t, \"user\", message.Role)\n\trequire.Equal(t, \"Hello world\", message.Parts)\n\n\t// Get message\n\tretrievedMessage, err := q.GetMessage(ctx, message.ID)\n\trequire.NoError(t, err)\n\trequire.Equal(t, message.ID, retrievedMessage.ID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestQueries_PrepareWithNilDB_185": {
+      "name": "TestQueries_PrepareWithNilDB",
+      "type": "function",
+      "start_line": 185,
+      "end_line": 194,
+      "content_hash": "619fe04727bebc35f625dedc884e3359daf1864d",
+      "content": "func TestQueries_PrepareWithNilDB(t *testing.T) {\n\tctx := context.Background()\n\n\t// Test prepare with nil DB causes a panic, which is expected behavior\n\tassert.Panics(t, func() {\n\t\tvar nilDB *sql.DB\n\t\t_, _ = Prepare(ctx, nilDB)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSessionOperations_EdgeCases_195": {
+      "name": "TestSessionOperations_EdgeCases",
+      "type": "function",
+      "start_line": 195,
+      "end_line": 226,
+      "content_hash": "bb90918faf26623a9875386c487d4f12d84a9d5e",
+      "content": "func TestSessionOperations_EdgeCases(t *testing.T) {\n\tctx := context.Background()\n\n\tdb, err := sql.Open(\"sqlite3\", \":memory:\")\n\trequire.NoError(t, err)\n\tdefer db.Close()\n\n\terr = createTestSchema(db)\n\trequire.NoError(t, err)\n\n\tq := New(db)\n\n\t// Test session with special characters\n\tsessionParams := CreateSessionParams{\n\t\tID:    \"session-with-special-chars-123\",\n\t\tTitle: \"Session with 'quotes' and \\n newlines\",\n\t}\n\n\tsession, err := q.CreateSession(ctx, sessionParams)\n\trequire.NoError(t, err)\n\trequire.Equal(t, sessionParams.ID, session.ID)\n\n\t// Test update with special characters\n\tupdateParams := UpdateSessionParams{\n\t\tID:    session.ID,\n\t\tTitle: \"Updated title with \u7279\u6b8a characters\",\n\t}\n\n\t_, err = q.UpdateSession(ctx, updateParams)\n\trequire.NoError(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMessageOperations_EdgeCases_227": {
+      "name": "TestMessageOperations_EdgeCases",
+      "type": "function",
+      "start_line": 227,
+      "end_line": 268,
+      "content_hash": "ea7a128db2fe8056ee9a6a9dabd95309d69bf83b",
+      "content": "func TestMessageOperations_EdgeCases(t *testing.T) {\n\tctx := context.Background()\n\n\tdb, err := sql.Open(\"sqlite3\", \":memory:\")\n\trequire.NoError(t, err)\n\tdefer db.Close()\n\n\terr = createTestSchema(db)\n\trequire.NoError(t, err)\n\n\tq := New(db)\n\n\t// Create a session first\n\tsession, err := q.CreateSession(ctx, CreateSessionParams{\n\t\tID:    \"message-test-session\",\n\t\tTitle: \"Message Test Session\",\n\t})\n\trequire.NoError(t, err)\n\n\t// Test message with invalid JSON parts (should still store as string)\n\tmessageParams := CreateMessageParams{\n\t\tID:        \"invalid-json-message\",\n\t\tSessionID: session.ID,\n\t\tRole:      \"user\",\n\t\tParts:     \"Message with content\",\n\t}\n\n\t_, err = q.CreateMessage(ctx, messageParams)\n\trequire.NoError(t, err)\n\n\t// Test message with reasoning\n\tmessageParamsReasoning := CreateMessageParams{\n\t\tID:        \"reasoning-message\",\n\t\tSessionID: session.ID,\n\t\tRole:      \"assistant\",\n\t\tParts:     \"Final answer\",\n\t}\n\n\t_, err = q.CreateMessage(ctx, messageParamsReasoning)\n\trequire.NoError(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestLongContent_269": {
+      "name": "TestLongContent",
+      "type": "function",
+      "start_line": 269,
+      "end_line": 306,
+      "content_hash": "7c761ec99638943b30f0a5a0f2b8f1820762b8c5",
+      "content": "func TestLongContent(t *testing.T) {\n\tctx := context.Background()\n\n\tdb, err := sql.Open(\"sqlite3\", \":memory:\")\n\trequire.NoError(t, err)\n\tdefer db.Close()\n\n\terr = createTestSchema(db)\n\trequire.NoError(t, err)\n\n\tq := New(db)\n\n\t// Create a session\n\tsession, err := q.CreateSession(ctx, CreateSessionParams{\n\t\tID:    \"long-content-session\",\n\t\tTitle: \"Long Content Session\",\n\t})\n\trequire.NoError(t, err)\n\n\t// Test with very long content\n\tlongContent := strings.Repeat(\"This is a very long message content. \", 100)\n\n\tmessageParams := CreateMessageParams{\n\t\tID:        \"long-content-message\",\n\t\tSessionID: session.ID,\n\t\tRole:      \"user\",\n\t\tParts:     longContent,\n\t}\n\n\tmessage, err := q.CreateMessage(ctx, messageParams)\n\trequire.NoError(t, err)\n\trequire.Equal(t, longContent, message.Parts)\n\n\t// Verify we can retrieve it\n\tretrieved, err := q.GetMessage(ctx, message.ID)\n\trequire.NoError(t, err)\n\trequire.Equal(t, longContent, retrieved.Parts)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

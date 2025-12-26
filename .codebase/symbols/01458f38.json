@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/tests/traversal_tests/secondary_index_tests.rs",
+  "file_hash": "a135c9f1256fcf078382580ab20c7025066da589",
+  "updated_at": "2025-12-26T17:34:20.109338",
+  "symbols": {
+    "function_setup_indexed_db_26": {
+      "name": "setup_indexed_db",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 34,
+      "content_hash": "7c81d312fcf81ccfe7160b3fcb27426cdb0a2e13",
+      "content": "fn setup_indexed_db() -> (TempDir, Arc<HelixGraphStorage>) {\n    let temp_dir = TempDir::new().unwrap();\n    let db_path = temp_dir.path().to_str().unwrap();\n    let mut config = crate::helix_engine::traversal_core::config::Config::default();\n    config.graph_config.as_mut().unwrap().secondary_indices = Some(vec![\"name\".to_string()]);\n    let storage = HelixGraphStorage::new(db_path, config, Default::default()).unwrap();\n    (temp_dir, Arc::new(storage))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_to_result_iter_35": {
+      "name": "to_result_iter",
+      "type": "function",
+      "start_line": 35,
+      "end_line": 41,
+      "content_hash": "83f989364404e40e84c0889713515ae433a57dac",
+      "content": "fn to_result_iter(\n    values: Vec<TraversalValue>,\n) -> impl Iterator<Item = Result<TraversalValue, GraphError>> {\n    values.into_iter().map(Ok)\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_delete_node_with_secondary_index_42": {
+      "name": "test_delete_node_with_secondary_index",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 94,
+      "content_hash": "6b68f02a96455b5ada82dd2f99b908453c69e79e",
+      "content": "fn test_delete_node_with_secondary_index() {\n    let (_temp_dir, storage) = setup_indexed_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\n            \"person\",\n            props_option(&arena, props! { \"name\" => \"John\" }),\n            Some(&[\"name\"]),\n        )\n        .collect_to_obj().unwrap();\n    let node_id = node.id();\n\n    G::new_mut_from_iter(&storage, &mut txn, std::iter::once(node), &arena)\n        .update(&[(\"name\", Value::from(\"Jane\"))])\n        .collect_to_obj().unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let jane_nodes = G::new(&storage, &txn, &arena)\n        .n_from_index(\"person\", \"name\", &\"Jane\".to_string())\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    assert_eq!(jane_nodes.len(), 1);\n    assert_eq!(jane_nodes[0].id(), node_id);\n\n    let john_nodes = G::new(&storage, &txn, &arena)\n        .n_from_index(\"person\", \"name\", &\"John\".to_string())\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    assert!(john_nodes.is_empty());\n    drop(txn);\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_id(&node_id)\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    drop(txn);\n\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    Drop::drop_traversal(to_result_iter(traversal), storage.as_ref(), &mut txn).unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let node = G::new(&storage, &txn, &arena)\n        .n_from_index(\"person\", \"name\", &\"Jane\".to_string())\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    assert!(node.is_empty());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_update_of_secondary_indices_95": {
+      "name": "test_update_of_secondary_indices",
+      "type": "function",
+      "start_line": 95,
+      "end_line": 135,
+      "content_hash": "3dae838b6a4cac163cd47269c66b5f323565e905",
+      "content": "fn test_update_of_secondary_indices() {\n    let (_temp_dir, storage) = setup_indexed_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\n            \"person\",\n            props_option(&arena, props! { \"name\" => \"John\" }),\n            Some(&[\"name\"]),\n        )\n        .collect_to_obj().unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    G::new_mut_from_iter(&storage, &mut txn, std::iter::once(node), &arena)\n        .update(&[(\"name\", Value::from(\"Jane\"))])\n        .collect_to_obj().unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let nodes = G::new(&storage, &txn, &arena)\n        .n_from_index(\"person\", \"name\", &\"Jane\".to_string())\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    assert_eq!(nodes.len(), 1);\n    if let TraversalValue::Node(node) = &nodes[0] {\n        match node.properties.as_ref().unwrap().get(\"name\").unwrap() {\n            Value::String(name) => assert_eq!(name, \"Jane\"),\n            other => panic!(\"unexpected value: {other:?}\"),\n        }\n    } else {\n        panic!(\"expected node\");\n    }\n\n    let john_nodes = G::new(&storage, &txn, &arena)\n        .n_from_index(\"person\", \"name\", &\"John\".to_string())\n        .collect::<Result<Vec<_>,_>>().unwrap();\n    assert!(john_nodes.is_empty());\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

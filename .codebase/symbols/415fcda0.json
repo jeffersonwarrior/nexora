@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_gateway/builtin/node_connections.rs",
+  "file_hash": "9d1ac2faf56371d604051f12bbc721ac9febe427",
+  "updated_at": "2025-12-26T17:34:23.592316",
+  "symbols": {
+    "struct_NodeConnectionsQuery_24": {
+      "name": "NodeConnectionsQuery",
+      "type": "struct",
+      "start_line": 24,
+      "end_line": 57,
+      "content_hash": "e238a90ea0ced23dad137c40f7ff784ea17378b1",
+      "content": "pub struct NodeConnectionsQuery {\n    node_id: String,\n}\n\npub async fn node_connections_handler(\n    State(state): State<Arc<AppState>>,\n    Query(params): Query<NodeConnectionsQuery>,\n) -> axum::http::Response<Body> {\n    let mut req = protocol::request::Request {\n        name: \"node_connections\".to_string(),\n        req_type: RequestType::Query,\n        api_key: None,\n        body: axum::body::Bytes::new(),\n        in_fmt: protocol::Format::default(),\n        out_fmt: protocol::Format::default(),\n    };\n\n    if let Ok(params_json) = sonic_rs::to_vec(&json!({\n        \"node_id\": params.node_id\n    })) {\n        req.body = axum::body::Bytes::from(params_json);\n    }\n\n    let res = state.worker_pool.process(req).await;\n\n    match res {\n        Ok(r) => r.into_response(),\n        Err(e) => {\n            info!(?e, \"Got error\");\n            e.into_response()\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_node_connections_inner_58": {
+      "name": "node_connections_inner",
+      "type": "function",
+      "start_line": 58,
+      "end_line": 233,
+      "content_hash": "39da18e67d49391360d45353b1d7250d2006821f",
+      "content": "pub fn node_connections_inner(input: HandlerInput) -> Result<protocol::Response, GraphError> {\n    let db = Arc::clone(&input.graph.storage);\n    let txn = db.graph_env.read_txn().map_err(GraphError::from)?;\n    let arena = bumpalo::Bump::new();\n\n    let node_id_str = if !input.request.body.is_empty() {\n        match sonic_rs::from_slice::<sonic_rs::Value>(&input.request.body) {\n            Ok(params) => params\n                .get(\"node_id\")\n                .and_then(|v| v.as_str())\n                .map(|s| s.to_string()),\n            Err(_) => None,\n        }\n    } else {\n        None\n    };\n\n    let node_id_str =\n        node_id_str.ok_or_else(|| GraphError::New(\"node_id is required\".to_string()))?;\n\n    let node_id = if let Ok(uuid) = uuid::Uuid::parse_str(&node_id_str) {\n        uuid.as_u128()\n    } else if let Ok(num) = node_id_str.parse::<u128>() {\n        num\n    } else {\n        return Err(GraphError::New(\n            \"Invalid node_id format - must be UUID or u128\".to_string(),\n        ));\n    };\n\n    let mut connected_node_ids = HashSet::with_capacity(50);\n    let mut connected_nodes = Vec::with_capacity(50);\n\n    let incoming_edges = db\n        .in_edges_db\n        .prefix_iter(&txn, &node_id.to_be_bytes())?\n        .filter_map(|result| match result {\n            Ok((_, value)) => match HelixGraphStorage::unpack_adj_edge_data(value) {\n                Ok((edge_id, from_node)) => {\n                    if connected_node_ids.insert(from_node)\n                        && let Ok(node) = db.get_node(&txn, &from_node, &arena)\n                    {\n                        connected_nodes.push(TraversalValue::Node(node));\n                    }\n\n                    match db.get_edge(&txn, &edge_id, &arena) {\n                        Ok(edge) => Some(TraversalValue::Edge(edge)),\n                        Err(_) => None,\n                    }\n                }\n                Err(_) => None,\n            },\n            Err(_) => None,\n        })\n        .collect::<Vec<_>>();\n\n    let outgoing_edges = db\n        .out_edges_db\n        .prefix_iter(&txn, &node_id.to_be_bytes())?\n        .filter_map(|result| match result {\n            Ok((_, value)) => match HelixGraphStorage::unpack_adj_edge_data(value) {\n                Ok((edge_id, to_node)) => {\n                    if connected_node_ids.insert(to_node)\n                        && let Ok(node) = db.get_node(&txn, &to_node, &arena)\n                    {\n                        connected_nodes.push(TraversalValue::Node(node));\n                    }\n\n                    match db.get_edge(&txn, &edge_id, &arena) {\n                        Ok(edge) => Some(TraversalValue::Edge(edge)),\n                        Err(_) => None,\n                    }\n                }\n                Err(_) => None,\n            },\n            Err(_) => None,\n        })\n        .collect::<Vec<_>>();\n\n    let connected_nodes_json: Vec<sonic_rs::Value> = connected_nodes\n        .into_iter()\n        .filter_map(|tv| {\n            if let TraversalValue::Node(node) = tv {\n                let id_str = ID::from(node.id).stringify();\n                let mut node_json = json!({\n                    \"id\": id_str.clone(),\n                    \"label\": node.label,\n                    \"title\": id_str\n                });\n                if let Some(properties) = &node.properties {\n                    for (key, value) in properties.iter() {\n                        node_json[key] = sonic_rs::to_value(&value.inner_stringify())\n                            .unwrap_or_else(|_| sonic_rs::Value::from(\"\"));\n                    }\n                }\n                Some(node_json)\n            } else {\n                None\n            }\n        })\n        .collect();\n\n    let incoming_edges_json: Vec<sonic_rs::Value> = incoming_edges\n        .into_iter()\n        .filter_map(|tv| {\n            if let TraversalValue::Edge(edge) = tv {\n                Some(json!({\n                    \"id\": ID::from(edge.id).stringify(),\n                    \"from_node\": ID::from(edge.from_node).stringify(),\n                    \"to_node\": ID::from(edge.to_node).stringify(),\n                    \"label\": edge.label\n                }))\n            } else {\n                None\n            }\n        })\n        .collect();\n\n    let outgoing_edges_json: Vec<sonic_rs::Value> = outgoing_edges\n        .into_iter()\n        .filter_map(|tv| {\n            if let TraversalValue::Edge(edge) = tv {\n                Some(json!({\n                    \"id\": ID::from(edge.id).stringify(),\n                    \"from_node\": ID::from(edge.from_node).stringify(),\n                    \"to_node\": ID::from(edge.to_node).stringify(),\n                    \"label\": edge.label\n                }))\n            } else {\n                None\n            }\n        })\n        .collect();\n\n    let result = json!({\n        \"connected_nodes\": connected_nodes_json,\n        \"incoming_edges\": incoming_edges_json,\n        \"outgoing_edges\": outgoing_edges_json\n    });\n\n    Ok(protocol::Response {\n        body: sonic_rs::to_vec(&result).map_err(|e| GraphError::New(e.to_string()))?,\n        fmt: Default::default(),\n    })\n}\n\ninventory::submit! {\n    HandlerSubmission(\n        Handler::new(\"node_connections\", node_connections_inner, false)\n    )\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    use crate::{\n        helix_engine::{\n            storage_core::version_info::VersionInfo,\n            traversal_core::{\n                HelixGraphEngine, HelixGraphEngineOpts,\n                config::Config,\n                ops::{\n                    g::G,\n                    source::{add_e::AddEAdapter, add_n::AddNAdapter},\n                },\n            },\n        },\n        helix_gateway::router::router::HandlerInput,\n        helixc::generator::traversal_steps::EdgeType,\n        protocol::{Format, request::Request, request::RequestType},\n        utils::id::ID,\n    };\n    use axum::body::Bytes;\n    use std::sync::Arc;\n    use tempfile::TempDir;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setup_test_engine_234": {
+      "name": "setup_test_engine",
+      "type": "function",
+      "start_line": 234,
+      "end_line": 246,
+      "content_hash": "bc59db59deca98ae1700862874b6d2114ed21047",
+      "content": "    fn setup_test_engine() -> (HelixGraphEngine, TempDir) {\n        let temp_dir = TempDir::new().unwrap();\n        let db_path = temp_dir.path().to_str().unwrap();\n        let opts = HelixGraphEngineOpts {\n            path: db_path.to_string(),\n            config: Config::default(),\n            version_info: VersionInfo::default(),\n        };\n        let engine = HelixGraphEngine::new(opts).unwrap();\n        (engine, temp_dir)\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_node_connections_with_outgoing_247": {
+      "name": "test_node_connections_with_outgoing",
+      "type": "function",
+      "start_line": 247,
+      "end_line": 299,
+      "content_hash": "2ca8a0be6ded651a4ec8ff5c857e8ea67872d27d",
+      "content": "    fn test_node_connections_with_outgoing() -> Result<(), Box<dyn std::error::Error>> {\n        let (engine, _temp_dir) = setup_test_engine();\n        let mut txn = engine.storage.graph_env.write_txn().unwrap();\n        let arena = bumpalo::Bump::new();\n\n        let node1 = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_n(arena.alloc_str(\"person\"), None, None)\n            .collect_to_obj()?;\n\n        let node2 = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_n(arena.alloc_str(\"person\"), None, None)\n            .collect_to_obj()?;\n\n        let _edge = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_edge(\n                arena.alloc_str(\"knows\"),\n                None,\n                node1.id(),\n                node2.id(),\n                false,\n            )\n            .collect_to_obj()?;\n\n        txn.commit().unwrap();\n\n        let node_id_str = ID::from(node1.id()).stringify();\n        let params_json = sonic_rs::to_vec(&json!({\"node_id\": node_id_str})).unwrap();\n\n        let request = Request {\n            name: \"node_connections\".to_string(),\n            req_type: RequestType::Query,\n            api_key: None,\n            body: Bytes::from(params_json),\n            in_fmt: Format::Json,\n            out_fmt: Format::Json,\n        };\n\n        let input = HandlerInput {\n            graph: Arc::new(engine),\n            request,\n        };\n\n        let result = node_connections_inner(input);\n        assert!(result.is_ok());\n\n        let response = result.unwrap();\n        let body_str = String::from_utf8(response.body).unwrap();\n        assert!(body_str.contains(\"outgoing_edges\"));\n        assert!(body_str.contains(\"connected_nodes\"));\n        Ok(())\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_node_connections_with_incoming_300": {
+      "name": "test_node_connections_with_incoming",
+      "type": "function",
+      "start_line": 300,
+      "end_line": 351,
+      "content_hash": "a937b212dc04842935bead8646a2be1e2d2ea58c",
+      "content": "    fn test_node_connections_with_incoming() -> Result<(), Box<dyn std::error::Error>> {\n        let (engine, _temp_dir) = setup_test_engine();\n        let mut txn = engine.storage.graph_env.write_txn().unwrap();\n        let arena = bumpalo::Bump::new();\n\n        let node1 = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_n(arena.alloc_str(\"person\"), None, None)\n            .collect_to_obj()?;\n\n        let node2 = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_n(arena.alloc_str(\"person\"), None, None)\n            .collect_to_obj()?;\n\n        let _edge = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_edge(\n                arena.alloc_str(\"knows\"),\n                None,\n                node1.id(),\n                node2.id(),\n                false,\n            )\n            .collect_to_obj()?;\n\n        txn.commit().unwrap();\n\n        let node_id_str = ID::from(node2.id()).stringify();\n        let params_json = sonic_rs::to_vec(&json!({\"node_id\": node_id_str})).unwrap();\n\n        let request = Request {\n            name: \"node_connections\".to_string(),\n            req_type: RequestType::Query,\n            api_key: None,\n            body: Bytes::from(params_json),\n            in_fmt: Format::Json,\n            out_fmt: Format::Json,\n        };\n\n        let input = HandlerInput {\n            graph: Arc::new(engine),\n            request,\n        };\n\n        let result = node_connections_inner(input);\n        assert!(result.is_ok());\n\n        let response = result.unwrap();\n        let body_str = String::from_utf8(response.body).unwrap();\n        assert!(body_str.contains(\"incoming_edges\"));\n        Ok(())\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_node_connections_no_connections_352": {
+      "name": "test_node_connections_no_connections",
+      "type": "function",
+      "start_line": 352,
+      "end_line": 391,
+      "content_hash": "22d861108b83def4f1add2885e7b9bc32b65069f",
+      "content": "    fn test_node_connections_no_connections() -> Result<(), Box<dyn std::error::Error>> {\n        let (engine, _temp_dir) = setup_test_engine();\n        let mut txn = engine.storage.graph_env.write_txn().unwrap();\n        let arena = bumpalo::Bump::new();\n\n        let node = G::new_mut(&engine.storage, &arena, &mut txn)\n            .add_n(arena.alloc_str(\"person\"), None, None)\n            .collect_to_obj()?;\n\n        txn.commit().unwrap();\n\n        let node_id_str = ID::from(node.id()).stringify();\n        let params_json = sonic_rs::to_vec(&json!({\"node_id\": node_id_str})).unwrap();\n\n        let request = Request {\n            name: \"node_connections\".to_string(),\n            req_type: RequestType::Query,\n            api_key: None,\n            body: Bytes::from(params_json),\n            in_fmt: Format::Json,\n            out_fmt: Format::Json,\n        };\n\n        let input = HandlerInput {\n            graph: Arc::new(engine),\n            request,\n        };\n\n        let result = node_connections_inner(input);\n        assert!(result.is_ok());\n\n        let response = result.unwrap();\n        let body_str = String::from_utf8(response.body).unwrap();\n        assert!(body_str.contains(\"connected_nodes\"));\n        assert!(body_str.contains(\"incoming_edges\"));\n        assert!(body_str.contains(\"outgoing_edges\"));\n        Ok(())\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_node_connections_invalid_id_392": {
+      "name": "test_node_connections_invalid_id",
+      "type": "function",
+      "start_line": 392,
+      "end_line": 415,
+      "content_hash": "74f1f96cb2555acb8242f603e79e19813f64b624",
+      "content": "    fn test_node_connections_invalid_id() {\n        let (engine, _temp_dir) = setup_test_engine();\n\n        let params_json = sonic_rs::to_vec(&json!({\"node_id\": \"invalid\"})).unwrap();\n\n        let request = Request {\n            name: \"node_connections\".to_string(),\n            req_type: RequestType::Query,\n            api_key: None,\n            body: Bytes::from(params_json),\n            in_fmt: Format::Json,\n            out_fmt: Format::Json,\n        };\n\n        let input = HandlerInput {\n            graph: Arc::new(engine),\n            request,\n        };\n\n        let result = node_connections_inner(input);\n        assert!(result.is_err());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_node_connections_missing_node_id_416": {
+      "name": "test_node_connections_missing_node_id",
+      "type": "function",
+      "start_line": 416,
+      "end_line": 436,
+      "content_hash": "4589ef45cbe852cb35cc53903db61e51c5856c7e",
+      "content": "    fn test_node_connections_missing_node_id() {\n        let (engine, _temp_dir) = setup_test_engine();\n\n        let request = Request {\n            name: \"node_connections\".to_string(),\n            req_type: RequestType::Query,\n            api_key: None,\n            body: Bytes::new(),\n            in_fmt: Format::Json,\n            out_fmt: Format::Json,\n        };\n\n        let input = HandlerInput {\n            graph: Arc::new(engine),\n            request,\n        };\n\n        let result = node_connections_inner(input);\n        assert!(result.is_err());\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

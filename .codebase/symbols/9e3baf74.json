@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/bug-report/cli.ts",
+  "file_hash": "8b1850f58d76d193d2c5bcc035fb163194311ff0",
+  "updated_at": "2025-12-26T17:34:23.439016",
+  "symbols": {
+    "function_parseArgs_21": {
+      "name": "parseArgs",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 51,
+      "content_hash": "5132a8fb33bf99acdde7dab938348f5601ac04cc",
+      "content": "function parseArgs(): CliArgs {\n  const args = process.argv.slice(2);\n  const parsed: CliArgs = {\n    verbose: false,\n    noLogs: false,\n    help: false,\n  };\n\n  for (let i = 0; i < args.length; i++) {\n    const arg = args[i];\n    switch (arg) {\n      case \"-h\":\n      case \"--help\":\n        parsed.help = true;\n        break;\n      case \"-v\":\n      case \"--verbose\":\n        parsed.verbose = true;\n        break;\n      case \"--no-logs\":\n        parsed.noLogs = true;\n        break;\n      case \"-o\":\n      case \"--output\":\n        parsed.output = args[++i];\n        break;\n    }\n  }\n\n  return parsed;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_printHelp_53": {
+      "name": "printHelp",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 86,
+      "content_hash": "10d2cce2048212af529adcec58a57a8da42537bd",
+      "content": "function printHelp(): void {\n  console.log(`\nbug-report - Generate bug reports for claude-mem\n\nUSAGE:\n  npm run bug-report [options]\n\nOPTIONS:\n  -o, --output <file>    Save report to file (default: stdout + timestamped file)\n  -v, --verbose          Show all collected diagnostics\n  --no-logs              Skip log collection (for privacy)\n  -h, --help             Show this help message\n\nDESCRIPTION:\n  This script collects system diagnostics, prompts you for issue details,\n  and generates a formatted GitHub issue for claude-mem using the Claude Agent SDK.\n\n  The generated report will be saved to ~/bug-report-YYYY-MM-DD-HHMMSS.md\n  and displayed in your terminal for easy copy-pasting to GitHub.\n\nEXAMPLES:\n  # Generate a bug report interactively\n  npm run bug-report\n\n  # Generate without including logs (for privacy)\n  npm run bug-report --no-logs\n\n  # Save to a specific file\n  npm run bug-report --output ~/my-bug-report.md\n\n  # Show all diagnostic details during collection\n  npm run bug-report --verbose\n`);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_promptUser_88": {
+      "name": "promptUser",
+      "type": "function",
+      "start_line": 88,
+      "end_line": 100,
+      "content_hash": "78f5b0cb60dd039e2c7f326d273ac67babcfc93d",
+      "content": "async function promptUser(question: string): Promise<string> {\n  const rl = readline.createInterface({\n    input: process.stdin,\n    output: process.stdout,\n  });\n\n  return new Promise((resolve) => {\n    rl.question(question, (answer) => {\n      rl.close();\n      resolve(answer.trim());\n    });\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_promptMultiline_102": {
+      "name": "promptMultiline",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 129,
+      "content_hash": "7d1046d5f45083b38b0a32c7405d429e6b752fc0",
+      "content": "async function promptMultiline(prompt: string): Promise<string> {\n  console.log(prompt);\n  console.log(\"(Press Enter on an empty line to finish)\\n\");\n\n  const rl = readline.createInterface({\n    input: process.stdin,\n    output: process.stdout,\n  });\n\n  const lines: string[] = [];\n\n  return new Promise((resolve) => {\n    rl.on(\"line\", (line) => {\n      // Empty line means we're done\n      if (line.trim() === \"\" && lines.length > 0) {\n        rl.close();\n        resolve(lines.join(\"\\n\"));\n      } else if (line.trim() !== \"\") {\n        // Only add non-empty lines (or preserve empty lines in the middle)\n        lines.push(line);\n      }\n    });\n\n    rl.on(\"close\", () => {\n      resolve(lines.join(\"\\n\"));\n    });\n  });\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_131": {
+      "name": "main",
+      "type": "function",
+      "start_line": 131,
+      "end_line": 270,
+      "content_hash": "f6fe2bfffcac72ab33b666c7a0a44041d9863c24",
+      "content": "async function main() {\n  const args = parseArgs();\n\n  if (args.help) {\n    printHelp();\n    process.exit(0);\n  }\n\n  console.log(\"\ud83c\udf0e Leave report in ANY language, and it will auto translate to English\\n\");\n  console.log(\"\ud83d\udd0d Collecting system diagnostics...\");\n\n  // Collect diagnostics\n  const diagnostics = await collectDiagnostics({\n    includeLogs: !args.noLogs,\n  });\n\n  console.log(\"\u2713 Version information collected\");\n  console.log(\"\u2713 Platform details collected\");\n  console.log(\"\u2713 Worker status checked\");\n  if (!args.noLogs) {\n    console.log(\n      `\u2713 Logs extracted (last ${diagnostics.logs.workerLog.length + diagnostics.logs.silentLog.length} lines)`\n    );\n  }\n  console.log(\"\u2713 Configuration loaded\\n\");\n\n  // Show summary\n  console.log(\"\ud83d\udccb System Summary:\");\n  console.log(`   Claude-mem: v${diagnostics.versions.claudeMem}`);\n  console.log(`   Claude Code: ${diagnostics.versions.claudeCode}`);\n  console.log(\n    `   Platform: ${diagnostics.platform.osVersion} (${diagnostics.platform.arch})`\n  );\n  console.log(\n    `   Worker: ${diagnostics.worker.running ? `Running (PID ${diagnostics.worker.pid}, port ${diagnostics.worker.port})` : \"Not running\"}\\n`\n  );\n\n  if (args.verbose) {\n    console.log(\"\ud83d\udcca Detailed Diagnostics:\");\n    console.log(JSON.stringify(diagnostics, null, 2));\n    console.log();\n  }\n\n  // Prompt for issue details\n  const issueDescription = await promptMultiline(\n    \"Please describe the issue you're experiencing:\"\n  );\n\n  if (!issueDescription.trim()) {\n    console.error(\"\u274c Issue description is required\");\n    process.exit(1);\n  }\n\n  console.log();\n  const expectedBehavior = await promptMultiline(\n    \"Expected behavior (leave blank to skip):\"\n  );\n\n  console.log();\n  const stepsToReproduce = await promptMultiline(\n    \"Steps to reproduce (leave blank to skip):\"\n  );\n\n  console.log();\n  const confirm = await promptUser(\n    \"Generate bug report? (y/n): \"\n  );\n\n  if (confirm.toLowerCase() !== \"y\" && confirm.toLowerCase() !== \"yes\") {\n    console.log(\"\u274c Bug report generation cancelled\");\n    process.exit(0);\n  }\n\n  console.log(\"\\n\ud83e\udd16 Generating bug report with Claude...\");\n\n  // Generate the bug report\n  const result = await generateBugReport({\n    issueDescription,\n    expectedBehavior: expectedBehavior.trim() || undefined,\n    stepsToReproduce: stepsToReproduce.trim() || undefined,\n    includeLogs: !args.noLogs,\n  });\n\n  if (!result.success) {\n    console.error(\"\u274c Failed to generate bug report:\", result.error);\n    process.exit(1);\n  }\n\n  console.log(\"\u2713 Issue formatted successfully\\n\");\n\n  // Generate output file path\n  const timestamp = new Date()\n    .toISOString()\n    .replace(/:/g, \"\")\n    .replace(/\\..+/, \"\")\n    .replace(\"T\", \"-\");\n  const defaultOutputPath = path.join(\n    os.homedir(),\n    `bug-report-${timestamp}.md`\n  );\n  const outputPath = args.output || defaultOutputPath;\n\n  // Save to file\n  await fs.writeFile(outputPath, result.body, \"utf-8\");\n\n  // Build GitHub URL with pre-filled title and body\n  const encodedTitle = encodeURIComponent(result.title);\n  const encodedBody = encodeURIComponent(result.body);\n  const githubUrl = `https://github.com/thedotmack/claude-mem/issues/new?title=${encodedTitle}&body=${encodedBody}`;\n\n  // Display the report\n  console.log(\"\u2500\".repeat(60));\n  console.log(\"\ud83d\udccb BUG REPORT GENERATED\");\n  console.log(\"\u2500\".repeat(60));\n  console.log();\n  console.log(result.body);\n  console.log();\n  console.log(\"\u2500\".repeat(60));\n  console.log(\"Suggested labels: bug, needs-triage\");\n  console.log(`Report saved to: ${outputPath}`);\n  console.log(\"\u2500\".repeat(60));\n  console.log();\n\n  // Open GitHub issue in browser\n  console.log(\"\ud83c\udf10 Opening GitHub issue form in your browser...\");\n  try {\n    const openCommand =\n      process.platform === \"darwin\"\n        ? \"open\"\n        : process.platform === \"win32\"\n          ? \"start\"\n          : \"xdg-open\";\n\n    await execAsync(`${openCommand} \"${githubUrl}\"`);\n    console.log(\"\u2713 Browser opened successfully\");\n  } catch (error) {\n    console.error(\"\u274c Failed to open browser. Please visit:\");\n    console.error(githubUrl);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

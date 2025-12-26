@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/tui/exp/list/filterable.go",
+  "file_hash": "958f966eaf09607a15493aa59cf49020a4120dc6",
+  "updated_at": "2025-12-26T17:34:24.240086",
+  "symbols": {
+    "interface_FilterableItem_20": {
+      "name": "FilterableItem",
+      "type": "interface",
+      "start_line": 20,
+      "end_line": 34,
+      "content_hash": "12d088631d4c49d49707ced1b826d642308d43c9",
+      "content": "type FilterableItem interface {\n\tItem\n\tFilterValue() string\n}\n\ntype FilterableList[T FilterableItem] interface {\n\tList[T]\n\tCursor() *tea.Cursor\n\tSetInputWidth(int)\n\tSetInputPlaceholder(string)\n\tSetResultsSize(int)\n\tFilter(q string) tea.Cmd\n\tfuzzy.Source\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_HasMatchIndexes_35": {
+      "name": "HasMatchIndexes",
+      "type": "interface",
+      "start_line": 35,
+      "end_line": 38,
+      "content_hash": "56cd7bb8e9af3547bfa20b4d77bfc46eb1495e3b",
+      "content": "type HasMatchIndexes interface {\n\tMatchIndexes([]int)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_filterableOptions_39": {
+      "name": "filterableOptions",
+      "type": "struct",
+      "start_line": 39,
+      "end_line": 59,
+      "content_hash": "d45aabfaa10f70006dbc734f1d76538260461935",
+      "content": "type filterableOptions struct {\n\tlistOptions []ListOption\n\tplaceholder string\n\tinputHidden bool\n\tinputWidth  int\n\tinputStyle  lipgloss.Style\n}\ntype filterableList[T FilterableItem] struct {\n\t*list[T]\n\t*filterableOptions\n\twidth, height int\n\t// stores all available items\n\titems       []T\n\tresultsSize int\n\tinput       textinput.Model\n\tinputWidth  int\n\tquery       string\n}\n\ntype filterableListOption func(*filterableOptions)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithFilterPlaceholder_60": {
+      "name": "WithFilterPlaceholder",
+      "type": "function",
+      "start_line": 60,
+      "end_line": 65,
+      "content_hash": "fafd052fd75aac6fa727bc2a29bf01ac24562027",
+      "content": "func WithFilterPlaceholder(ph string) filterableListOption {\n\treturn func(f *filterableOptions) {\n\t\tf.placeholder = ph\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithFilterInputHidden_66": {
+      "name": "WithFilterInputHidden",
+      "type": "function",
+      "start_line": 66,
+      "end_line": 71,
+      "content_hash": "5594eabad873589ac7104a6822fac8be826f8d8e",
+      "content": "func WithFilterInputHidden() filterableListOption {\n\treturn func(f *filterableOptions) {\n\t\tf.inputHidden = true\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithFilterInputStyle_72": {
+      "name": "WithFilterInputStyle",
+      "type": "function",
+      "start_line": 72,
+      "end_line": 77,
+      "content_hash": "582866d848019b919045723d8377d68658c914e2",
+      "content": "func WithFilterInputStyle(inputStyle lipgloss.Style) filterableListOption {\n\treturn func(f *filterableOptions) {\n\t\tf.inputStyle = inputStyle\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithFilterListOptions_78": {
+      "name": "WithFilterListOptions",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 83,
+      "content_hash": "5ddc73836b6a018eeb01e71ed6174189dddc19d0",
+      "content": "func WithFilterListOptions(opts ...ListOption) filterableListOption {\n\treturn func(f *filterableOptions) {\n\t\tf.listOptions = opts\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_WithFilterInputWidth_84": {
+      "name": "WithFilterInputWidth",
+      "type": "function",
+      "start_line": 84,
+      "end_line": 329,
+      "content_hash": "8d24fd47dc84d8b748af4a272fa61fc4a5a81baa",
+      "content": "func WithFilterInputWidth(inputWidth int) filterableListOption {\n\treturn func(f *filterableOptions) {\n\t\tf.inputWidth = inputWidth\n\t}\n}\n\nfunc NewFilterableList[T FilterableItem](items []T, opts ...filterableListOption) FilterableList[T] {\n\tt := styles.CurrentTheme()\n\n\tf := &filterableList[T]{\n\t\tfilterableOptions: &filterableOptions{\n\t\t\tinputStyle:  t.S().Base,\n\t\t\tplaceholder: \"Type to filter\",\n\t\t},\n\t}\n\tfor _, opt := range opts {\n\t\topt(f.filterableOptions)\n\t}\n\tf.list = New(items, f.listOptions...).(*list[T])\n\n\tf.updateKeyMaps()\n\tf.items = f.list.items\n\n\tif f.inputHidden {\n\t\treturn f\n\t}\n\n\tti := textinput.New()\n\tti.Placeholder = f.placeholder\n\tti.SetVirtualCursor(false)\n\tti.Focus()\n\tti.SetStyles(t.S().TextInput)\n\tf.input = ti\n\treturn f\n}\n\nfunc (f *filterableList[T]) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase tea.KeyPressMsg:\n\t\tswitch {\n\t\t// handle movements\n\t\tcase key.Matches(msg, f.keyMap.Down),\n\t\t\tkey.Matches(msg, f.keyMap.Up),\n\t\t\tkey.Matches(msg, f.keyMap.DownOneItem),\n\t\t\tkey.Matches(msg, f.keyMap.UpOneItem),\n\t\t\tkey.Matches(msg, f.keyMap.HalfPageDown),\n\t\t\tkey.Matches(msg, f.keyMap.HalfPageUp),\n\t\t\tkey.Matches(msg, f.keyMap.PageDown),\n\t\t\tkey.Matches(msg, f.keyMap.PageUp),\n\t\t\tkey.Matches(msg, f.keyMap.End),\n\t\t\tkey.Matches(msg, f.keyMap.Home):\n\t\t\tu, cmd := f.list.Update(msg)\n\t\t\tf.list = u.(*list[T])\n\t\t\treturn f, cmd\n\t\tdefault:\n\t\t\tif !f.inputHidden {\n\t\t\t\tvar cmds []tea.Cmd\n\t\t\t\tvar cmd tea.Cmd\n\t\t\t\tf.input, cmd = f.input.Update(msg)\n\t\t\t\tcmds = append(cmds, cmd)\n\n\t\t\t\tif f.query != f.input.Value() {\n\t\t\t\t\tcmd = f.Filter(f.input.Value())\n\t\t\t\t\tcmds = append(cmds, cmd)\n\t\t\t\t}\n\t\t\t\tf.query = f.input.Value()\n\t\t\t\treturn f, tea.Batch(cmds...)\n\t\t\t}\n\t\t}\n\t}\n\tu, cmd := f.list.Update(msg)\n\tf.list = u.(*list[T])\n\treturn f, cmd\n}\n\nfunc (f *filterableList[T]) View() string {\n\tif f.inputHidden {\n\t\treturn f.list.View()\n\t}\n\n\treturn lipgloss.JoinVertical(\n\t\tlipgloss.Left,\n\t\tf.inputStyle.Render(f.input.View()),\n\t\tf.list.View(),\n\t)\n}\n\n// removes bindings that are used for search\nfunc (f *filterableList[T]) updateKeyMaps() {\n\tremoveLettersAndNumbers := func(bindings []string) []string {\n\t\tvar keep []string\n\t\tfor _, b := range bindings {\n\t\t\tif len(b) != 1 {\n\t\t\t\tkeep = append(keep, b)\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tif b == \" \" {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tm := alphanumericRegex.MatchString(b)\n\t\t\tif !m {\n\t\t\t\tkeep = append(keep, b)\n\t\t\t}\n\t\t}\n\t\treturn keep\n\t}\n\n\tupdateBinding := func(binding key.Binding) key.Binding {\n\t\tnewKeys := removeLettersAndNumbers(binding.Keys())\n\t\tif len(newKeys) == 0 {\n\t\t\tbinding.SetEnabled(false)\n\t\t\treturn binding\n\t\t}\n\t\tbinding.SetKeys(newKeys...)\n\t\treturn binding\n\t}\n\n\tf.keyMap.Down = updateBinding(f.keyMap.Down)\n\tf.keyMap.Up = updateBinding(f.keyMap.Up)\n\tf.keyMap.DownOneItem = updateBinding(f.keyMap.DownOneItem)\n\tf.keyMap.UpOneItem = updateBinding(f.keyMap.UpOneItem)\n\tf.keyMap.HalfPageDown = updateBinding(f.keyMap.HalfPageDown)\n\tf.keyMap.HalfPageUp = updateBinding(f.keyMap.HalfPageUp)\n\tf.keyMap.PageDown = updateBinding(f.keyMap.PageDown)\n\tf.keyMap.PageUp = updateBinding(f.keyMap.PageUp)\n\tf.keyMap.End = updateBinding(f.keyMap.End)\n\tf.keyMap.Home = updateBinding(f.keyMap.Home)\n}\n\nfunc (m *filterableList[T]) GetSize() (int, int) {\n\treturn m.width, m.height\n}\n\nfunc (f *filterableList[T]) SetSize(w, h int) tea.Cmd {\n\tf.width = w\n\tf.height = h\n\tif f.inputHidden {\n\t\treturn f.list.SetSize(w, h)\n\t}\n\tif f.inputWidth == 0 {\n\t\tf.input.SetWidth(w)\n\t} else {\n\t\tf.input.SetWidth(f.inputWidth)\n\t}\n\treturn f.list.SetSize(w, h-(f.inputHeight()))\n}\n\nfunc (f *filterableList[T]) inputHeight() int {\n\treturn lipgloss.Height(f.inputStyle.Render(f.input.View()))\n}\n\nfunc (f *filterableList[T]) Filter(query string) tea.Cmd {\n\tvar cmds []tea.Cmd\n\tfor _, item := range f.items {\n\t\tif i, ok := any(item).(core.Focusable); ok {\n\t\t\tcmds = append(cmds, i.Blur())\n\t\t}\n\t\tif i, ok := any(item).(HasMatchIndexes); ok {\n\t\t\ti.MatchIndexes(make([]int, 0))\n\t\t}\n\t}\n\n\tf.selectedItemIdx = -1\n\tif query == \"\" || len(f.items) == 0 {\n\t\treturn f.list.SetItems(f.visibleItems(f.items))\n\t}\n\n\tmatches := fuzzy.FindFrom(query, f)\n\n\tvar matchedItems []T\n\tresultSize := len(matches)\n\tif f.resultsSize > 0 && resultSize > f.resultsSize {\n\t\tresultSize = f.resultsSize\n\t}\n\tfor i := range resultSize {\n\t\tmatch := matches[i]\n\t\titem := f.items[match.Index]\n\t\tif it, ok := any(item).(HasMatchIndexes); ok {\n\t\t\tit.MatchIndexes(match.MatchedIndexes)\n\t\t}\n\t\tmatchedItems = append(matchedItems, item)\n\t}\n\n\tif f.direction == DirectionBackward {\n\t\tslices.Reverse(matchedItems)\n\t}\n\n\tcmds = append(cmds, f.list.SetItems(matchedItems))\n\treturn tea.Batch(cmds...)\n}\n\nfunc (f *filterableList[T]) SetItems(items []T) tea.Cmd {\n\tf.items = items\n\treturn f.list.SetItems(f.visibleItems(items))\n}\n\nfunc (f *filterableList[T]) Cursor() *tea.Cursor {\n\tif f.inputHidden {\n\t\treturn nil\n\t}\n\treturn f.input.Cursor()\n}\n\nfunc (f *filterableList[T]) Blur() tea.Cmd {\n\tf.input.Blur()\n\treturn f.list.Blur()\n}\n\nfunc (f *filterableList[T]) Focus() tea.Cmd {\n\tf.input.Focus()\n\treturn f.list.Focus()\n}\n\nfunc (f *filterableList[T]) IsFocused() bool {\n\treturn f.list.IsFocused()\n}\n\nfunc (f *filterableList[T]) SetInputWidth(w int) {\n\tf.inputWidth = w\n}\n\nfunc (f *filterableList[T]) SetInputPlaceholder(ph string) {\n\tf.placeholder = ph\n}\n\nfunc (f *filterableList[T]) SetResultsSize(size int) {\n\tf.resultsSize = size\n}\n\nfunc (f *filterableList[T]) String(i int) string {\n\treturn f.items[i].FilterValue()\n}\n\nfunc (f *filterableList[T]) Len() int {\n\treturn len(f.items)\n}\n\n// visibleItems returns the subset of items that should be rendered based on\n// the configured resultsSize limit. The underlying source (f.items) remains\n// intact so filtering still searches the full set.\nfunc (f *filterableList[T]) visibleItems(items []T) []T {\n\tif f.resultsSize > 0 && len(items) > f.resultsSize {\n\t\treturn items[:f.resultsSize]\n\t}\n\treturn items\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

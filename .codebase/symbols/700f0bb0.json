@@ -1,0 +1,293 @@
+{
+  "file_path": "/work/internal/tui/page/chat/chat.go",
+  "file_hash": "34645108a8a05db7d3e98946379dccfc13ab20b8",
+  "updated_at": "2025-12-26T17:34:21.203062",
+  "symbols": {
+    "interface_ChatPage_78": {
+      "name": "ChatPage",
+      "type": "interface",
+      "start_line": 78,
+      "end_line": 84,
+      "content_hash": "7b57a80049a9dc9b9cc78c9b7e6efc80b0c86a95",
+      "content": "type ChatPage interface {\n\tutil.Model\n\tlayout.Help\n\tIsChatFocused() bool\n}\n\n// cancelTimerCmd creates a command that expires the cancel timer",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cancelTimerCmd_85": {
+      "name": "cancelTimerCmd",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 90,
+      "content_hash": "3767e0b00c94b7d5a0d216c1d193d9b1521a6419",
+      "content": "func cancelTimerCmd() tea.Cmd {\n\treturn tea.Tick(CancelTimerDuration, func(time.Time) tea.Msg {\n\t\treturn CancelTimerExpiredMsg{}\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_chatPage_91": {
+      "name": "chatPage",
+      "type": "struct",
+      "start_line": 91,
+      "end_line": 120,
+      "content_hash": "c788855eb2761b904e5f9c746dcac2a2fa108548",
+      "content": "type chatPage struct {\n\twidth, height               int\n\tdetailsWidth, detailsHeight int\n\tapp                         *app.App\n\tkeyboardEnhancements        tea.KeyboardEnhancementsMsg\n\n\t// Layout state\n\tcompact      bool\n\tforceCompact bool\n\tfocusedPane  PanelType\n\n\t// Session\n\tsession session.Session\n\tkeyMap  KeyMap\n\n\t// Components\n\theader  header.Header\n\tsidebar sidebar.Sidebar\n\tchat    chat.MessageListCmp\n\teditor  editor.Editor\n\tsplash  splash.Splash\n\n\t// Simple state flags\n\tshowingDetails   bool\n\tisCanceling      bool\n\tsplashFullScreen bool\n\tisOnboarding     bool\n\tisProjectInit    bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_New_121": {
+      "name": "New",
+      "type": "function",
+      "start_line": 121,
+      "end_line": 133,
+      "content_hash": "3bfd5865524f529f49bc2e9e26dd391635ef21fb",
+      "content": "func New(app *app.App) ChatPage {\n\treturn &chatPage{\n\t\tapp:         app,\n\t\tkeyMap:      DefaultKeyMap(),\n\t\theader:      header.New(app.LSPClients),\n\t\tsidebar:     sidebar.New(app.History, app.LSPClients, false),\n\t\tchat:        chat.New(app),\n\t\teditor:      editor.New(app),\n\t\tsplash:      splash.New(),\n\t\tfocusedPane: PanelTypeSplash,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_134": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 134,
+      "end_line": 167,
+      "content_hash": "4eb5ded1c1e15fdbb105bf2a4a57aa0330871a15",
+      "content": "func (p *chatPage) Init() tea.Cmd {\n\tcfg := config.Get()\n\tcompact := cfg.Options.TUI.CompactMode\n\tp.compact = compact\n\tp.forceCompact = compact\n\tp.sidebar.SetCompactMode(p.compact)\n\n\t// Set splash state based on config\n\tif !config.HasInitialDataConfig() {\n\t\t// First-time setup: show model selection\n\t\tp.splash.SetOnboarding(true)\n\t\tp.isOnboarding = true\n\t\tp.splashFullScreen = true\n\t} else if b, _ := config.ProjectNeedsInitialization(); b {\n\t\t// Project needs context initialization\n\t\tp.splash.SetProjectInit(true)\n\t\tp.isProjectInit = true\n\t\tp.splashFullScreen = true\n\t} else {\n\t\t// Ready to chat: focus editor, splash in background\n\t\tp.focusedPane = PanelTypeEditor\n\t\tp.splashFullScreen = false\n\t}\n\n\treturn tea.Batch(\n\t\tp.header.Init(),\n\t\tp.sidebar.Init(),\n\t\tp.chat.Init(),\n\t\tp.editor.Init(),\n\t\tp.splash.Init(),\n\t)\n}\n\n// Context for chat page operations - using background context for UI-driven operations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_168": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 168,
+      "end_line": 463,
+      "content_hash": "a97024d7132403ce78fab7d6d41872f6b9a1b86a",
+      "content": "func (p *chatPage) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tctx := context.Background()\n\tvar cmds []tea.Cmd\n\tswitch msg := msg.(type) {\n\tcase tea.KeyboardEnhancementsMsg:\n\t\tp.keyboardEnhancements = msg\n\t\treturn p, nil\n\tcase tea.MouseWheelMsg:\n\t\tif p.compact {\n\t\t\tmsg.Y -= 1\n\t\t}\n\t\tif p.isMouseOverChat(msg.X, msg.Y) {\n\t\t\tu, cmd := p.chat.Update(msg)\n\t\t\tp.chat = u.(chat.MessageListCmp)\n\t\t\treturn p, cmd\n\t\t}\n\t\treturn p, nil\n\tcase tea.MouseClickMsg:\n\t\tif p.isOnboarding || p.isProjectInit {\n\t\t\treturn p, nil\n\t\t}\n\t\tif p.compact {\n\t\t\tmsg.Y -= 1\n\t\t}\n\t\tif p.isMouseOverChat(msg.X, msg.Y) {\n\t\t\tp.focusedPane = PanelTypeChat\n\t\t\tp.chat.Focus()\n\t\t\tp.editor.Blur()\n\t\t} else {\n\t\t\tp.focusedPane = PanelTypeEditor\n\t\t\tp.editor.Focus()\n\t\t\tp.chat.Blur()\n\t\t}\n\t\tu, cmd := p.chat.Update(msg)\n\t\tp.chat = u.(chat.MessageListCmp)\n\t\treturn p, cmd\n\tcase tea.MouseMotionMsg:\n\t\tif p.compact {\n\t\t\tmsg.Y -= 1\n\t\t}\n\t\tif msg.Button == tea.MouseLeft {\n\t\t\tu, cmd := p.chat.Update(msg)\n\t\t\tp.chat = u.(chat.MessageListCmp)\n\t\t\treturn p, cmd\n\t\t}\n\t\treturn p, nil\n\tcase tea.MouseReleaseMsg:\n\t\tif p.isOnboarding || p.isProjectInit {\n\t\t\treturn p, nil\n\t\t}\n\t\tif p.compact {\n\t\t\tmsg.Y -= 1\n\t\t}\n\t\tif msg.Button == tea.MouseLeft {\n\t\t\tu, cmd := p.chat.Update(msg)\n\t\t\tp.chat = u.(chat.MessageListCmp)\n\t\t\treturn p, cmd\n\t\t}\n\t\treturn p, nil\n\tcase chat.SelectionCopyMsg:\n\t\tu, cmd := p.chat.Update(msg)\n\t\tp.chat = u.(chat.MessageListCmp)\n\t\treturn p, cmd\n\tcase tea.WindowSizeMsg:\n\t\tu, cmd := p.editor.Update(msg)\n\t\tp.editor = u.(editor.Editor)\n\t\treturn p, tea.Batch(p.SetSize(msg.Width, msg.Height), cmd)\n\tcase CancelTimerExpiredMsg:\n\t\tp.isCanceling = false\n\t\treturn p, nil\n\tcase editor.OpenEditorMsg:\n\t\tu, cmd := p.editor.Update(msg)\n\t\tp.editor = u.(editor.Editor)\n\t\treturn p, cmd\n\tcase chat.SendMsg:\n\t\treturn p, p.sendMessage(msg.Text, msg.Attachments)\n\tcase chat.SessionSelectedMsg:\n\t\treturn p, p.setSession(msg)\n\tcase splash.SubmitAPIKeyMsg:\n\t\tu, cmd := p.splash.Update(msg)\n\t\tp.splash = u.(splash.Splash)\n\t\tcmds = append(cmds, cmd)\n\t\treturn p, tea.Batch(cmds...)\n\tcase commands.ToggleCompactModeMsg:\n\t\tp.forceCompact = !p.forceCompact\n\t\tvar cmd tea.Cmd\n\t\tif p.forceCompact {\n\t\t\tp.setCompactMode(true)\n\t\t\tcmd = p.updateCompactConfig(true)\n\t\t} else if p.width >= CompactModeWidthBreakpoint && p.height >= CompactModeHeightBreakpoint {\n\t\t\tp.setCompactMode(false)\n\t\t\tcmd = p.updateCompactConfig(false)\n\t\t}\n\t\treturn p, tea.Batch(p.SetSize(p.width, p.height), cmd)\n\tcase commands.ToggleThinkingMsg:\n\t\treturn p, p.toggleThinking()\n\tcase commands.OpenReasoningDialogMsg:\n\t\treturn p, p.openReasoningDialog()\n\tcase reasoning.ReasoningEffortSelectedMsg:\n\t\treturn p, p.handleReasoningEffortSelected(msg.Effort)\n\tcase commands.OpenExternalEditorMsg:\n\t\tu, cmd := p.editor.Update(msg)\n\t\tp.editor = u.(editor.Editor)\n\t\treturn p, cmd\n\tcase pubsub.Event[session.Session]:\n\t\t// Update main session if it matches current session\n\t\tif msg.Type == pubsub.UpdatedEvent && p.session.ID == msg.Payload.ID {\n\t\t\tp.session = msg.Payload\n\t\t}\n\t\tu, cmd := p.header.Update(msg)\n\t\tp.header = u.(header.Header)\n\t\tcmds = append(cmds, cmd)\n\t\tu, cmd = p.sidebar.Update(msg)\n\t\tp.sidebar = u.(sidebar.Sidebar)\n\t\tcmds = append(cmds, cmd)\n\t\t// Also update chat and editor components\n\t\tu, cmd = p.chat.Update(msg)\n\t\tp.chat = u.(chat.MessageListCmp)\n\t\tcmds = append(cmds, cmd)\n\t\tu, cmd = p.editor.Update(msg)\n\t\tp.editor = u.(editor.Editor)\n\t\tcmds = append(cmds, cmd)\n\t\treturn p, tea.Batch(cmds...)\n\tcase chat.SessionClearedMsg:\n\t\tu, cmd := p.header.Update(msg)\n\t\tp.header = u.(header.Header)\n\t\tcmds = append(cmds, cmd)\n\t\tu, cmd = p.sidebar.Update(msg)\n\t\tp.sidebar = u.(sidebar.Sidebar)\n\t\tcmds = append(cmds, cmd)\n\t\tu, cmd = p.chat.Update(msg)\n\t\tp.chat = u.(chat.MessageListCmp)\n\t\tcmds = append(cmds, cmd)\n\t\treturn p, tea.Batch(cmds...)\n\tcase filepicker.FilePickedMsg,\n\t\tcompletions.CompletionsClosedMsg,\n\t\tcompletions.SelectCompletionMsg:\n\t\tu, cmd := p.editor.Update(msg)\n\t\tp.editor = u.(editor.Editor)\n\t\tcmds = append(cmds, cmd)\n\t\treturn p, tea.Batch(cmds...)\n\n\tcase claude.ValidationCompletedMsg, claude.AuthenticationCompleteMsg:\n\t\tif p.focusedPane == PanelTypeSplash {\n\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\tp.splash = u.(splash.Splash)\n\t\t\tcmds = append(cmds, cmd)\n\t\t}\n\t\treturn p, tea.Batch(cmds...)\n\tcase models.APIKeyStateChangeMsg:\n\t\tif p.focusedPane == PanelTypeSplash {\n\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\tp.splash = u.(splash.Splash)\n\t\t\tcmds = append(cmds, cmd)\n\t\t}\n\t\treturn p, tea.Batch(cmds...)\n\tcase pubsub.Event[message.Message],\n\t\tanim.StepMsg,\n\t\tspinner.TickMsg:\n\t\tif p.focusedPane == PanelTypeSplash {\n\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\tp.splash = u.(splash.Splash)\n\t\t\tcmds = append(cmds, cmd)\n\t\t} else {\n\t\t\tu, cmd := p.chat.Update(msg)\n\t\t\tp.chat = u.(chat.MessageListCmp)\n\t\t\tcmds = append(cmds, cmd)\n\t\t}\n\n\t\treturn p, tea.Batch(cmds...)\n\tcase commands.ToggleYoloModeMsg:\n\t\t// update the editor style\n\t\tu, cmd := p.editor.Update(msg)\n\t\tp.editor = u.(editor.Editor)\n\t\treturn p, cmd\n\tcase pubsub.Event[history.File], sidebar.SessionFilesMsg:\n\t\tu, cmd := p.sidebar.Update(msg)\n\t\tp.sidebar = u.(sidebar.Sidebar)\n\t\tcmds = append(cmds, cmd)\n\t\treturn p, tea.Batch(cmds...)\n\tcase pubsub.Event[permission.PermissionNotification]:\n\t\tu, cmd := p.chat.Update(msg)\n\t\tp.chat = u.(chat.MessageListCmp)\n\t\tcmds = append(cmds, cmd)\n\t\treturn p, tea.Batch(cmds...)\n\n\tcase commands.CommandRunCustomMsg:\n\t\tif p.app.AgentCoordinator.IsBusy() {\n\t\t\treturn p, util.ReportWarn(\"Agent is busy, please wait before executing a command...\")\n\t\t}\n\n\t\tcmd := p.sendMessage(msg.Content, nil)\n\t\tif cmd != nil {\n\t\t\treturn p, cmd\n\t\t}\n\tcase splash.OnboardingCompleteMsg:\n\t\tp.splashFullScreen = false\n\t\tif b, _ := config.ProjectNeedsInitialization(); b {\n\t\t\tp.splash.SetProjectInit(true)\n\t\t\tp.splashFullScreen = true\n\t\t\treturn p, p.SetSize(p.width, p.height)\n\t\t}\n\t\terr := p.app.InitCoderAgent(ctx)\n\t\tif err != nil {\n\t\t\treturn p, util.ReportError(err)\n\t\t}\n\t\tp.isOnboarding = false\n\t\tp.isProjectInit = false\n\t\tp.focusedPane = PanelTypeEditor\n\t\treturn p, p.SetSize(p.width, p.height)\n\tcase commands.NewSessionsMsg:\n\t\tif p.app.AgentCoordinator.IsBusy() {\n\t\t\treturn p, util.ReportWarn(\"Agent is busy, please wait before starting a new session...\")\n\t\t}\n\t\treturn p, p.newSession()\n\tcase tea.KeyPressMsg:\n\t\tswitch {\n\t\tcase key.Matches(msg, p.keyMap.NewSession):\n\t\t\t// if we have no agent do nothing\n\t\t\tif p.app.AgentCoordinator == nil {\n\t\t\t\treturn p, nil\n\t\t\t}\n\t\t\tif p.app.AgentCoordinator.IsBusy() {\n\t\t\t\treturn p, util.ReportWarn(\"Agent is busy, please wait before starting a new session...\")\n\t\t\t}\n\t\t\treturn p, p.newSession()\n\t\tcase key.Matches(msg, p.keyMap.AddAttachment):\n\t\t\t// Skip attachment handling during onboarding/splash screen\n\t\t\tif p.focusedPane == PanelTypeSplash || p.isOnboarding {\n\t\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\t\tp.splash = u.(splash.Splash)\n\t\t\t\treturn p, cmd\n\t\t\t}\n\t\t\tagentCfg := config.Get().Agents[config.AgentCoder]\n\t\t\tmodel := config.Get().GetModelByType(agentCfg.Model)\n\t\t\tif model == nil {\n\t\t\t\treturn p, util.ReportWarn(\"No model configured yet\")\n\t\t\t}\n\t\t\tif model.SupportsImages {\n\t\t\t\treturn p, util.CmdHandler(commands.OpenFilePickerMsg{})\n\t\t\t} else {\n\t\t\t\treturn p, util.ReportWarn(\"File attachments are not supported by the current model: \" + model.Name)\n\t\t\t}\n\t\tcase key.Matches(msg, p.keyMap.Tab):\n\t\t\tif p.session.ID == \"\" {\n\t\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\t\tp.splash = u.(splash.Splash)\n\t\t\t\treturn p, cmd\n\t\t\t}\n\t\t\tp.changeFocus()\n\t\t\treturn p, nil\n\t\tcase key.Matches(msg, p.keyMap.Cancel):\n\t\t\tif p.session.ID != \"\" && p.app.AgentCoordinator.IsBusy() {\n\t\t\t\treturn p, p.cancel()\n\t\t\t}\n\t\tcase key.Matches(msg, p.keyMap.Details):\n\t\t\tp.toggleDetails()\n\t\t\treturn p, nil\n\t\t}\n\n\t\tswitch p.focusedPane {\n\t\tcase PanelTypeChat:\n\t\t\tu, cmd := p.chat.Update(msg)\n\t\t\tp.chat = u.(chat.MessageListCmp)\n\t\t\tcmds = append(cmds, cmd)\n\t\tcase PanelTypeEditor:\n\t\t\tu, cmd := p.editor.Update(msg)\n\t\t\tp.editor = u.(editor.Editor)\n\t\t\tcmds = append(cmds, cmd)\n\t\tcase PanelTypeSplash:\n\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\tp.splash = u.(splash.Splash)\n\t\t\tcmds = append(cmds, cmd)\n\t\t}\n\tcase tea.PasteMsg:\n\t\tswitch p.focusedPane {\n\t\tcase PanelTypeEditor:\n\t\t\tu, cmd := p.editor.Update(msg)\n\t\t\tp.editor = u.(editor.Editor)\n\t\t\tcmds = append(cmds, cmd)\n\t\t\treturn p, tea.Batch(cmds...)\n\t\tcase PanelTypeChat:\n\t\t\tu, cmd := p.chat.Update(msg)\n\t\t\tp.chat = u.(chat.MessageListCmp)\n\t\t\tcmds = append(cmds, cmd)\n\t\t\treturn p, tea.Batch(cmds...)\n\t\tcase PanelTypeSplash:\n\t\t\tu, cmd := p.splash.Update(msg)\n\t\t\tp.splash = u.(splash.Splash)\n\t\t\tcmds = append(cmds, cmd)\n\t\t\treturn p, tea.Batch(cmds...)\n\t\t}\n\t}\n\treturn p, tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_464": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 464,
+      "end_line": 477,
+      "content_hash": "d82edbc7ef72e000f132255cff274b77abcec7bd",
+      "content": "func (p *chatPage) Cursor() *tea.Cursor {\n\tif p.header.ShowingDetails() {\n\t\treturn nil\n\t}\n\tswitch p.focusedPane {\n\tcase PanelTypeEditor:\n\t\treturn p.editor.Cursor()\n\tcase PanelTypeSplash:\n\t\treturn p.splash.Cursor()\n\tdefault:\n\t\treturn nil\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_478": {
+      "name": "View",
+      "type": "method",
+      "start_line": 478,
+      "end_line": 546,
+      "content_hash": "63008fd1c0c250e46290c0409f4952c477b0f9f6",
+      "content": "func (p *chatPage) View() string {\n\tvar chatView string\n\tt := styles.CurrentTheme()\n\n\tif p.session.ID == \"\" {\n\t\tsplashView := p.splash.View()\n\t\t// Full screen during onboarding or project initialization\n\t\tif p.splashFullScreen {\n\t\t\tchatView = splashView\n\t\t} else {\n\t\t\t// Show splash + editor for new message state\n\t\t\teditorView := p.editor.View()\n\t\t\tchatView = lipgloss.JoinVertical(\n\t\t\t\tlipgloss.Left,\n\t\t\t\tt.S().Base.Render(splashView),\n\t\t\t\teditorView,\n\t\t\t)\n\t\t}\n\t} else {\n\t\tmessagesView := p.chat.View()\n\t\teditorView := p.editor.View()\n\t\tif p.compact {\n\t\t\theaderView := p.header.View()\n\t\t\tchatView = lipgloss.JoinVertical(\n\t\t\t\tlipgloss.Left,\n\t\t\t\theaderView,\n\t\t\t\tmessagesView,\n\t\t\t\teditorView,\n\t\t\t)\n\t\t} else {\n\t\t\tsidebarView := p.sidebar.View()\n\t\t\tmessages := lipgloss.JoinHorizontal(\n\t\t\t\tlipgloss.Left,\n\t\t\t\tmessagesView,\n\t\t\t\tsidebarView,\n\t\t\t)\n\t\t\tchatView = lipgloss.JoinVertical(\n\t\t\t\tlipgloss.Left,\n\t\t\t\tmessages,\n\t\t\t\tp.editor.View(),\n\t\t\t)\n\t\t}\n\t}\n\n\tlayers := []*lipgloss.Layer{\n\t\tlipgloss.NewLayer(chatView).X(0).Y(0),\n\t}\n\n\tif p.showingDetails {\n\t\tstyle := t.S().Base.\n\t\t\tWidth(p.detailsWidth).\n\t\t\tBorder(lipgloss.RoundedBorder()).\n\t\t\tBorderForeground(t.BorderFocus)\n\t\tversion := t.S().Base.Foreground(t.Border).Width(p.detailsWidth - 4).AlignHorizontal(lipgloss.Right).Render(version.Version)\n\t\tdetails := style.Render(\n\t\t\tlipgloss.JoinVertical(\n\t\t\t\tlipgloss.Left,\n\t\t\t\tp.sidebar.View(),\n\t\t\t\tversion,\n\t\t\t),\n\t\t)\n\t\tlayers = append(layers, lipgloss.NewLayer(details).X(1).Y(1))\n\t}\n\tcanvas := lipgloss.NewCanvas(\n\t\tlayers...,\n\t)\n\treturn canvas.Render()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_updateCompactConfig_547": {
+      "name": "updateCompactConfig",
+      "type": "method",
+      "start_line": 547,
+      "end_line": 559,
+      "content_hash": "06a88403a986d598557455f12c6ce565c31622e4",
+      "content": "func (p *chatPage) updateCompactConfig(compact bool) tea.Cmd {\n\treturn func() tea.Msg {\n\t\terr := config.Get().SetCompactMode(compact)\n\t\tif err != nil {\n\t\t\treturn util.InfoMsg{\n\t\t\t\tType: util.InfoTypeError,\n\t\t\t\tMsg:  \"Failed to update compact mode configuration: \" + err.Error(),\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_toggleThinking_560": {
+      "name": "toggleThinking",
+      "type": "method",
+      "start_line": 560,
+      "end_line": 588,
+      "content_hash": "4d1ee209dfe8111ae752f9fc12fed044201739f2",
+      "content": "func (p *chatPage) toggleThinking() tea.Cmd {\n\treturn func() tea.Msg {\n\t\tcfg := config.Get()\n\t\tagentCfg := cfg.Agents[config.AgentCoder]\n\t\tcurrentModel := cfg.Models[agentCfg.Model]\n\n\t\t// Toggle the thinking mode\n\t\tcurrentModel.Think = !currentModel.Think\n\t\tif err := cfg.UpdatePreferredModel(agentCfg.Model, currentModel); err != nil {\n\t\t\treturn util.InfoMsg{\n\t\t\t\tType: util.InfoTypeError,\n\t\t\t\tMsg:  \"Failed to update thinking mode: \" + err.Error(),\n\t\t\t}\n\t\t}\n\n\t\t// Update the agent with the new configuration\n\t\tgo p.app.UpdateAgentModel(context.Background())\n\n\t\tstatus := \"disabled\"\n\t\tif currentModel.Think {\n\t\t\tstatus = \"enabled\"\n\t\t}\n\t\treturn util.InfoMsg{\n\t\t\tType: util.InfoTypeInfo,\n\t\t\tMsg:  \"Thinking mode \" + status,\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_openReasoningDialog_589": {
+      "name": "openReasoningDialog",
+      "type": "method",
+      "start_line": 589,
+      "end_line": 605,
+      "content_hash": "242efef4869ba7a4abf89139dd14f9ea2b3b895e",
+      "content": "func (p *chatPage) openReasoningDialog() tea.Cmd {\n\treturn func() tea.Msg {\n\t\tcfg := config.Get()\n\t\tagentCfg := cfg.Agents[config.AgentCoder]\n\t\tmodel := cfg.GetModelByType(agentCfg.Model)\n\t\tproviderCfg := cfg.GetProviderForModel(agentCfg.Model)\n\n\t\tif providerCfg != nil && model != nil && len(model.ReasoningLevels) > 0 {\n\t\t\t// Return the OpenDialogMsg directly so it bubbles up to the main TUI\n\t\t\treturn dialogs.OpenDialogMsg{\n\t\t\t\tModel: reasoning.NewReasoningDialog(),\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_handleReasoningEffortSelected_606": {
+      "name": "handleReasoningEffortSelected",
+      "type": "method",
+      "start_line": 606,
+      "end_line": 635,
+      "content_hash": "149cb56c7586e032a52e024d724368e0a6819fa4",
+      "content": "func (p *chatPage) handleReasoningEffortSelected(effort string) tea.Cmd {\n\treturn func() tea.Msg {\n\t\tcfg := config.Get()\n\t\tagentCfg := cfg.Agents[config.AgentCoder]\n\t\tcurrentModel := cfg.Models[agentCfg.Model]\n\n\t\t// Update the model configuration\n\t\tcurrentModel.ReasoningEffort = effort\n\t\tif err := cfg.UpdatePreferredModel(agentCfg.Model, currentModel); err != nil {\n\t\t\treturn util.InfoMsg{\n\t\t\t\tType: util.InfoTypeError,\n\t\t\t\tMsg:  \"Failed to update reasoning effort: \" + err.Error(),\n\t\t\t}\n\t\t}\n\n\t\t// Update the agent with the new configuration\n\t\tif err := p.app.UpdateAgentModel(context.Background()); err != nil {\n\t\t\treturn util.InfoMsg{\n\t\t\t\tType: util.InfoTypeError,\n\t\t\t\tMsg:  \"Failed to update reasoning effort: \" + err.Error(),\n\t\t\t}\n\t\t}\n\n\t\treturn util.InfoMsg{\n\t\t\tType: util.InfoTypeInfo,\n\t\t\tMsg:  \"Reasoning effort set to \" + effort,\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setCompactMode_636": {
+      "name": "setCompactMode",
+      "type": "method",
+      "start_line": 636,
+      "end_line": 647,
+      "content_hash": "d22a5f693d2bbaac6e098f49c4b3747f70640454",
+      "content": "func (p *chatPage) setCompactMode(compact bool) {\n\tif p.compact == compact {\n\t\treturn\n\t}\n\tp.compact = compact\n\tif compact {\n\t\tp.sidebar.SetCompactMode(true)\n\t} else {\n\t\tp.setShowDetails(false)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_handleCompactMode_648": {
+      "name": "handleCompactMode",
+      "type": "method",
+      "start_line": 648,
+      "end_line": 659,
+      "content_hash": "9fbd982a4cd25940ee82bfcd79af21e687da7d6e",
+      "content": "func (p *chatPage) handleCompactMode(newWidth int, newHeight int) {\n\tif p.forceCompact {\n\t\treturn\n\t}\n\tif (newWidth < CompactModeWidthBreakpoint || newHeight < CompactModeHeightBreakpoint) && !p.compact {\n\t\tp.setCompactMode(true)\n\t}\n\tif (newWidth >= CompactModeWidthBreakpoint && newHeight >= CompactModeHeightBreakpoint) && p.compact {\n\t\tp.setCompactMode(false)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetSize_660": {
+      "name": "SetSize",
+      "type": "method",
+      "start_line": 660,
+      "end_line": 690,
+      "content_hash": "03816d4d676084b72ac4644b53895891e152ff5f",
+      "content": "func (p *chatPage) SetSize(width, height int) tea.Cmd {\n\tp.handleCompactMode(width, height)\n\tp.width = width\n\tp.height = height\n\tvar cmds []tea.Cmd\n\n\tif p.session.ID == \"\" {\n\t\tif p.splashFullScreen {\n\t\t\tcmds = append(cmds, p.splash.SetSize(width, height))\n\t\t} else {\n\t\t\tcmds = append(cmds, p.splash.SetSize(width, height-EditorHeight))\n\t\t\tcmds = append(cmds, p.editor.SetSize(width, EditorHeight))\n\t\t\tcmds = append(cmds, p.editor.SetPosition(0, height-EditorHeight))\n\t\t}\n\t} else {\n\t\tif p.compact {\n\t\t\tcmds = append(cmds, p.chat.SetSize(width, height-EditorHeight-HeaderHeight))\n\t\t\tp.detailsWidth = width - DetailsPositioning\n\t\t\tcmds = append(cmds, p.sidebar.SetSize(p.detailsWidth-LeftRightBorders, p.detailsHeight-TopBottomBorders))\n\t\t\tcmds = append(cmds, p.editor.SetSize(width, EditorHeight))\n\t\t\tcmds = append(cmds, p.header.SetWidth(width-BorderWidth))\n\t\t} else {\n\t\t\tcmds = append(cmds, p.chat.SetSize(width-SideBarWidth, height-EditorHeight))\n\t\t\tcmds = append(cmds, p.editor.SetSize(width, EditorHeight))\n\t\t\tcmds = append(cmds, p.sidebar.SetSize(SideBarWidth, height-EditorHeight))\n\t\t}\n\t\tcmds = append(cmds, p.editor.SetPosition(0, height-EditorHeight))\n\t}\n\treturn tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_newSession_691": {
+      "name": "newSession",
+      "type": "method",
+      "start_line": 691,
+      "end_line": 706,
+      "content_hash": "06c9bb7a31ae4273e0e4b67985fd3182f03ebeee",
+      "content": "func (p *chatPage) newSession() tea.Cmd {\n\tif p.session.ID == \"\" {\n\t\treturn nil\n\t}\n\n\tp.session = session.Session{}\n\tp.focusedPane = PanelTypeEditor\n\tp.editor.Focus()\n\tp.chat.Blur()\n\tp.isCanceling = false\n\treturn tea.Batch(\n\t\tutil.CmdHandler(chat.SessionClearedMsg{}),\n\t\tp.SetSize(p.width, p.height),\n\t)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setSession_707": {
+      "name": "setSession",
+      "type": "method",
+      "start_line": 707,
+      "end_line": 723,
+      "content_hash": "06337f6624860ec7917e5f1fe1910cba1679519b",
+      "content": "func (p *chatPage) setSession(session session.Session) tea.Cmd {\n\tif p.session.ID == session.ID {\n\t\treturn nil\n\t}\n\n\tvar cmds []tea.Cmd\n\tp.session = session\n\n\tcmds = append(cmds, p.SetSize(p.width, p.height))\n\tcmds = append(cmds, p.chat.SetSession(session))\n\tcmds = append(cmds, p.sidebar.SetSession(session))\n\tcmds = append(cmds, p.header.SetSession(session))\n\tcmds = append(cmds, p.editor.SetSession(session))\n\n\treturn tea.Sequence(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_changeFocus_724": {
+      "name": "changeFocus",
+      "type": "method",
+      "start_line": 724,
+      "end_line": 739,
+      "content_hash": "e237e15da2b2775226db296144c13256acfbd6b2",
+      "content": "func (p *chatPage) changeFocus() {\n\tif p.session.ID == \"\" {\n\t\treturn\n\t}\n\tswitch p.focusedPane {\n\tcase PanelTypeChat:\n\t\tp.focusedPane = PanelTypeEditor\n\t\tp.editor.Focus()\n\t\tp.chat.Blur()\n\tcase PanelTypeEditor:\n\t\tp.focusedPane = PanelTypeChat\n\t\tp.chat.Focus()\n\t\tp.editor.Blur()\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_cancel_740": {
+      "name": "cancel",
+      "type": "method",
+      "start_line": 740,
+      "end_line": 756,
+      "content_hash": "684f9a6e411cd014294ae9e012f8072ebd60a689",
+      "content": "func (p *chatPage) cancel() tea.Cmd {\n\tif p.isCanceling {\n\t\tp.isCanceling = false\n\t\tif p.app.AgentCoordinator != nil {\n\t\t\tp.app.AgentCoordinator.Cancel(p.session.ID)\n\t\t}\n\t\treturn nil\n\t}\n\n\tif p.app.AgentCoordinator != nil && p.app.AgentCoordinator.QueuedPrompts(p.session.ID) > 0 {\n\t\tp.app.AgentCoordinator.ClearQueue(p.session.ID)\n\t\treturn nil\n\t}\n\tp.isCanceling = true\n\treturn cancelTimerCmd()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_setShowDetails_757": {
+      "name": "setShowDetails",
+      "type": "method",
+      "start_line": 757,
+      "end_line": 764,
+      "content_hash": "840d31811042146dfbf1a67d6e9e774e6ddc54a2",
+      "content": "func (p *chatPage) setShowDetails(show bool) {\n\tp.showingDetails = show\n\tp.header.SetDetailsOpen(p.showingDetails)\n\tif !p.compact {\n\t\tp.sidebar.SetCompactMode(false)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_toggleDetails_765": {
+      "name": "toggleDetails",
+      "type": "method",
+      "start_line": 765,
+      "end_line": 771,
+      "content_hash": "00f26e2e338546eb1e087b262fe1a4c5b7c01425",
+      "content": "func (p *chatPage) toggleDetails() {\n\tif p.session.ID == \"\" || !p.compact {\n\t\treturn\n\t}\n\tp.setShowDetails(!p.showingDetails)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_sendMessage_772": {
+      "name": "sendMessage",
+      "type": "method",
+      "start_line": 772,
+      "end_line": 804,
+      "content_hash": "53b4053160f124826baf7262fb65f72acdf2a476",
+      "content": "func (p *chatPage) sendMessage(text string, attachments []message.Attachment) tea.Cmd {\n\tsession := p.session\n\tvar cmds []tea.Cmd\n\tif p.session.ID == \"\" {\n\t\tnewSession, err := p.app.Sessions.Create(context.Background(), session.Title)\n\t\tif err != nil {\n\t\t\treturn util.ReportError(err)\n\t\t}\n\t\tsession = newSession\n\t\tcmds = append(cmds, util.CmdHandler(chat.SessionSelectedMsg(session)))\n\t}\n\tif p.app.AgentCoordinator == nil {\n\t\treturn util.ReportError(fmt.Errorf(\"coder agent is not initialized\"))\n\t}\n\tcmds = append(cmds, p.chat.GoToBottom())\n\tcmds = append(cmds, func() tea.Msg {\n\t\t_, err := p.app.AgentCoordinator.Run(context.Background(), session.ID, text, attachments...)\n\t\tif err != nil {\n\t\t\tisCancelErr := errors.Is(err, context.Canceled)\n\t\t\tisPermissionErr := errors.Is(err, permission.ErrorPermissionDenied)\n\t\t\tif isCancelErr || isPermissionErr {\n\t\t\t\treturn nil\n\t\t\t}\n\t\t\treturn util.InfoMsg{\n\t\t\t\tType: util.InfoTypeError,\n\t\t\t\tMsg:  err.Error(),\n\t\t\t}\n\t\t}\n\t\treturn nil\n\t})\n\treturn tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Bindings_805": {
+      "name": "Bindings",
+      "type": "method",
+      "start_line": 805,
+      "end_line": 844,
+      "content_hash": "6b190f99ddb1f0dc1a9792118f2802855c22b6bf",
+      "content": "func (p *chatPage) Bindings() []key.Binding {\n\tbindings := []key.Binding{\n\t\tp.keyMap.NewSession,\n\t\tp.keyMap.AddAttachment,\n\t}\n\tif p.app.AgentCoordinator != nil && p.app.AgentCoordinator.IsBusy() {\n\t\tcancelBinding := p.keyMap.Cancel\n\t\tif p.isCanceling {\n\t\t\tcancelBinding = key.NewBinding(\n\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\tkey.WithHelp(\"esc\", \"press again to cancel\"),\n\t\t\t)\n\t\t}\n\t\tbindings = append([]key.Binding{cancelBinding}, bindings...)\n\t}\n\n\tswitch p.focusedPane {\n\tcase PanelTypeChat:\n\t\tbindings = append([]key.Binding{\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"tab\"),\n\t\t\t\tkey.WithHelp(\"tab\", \"focus editor\"),\n\t\t\t),\n\t\t}, bindings...)\n\t\tbindings = append(bindings, p.chat.Bindings()...)\n\tcase PanelTypeEditor:\n\t\tbindings = append([]key.Binding{\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"tab\"),\n\t\t\t\tkey.WithHelp(\"tab\", \"focus chat\"),\n\t\t\t),\n\t\t}, bindings...)\n\t\tbindings = append(bindings, p.editor.Bindings()...)\n\tcase PanelTypeSplash:\n\t\tbindings = append(bindings, p.splash.Bindings()...)\n\t}\n\n\treturn bindings\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Help_845": {
+      "name": "Help",
+      "type": "method",
+      "start_line": 845,
+      "end_line": 1190,
+      "content_hash": "9a7b04277ba91e3fac5b9a42ccedfaddd86913d7",
+      "content": "func (p *chatPage) Help() help.KeyMap {\n\tvar shortList []key.Binding\n\tvar fullList [][]key.Binding\n\tswitch {\n\tcase p.isOnboarding && p.splash.IsShowingClaudeAuthMethodChooser():\n\t\tshortList = append(shortList,\n\t\t\t// Choose auth method\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"left\", \"right\", \"tab\"),\n\t\t\t\tkey.WithHelp(\"\u2190\u2192/tab\", \"choose\"),\n\t\t\t),\n\t\t\t// Accept selection\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\tkey.WithHelp(\"enter\", \"accept\"),\n\t\t\t),\n\t\t\t// Go back\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\tkey.WithHelp(\"esc\", \"back\"),\n\t\t\t),\n\t\t\t// Quit\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+c\"),\n\t\t\t\tkey.WithHelp(\"ctrl+c\", \"quit\"),\n\t\t\t),\n\t\t)\n\t\t// keep them the same\n\t\tfor _, v := range shortList {\n\t\t\tfullList = append(fullList, []key.Binding{v})\n\t\t}\n\tcase p.isOnboarding && p.splash.IsShowingClaudeOAuth2():\n\t\tif p.splash.IsClaudeOAuthURLState() {\n\t\t\tshortList = append(shortList,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\t\tkey.WithHelp(\"enter\", \"open\"),\n\t\t\t\t),\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"c\"),\n\t\t\t\t\tkey.WithHelp(\"c\", \"copy url\"),\n\t\t\t\t),\n\t\t\t)\n\t\t} else if p.splash.IsClaudeOAuthComplete() {\n\t\t\tshortList = append(shortList,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\t\tkey.WithHelp(\"enter\", \"continue\"),\n\t\t\t\t),\n\t\t\t)\n\t\t} else {\n\t\t\tshortList = append(shortList,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\t\tkey.WithHelp(\"enter\", \"submit\"),\n\t\t\t\t),\n\t\t\t)\n\t\t}\n\t\tshortList = append(shortList,\n\t\t\t// Quit\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+c\"),\n\t\t\t\tkey.WithHelp(\"ctrl+c\", \"quit\"),\n\t\t\t),\n\t\t)\n\t\t// keep them the same\n\t\tfor _, v := range shortList {\n\t\t\tfullList = append(fullList, []key.Binding{v})\n\t\t}\n\tcase p.isOnboarding && !p.splash.IsShowingAPIKey():\n\t\tshortList = append(shortList,\n\t\t\t// Choose model\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"up\", \"down\"),\n\t\t\t\tkey.WithHelp(\"\u2191/\u2193\", \"choose\"),\n\t\t\t),\n\t\t\t// Accept selection\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"enter\", \"ctrl+y\"),\n\t\t\t\tkey.WithHelp(\"enter\", \"accept\"),\n\t\t\t),\n\t\t\t// Quit\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+c\"),\n\t\t\t\tkey.WithHelp(\"ctrl+c\", \"quit\"),\n\t\t\t),\n\t\t)\n\t\t// keep them the same\n\t\tfor _, v := range shortList {\n\t\t\tfullList = append(fullList, []key.Binding{v})\n\t\t}\n\tcase p.isOnboarding && p.splash.IsShowingAPIKey():\n\t\tif p.splash.IsAPIKeyValid() {\n\t\t\tshortList = append(shortList,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"enter\"),\n\t\t\t\t\tkey.WithHelp(\"enter\", \"continue\"),\n\t\t\t\t),\n\t\t\t)\n\t\t} else {\n\t\t\tshortList = append(shortList,\n\t\t\t\t// Go back\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\t\tkey.WithHelp(\"esc\", \"back\"),\n\t\t\t\t),\n\t\t\t)\n\t\t}\n\t\tshortList = append(shortList,\n\t\t\t// Quit\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+c\"),\n\t\t\t\tkey.WithHelp(\"ctrl+c\", \"quit\"),\n\t\t\t),\n\t\t)\n\t\t// keep them the same\n\t\tfor _, v := range shortList {\n\t\t\tfullList = append(fullList, []key.Binding{v})\n\t\t}\n\tcase p.isProjectInit:\n\t\tshortList = append(shortList,\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+c\"),\n\t\t\t\tkey.WithHelp(\"ctrl+c\", \"quit\"),\n\t\t\t),\n\t\t)\n\t\t// keep them the same\n\t\tfor _, v := range shortList {\n\t\t\tfullList = append(fullList, []key.Binding{v})\n\t\t}\n\tdefault:\n\t\tif p.editor.IsCompletionsOpen() {\n\t\t\tshortList = append(shortList,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"tab\", \"enter\"),\n\t\t\t\t\tkey.WithHelp(\"tab/enter\", \"complete\"),\n\t\t\t\t),\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\t\tkey.WithHelp(\"esc\", \"cancel\"),\n\t\t\t\t),\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"up\", \"down\"),\n\t\t\t\t\tkey.WithHelp(\"\u2191/\u2193\", \"choose\"),\n\t\t\t\t),\n\t\t\t)\n\t\t\tfor _, v := range shortList {\n\t\t\t\tfullList = append(fullList, []key.Binding{v})\n\t\t\t}\n\t\t\treturn core.NewSimpleHelp(shortList, fullList)\n\t\t}\n\t\tif p.app.AgentCoordinator != nil && p.app.AgentCoordinator.IsBusy() {\n\t\t\tcancelBinding := key.NewBinding(\n\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\tkey.WithHelp(\"esc\", \"cancel\"),\n\t\t\t)\n\t\t\tif p.isCanceling {\n\t\t\t\tcancelBinding = key.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\t\tkey.WithHelp(\"esc\", \"press again to cancel\"),\n\t\t\t\t)\n\t\t\t}\n\t\t\tif p.app.AgentCoordinator != nil && p.app.AgentCoordinator.QueuedPrompts(p.session.ID) > 0 {\n\t\t\t\tcancelBinding = key.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\t\tkey.WithHelp(\"esc\", \"clear queue\"),\n\t\t\t\t)\n\t\t\t}\n\t\t\tshortList = append(shortList, cancelBinding)\n\t\t\tfullList = append(fullList,\n\t\t\t\t[]key.Binding{\n\t\t\t\t\tcancelBinding,\n\t\t\t\t},\n\t\t\t)\n\t\t}\n\t\tglobalBindings := []key.Binding{}\n\t\t// we are in a session\n\t\tif p.session.ID != \"\" {\n\t\t\ttabKey := key.NewBinding(\n\t\t\t\tkey.WithKeys(\"tab\"),\n\t\t\t\tkey.WithHelp(\"tab\", \"focus chat\"),\n\t\t\t)\n\t\t\tif p.focusedPane == PanelTypeChat {\n\t\t\t\ttabKey = key.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"tab\"),\n\t\t\t\t\tkey.WithHelp(\"tab\", \"focus editor\"),\n\t\t\t\t)\n\t\t\t}\n\t\t\tshortList = append(shortList, tabKey)\n\t\t\tglobalBindings = append(globalBindings, tabKey)\n\t\t}\n\t\tcommandsBinding := key.NewBinding(\n\t\t\tkey.WithKeys(\"ctrl+p\"),\n\t\t\tkey.WithHelp(\"ctrl+p\", \"commands\"),\n\t\t)\n\t\tmodelsBinding := key.NewBinding(\n\t\t\tkey.WithKeys(\"ctrl+m\", \"ctrl+l\"),\n\t\t\tkey.WithHelp(\"ctrl+l\", \"models\"),\n\t\t)\n\t\tif p.keyboardEnhancements.Flags > 0 {\n\t\t\t// non-zero flags mean we have at least key disambiguation\n\t\t\tmodelsBinding.SetHelp(\"ctrl+m\", \"models\")\n\t\t}\n\t\thelpBinding := key.NewBinding(\n\t\t\tkey.WithKeys(\"ctrl+g\"),\n\t\t\tkey.WithHelp(\"ctrl+g\", \"more\"),\n\t\t)\n\t\tglobalBindings = append(globalBindings, commandsBinding, modelsBinding)\n\t\tglobalBindings = append(globalBindings,\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+s\"),\n\t\t\t\tkey.WithHelp(\"ctrl+s\", \"sessions\"),\n\t\t\t),\n\t\t)\n\t\tif p.session.ID != \"\" {\n\t\t\tglobalBindings = append(globalBindings,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"ctrl+n\"),\n\t\t\t\t\tkey.WithHelp(\"ctrl+n\", \"new sessions\"),\n\t\t\t\t))\n\t\t}\n\t\tshortList = append(shortList,\n\t\t\t// Commands\n\t\t\tcommandsBinding,\n\t\t\tmodelsBinding,\n\t\t)\n\t\tfullList = append(fullList, globalBindings)\n\n\t\tswitch p.focusedPane {\n\t\tcase PanelTypeChat:\n\t\t\tshortList = append(shortList,\n\t\t\t\tkey.NewBinding(\n\t\t\t\t\tkey.WithKeys(\"up\", \"down\"),\n\t\t\t\t\tkey.WithHelp(\"\u2191\u2193\", \"scroll\"),\n\t\t\t\t),\n\t\t\t\tmessages.CopyKey,\n\t\t\t)\n\t\t\tfullList = append(fullList,\n\t\t\t\t[]key.Binding{\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"up\", \"down\"),\n\t\t\t\t\t\tkey.WithHelp(\"\u2191\u2193\", \"scroll\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"shift+up\", \"shift+down\"),\n\t\t\t\t\t\tkey.WithHelp(\"shift+\u2191\u2193\", \"next/prev item\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"pgup\", \"b\"),\n\t\t\t\t\t\tkey.WithHelp(\"b/pgup\", \"page up\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"pgdown\", \" \", \"f\"),\n\t\t\t\t\t\tkey.WithHelp(\"f/pgdn\", \"page down\"),\n\t\t\t\t\t),\n\t\t\t\t},\n\t\t\t\t[]key.Binding{\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"u\"),\n\t\t\t\t\t\tkey.WithHelp(\"u\", \"half page up\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"d\"),\n\t\t\t\t\t\tkey.WithHelp(\"d\", \"half page down\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"g\", \"home\"),\n\t\t\t\t\t\tkey.WithHelp(\"g\", \"home\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"G\", \"end\"),\n\t\t\t\t\t\tkey.WithHelp(\"G\", \"end\"),\n\t\t\t\t\t),\n\t\t\t\t},\n\t\t\t\t[]key.Binding{\n\t\t\t\t\tmessages.CopyKey,\n\t\t\t\t\tmessages.ClearSelectionKey,\n\t\t\t\t},\n\t\t\t)\n\t\tcase PanelTypeEditor:\n\t\t\tnewLineBinding := key.NewBinding(\n\t\t\t\tkey.WithKeys(\"shift+enter\", \"ctrl+j\"),\n\t\t\t\t// \"ctrl+j\" is a common keybinding for newline in many editors. If\n\t\t\t\t// the terminal supports \"shift+enter\", we substitute the help text\n\t\t\t\t// to reflect that.\n\t\t\t\tkey.WithHelp(\"ctrl+j\", \"newline\"),\n\t\t\t)\n\t\t\tif p.keyboardEnhancements.Flags > 0 {\n\t\t\t\t// Non-zero flags mean we have at least key disambiguation.\n\t\t\t\tnewLineBinding.SetHelp(\"shift+enter\", newLineBinding.Help().Desc)\n\t\t\t}\n\t\t\tshortList = append(shortList, newLineBinding)\n\t\t\tfullList = append(fullList,\n\t\t\t\t[]key.Binding{\n\t\t\t\t\tnewLineBinding,\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"ctrl+f\"),\n\t\t\t\t\t\tkey.WithHelp(\"ctrl+f\", \"add image\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"@\"),\n\t\t\t\t\t\tkey.WithHelp(\"@\", \"mention file\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"ctrl+o\"),\n\t\t\t\t\t\tkey.WithHelp(\"ctrl+o\", \"open editor\"),\n\t\t\t\t\t),\n\t\t\t\t})\n\n\t\t\tif p.editor.HasAttachments() {\n\t\t\t\tfullList = append(fullList, []key.Binding{\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"ctrl+r\"),\n\t\t\t\t\t\tkey.WithHelp(\"ctrl+r+{i}\", \"delete attachment at index i\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"ctrl+r\", \"r\"),\n\t\t\t\t\t\tkey.WithHelp(\"ctrl+r+r\", \"delete all attachments\"),\n\t\t\t\t\t),\n\t\t\t\t\tkey.NewBinding(\n\t\t\t\t\t\tkey.WithKeys(\"esc\", \"alt+esc\"),\n\t\t\t\t\t\tkey.WithHelp(\"esc\", \"cancel delete mode\"),\n\t\t\t\t\t),\n\t\t\t\t})\n\t\t\t}\n\t\t}\n\t\tshortList = append(shortList,\n\t\t\t// Quit\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+c\"),\n\t\t\t\tkey.WithHelp(\"ctrl+c\", \"quit\"),\n\t\t\t),\n\t\t\t// Help\n\t\t\thelpBinding,\n\t\t)\n\t\tfullList = append(fullList, []key.Binding{\n\t\t\tkey.NewBinding(\n\t\t\t\tkey.WithKeys(\"ctrl+g\"),\n\t\t\t\tkey.WithHelp(\"ctrl+g\", \"less\"),\n\t\t\t),\n\t\t})\n\t}\n\n\treturn core.NewSimpleHelp(shortList, fullList)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsChatFocused_1191": {
+      "name": "IsChatFocused",
+      "type": "method",
+      "start_line": 1191,
+      "end_line": 1196,
+      "content_hash": "135b815aa9d21b6dc57556fd4077c83157d7f9d5",
+      "content": "func (p *chatPage) IsChatFocused() bool {\n\treturn p.focusedPane == PanelTypeChat\n}\n\n// isMouseOverChat checks if the given mouse coordinates are within the chat area bounds.\n// Returns true if the mouse is over the chat area, false otherwise.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_isMouseOverChat_1197": {
+      "name": "isMouseOverChat",
+      "type": "method",
+      "start_line": 1197,
+      "end_line": 1221,
+      "content_hash": "aeac99b5c7b300f6ffec175fb85620f9d54f3cf8",
+      "content": "func (p *chatPage) isMouseOverChat(x, y int) bool {\n\t// No session means no chat area\n\tif p.session.ID == \"\" {\n\t\treturn false\n\t}\n\n\tvar chatX, chatY, chatWidth, chatHeight int\n\n\tif p.compact {\n\t\t// In compact mode: chat area starts after header and spans full width\n\t\tchatX = 0\n\t\tchatY = HeaderHeight\n\t\tchatWidth = p.width\n\t\tchatHeight = p.height - EditorHeight - HeaderHeight\n\t} else {\n\t\t// In non-compact mode: chat area spans from left edge to sidebar\n\t\tchatX = 0\n\t\tchatY = 0\n\t\tchatWidth = p.width - SideBarWidth\n\t\tchatHeight = p.height - EditorHeight\n\t}\n\n\t// Check if mouse coordinates are within chat bounds\n\treturn x >= chatX && x < chatX+chatWidth && y >= chatY && y < chatY+chatHeight\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

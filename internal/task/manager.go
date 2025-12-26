@@ -152,6 +152,13 @@ func (m *Manager) AnalyzeDrift(sessionID, aiResponse string) DriftAnalysis {
 		analysis.MilestoneProgress = m.checkMilestoneProgress(aiResponse, task)
 	}
 
+	// Set appropriate message
+	if analysis.Drifted {
+		analysis.Message = "Drift detected - see recommendations"
+	} else {
+		analysis.Message = "Response is on track"
+	}
+
 	return analysis
 }
 

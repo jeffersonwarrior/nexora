@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/tui/exp/diffview/util_test.go",
+  "file_hash": "b450151997cb313f29a98b194cc0336d8241e5e6",
+  "updated_at": "2025-12-26T17:34:22.831740",
+  "symbols": {
+    "function_TestPad_7": {
+      "name": "TestPad",
+      "type": "function",
+      "start_line": 7,
+      "end_line": 27,
+      "content_hash": "6777937cd9644669c30400519fbdb2c767551273",
+      "content": "func TestPad(t *testing.T) {\n\ttests := []struct {\n\t\tinput    any\n\t\twidth    int\n\t\texpected string\n\t}{\n\t\t{7, 2, \" 7\"},\n\t\t{7, 3, \"  7\"},\n\t\t{\"a\", 2, \" a\"},\n\t\t{\"a\", 3, \"  a\"},\n\t\t{\"\u2026\", 2, \" \u2026\"},\n\t\t{\"\u2026\", 3, \"  \u2026\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tresult := pad(tt.input, tt.width)\n\t\tif result != tt.expected {\n\t\t\tt.Errorf(\"expected %q, got %q\", tt.expected, result)\n\t\t}\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

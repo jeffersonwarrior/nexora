@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-container/docker-compose.yml",
+  "file_hash": "76b6619e348dce67e3744fe5b844e6eb15495350",
+  "updated_at": "2025-12-26T17:34:21.749953",
+  "symbols": {
+    "key_services_1": {
+      "name": "services",
+      "type": "key",
+      "start_line": 1,
+      "end_line": 16,
+      "content_hash": "76b6619e348dce67e3744fe5b844e6eb15495350",
+      "content": "services:\n  helix-dev:\n    container_name: helix-dockerdev\n    build:\n      context: ..\n      dockerfile: helix-container/Dockerfile\n    ports:\n      - \"${HELIX_PORT:-6969}:6969\"\n    volumes:\n      - ${HOME}/.helix/dockerdev:/usr/src/app\n    environment:\n      - HELIX_PORT=${HELIX_PORT:-6969}\n      - HELIX_DATA_DIR=/usr/src/app/data\n      - HELIX_DAEMON=1\n    restart: unless-stopped\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev_2": {
+      "name": "services.helix-dev",
+      "type": "key",
+      "start_line": 2,
+      "end_line": 16,
+      "content_hash": "ff7662d2e20c03a589579883acdda8d589f8aa69",
+      "content": "  helix-dev:\n    container_name: helix-dockerdev\n    build:\n      context: ..\n      dockerfile: helix-container/Dockerfile\n    ports:\n      - \"${HELIX_PORT:-6969}:6969\"\n    volumes:\n      - ${HOME}/.helix/dockerdev:/usr/src/app\n    environment:\n      - HELIX_PORT=${HELIX_PORT:-6969}\n      - HELIX_DATA_DIR=/usr/src/app/data\n      - HELIX_DAEMON=1\n    restart: unless-stopped\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.container_name_3": {
+      "name": "services.helix-dev.container_name",
+      "type": "key",
+      "start_line": 3,
+      "end_line": 3,
+      "content_hash": "ea0f8d2dae0d095a0091ea1ea7e3bc3f4970a6e1",
+      "content": "    container_name: helix-dockerdev",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.build_4": {
+      "name": "services.helix-dev.build",
+      "type": "key",
+      "start_line": 4,
+      "end_line": 6,
+      "content_hash": "bd696361fb0f81860f36a904bfc8291b1f35061d",
+      "content": "    build:\n      context: ..\n      dockerfile: helix-container/Dockerfile",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.build.context_5": {
+      "name": "services.helix-dev.build.context",
+      "type": "key",
+      "start_line": 5,
+      "end_line": 5,
+      "content_hash": "bb95e5ae92777a458176cc242b87855d04f9b2c7",
+      "content": "      context: ..",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.build.dockerfile_6": {
+      "name": "services.helix-dev.build.dockerfile",
+      "type": "key",
+      "start_line": 6,
+      "end_line": 6,
+      "content_hash": "5c567a6946a872731823699b2346343e24a81402",
+      "content": "      dockerfile: helix-container/Dockerfile",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.ports_7": {
+      "name": "services.helix-dev.ports",
+      "type": "key",
+      "start_line": 7,
+      "end_line": 8,
+      "content_hash": "8346e33a25dd78c30e3ce66623f30af3decd64df",
+      "content": "    ports:\n      - \"${HELIX_PORT:-6969}:6969\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.volumes_9": {
+      "name": "services.helix-dev.volumes",
+      "type": "key",
+      "start_line": 9,
+      "end_line": 10,
+      "content_hash": "9c8c9234c188b30d24c35db93801de73284f21ac",
+      "content": "    volumes:\n      - ${HOME}/.helix/dockerdev:/usr/src/app",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.environment_11": {
+      "name": "services.helix-dev.environment",
+      "type": "key",
+      "start_line": 11,
+      "end_line": 14,
+      "content_hash": "7a22b0e4613c115342c5e880fa7cea282d938f41",
+      "content": "    environment:\n      - HELIX_PORT=${HELIX_PORT:-6969}\n      - HELIX_DATA_DIR=/usr/src/app/data\n      - HELIX_DAEMON=1",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "key_services.helix-dev.restart_15": {
+      "name": "services.helix-dev.restart",
+      "type": "key",
+      "start_line": 15,
+      "end_line": 15,
+      "content_hash": "74557caa0a21d8e8ad7cfa64ad6b18fb402da2d0",
+      "content": "    restart: unless-stopped",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

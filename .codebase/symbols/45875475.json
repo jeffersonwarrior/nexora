@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/protocol/custom_serde/edge_serde.rs",
+  "file_hash": "8a43af6373ace26fa0e3b927d15d6efc0ae4d739",
+  "updated_at": "2025-12-26T17:34:21.998128",
+  "symbols": {
+    "struct_OptionPropertiesMapDeSeed_9": {
+      "name": "OptionPropertiesMapDeSeed",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 12,
+      "content_hash": "900f7c0eb80379f667f35e396232005a8d243920",
+      "content": "struct OptionPropertiesMapDeSeed<'arena> {\n    arena: &'arena bumpalo::Bump,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_DeserializeSeed_13": {
+      "name": "DeserializeSeed",
+      "type": "impl",
+      "start_line": 13,
+      "end_line": 19,
+      "content_hash": "4d68ffc9937fb23ce383dd0418e1eb5981c0f536",
+      "content": "impl<'de, 'arena> DeserializeSeed<'de> for OptionPropertiesMapDeSeed<'arena> {\n    type Value = Option<ImmutablePropertiesMap<'arena>>;\n\n    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n    where\n        D: serde::Deserializer<'de>,\n    {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_OptVisitor_20": {
+      "name": "OptVisitor",
+      "type": "struct",
+      "start_line": 20,
+      "end_line": 23,
+      "content_hash": "5cbe9ae43526fdaae3da35333fe652eae66cba52",
+      "content": "        struct OptVisitor<'arena> {\n            arena: &'arena bumpalo::Bump,\n        }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Visitor_24": {
+      "name": "Visitor",
+      "type": "impl",
+      "start_line": 24,
+      "end_line": 26,
+      "content_hash": "c72304f14a968219ac8981d0d8d9401278d10f50",
+      "content": "        impl<'de, 'arena> Visitor<'de> for OptVisitor<'arena> {\n            type Value = Option<ImmutablePropertiesMap<'arena>>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_expecting_27": {
+      "name": "expecting",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 52,
+      "content_hash": "185103e290c9773c1f8e378dbb8c324e4601b3c9",
+      "content": "            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n                formatter.write_str(\"Option<ImmutablePropertiesMap>\")\n            }\n\n            fn visit_none<E>(self) -> Result<Self::Value, E>\n            where\n                E: serde::de::Error,\n            {\n                Ok(None)\n            }\n\n            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n            where\n                D: serde::Deserializer<'de>,\n            {\n                ImmutablePropertiesMapDeSeed { arena: self.arena }\n                    .deserialize(deserializer)\n                    .map(Some)\n            }\n        }\n\n        deserializer.deserialize_option(OptVisitor { arena: self.arena })\n    }\n}\n\n/// DeserializeSeed for Node that allocates label and properties into the arena",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EdgeDeSeed_53": {
+      "name": "EdgeDeSeed",
+      "type": "struct",
+      "start_line": 53,
+      "end_line": 57,
+      "content_hash": "260a94d9fdd6efdf3689935e52631688c43620d3",
+      "content": "pub struct EdgeDeSeed<'arena> {\n    pub arena: &'arena bumpalo::Bump,\n    pub id: u128,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_serde::de::DeserializeSeed_58": {
+      "name": "serde::de::DeserializeSeed",
+      "type": "impl",
+      "start_line": 58,
+      "end_line": 64,
+      "content_hash": "91cd27dd57c996c1acc7b695aef79f019035fcea",
+      "content": "impl<'de, 'arena> serde::de::DeserializeSeed<'de> for EdgeDeSeed<'arena> {\n    type Value = Edge<'arena>;\n\n    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>\n    where\n        D: serde::de::Deserializer<'de>,\n    {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_EdgeVisitor_65": {
+      "name": "EdgeVisitor",
+      "type": "struct",
+      "start_line": 65,
+      "end_line": 69,
+      "content_hash": "057fae71ab3f7f4403fb6f2b06bb4c8d1985f1f9",
+      "content": "        struct EdgeVisitor<'arena> {\n            arena: &'arena bumpalo::Bump,\n            id: u128,\n        }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_serde::de::Visitor_70": {
+      "name": "serde::de::Visitor",
+      "type": "impl",
+      "start_line": 70,
+      "end_line": 72,
+      "content_hash": "bd6566539ac9e92fceab7056efe86e804a7a3c1a",
+      "content": "        impl<'de, 'arena> serde::de::Visitor<'de> for EdgeVisitor<'arena> {\n            type Value = Edge<'arena>;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_expecting_73": {
+      "name": "expecting",
+      "type": "method",
+      "start_line": 73,
+      "end_line": 122,
+      "content_hash": "0b4ca0b1c9985e38f7440a6ad95e10ed86e6b2f9",
+      "content": "            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {\n                formatter.write_str(\"struct Edge\")\n            }\n\n            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>\n            where\n                A: serde::de::SeqAccess<'de>,\n            {\n                let label_string: &'de str = seq\n                    .next_element()?\n                    .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;\n                let label = self.arena.alloc_str(label_string);\n\n                let version: u8 = seq.next_element()?.unwrap_or(0);\n\n                let from_node: u128 = seq\n                    .next_element()?\n                    .ok_or_else(|| serde::de::Error::invalid_length(1, &self))?;\n\n                let to_node: u128 = seq\n                    .next_element()?\n                    .ok_or_else(|| serde::de::Error::invalid_length(2, &self))?;\n\n                // Use our custom DeserializeSeed that handles the Option wrapper\n                let properties: Option<ImmutablePropertiesMap<'arena>> = seq\n                    .next_element_seed(OptionPropertiesMapDeSeed { arena: self.arena })?\n                    .ok_or_else(|| serde::de::Error::custom(\"Expected properties field\"))?;\n\n                Ok(Edge {\n                    id: self.id,\n                    label,\n                    version,\n                    from_node,\n                    to_node,\n                    properties,\n                })\n            }\n        }\n\n        // Match the serialize_struct call in Edge's Serialize implementation\n        deserializer.deserialize_struct(\n            \"Edge\",\n            &[\"label\", \"version\", \"from_node\", \"to_node\", \"properties\"],\n            EdgeVisitor {\n                arena: self.arena,\n                id: self.id,\n            },\n        )\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

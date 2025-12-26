@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_hybrid_cli_json.py",
+  "file_hash": "b87b4223967ae22e13356e90289af9a9854a21c9",
+  "updated_at": "2025-12-26T17:34:20.744025",
+  "symbols": {
+    "function_test_hybrid_cli_json_output_8": {
+      "name": "test_hybrid_cli_json_output",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 86,
+      "content_hash": "6b9a042d3a98fba570e28a5ddb0168f57f0653cb",
+      "content": "def test_hybrid_cli_json_output(monkeypatch, capsys):\n    hy = importlib.import_module(\"scripts.hybrid_search\")\n    embedder = importlib.import_module(\"scripts.embedder\")\n\n    class DummyVec:\n        def __init__(self):\n            self._data = [0.1, 0.2]\n\n        def tolist(self):\n            return list(self._data)\n\n    class DummyEmbedding:\n        def __init__(self, model_name):\n            self.model_name = model_name\n\n        def embed(self, texts):\n            for _ in texts:\n                yield DummyVec()\n\n    class DummyClient:\n        def __init__(self, *args, **kwargs):\n            self.args = args\n            self.kwargs = kwargs\n\n    def fake_dense_query(client, vec_name, vector, flt, per_query, collection_name=None, query_text=None):\n        md = {\n            \"path\": \"/work/pkg/a.py\",\n            \"symbol\": \"foo\",\n            \"symbol_path\": \"pkg.a:foo\",\n            \"path_prefix\": \"/work/pkg\",\n            \"start_line\": 1,\n            \"end_line\": 2,\n            \"code\": \"def foo():\\n    return 1\\n\",\n            \"imports\": [\"pkg.b\"],\n            \"calls\": [\"pkg.bar\"],\n        }\n        return [SimpleNamespace(id=\"1\", payload={\"metadata\": md})]\n\n    monkeypatch.setenv(\"COLLECTION_NAME\", \"test-collection\")\n    monkeypatch.setenv(\"QDRANT_URL\", \"http://example.invalid:6333\")\n    monkeypatch.setenv(\"EMBEDDING_MODEL\", \"stub-model\")\n    monkeypatch.setattr(hy, \"TextEmbedding\", DummyEmbedding)\n    monkeypatch.setattr(hy, \"_get_embedding_model\", lambda *a, **k: DummyEmbedding(\"stub-model\"))\n    monkeypatch.setattr(embedder, \"get_embedding_model\", lambda *a, **k: DummyEmbedding(\"stub-model\"))\n    monkeypatch.setattr(hy, \"QdrantClient\", DummyClient)\n    monkeypatch.setattr(hy, \"_ensure_collection\", lambda *a, **k: None)\n    monkeypatch.setattr(hy, \"lex_hash_vector\", lambda *a, **k: [])\n    monkeypatch.setattr(hy, \"lex_query\", lambda *a, **k: [])\n    monkeypatch.setattr(hy, \"expand_queries\", lambda queries, lang=None: queries)\n    monkeypatch.setattr(hy, \"_embed_queries_cached\", lambda *a, **k: [[0.1, 0.2]])\n    monkeypatch.setattr(hy, \"dense_query\", fake_dense_query)\n    monkeypatch.setattr(hy, \"lexical_score\", lambda *a, **k: 0.0)\n\n    monkeypatch.setattr(\n        sys,\n        \"argv\",\n        [\n            \"hybrid_search.py\",\n            \"--json\",\n            \"--query\",\n            \"foo\",\n            \"--limit\",\n            \"1\",\n        ],\n    )\n\n    hy.main()\n\n    captured = capsys.readouterr()\n    lines = [ln for ln in captured.out.splitlines() if ln.strip()]\n    assert len(lines) == 1\n    payload = json.loads(lines[0])\n    assert payload[\"path\"] == \"/work/pkg/a.py\"\n    assert payload[\"components\"][\"dense_rrf\"] > 0\n    # \"why\" is optional (disabled by default via INCLUDE_WHY=0)\n    # If present, verify it contains dense_rrf; otherwise just check components\n    if \"why\" in payload:\n        assert any(\"dense_rrf\" in entry for entry in payload[\"why\"])\n    assert payload[\"relations\"][\"imports\"] == [\"pkg.b\"]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_DummyVec_12": {
+      "name": "DummyVec",
+      "type": "class",
+      "start_line": 12,
+      "end_line": 17,
+      "content_hash": "edfe88266bffd659b495a77c71434acbec6df02c",
+      "content": "    class DummyVec:\n        def __init__(self):\n            self._data = [0.1, 0.2]\n\n        def tolist(self):\n            return list(self._data)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___13": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 13,
+      "end_line": 14,
+      "content_hash": "322b6674d12cf771a22555bba175f2a1e9a19d70",
+      "content": "        def __init__(self):\n            self._data = [0.1, 0.2]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_tolist_16": {
+      "name": "tolist",
+      "type": "method",
+      "start_line": 16,
+      "end_line": 17,
+      "content_hash": "004c9a1684afb33171eaa6cf2a516ab56c9840ce",
+      "content": "        def tolist(self):\n            return list(self._data)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_DummyEmbedding_19": {
+      "name": "DummyEmbedding",
+      "type": "class",
+      "start_line": 19,
+      "end_line": 25,
+      "content_hash": "afa3691b1a9c9f246824d07ef45d9d9e5ba38d51",
+      "content": "    class DummyEmbedding:\n        def __init__(self, model_name):\n            self.model_name = model_name\n\n        def embed(self, texts):\n            for _ in texts:\n                yield DummyVec()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___20": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 20,
+      "end_line": 21,
+      "content_hash": "10df0bf71148919d6b48fe1da2f87dd1d6f12d79",
+      "content": "        def __init__(self, model_name):\n            self.model_name = model_name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_embed_23": {
+      "name": "embed",
+      "type": "method",
+      "start_line": 23,
+      "end_line": 25,
+      "content_hash": "610612060ad94694fdfe6dc1060c43d35cc62939",
+      "content": "        def embed(self, texts):\n            for _ in texts:\n                yield DummyVec()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "class_DummyClient_27": {
+      "name": "DummyClient",
+      "type": "class",
+      "start_line": 27,
+      "end_line": 30,
+      "content_hash": "f05e0d069f32b5aecc858e3e5a0e05d62af3c6f7",
+      "content": "    class DummyClient:\n        def __init__(self, *args, **kwargs):\n            self.args = args\n            self.kwargs = kwargs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method___init___28": {
+      "name": "__init__",
+      "type": "method",
+      "start_line": 28,
+      "end_line": 30,
+      "content_hash": "c82aaa8b1f1d4799d206bc5ce120891f45ca19aa",
+      "content": "        def __init__(self, *args, **kwargs):\n            self.args = args\n            self.kwargs = kwargs",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_dense_query_32": {
+      "name": "fake_dense_query",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 44,
+      "content_hash": "cf3ed8ab1873dfd49883b70fa0c89f968fd91b11",
+      "content": "    def fake_dense_query(client, vec_name, vector, flt, per_query, collection_name=None, query_text=None):\n        md = {\n            \"path\": \"/work/pkg/a.py\",\n            \"symbol\": \"foo\",\n            \"symbol_path\": \"pkg.a:foo\",\n            \"path_prefix\": \"/work/pkg\",\n            \"start_line\": 1,\n            \"end_line\": 2,\n            \"code\": \"def foo():\\n    return 1\\n\",\n            \"imports\": [\"pkg.b\"],\n            \"calls\": [\"pkg.bar\"],\n        }\n        return [SimpleNamespace(id=\"1\", payload={\"metadata\": md})]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

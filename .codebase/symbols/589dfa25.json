@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/util/order.rs",
+  "file_hash": "a06c8ba1219be49c706373db3e1e6b99af7c639f",
+  "updated_at": "2025-12-26T17:34:21.196635",
+  "symbols": {
+    "struct_OrderByAsc_10": {
+      "name": "OrderByAsc",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 13,
+      "content_hash": "fb16769321da8971c5ead3d5c5742fa3c1cf9e1a",
+      "content": "pub struct OrderByAsc<I> {\n    iter: I,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_14": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 14,
+      "end_line": 19,
+      "content_hash": "bf45f8b8943c8c0423479d0f9f5d0df2bd578a25",
+      "content": "impl<'arena, I> Iterator for OrderByAsc<I>\nwhere\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n{\n    type Item = I::Item;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_20": {
+      "name": "next",
+      "type": "method",
+      "start_line": 20,
+      "end_line": 24,
+      "content_hash": "d258580f7a868d34a4600b6c490c118542bfa73e",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        self.iter.next()\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_OrderByDesc_25": {
+      "name": "OrderByDesc",
+      "type": "struct",
+      "start_line": 25,
+      "end_line": 28,
+      "content_hash": "ffce2c5de33a0770b5a77a7413eab2cbc3a3adfe",
+      "content": "pub struct OrderByDesc<I> {\n    iter: I,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_29": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 29,
+      "end_line": 34,
+      "content_hash": "4fd00f9ca80c55ae7479033180c71e6752b2bcb2",
+      "content": "impl<'arena, I> Iterator for OrderByDesc<I>\nwhere\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n{\n    type Item = I::Item;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_35": {
+      "name": "next",
+      "type": "method",
+      "start_line": 35,
+      "end_line": 39,
+      "content_hash": "d258580f7a868d34a4600b6c490c118542bfa73e",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        self.iter.next()\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_OrderByAdapter_40": {
+      "name": "OrderByAdapter",
+      "type": "trait",
+      "start_line": 40,
+      "end_line": 40,
+      "content_hash": "09e83c5e2eb26748879258d434ffa5b525ffc512",
+      "content": "pub trait OrderByAdapter<'db, 'arena, 'txn>: Iterator {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_order_by_asc_41": {
+      "name": "order_by_asc",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 47,
+      "content_hash": "9a197d606d1060580481e8768fe10c4a9ca4d836",
+      "content": "    fn order_by_asc(\n        self,\n        property: &str,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_48": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 48,
+      "end_line": 50,
+      "content_hash": "8773007e76fbde46c81641c22c1a5fbbac716149",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_order_by_desc_51": {
+      "name": "order_by_desc",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 57,
+      "content_hash": "23003ea3967e6e3de4ba53ca6e7ad2f5ef4cd5ff",
+      "content": "    fn order_by_desc(\n        self,\n        property: &str,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_58": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 58,
+      "end_line": 64,
+      "content_hash": "8265d44f0bdff32ba33f07085896ca2a1f173c66",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    OrderByAdapter<'db, 'arena, 'txn> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_order_by_asc_65": {
+      "name": "order_by_asc",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 71,
+      "content_hash": "9a197d606d1060580481e8768fe10c4a9ca4d836",
+      "content": "    fn order_by_asc(\n        self,\n        property: &str,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_72": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 72,
+      "end_line": 116,
+      "content_hash": "9833cd0e5aa7bf5e53667cf6277007ae085ebb9b",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        RoTraversalIterator {\n            arena: self.arena,\n            storage: self.storage,\n            txn: self.txn,\n            inner: OrderByAsc {\n                iter: self.inner.sorted_by(|a, b| match (a, b) {\n                    (Ok(a), Ok(b)) => match (a, b) {\n                        (TraversalValue::Node(a), TraversalValue::Node(b)) => {\n                            match (a.get_property(property), b.get_property(property)) {\n                                (Some(val_a), Some(val_b)) => val_a.cmp(val_b),\n                                (Some(_), None) => Ordering::Less,\n                                (None, Some(_)) => Ordering::Greater,\n                                (None, None) => Ordering::Equal,\n                            }\n                        }\n                        (TraversalValue::Edge(a), TraversalValue::Edge(b)) => {\n                            match (a.get_property(property), b.get_property(property)) {\n                                (Some(val_a), Some(val_b)) => val_a.cmp(val_b),\n                                (Some(_), None) => Ordering::Less,\n                                (None, Some(_)) => Ordering::Greater,\n                                (None, None) => Ordering::Equal,\n                            }\n                        }\n                        (TraversalValue::Vector(a), TraversalValue::Vector(b)) => {\n                            match (a.get_property(property), b.get_property(property)) {\n                                (Some(val_a), Some(val_b)) => val_a.cmp(val_b),\n                                (Some(_), None) => Ordering::Less,\n                                (None, Some(_)) => Ordering::Greater,\n                                (None, None) => Ordering::Equal,\n                            }\n                        }\n                        (TraversalValue::Value(val_a), TraversalValue::Value(val_b)) => {\n                            val_a.cmp(val_b)\n                        }\n                        _ => Ordering::Equal,\n                    },\n                    (Err(_), _) => Ordering::Equal,\n                    (_, Err(_)) => Ordering::Equal,\n                }),\n            },\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_order_by_desc_117": {
+      "name": "order_by_desc",
+      "type": "method",
+      "start_line": 117,
+      "end_line": 123,
+      "content_hash": "23003ea3967e6e3de4ba53ca6e7ad2f5ef4cd5ff",
+      "content": "    fn order_by_desc(\n        self,\n        property: &str,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_124": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 124,
+      "end_line": 168,
+      "content_hash": "f91dc59a1408f0c1c3e123ec808c239f7ba8b1fe",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        RoTraversalIterator {\n            arena: self.arena,\n            storage: self.storage,\n            txn: self.txn,\n            inner: OrderByAsc {\n                iter: self.inner.sorted_by(|a, b| match (a, b) {\n                    (Ok(a), Ok(b)) => match (a, b) {\n                        (TraversalValue::Node(a), TraversalValue::Node(b)) => {\n                            match (a.get_property(property), b.get_property(property)) {\n                                (Some(val_a), Some(val_b)) => val_b.cmp(val_a),\n                                (Some(_), None) => Ordering::Less,\n                                (None, Some(_)) => Ordering::Greater,\n                                (None, None) => Ordering::Equal,\n                            }\n                        }\n                        (TraversalValue::Edge(a), TraversalValue::Edge(b)) => {\n                            match (a.get_property(property), b.get_property(property)) {\n                                (Some(val_a), Some(val_b)) => val_b.cmp(val_a),\n                                (Some(_), None) => Ordering::Less,\n                                (None, Some(_)) => Ordering::Greater,\n                                (None, None) => Ordering::Equal,\n                            }\n                        }\n                        (TraversalValue::Vector(a), TraversalValue::Vector(b)) => {\n                            match (a.get_property(property), b.get_property(property)) {\n                                (Some(val_a), Some(val_b)) => val_b.cmp(val_a),\n                                (Some(_), None) => Ordering::Less,\n                                (None, Some(_)) => Ordering::Greater,\n                                (None, None) => Ordering::Equal,\n                            }\n                        }\n                        (TraversalValue::Value(val_a), TraversalValue::Value(val_b)) => {\n                            val_b.cmp(val_a)\n                        }\n                        _ => Ordering::Equal,\n                    },\n                    (Err(_), _) => Ordering::Equal,\n                    (_, Err(_)) => Ordering::Equal,\n                }),\n            },\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

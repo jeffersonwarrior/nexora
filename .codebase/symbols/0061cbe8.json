@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/mcp/zai/zai_test.go",
+  "file_hash": "aabfbdb39cce507ab08ce6ea2dfe4ef536e096b5",
+  "updated_at": "2025-12-26T17:34:22.842319",
+  "symbols": {
+    "function_TestIsVisionTool_11": {
+      "name": "TestIsVisionTool",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 76,
+      "content_hash": "749248ad93b8b549115e00d333fb2d6bfa4ef0cf",
+      "content": "func TestIsVisionTool(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\ttoolName string\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname:     \"data visualization tool\",\n\t\t\ttoolName: \"mcp_vision_analyze_data_visualization\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"general image analysis tool\",\n\t\t\ttoolName: \"mcp_vision_analyze_image\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"text extraction tool\",\n\t\t\ttoolName: \"mcp_vision_extract_text_from_screenshot\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"UI to artifact tool\",\n\t\t\ttoolName: \"mcp_vision_ui_to_artifact\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"error diagnosis tool\",\n\t\t\ttoolName: \"mcp_vision_diagnose_error_screenshot\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"technical diagram tool\",\n\t\t\ttoolName: \"mcp_vision_understand_technical_diagram\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"UI diff check tool\",\n\t\t\ttoolName: \"mcp_vision_ui_diff_check\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"video analysis tool\",\n\t\t\ttoolName: \"mcp_vision_analyze_video\",\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"non-vision tool\",\n\t\t\ttoolName: \"bash\",\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"empty tool name\",\n\t\t\ttoolName: \"\",\n\t\t\texpected: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := IsVisionTool(tt.toolName)\n\t\t\tassert.Equal(t, tt.expected, result)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetToolDescription_77": {
+      "name": "TestGetToolDescription",
+      "type": "function",
+      "start_line": 77,
+      "end_line": 107,
+      "content_hash": "8bc1f2dd0bdd6ae090b32b85c2375fdb6d5d27c7",
+      "content": "func TestGetToolDescription(t *testing.T) {\n\ttests := []struct {\n\t\tname         string\n\t\ttoolName     string\n\t\texpectedDesc string\n\t}{\n\t\t{\n\t\t\tname:         \"data visualization tool description\",\n\t\t\ttoolName:     \"mcp_vision_analyze_data_visualization\",\n\t\t\texpectedDesc: \"Analyze charts, graphs, and data visualizations to extract insights\",\n\t\t},\n\t\t{\n\t\t\tname:         \"general image analysis tool description\",\n\t\t\ttoolName:     \"mcp_vision_analyze_image\",\n\t\t\texpectedDesc: \"General-purpose image analysis for any visual content\",\n\t\t},\n\t\t{\n\t\t\tname:         \"unknown tool\",\n\t\t\ttoolName:     \"unknown_tool\",\n\t\t\texpectedDesc: \"Z.ai vision analysis tool\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := GetToolDescription(tt.toolName)\n\t\t\tassert.Equal(t, tt.expectedDesc, result)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestStateString_108": {
+      "name": "TestStateString",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 143,
+      "content_hash": "db7161d1094b5a559b29c61ee20bee4e6e91784e",
+      "content": "func TestStateString(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tstate    State\n\t\texpected string\n\t}{\n\t\t{\n\t\t\tname:     \"not configured state\",\n\t\t\tstate:    StateNotConfigured,\n\t\t\texpected: \"not_configured\",\n\t\t},\n\t\t{\n\t\t\tname:     \"stopped state\",\n\t\t\tstate:    StateStopped,\n\t\t\texpected: \"stopped\",\n\t\t},\n\t\t{\n\t\t\tname:     \"running state\",\n\t\t\tstate:    StateRunning,\n\t\t\texpected: \"running\",\n\t\t},\n\t\t{\n\t\t\tname:     \"unknown state\",\n\t\t\tstate:    State(999),\n\t\t\texpected: \"unknown\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := tt.state.String()\n\t\t\tassert.Equal(t, tt.expected, result)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestValidateConfig_144": {
+      "name": "TestValidateConfig",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 175,
+      "content_hash": "a93e992c699b2fa595461a61226e0ae186a8c5fb",
+      "content": "func TestValidateConfig(t *testing.T) {\n\t// Store original env var\n\toriginalAPIKey := os.Getenv(\"ZAI_API_KEY\")\n\tdefer func() {\n\t\tif originalAPIKey != \"\" {\n\t\t\tos.Setenv(\"ZAI_API_KEY\", originalAPIKey)\n\t\t} else {\n\t\t\tos.Unsetenv(\"ZAI_API_KEY\")\n\t\t}\n\t}()\n\n\tt.Run(\"missing API key\", func(t *testing.T) {\n\t\tos.Setenv(\"ZAI_API_KEY\", \"\")\n\t\terr := ValidateConfig()\n\t\tassert.Error(t, err)\n\t\tassert.Contains(t, err.Error(), \"ZAI_API_KEY environment variable is required\")\n\t})\n\n\tt.Run(\"API key too short\", func(t *testing.T) {\n\t\tos.Setenv(\"ZAI_API_KEY\", \"short\")\n\t\terr := ValidateConfig()\n\t\tassert.Error(t, err)\n\t\tassert.Contains(t, err.Error(), \"appears to be too short\")\n\t})\n\n\tt.Run(\"valid API key\", func(t *testing.T) {\n\t\tos.Setenv(\"ZAI_API_KEY\", \"valid_api_key_for_testing\")\n\t\terr := ValidateConfig()\n\t\tassert.NoError(t, err)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestManager_176": {
+      "name": "TestManager",
+      "type": "function",
+      "start_line": 176,
+      "end_line": 239,
+      "content_hash": "c4b767cfbf9e86ac278c105b13e9a2a13d5111d9",
+      "content": "func TestManager(t *testing.T) {\n\t// Store original env var\n\toriginalAPIKey := os.Getenv(\"ZAI_API_KEY\")\n\tdefer func() {\n\t\tif originalAPIKey != \"\" {\n\t\t\tos.Setenv(\"ZAI_API_KEY\", originalAPIKey)\n\t\t} else {\n\t\t\tos.Unsetenv(\"ZAI_API_KEY\")\n\t\t}\n\t}()\n\n\tt.Run(\"manager without API key\", func(t *testing.T) {\n\t\tos.Setenv(\"ZAI_API_KEY\", \"\")\n\t\tcfg := config.Config{}\n\t\tmanager := NewManager(cfg)\n\n\t\t// Check initial status\n\t\tstatus := manager.GetStatus()\n\t\tassert.Equal(t, StateNotConfigured, status.State)\n\t\tassert.Contains(t, status.Message, \"ZAI_API_KEY not set\")\n\n\t\t// Try to start\n\t\terr := manager.Start(nil)\n\t\tassert.Error(t, err)\n\t\tassert.Contains(t, err.Error(), \"ZAI_API_KEY environment variable is required\")\n\t})\n\n\tt.Run(\"manager with API key\", func(t *testing.T) {\n\t\tos.Setenv(\"ZAI_API_KEY\", \"valid_api_key_for_testing\")\n\t\tcfg := config.Config{}\n\t\tmanager := NewManager(cfg)\n\n\t\t// Check initial status\n\t\tstatus := manager.GetStatus()\n\t\tassert.Equal(t, StateStopped, status.State)\n\n\t\t// Try to get client before start\n\t\t_, err := manager.GetClient()\n\t\tassert.Error(t, err)\n\t\tassert.Contains(t, err.Error(), \"not initialized\")\n\n\t\t// Start manager\n\t\terr = manager.Start(nil)\n\t\t// Note: This will fail in mock mode, but we can still test the structure\n\t\t// In a real environment with proper MCP server, this would succeed\n\t\tif err != nil {\n\t\t\tt.Logf(\"Expected failure in mock mode: %v\", err)\n\t\t}\n\t})\n\n\tt.Run(\"manager stop\", func(t *testing.T) {\n\t\tos.Setenv(\"ZAI_API_KEY\", \"valid_api_key_for_testing\")\n\t\tcfg := config.Config{}\n\t\tmanager := NewManager(cfg)\n\n\t\t// Stop manager (should not error even if not started)\n\t\terr := manager.Stop()\n\t\tassert.NoError(t, err)\n\n\t\t// Check status after stop\n\t\tstatus := manager.GetStatus()\n\t\tassert.Equal(t, StateStopped, status.State)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

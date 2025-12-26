@@ -1,0 +1,293 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/parser/expression_parse_methods.rs",
+  "file_hash": "bf758be11bdf78cd5839bf574821dab467e49ee9",
+  "updated_at": "2025-12-26T17:34:20.144001",
+  "symbols": {
+    "impl_HelixParser_16": {
+      "name": "HelixParser",
+      "type": "impl",
+      "start_line": 16,
+      "end_line": 691,
+      "content_hash": "c11cd26abab7743bb44a957ad3729af27bd50d60",
+      "content": "impl HelixParser {\n    pub(super) fn parse_assignment(&self, pair: Pair<Rule>) -> Result<Assignment, ParserError> {\n        let mut pairs = pair.clone().into_inner();\n        let variable = pairs.try_next()?.as_str().to_string();\n        let value = self.parse_expression(pairs.try_next()?)?;\n\n        Ok(Assignment {\n            variable,\n            value,\n            loc: pair.loc(),\n        })\n    }\n\n    pub(super) fn parse_expression(&self, p: Pair<Rule>) -> Result<Expression, ParserError> {\n        let pair = p.try_inner_next()?;\n\n        match pair.as_rule() {\n            Rule::traversal => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::Traversal(Box::new(self.parse_traversal(pair)?)),\n            }),\n            Rule::id_traversal => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::Traversal(Box::new(self.parse_traversal(pair)?)),\n            }),\n\n            Rule::anonymous_traversal => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::Traversal(Box::new(self.parse_anon_traversal(pair)?)),\n            }),\n            Rule::identifier => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::Identifier(pair.as_str().to_string()),\n            }),\n            Rule::string_literal => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::StringLiteral(self.parse_string_literal(pair)?),\n            }),\n            Rule::exists => {\n                let loc = pair.loc();\n                let mut inner = pair.into_inner();\n                let negated = match inner.peek() {\n                    Some(p) => p.as_rule() == Rule::negate,\n                    None => false,\n                };\n                if negated {\n                    inner.next();\n                }\n                let traversal = inner\n                    .next()\n                    .ok_or_else(|| ParserError::from(\"Missing traversal\"))?;\n\n                let parsed_traversal = match traversal.as_rule() {\n                    Rule::anonymous_traversal => self.parse_anon_traversal(traversal)?,\n                    Rule::id_traversal => self.parse_traversal(traversal)?,\n                    Rule::traversal => self.parse_traversal(traversal)?,\n                    other => return Err(ParserError::from(format!(\n                        \"Unexpected rule in exists expression: {:?}\",\n                        other\n                    ))),\n                };\n                let expr = ExpressionType::Exists(ExistsExpression {\n                    loc: loc.clone(),\n                    expr: Box::new(Expression {\n                        loc: loc.clone(),\n                        expr: ExpressionType::Traversal(Box::new(parsed_traversal)),\n                    }),\n                });\n                Ok(Expression {\n                    loc: loc.clone(),\n                    expr: match negated {\n                        true => ExpressionType::Not(Box::new(Expression {\n                            loc: loc.clone(),\n                            expr,\n                        })),\n                        false => expr,\n                    },\n                })\n            }\n            Rule::integer => pair\n                .as_str()\n                .parse()\n                .map(|i| Expression {\n                    loc: pair.loc(),\n                    expr: ExpressionType::IntegerLiteral(i),\n                })\n                .map_err(|_| ParserError::from(\"Invalid integer literal\")),\n            Rule::float => pair\n                .as_str()\n                .parse()\n                .map(|f| Expression {\n                    loc: pair.loc(),\n                    expr: ExpressionType::FloatLiteral(f),\n                })\n                .map_err(|_| ParserError::from(\"Invalid float literal\")),\n            Rule::boolean => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::BooleanLiteral(pair.as_str() == \"true\"),\n            }),\n            Rule::array_literal => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::ArrayLiteral(self.parse_array_literal(pair)?),\n            }),\n            Rule::evaluates_to_bool => Ok(self.parse_boolean_expression(pair)?),\n            Rule::AddN => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::AddNode(self.parse_add_node(pair)?),\n            }),\n            Rule::AddV => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::AddVector(self.parse_add_vector(pair)?),\n            }),\n            Rule::AddE => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::AddEdge(self.parse_add_edge(pair, false)?),\n            }),\n            Rule::search_vector => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::SearchVector(self.parse_search_vector(pair)?),\n            }),\n            Rule::none => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::Empty,\n            }),\n            Rule::bm25_search => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::BM25Search(self.parse_bm25_search(pair)?),\n            }),\n            Rule::math_function_call => Ok(Expression {\n                loc: pair.loc(),\n                expr: ExpressionType::MathFunctionCall(self.parse_math_function_call(pair)?),\n            }),\n            _ => Err(ParserError::from(format!(\n                \"Unexpected expression type: {:?}\",\n                pair.as_rule()\n            ))),\n        }\n    }\n\n    pub(super) fn parse_boolean_expression(\n        &self,\n        pair: Pair<Rule>,\n    ) -> Result<Expression, ParserError> {\n        let expression = pair.try_inner_next()?;\n        match expression.as_rule() {\n            Rule::and => {\n                let loc: Loc = expression.loc();\n                let mut inner = expression.into_inner();\n                let negated = match inner.peek() {\n                    Some(p) => p.as_rule() == Rule::negate,\n                    None => false,\n                };\n                if negated {\n                    inner.next();\n                }\n                let exprs = self.parse_expression_vec(inner)?;\n                Ok(Expression {\n                    loc: loc.clone(),\n                    expr: match negated {\n                        true => ExpressionType::Not(Box::new(Expression {\n                            loc,\n                            expr: ExpressionType::And(exprs),\n                        })),\n                        false => ExpressionType::And(exprs),\n                    },\n                })\n            }\n            Rule::or => {\n                let loc: Loc = expression.loc();\n                let mut inner = expression.into_inner();\n                let negated = match inner.peek() {\n                    Some(p) => p.as_rule() == Rule::negate,\n                    None => false,\n                };\n                if negated {\n                    inner.next();\n                }\n                let exprs = self.parse_expression_vec(inner)?;\n                Ok(Expression {\n                    loc: loc.clone(),\n                    expr: match negated {\n                        true => ExpressionType::Not(Box::new(Expression {\n                            loc,\n                            expr: ExpressionType::Or(exprs),\n                        })),\n                        false => ExpressionType::Or(exprs),\n                    },\n                })\n            }\n            Rule::boolean => Ok(Expression {\n                loc: expression.loc(),\n                expr: ExpressionType::BooleanLiteral(expression.as_str() == \"true\"),\n            }),\n            Rule::exists => {\n                let loc = expression.loc();\n                let mut inner = expression.into_inner();\n                let negated = match inner.peek() {\n                    Some(p) => p.as_rule() == Rule::negate,\n                    None => false,\n                };\n                if negated {\n                    inner.next();\n                }\n                let traversal = inner\n                    .next()\n                    .ok_or_else(|| ParserError::from(\"Missing traversal\"))?;\n                let parsed_traversal = match traversal.as_rule() {\n                    Rule::anonymous_traversal => self.parse_anon_traversal(traversal)?,\n                    Rule::id_traversal => self.parse_traversal(traversal)?,\n                    Rule::traversal => self.parse_traversal(traversal)?,\n                    other => return Err(ParserError::from(format!(\n                        \"Unexpected rule in and_or_expression exists: {:?}\",\n                        other\n                    ))),\n                };\n                let expr = ExpressionType::Exists(ExistsExpression {\n                    loc: loc.clone(),\n                    expr: Box::new(Expression {\n                        loc: loc.clone(),\n                        expr: ExpressionType::Traversal(Box::new(parsed_traversal)),\n                    }),\n                });\n                Ok(Expression {\n                    loc: loc.clone(),\n                    expr: match negated {\n                        true => ExpressionType::Not(Box::new(Expression {\n                            loc: loc.clone(),\n                            expr,\n                        })),\n                        false => expr,\n                    },\n                })\n            }\n\n            other => Err(ParserError::from(format!(\n                \"Unexpected rule in parse_and_or_expression: {:?}\",\n                other\n            ))),\n        }\n    }\n    pub(super) fn parse_expression_vec(\n        &self,\n        pairs: Pairs<Rule>,\n    ) -> Result<Vec<Expression>, ParserError> {\n        let mut expressions = Vec::new();\n        for p in pairs {\n            match p.as_rule() {\n                Rule::anonymous_traversal => {\n                    expressions.push(Expression {\n                        loc: p.loc(),\n                        expr: ExpressionType::Traversal(Box::new(self.parse_anon_traversal(p)?)),\n                    });\n                }\n                Rule::traversal => {\n                    expressions.push(Expression {\n                        loc: p.loc(),\n                        expr: ExpressionType::Traversal(Box::new(self.parse_traversal(p)?)),\n                    });\n                }\n                Rule::id_traversal => {\n                    expressions.push(Expression {\n                        loc: p.loc(),\n                        expr: ExpressionType::Traversal(Box::new(self.parse_traversal(p)?)),\n                    });\n                }\n                Rule::evaluates_to_bool => {\n                    expressions.push(self.parse_boolean_expression(p)?);\n                }\n                other => return Err(ParserError::from(format!(\n                    \"Unexpected rule in parse_expression_vec: {:?}\",\n                    other\n                ))),\n            }\n        }\n        Ok(expressions)\n    }\n\n    pub(super) fn parse_bm25_search(&self, pair: Pair<Rule>) -> Result<BM25Search, ParserError> {\n        let mut pairs = pair.clone().into_inner();\n        let vector_type = pairs.try_next()?.as_str().to_string();\n        let query = match pairs.next() {\n            Some(pair) => match pair.as_rule() {\n                Rule::identifier => ValueType::Identifier {\n                    value: pair.as_str().to_string(),\n                    loc: pair.loc(),\n                },\n                Rule::string_literal => ValueType::Literal {\n                    value: Value::String(pair.as_str().to_string()),\n                    loc: pair.loc(),\n                },\n                _ => {\n                    return Err(ParserError::from(format!(\n                        \"Unexpected rule in BM25Search: {:?}\",\n                        pair.as_rule()\n                    )));\n                }\n            },\n            None => {\n                return Err(ParserError::from(format!(\n                    \"Unexpected rule in BM25Search: {:?}\",\n                    pair.as_rule()\n                )));\n            }\n        };\n        let k = Some(match pairs.next() {\n            Some(pair) => match pair.as_rule() {\n                Rule::identifier => EvaluatesToNumber {\n                    loc: pair.loc(),\n                    value: EvaluatesToNumberType::Identifier(pair.as_str().to_string()),\n                },\n                Rule::integer => EvaluatesToNumber {\n                    loc: pair.loc(),\n                    value: EvaluatesToNumberType::I32(\n                        pair.as_str()\n                            .to_string()\n                            .parse::<i32>()\n                            .map_err(|_| ParserError::from(\"Invalid integer value\"))?,\n                    ),\n                },\n                _ => {\n                    return Err(ParserError::from(format!(\n                        \"Unexpected rule in BM25Search: {:?}\",\n                        pair.as_rule()\n                    )));\n                }\n            },\n            None => {\n                return Err(ParserError::from(format!(\n                    \"Unexpected rule in BM25Search: {:?}\",\n                    pair.as_rule()\n                )));\n            }\n        });\n\n        Ok(BM25Search {\n            loc: pair.loc(),\n            type_arg: Some(vector_type),\n            data: Some(query),\n            k,\n        })\n    }\n\n    pub(super) fn parse_for_loop(&self, pair: Pair<Rule>) -> Result<ForLoop, ParserError> {\n        let mut pairs = pair.clone().into_inner();\n        // parse the arguments\n        let argument = pairs.try_next_inner().try_next()?;\n        let argument_loc = argument.loc();\n        let variable = match argument.as_rule() {\n            Rule::object_destructuring => {\n                let fields = argument\n                    .into_inner()\n                    .map(|p| (p.loc(), p.as_str().to_string()))\n                    .collect();\n                ForLoopVars::ObjectDestructuring {\n                    fields,\n                    loc: argument_loc,\n                }\n            }\n            Rule::object_access => {\n                let mut inner = argument.clone().into_inner();\n                let object_name = inner.try_next()?.as_str().to_string();\n                let field_name = inner.try_next()?.as_str().to_string();\n                ForLoopVars::ObjectAccess {\n                    name: object_name,\n                    field: field_name,\n                    loc: argument_loc,\n                }\n            }\n            Rule::identifier => ForLoopVars::Identifier {\n                name: argument.as_str().to_string(),\n                loc: argument_loc,\n            },\n            _ => {\n                return Err(ParserError::from(format!(\n                    \"Unexpected rule in ForLoop: {:?}\",\n                    argument.as_rule()\n                )));\n            }\n        };\n\n        // parse the in\n        let in_ = pairs.try_next()?.clone();\n        let in_variable = match in_.as_rule() {\n            Rule::identifier => (in_.loc(), in_.as_str().to_string()),\n            _ => {\n                return Err(ParserError::from(format!(\n                    \"Unexpected rule in ForLoop: {:?}\",\n                    in_.as_rule()\n                )));\n            }\n        };\n        // parse the body\n        let statements = self.parse_query_body(pairs.try_next()?)?;\n\n        Ok(ForLoop {\n            variable,\n            in_variable,\n            statements,\n            loc: pair.loc(),\n        })\n    }\n\n    pub(super) fn parse_search_vector(\n        &self,\n        pair: Pair<Rule>,\n    ) -> Result<SearchVector, ParserError> {\n        let mut vector_type = None;\n        let mut data = None;\n        let mut k: Option<EvaluatesToNumber> = None;\n        let mut pre_filter = None;\n        for p in pair.clone().into_inner() {\n            match p.as_rule() {\n                Rule::identifier_upper => {\n                    vector_type = Some(p.as_str().to_string());\n                }\n                Rule::vector_data => {\n                    let vector_data = p.clone().try_inner_next()?;\n                    match vector_data.as_rule() {\n                        Rule::identifier => {\n                            data = Some(VectorData::Identifier(p.as_str().to_string()));\n                        }\n                        Rule::vec_literal => {\n                            data = Some(VectorData::Vector(self.parse_vec_literal(p)?));\n                        }\n                        Rule::embed_method => {\n                            let loc = vector_data.loc();\n                            let inner = vector_data.try_inner_next()?;\n                            data = Some(VectorData::Embed(Embed {\n                                loc,\n                                value: match inner.as_rule() {\n                                    Rule::identifier => {\n                                        EvaluatesToString::Identifier(inner.as_str().to_string())\n                                    }\n                                    Rule::string_literal => {\n                                        EvaluatesToString::StringLiteral(inner.as_str().to_string())\n                                    }\n                                    _ => {\n                                        return Err(ParserError::from(format!(\n                                            \"Unexpected rule in SearchV: {:?} => {:?}\",\n                                            inner.as_rule(),\n                                            inner,\n                                        )));\n                                    }\n                                },\n                            }));\n                        }\n                        _ => {\n                            return Err(ParserError::from(format!(\n                                \"Unexpected rule in SearchV: {:?} => {:?}\",\n                                vector_data.as_rule(),\n                                vector_data,\n                            )));\n                        }\n                    }\n                }\n                Rule::integer => {\n                    k = Some(EvaluatesToNumber {\n                        loc: p.loc(),\n                        value: EvaluatesToNumberType::I32(\n                            p.as_str()\n                                .to_string()\n                                .parse::<i32>()\n                                .map_err(|_| ParserError::from(\"Invalid integer value\"))?,\n                        ),\n                    });\n                }\n                Rule::identifier => {\n                    k = Some(EvaluatesToNumber {\n                        loc: p.loc(),\n                        value: EvaluatesToNumberType::Identifier(p.as_str().to_string()),\n                    });\n                }\n                Rule::pre_filter => {\n                    pre_filter = Some(Box::new(self.parse_expression(p)?));\n                }\n                _ => {\n                    return Err(ParserError::from(format!(\n                        \"Unexpected rule in SearchV: {:?} => {:?}\",\n                        p.as_rule(),\n                        p,\n                    )));\n                }\n            }\n        }\n\n        Ok(SearchVector {\n            loc: pair.loc(),\n            vector_type,\n            data,\n            k,\n            pre_filter,\n        })\n    }\n\n    pub(super) fn parse_math_function_call(\n        &self,\n        pair: Pair<Rule>,\n    ) -> Result<MathFunctionCall, ParserError> {\n        let loc = pair.loc();\n        let mut inner = pair.into_inner();\n\n        // Parse function name\n        let function_name_pair = inner\n            .next()\n            .ok_or_else(|| ParserError::from(\"Missing function name\"))?;\n        let function_name = function_name_pair.as_str();\n\n        // Map function name to MathFunction enum\n        let function = match function_name {\n            \"ADD\" => MathFunction::Add,\n            \"SUB\" => MathFunction::Sub,\n            \"MUL\" => MathFunction::Mul,\n            \"DIV\" => MathFunction::Div,\n            \"POW\" => MathFunction::Pow,\n            \"MOD\" => MathFunction::Mod,\n            \"ABS\" => MathFunction::Abs,\n            \"SQRT\" => MathFunction::Sqrt,\n            \"LN\" => MathFunction::Ln,\n            \"LOG10\" => MathFunction::Log10,\n            \"LOG\" => MathFunction::Log,\n            \"EXP\" => MathFunction::Exp,\n            \"CEIL\" => MathFunction::Ceil,\n            \"FLOOR\" => MathFunction::Floor,\n            \"ROUND\" => MathFunction::Round,\n            \"SIN\" => MathFunction::Sin,\n            \"COS\" => MathFunction::Cos,\n            \"TAN\" => MathFunction::Tan,\n            \"ASIN\" => MathFunction::Asin,\n            \"ACOS\" => MathFunction::Acos,\n            \"ATAN\" => MathFunction::Atan,\n            \"ATAN2\" => MathFunction::Atan2,\n            \"PI\" => MathFunction::Pi,\n            \"E\" => MathFunction::E,\n            \"MIN\" => MathFunction::Min,\n            \"MAX\" => MathFunction::Max,\n            \"SUM\" => MathFunction::Sum,\n            \"AVG\" => MathFunction::Avg,\n            \"COUNT\" => MathFunction::Count,\n            _ => {\n                return Err(ParserError::from(format!(\n                    \"Unknown mathematical function: {}\",\n                    function_name\n                )))\n            }\n        };\n\n        // Parse arguments (if any)\n        let mut args = Vec::new();\n        if let Some(args_pair) = inner.next() {\n            // args_pair is the function_args rule\n            for arg_pair in args_pair.into_inner() {\n                // Each arg_pair is a math_expression\n                args.push(self.parse_math_expression(arg_pair)?);\n            }\n        }\n\n        // Validate arity\n        let expected_arity = function.arity();\n        let actual_arity = args.len();\n        if expected_arity != actual_arity {\n            return Err(ParserError::from(format!(\n                \"Function {} expects {} argument(s), but got {}\",\n                function_name, expected_arity, actual_arity\n            )));\n        }\n\n        Ok(MathFunctionCall {\n            function,\n            args,\n            loc,\n        })\n    }\n\n    pub(super) fn parse_math_expression(\n        &self,\n        pair: Pair<Rule>,\n    ) -> Result<Expression, ParserError> {\n        // math_expression can be: math_function_call | evaluates_to_number | anonymous_traversal\n        let inner = pair.try_inner_next()?;\n\n        match inner.as_rule() {\n            Rule::math_function_call => Ok(Expression {\n                loc: inner.loc(),\n                expr: ExpressionType::MathFunctionCall(self.parse_math_function_call(inner)?),\n            }),\n            Rule::evaluates_to_number => {\n                // evaluates_to_number is a compound rule, unwrap and parse its contents\n                let inner_inner = inner.try_inner_next()?;\n                match inner_inner.as_rule() {\n                    Rule::math_function_call => Ok(Expression {\n                        loc: inner_inner.loc(),\n                        expr: ExpressionType::MathFunctionCall(self.parse_math_function_call(inner_inner)?),\n                    }),\n                    Rule::float => inner_inner\n                        .as_str()\n                        .parse()\n                        .map(|f| Expression {\n                            loc: inner_inner.loc(),\n                            expr: ExpressionType::FloatLiteral(f),\n                        })\n                        .map_err(|_| ParserError::from(\"Invalid float literal\")),\n                    Rule::integer => inner_inner\n                        .as_str()\n                        .parse()\n                        .map(|i| Expression {\n                            loc: inner_inner.loc(),\n                            expr: ExpressionType::IntegerLiteral(i),\n                        })\n                        .map_err(|_| ParserError::from(\"Invalid integer literal\")),\n                    Rule::identifier => Ok(Expression {\n                        loc: inner_inner.loc(),\n                        expr: ExpressionType::Identifier(inner_inner.as_str().to_string()),\n                    }),\n                    Rule::traversal => Ok(Expression {\n                        loc: inner_inner.loc(),\n                        expr: ExpressionType::Traversal(Box::new(self.parse_traversal(inner_inner)?)),\n                    }),\n                    Rule::id_traversal => Ok(Expression {\n                        loc: inner_inner.loc(),\n                        expr: ExpressionType::Traversal(Box::new(self.parse_traversal(inner_inner)?)),\n                    }),\n                    _ => Err(ParserError::from(format!(\n                        \"Unexpected evaluates_to_number type: {:?}\",\n                        inner_inner.as_rule()\n                    ))),\n                }\n            }\n            Rule::float => inner\n                .as_str()\n                .parse()\n                .map(|f| Expression {\n                    loc: inner.loc(),\n                    expr: ExpressionType::FloatLiteral(f),\n                })\n                .map_err(|_| ParserError::from(\"Invalid float literal\")),\n            Rule::integer => inner\n                .as_str()\n                .parse()\n                .map(|i| Expression {\n                    loc: inner.loc(),\n                    expr: ExpressionType::IntegerLiteral(i),\n                })\n                .map_err(|_| ParserError::from(\"Invalid integer literal\")),\n            Rule::identifier => Ok(Expression {\n                loc: inner.loc(),\n                expr: ExpressionType::Identifier(inner.as_str().to_string()),\n            }),\n            Rule::traversal => Ok(Expression {\n                loc: inner.loc(),\n                expr: ExpressionType::Traversal(Box::new(self.parse_traversal(inner)?)),\n            }),\n            Rule::id_traversal => Ok(Expression {\n                loc: inner.loc(),\n                expr: ExpressionType::Traversal(Box::new(self.parse_traversal(inner)?)),\n            }),\n            Rule::anonymous_traversal => Ok(Expression {\n                loc: inner.loc(),\n                expr: ExpressionType::Traversal(Box::new(self.parse_anon_traversal(inner)?)),\n            }),\n            _ => Err(ParserError::from(format!(\n                \"Unexpected math expression type: {:?}\",\n                inner.as_rule()\n            ))),\n        }\n    }\n}\n\n#[cfg(test)]\nmod tests {\n    use crate::helixc::parser::{write_to_temp_file, HelixParser};\n\n    // ============================================================================\n    // Literal Expression Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_integer_literal_692": {
+      "name": "test_parse_integer_literal",
+      "type": "method",
+      "start_line": 692,
+      "end_line": 706,
+      "content_hash": "30952f3108cd89f8377e22c9d1341820e8b7374a",
+      "content": "    fn test_parse_integer_literal() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                value <- 42\n                RETURN value\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_float_literal_707": {
+      "name": "test_parse_float_literal",
+      "type": "method",
+      "start_line": 707,
+      "end_line": 721,
+      "content_hash": "ce888786d0c39bbf34052dbf404ca648c27d153d",
+      "content": "    fn test_parse_float_literal() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                value <- 3.14\n                RETURN value\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_boolean_literal_true_722": {
+      "name": "test_parse_boolean_literal_true",
+      "type": "method",
+      "start_line": 722,
+      "end_line": 736,
+      "content_hash": "cb876939caa53d5efac52b47fcce95f7e3b1ad99",
+      "content": "    fn test_parse_boolean_literal_true() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                value <- true\n                RETURN value\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_boolean_literal_false_737": {
+      "name": "test_parse_boolean_literal_false",
+      "type": "method",
+      "start_line": 737,
+      "end_line": 751,
+      "content_hash": "75ae23ba8fee5aab3fb45c6c96c3b5d3e483457a",
+      "content": "    fn test_parse_boolean_literal_false() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                value <- false\n                RETURN value\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_string_literal_752": {
+      "name": "test_parse_string_literal",
+      "type": "method",
+      "start_line": 752,
+      "end_line": 766,
+      "content_hash": "d810c6f609e38f4bb6926a373f7cbc9d4c7e9217",
+      "content": "    fn test_parse_string_literal() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                value <- \"Hello World\"\n                RETURN value\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_array_literal_767": {
+      "name": "test_parse_array_literal",
+      "type": "method",
+      "start_line": 767,
+      "end_line": 785,
+      "content_hash": "fc74c06d47c612cadf214a9fb01016f4fea81178",
+      "content": "    fn test_parse_array_literal() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                values <- [1, 2, 3]\n                RETURN values\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    // ============================================================================\n    // Boolean Expression Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_and_in_where_clause_786": {
+      "name": "test_parse_and_in_where_clause",
+      "type": "method",
+      "start_line": 786,
+      "end_line": 805,
+      "content_hash": "6ca58e95340389fe1726de9ccc0b28dd40c1a7ea",
+      "content": "    fn test_parse_and_in_where_clause() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY testQuery(targetName: String, targetAge: U32) =>\n                person <- N<Person>::WHERE(\n                    AND(\n                        _::{name}::EQ(targetName),\n                        _::{age}::EQ(targetAge)\n                    )\n                )\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_or_in_where_clause_806": {
+      "name": "test_parse_or_in_where_clause",
+      "type": "method",
+      "start_line": 806,
+      "end_line": 825,
+      "content_hash": "d56b53a15444cd39de7975455049978cf38dd935",
+      "content": "    fn test_parse_or_in_where_clause() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery(name1: String, name2: String) =>\n                person <- N<Person>::WHERE(\n                    OR(\n                        _::{name}::EQ(name1),\n                        _::{name}::EQ(name2)\n                    )\n                )\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_exists_expression_826": {
+      "name": "test_parse_exists_expression",
+      "type": "method",
+      "start_line": 826,
+      "end_line": 842,
+      "content_hash": "a601c86c5629048a3b7ca9f31e891472eef3cc0b",
+      "content": "    fn test_parse_exists_expression() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person }\n\n            QUERY testQuery(id: ID) =>\n                person <- N<Person>(id)\n                hasFriends <- EXISTS(person::Out<Knows>)\n                RETURN hasFriends\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_not_exists_expression_843": {
+      "name": "test_parse_not_exists_expression",
+      "type": "method",
+      "start_line": 843,
+      "end_line": 859,
+      "content_hash": "1228048e062bc592e3d937382bc7a90da64746b0",
+      "content": "    fn test_parse_not_exists_expression() {\n        let source = r#\"\n            N::Person { name: String }\n            E::Knows { From: Person, To: Person }\n\n            QUERY testQuery(id: ID) =>\n                person <- N<Person>(id)\n                hasNoFriends <- !EXISTS(person::Out<Knows>)\n                RETURN hasNoFriends\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_negated_and_in_where_860": {
+      "name": "test_parse_negated_and_in_where",
+      "type": "method",
+      "start_line": 860,
+      "end_line": 883,
+      "content_hash": "619905b6eb9601cd8f180232b845c5e67fbe2d74",
+      "content": "    fn test_parse_negated_and_in_where() {\n        let source = r#\"\n            N::Person { name: String, active: Boolean }\n\n            QUERY testQuery(targetName: String) =>\n                person <- N<Person>::WHERE(\n                    !AND(\n                        _::{name}::EQ(targetName),\n                        _::{active}::EQ(true)\n                    )\n                )\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    // ============================================================================\n    // For Loop Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_for_loop_with_identifier_884": {
+      "name": "test_parse_for_loop_with_identifier",
+      "type": "method",
+      "start_line": 884,
+      "end_line": 901,
+      "content_hash": "c6611d2cb369a8ab5741e6c42d7f9c7e68e19039",
+      "content": "    fn test_parse_for_loop_with_identifier() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                people <- N<Person>\n                FOR person IN people {\n                    name <- person\n                }\n                RETURN \"done\"\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_for_loop_with_destructuring_902": {
+      "name": "test_parse_for_loop_with_destructuring",
+      "type": "method",
+      "start_line": 902,
+      "end_line": 919,
+      "content_hash": "db7876d1ea56a3869afec1767128e55c8f96610d",
+      "content": "    fn test_parse_for_loop_with_destructuring() {\n        let source = r#\"\n            N::Person { name: String, age: U32 }\n\n            QUERY testQuery() =>\n                people <- N<Person>\n                FOR {name, age} IN people {\n                    value <- name\n                }\n                RETURN \"done\"\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_for_loop_with_object_access_920": {
+      "name": "test_parse_for_loop_with_object_access",
+      "type": "method",
+      "start_line": 920,
+      "end_line": 941,
+      "content_hash": "3b729765aef5b6b6a3c0a7027eeaea42df60bde4",
+      "content": "    fn test_parse_for_loop_with_object_access() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                people <- N<Person>\n                FOR person.name IN people {\n                    value <- person\n                }\n                RETURN \"done\"\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    // ============================================================================\n    // BM25 Search Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_bm25_search_with_string_literal_942": {
+      "name": "test_parse_bm25_search_with_string_literal",
+      "type": "method",
+      "start_line": 942,
+      "end_line": 956,
+      "content_hash": "6681c0b94d2a5fe7cd3519c880794bcaab5c84fa",
+      "content": "    fn test_parse_bm25_search_with_string_literal() {\n        let source = r#\"\n            V::Document { content: String }\n\n            QUERY searchDocs() =>\n                docs <- SearchBM25<Document>(\"search query\", 10)\n                RETURN docs\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_bm25_search_with_identifier_957": {
+      "name": "test_parse_bm25_search_with_identifier",
+      "type": "method",
+      "start_line": 957,
+      "end_line": 971,
+      "content_hash": "3b46bf6985de00ef0289f52ba25aba06d146bce6",
+      "content": "    fn test_parse_bm25_search_with_identifier() {\n        let source = r#\"\n            V::Document { content: String }\n\n            QUERY searchDocs(query: String) =>\n                docs <- SearchBM25<Document>(query, 10)\n                RETURN docs\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_bm25_search_with_variable_k_972": {
+      "name": "test_parse_bm25_search_with_variable_k",
+      "type": "method",
+      "start_line": 972,
+      "end_line": 990,
+      "content_hash": "c4f503e5da7ba91fb8fcc131fad29ec7616bb9bd",
+      "content": "    fn test_parse_bm25_search_with_variable_k() {\n        let source = r#\"\n            V::Document { content: String }\n\n            QUERY searchDocs(query: String, limit: I32) =>\n                docs <- SearchBM25<Document>(query, limit)\n                RETURN docs\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    // ============================================================================\n    // Vector Search Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_vector_search_with_identifier_991": {
+      "name": "test_parse_vector_search_with_identifier",
+      "type": "method",
+      "start_line": 991,
+      "end_line": 1005,
+      "content_hash": "e02d2d29d51773cdc24ba420aff948753356d8ee",
+      "content": "    fn test_parse_vector_search_with_identifier() {\n        let source = r#\"\n            V::Document { content: String, embedding: [F32] }\n\n            QUERY searchSimilar(queryVec: [F32]) =>\n                docs <- SearchV<Document>(queryVec, 10)\n                RETURN docs\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_vector_search_with_embed_1006": {
+      "name": "test_parse_vector_search_with_embed",
+      "type": "method",
+      "start_line": 1006,
+      "end_line": 1020,
+      "content_hash": "bf951d65703df312efc1349b96d4515e4e3e2c2a",
+      "content": "    fn test_parse_vector_search_with_embed() {\n        let source = r#\"\n            V::Document { content: String, embedding: [F32] }\n\n            QUERY searchSimilar(query: String) =>\n                docs <- SearchV<Document>(Embed(query), 10)\n                RETURN docs\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_vector_search_with_string_embed_1021": {
+      "name": "test_parse_vector_search_with_string_embed",
+      "type": "method",
+      "start_line": 1021,
+      "end_line": 1039,
+      "content_hash": "eb4186b961b4fad93ff37df747fe86d4c6d45093",
+      "content": "    fn test_parse_vector_search_with_string_embed() {\n        let source = r#\"\n            V::Document { content: String, embedding: [F32] }\n\n            QUERY searchSimilar() =>\n                docs <- SearchV<Document>(Embed(\"search query\"), 10)\n                RETURN docs\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    // ============================================================================\n    // Assignment Tests\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_assignment_with_identifier_1040": {
+      "name": "test_parse_assignment_with_identifier",
+      "type": "method",
+      "start_line": 1040,
+      "end_line": 1054,
+      "content_hash": "5863376a4614ed75905dbcae9b17d3c385a69023",
+      "content": "    fn test_parse_assignment_with_identifier() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery(inputName: String) =>\n                name <- inputName\n                RETURN name\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_assignment_with_traversal_1055": {
+      "name": "test_parse_assignment_with_traversal",
+      "type": "method",
+      "start_line": 1055,
+      "end_line": 1073,
+      "content_hash": "b8b9a34db950cbfd68e7f97754fd573df61ee807",
+      "content": "    fn test_parse_assignment_with_traversal() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery(id: ID) =>\n                person <- N<Person>(id)\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    // ============================================================================\n    // Edge Cases and Complex Expressions\n    // ============================================================================\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_none_expression_1074": {
+      "name": "test_parse_none_expression",
+      "type": "method",
+      "start_line": 1074,
+      "end_line": 1088,
+      "content_hash": "3bb5afa841a04f63d833feea0f8d7990dd855151",
+      "content": "    fn test_parse_none_expression() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                value <- NONE\n                RETURN value\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_nested_boolean_in_where_1089": {
+      "name": "test_parse_nested_boolean_in_where",
+      "type": "method",
+      "start_line": 1089,
+      "end_line": 1111,
+      "content_hash": "2efeb60d81f855d9a1e2cb161e3a4f1696c0c6a9",
+      "content": "    fn test_parse_nested_boolean_in_where() {\n        let source = r#\"\n            N::Person { name: String, age: U32, active: Boolean }\n\n            QUERY testQuery(name1: String, name2: String, minAge: U32) =>\n                person <- N<Person>::WHERE(\n                    AND(\n                        OR(\n                            _::{name}::EQ(name1),\n                            _::{name}::EQ(name2)\n                        ),\n                        _::{age}::GT(minAge)\n                    )\n                )\n                RETURN person\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n\n    #[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_test_parse_multiple_assignments_1112": {
+      "name": "test_parse_multiple_assignments",
+      "type": "method",
+      "start_line": 1112,
+      "end_line": 1127,
+      "content_hash": "cf0f93f5ae3e5f614037bc64e327b753c8319d5d",
+      "content": "    fn test_parse_multiple_assignments() {\n        let source = r#\"\n            N::Person { name: String }\n\n            QUERY testQuery() =>\n                val1 <- 10\n                val2 <- 20\n                val3 <- 30\n                RETURN val1\n        \"#;\n\n        let content = write_to_temp_file(vec![source]);\n        let result = HelixParser::parse_source(&content);\n        assert!(result.is_ok());\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

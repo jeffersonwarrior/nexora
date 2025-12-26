@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/tools_test.go",
+  "file_hash": "04818ed2f929694081ec81444c5f4743a4ae1e30",
+  "updated_at": "2025-12-26T17:34:24.007358",
+  "symbols": {
+    "function_TestToolRegistry_Register_AddsTool_13": {
+      "name": "TestToolRegistry_Register_AddsTool",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 27,
+      "content_hash": "aac5add66ec774cea52e296c69a14a40a58c9620",
+      "content": "func TestToolRegistry_Register_AddsTool(t *testing.T) {\n\tregistry := NewToolRegistry()\n\ttool := NewMockTool(\"test-tool\", \"A test tool\", nil)\n\n\terr := registry.Register(tool)\n\trequire.NoError(t, err)\n\n\t// Verify tool is registered\n\tretrievedTool, err := registry.Get(\"test-tool\")\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"test-tool\", retrievedTool.Name())\n\tassert.Equal(t, \"A test tool\", retrievedTool.Description())\n}\n\n// TestToolRegistry_Register_DuplicateName_ReturnsError tests duplicate registration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolRegistry_Register_DuplicateName_ReturnsError_28": {
+      "name": "TestToolRegistry_Register_DuplicateName_ReturnsError",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 41,
+      "content_hash": "e7b4827051fbd2f5c3f3890f9f1610ef35482ed6",
+      "content": "func TestToolRegistry_Register_DuplicateName_ReturnsError(t *testing.T) {\n\tregistry := NewToolRegistry()\n\ttool1 := NewMockTool(\"duplicate\", \"First tool\", nil)\n\ttool2 := NewMockTool(\"duplicate\", \"Second tool\", nil)\n\n\terr := registry.Register(tool1)\n\trequire.NoError(t, err)\n\n\terr = registry.Register(tool2)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"already registered\")\n}\n\n// TestToolRegistry_Get_UnknownTool_ReturnsError tests getting unknown tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolRegistry_Get_UnknownTool_ReturnsError_42": {
+      "name": "TestToolRegistry_Get_UnknownTool_ReturnsError",
+      "type": "function",
+      "start_line": 42,
+      "end_line": 50,
+      "content_hash": "4a65d3695ebf39eef0813e94f081045c53cead54",
+      "content": "func TestToolRegistry_Get_UnknownTool_ReturnsError(t *testing.T) {\n\tregistry := NewToolRegistry()\n\n\t_, err := registry.Get(\"unknown-tool\")\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"not found\")\n}\n\n// TestToolRegistry_List_ReturnsAllTools tests listing all tools",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolRegistry_List_ReturnsAllTools_51": {
+      "name": "TestToolRegistry_List_ReturnsAllTools",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 79,
+      "content_hash": "50802438dbee2770ac5c7e1a8a44f6400d5d8998",
+      "content": "func TestToolRegistry_List_ReturnsAllTools(t *testing.T) {\n\tregistry := NewToolRegistry()\n\n\ttools := []*MockTool{\n\t\tNewMockTool(\"tool1\", \"First tool\", nil),\n\t\tNewMockTool(\"tool2\", \"Second tool\", nil),\n\t\tNewMockTool(\"tool3\", \"Third tool\", nil),\n\t}\n\n\tfor _, tool := range tools {\n\t\terr := registry.Register(tool)\n\t\trequire.NoError(t, err)\n\t}\n\n\tallTools := registry.List()\n\tassert.Len(t, allTools, 3)\n\n\t// registry.List() returns []string (tool names)\n\ttoolNames := make(map[string]bool)\n\tfor _, toolName := range allTools {\n\t\ttoolNames[toolName] = true\n\t}\n\n\tassert.True(t, toolNames[\"tool1\"])\n\tassert.True(t, toolNames[\"tool2\"])\n\tassert.True(t, toolNames[\"tool3\"])\n}\n\n// TestToolExecutor_Execute_WithValidInput tests tool execution",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolExecutor_Execute_WithValidInput_80": {
+      "name": "TestToolExecutor_Execute_WithValidInput",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 101,
+      "content_hash": "24705c9271f15e83768e88fb2f06a2a67018be63",
+      "content": "func TestToolExecutor_Execute_WithValidInput(t *testing.T) {\n\tregistry := NewToolRegistry()\n\texecutor := NewToolExecutor(registry)\n\n\ttool := NewMockTool(\"echo\", \"Echoes input\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\treturn map[string]interface{}{\n\t\t\t\"echo\": input[\"message\"],\n\t\t}, nil\n\t})\n\n\terr := registry.Register(tool)\n\trequire.NoError(t, err)\n\n\tresult, err := executor.Execute(context.Background(), \"echo\", map[string]interface{}{\n\t\t\"message\": \"Hello, World!\",\n\t})\n\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"Hello, World!\", result[\"echo\"])\n}\n\n// TestToolExecutor_Execute_UnknownTool_ReturnsError tests executing unknown tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolExecutor_Execute_UnknownTool_ReturnsError_102": {
+      "name": "TestToolExecutor_Execute_UnknownTool_ReturnsError",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 111,
+      "content_hash": "1bc2c31d27b2e2d8e6c94a71b8214cda3a70c772",
+      "content": "func TestToolExecutor_Execute_UnknownTool_ReturnsError(t *testing.T) {\n\tregistry := NewToolRegistry()\n\texecutor := NewToolExecutor(registry)\n\n\t_, err := executor.Execute(context.Background(), \"unknown-tool\", map[string]interface{}{})\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"not found\")\n}\n\n// TestToolExecutor_Execute_WithTimeout_RespectsTimeout tests timeout handling",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolExecutor_Execute_WithTimeout_RespectsTimeout_112": {
+      "name": "TestToolExecutor_Execute_WithTimeout_RespectsTimeout",
+      "type": "function",
+      "start_line": 112,
+      "end_line": 137,
+      "content_hash": "2d5429cd0c7dc7bfb44ced48830bc678584939b8",
+      "content": "func TestToolExecutor_Execute_WithTimeout_RespectsTimeout(t *testing.T) {\n\tregistry := NewToolRegistry()\n\texecutor := NewToolExecutor(registry)\n\n\t// Tool that waits longer than the context timeout\n\ttool := NewMockTool(\"hang\", \"Hanging tool\", func(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\treturn nil, ctx.Err()\n\t\tcase <-time.After(5 * time.Second):\n\t\t\treturn map[string]interface{}{\"result\": \"done\"}, nil\n\t\t}\n\t})\n\n\terr := registry.Register(tool)\n\trequire.NoError(t, err)\n\n\tctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)\n\tdefer cancel()\n\n\t_, err = executor.Execute(ctx, \"hang\", map[string]interface{}{})\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"deadline exceeded\")\n}\n\n// TestEchoTool_Execute_ReturnsInput tests echo tool functionality",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestEchoTool_Execute_ReturnsInput_138": {
+      "name": "TestEchoTool_Execute_ReturnsInput",
+      "type": "function",
+      "start_line": 138,
+      "end_line": 156,
+      "content_hash": "2efeb6975b4eae9e23e08f5a3aa897d8525abb95",
+      "content": "func TestEchoTool_Execute_ReturnsInput(t *testing.T) {\n\ttool := &EchoTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"message\": \"Test message\",\n\t\t\"number\":  42,\n\t\t\"array\":   []interface{}{1, 2, 3},\n\t}\n\n\tresult, err := tool.Execute(context.Background(), input)\n\trequire.NoError(t, err)\n\n\techoed := result[\"echoed\"].(map[string]interface{})\n\tassert.Equal(t, \"Test message\", echoed[\"message\"])\n\tassert.Equal(t, 42, echoed[\"number\"])\n\tassert.Equal(t, []interface{}{1, 2, 3}, echoed[\"array\"])\n}\n\n// TestCalculatorTool_Execute_Addition tests calculator addition",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_Addition_157": {
+      "name": "TestCalculatorTool_Execute_Addition",
+      "type": "function",
+      "start_line": 157,
+      "end_line": 172,
+      "content_hash": "d5d1f13d1823ab333764d046df3ba60d8557a7e6",
+      "content": "func TestCalculatorTool_Execute_Addition(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"a\":         15.0,\n\t\t\"b\":         27.0,\n\t\t\"operation\": \"+\",\n\t}\n\n\tresult, err := tool.Execute(context.Background(), input)\n\trequire.NoError(t, err)\n\n\tassert.Equal(t, 42.0, result[\"result\"])\n}\n\n// TestCalculatorTool_Execute_Subtraction tests calculator subtraction",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_Subtraction_173": {
+      "name": "TestCalculatorTool_Execute_Subtraction",
+      "type": "function",
+      "start_line": 173,
+      "end_line": 188,
+      "content_hash": "1ba88380412f752e4cb66b655373b0c24fc7abb7",
+      "content": "func TestCalculatorTool_Execute_Subtraction(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"a\":         100.0,\n\t\t\"b\":         57.0,\n\t\t\"operation\": \"-\",\n\t}\n\n\tresult, err := tool.Execute(context.Background(), input)\n\trequire.NoError(t, err)\n\n\tassert.Equal(t, 43.0, result[\"result\"])\n}\n\n// TestCalculatorTool_Execute_Multiplication tests calculator multiplication",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_Multiplication_189": {
+      "name": "TestCalculatorTool_Execute_Multiplication",
+      "type": "function",
+      "start_line": 189,
+      "end_line": 204,
+      "content_hash": "db1cf65b752dedcc8ca9fb25f1b82aacc4bd9573",
+      "content": "func TestCalculatorTool_Execute_Multiplication(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"a\":         6.0,\n\t\t\"b\":         7.0,\n\t\t\"operation\": \"*\",\n\t}\n\n\tresult, err := tool.Execute(context.Background(), input)\n\trequire.NoError(t, err)\n\n\tassert.Equal(t, 42.0, result[\"result\"])\n}\n\n// TestCalculatorTool_Execute_Division tests calculator division",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_Division_205": {
+      "name": "TestCalculatorTool_Execute_Division",
+      "type": "function",
+      "start_line": 205,
+      "end_line": 220,
+      "content_hash": "ced8f53205162dd4e89947a0a3112b4d3bd6a397",
+      "content": "func TestCalculatorTool_Execute_Division(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"a\":         84.0,\n\t\t\"b\":         2.0,\n\t\t\"operation\": \"/\",\n\t}\n\n\tresult, err := tool.Execute(context.Background(), input)\n\trequire.NoError(t, err)\n\n\tassert.Equal(t, 42.0, result[\"result\"])\n}\n\n// TestCalculatorTool_Execute_DivisionByZero_ReturnsError tests division by zero",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_DivisionByZero_ReturnsError_221": {
+      "name": "TestCalculatorTool_Execute_DivisionByZero_ReturnsError",
+      "type": "function",
+      "start_line": 221,
+      "end_line": 235,
+      "content_hash": "023a38cbef9425d596d664040bae6ccc1a1d8a7b",
+      "content": "func TestCalculatorTool_Execute_DivisionByZero_ReturnsError(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"a\":         42.0,\n\t\t\"b\":         0.0,\n\t\t\"operation\": \"/\",\n\t}\n\n\t_, err := tool.Execute(context.Background(), input)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"division by zero\")\n}\n\n// TestCalculatorTool_Execute_InvalidOperation_ReturnsError tests invalid operation",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_InvalidOperation_ReturnsError_236": {
+      "name": "TestCalculatorTool_Execute_InvalidOperation_ReturnsError",
+      "type": "function",
+      "start_line": 236,
+      "end_line": 250,
+      "content_hash": "3eef08bd257f28225832d6adc15f192bae19bc4b",
+      "content": "func TestCalculatorTool_Execute_InvalidOperation_ReturnsError(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\tinput := map[string]interface{}{\n\t\t\"a\":         42.0,\n\t\t\"b\":         1.0,\n\t\t\"operation\": \"invalid\",\n\t}\n\n\t_, err := tool.Execute(context.Background(), input)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"unsupported operation\")\n}\n\n// TestCalculatorTool_Execute_MissingParameters_ReturnsError tests missing parameters",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculatorTool_Execute_MissingParameters_ReturnsError_251": {
+      "name": "TestCalculatorTool_Execute_MissingParameters_ReturnsError",
+      "type": "function",
+      "start_line": 251,
+      "end_line": 265,
+      "content_hash": "8b2a853097baab5f7492c4b992869aae9c4a79a4",
+      "content": "func TestCalculatorTool_Execute_MissingParameters_ReturnsError(t *testing.T) {\n\ttool := &CalculatorTool{}\n\n\t// Missing 'operation' parameter\n\tinput := map[string]interface{}{\n\t\t\"a\": 1.0,\n\t\t\"b\": 1.0,\n\t}\n\n\t_, err := tool.Execute(context.Background(), input)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"missing 'operation' parameter\")\n}\n\n// TestToolUtility_RegisterCommonTools_AddsCommonTools tests default tool registration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolUtility_RegisterCommonTools_AddsCommonTools_266": {
+      "name": "TestToolUtility_RegisterCommonTools_AddsCommonTools",
+      "type": "function",
+      "start_line": 266,
+      "end_line": 286,
+      "content_hash": "19665140a5c0b45a60700b57395eca97730ceb9b",
+      "content": "func TestToolUtility_RegisterCommonTools_AddsCommonTools(t *testing.T) {\n\tregistry := NewToolRegistry()\n\n\terr := RegisterCommonTools(registry)\n\trequire.NoError(t, err)\n\n\t// Verify default tools are registered\n\ttools := registry.List()\n\tassert.Len(t, tools, 2)\n\n\t// registry.List() returns []string (tool names)\n\ttoolNames := make(map[string]bool)\n\tfor _, toolName := range tools {\n\t\ttoolNames[toolName] = true\n\t}\n\n\tassert.True(t, toolNames[\"echo\"])\n\tassert.True(t, toolNames[\"calculator\"])\n}\n\n// TestToolRegistry_ConcurrentAccess tests concurrent registry access",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestToolRegistry_ConcurrentAccess_287": {
+      "name": "TestToolRegistry_ConcurrentAccess",
+      "type": "function",
+      "start_line": 287,
+      "end_line": 317,
+      "content_hash": "4e1e30a20ab01a6fa6706808172c7751727fe88d",
+      "content": "func TestToolRegistry_ConcurrentAccess(t *testing.T) {\n\tregistry := NewToolRegistry()\n\tdone := make(chan bool, 10)\n\n\t// Register tools concurrently\n\tfor i := 0; i < 5; i++ {\n\t\tgo func(index int) {\n\t\t\ttool := NewMockTool(\"tool-\"+string(rune('A'+index)), \"Concurrent tool\", nil)\n\t\t\terr := registry.Register(tool)\n\t\t\tassert.NoError(t, err)\n\t\t\tdone <- true\n\t\t}(i)\n\t}\n\n\t// Get tools concurrently\n\tfor i := 0; i < 5; i++ {\n\t\tgo func(index int) {\n\t\t\t_, _ = registry.Get(\"tool-\" + string(rune('A'+index)))\n\t\t\t// May not exist yet, that's OK\n\t\t\tdone <- true\n\t\t}(i)\n\t}\n\n\t// Wait for all goroutines\n\tfor i := 0; i < 10; i++ {\n\t\t<-done\n\t}\n\n\t// Verify all tools are registered\n\tassert.Len(t, registry.List(), 5)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

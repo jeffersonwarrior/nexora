@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/agent/tools/fd_helper_test.go",
+  "file_hash": "92da52247d0bae8ceee49e90610c09f2f6171942",
+  "updated_at": "2025-12-26T17:34:23.615313",
+  "symbols": {
+    "function_TestGetFDCmd_10": {
+      "name": "TestGetFDCmd",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 40,
+      "content_hash": "2a972e1168ddc180bc3742562f4783e3fd86960b",
+      "content": "func TestGetFDCmd(t *testing.T) {\n\tctx := context.Background()\n\n\t// Test the function (behavior depends on system)\n\tcmd := getFDCmd(ctx)\n\n\t// Verify command is valid if returned\n\tif cmd != nil {\n\t\tif cmd.Path == \"\" {\n\t\t\tt.Error(\"getFDCmd returned command with empty path\")\n\t\t}\n\n\t\t// Verify it's one of the expected commands\n\t\tcmdName := cmd.Path[len(cmd.Path)-2:]\n\t\tif cmdName != \"fd\" && cmd.Path[len(cmd.Path)-6:] != \"fdfind\" {\n\t\t\tt.Errorf(\"unexpected command: %s\", cmd.Path)\n\t\t}\n\t}\n\n\t// If cmd is nil, verify fd/fdfind are not in PATH\n\tif cmd == nil {\n\t\tif _, err := exec.LookPath(\"fd\"); err == nil {\n\t\t\tt.Error(\"getFDCmd returned nil but fd is in PATH\")\n\t\t}\n\t\tif _, err := exec.LookPath(\"fdfind\"); err == nil {\n\t\t\tt.Error(\"getFDCmd returned nil but fdfind is in PATH\")\n\t\t}\n\t}\n}\n\n// TestGetFDCmdContext verifies context is passed correctly",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetFDCmdContext_41": {
+      "name": "TestGetFDCmdContext",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 56,
+      "content_hash": "f4e598f613caad4210f7873b3ffab8c4d0ffd0bb",
+      "content": "func TestGetFDCmdContext(t *testing.T) {\n\tctx, cancel := context.WithCancel(context.Background())\n\tcancel() // Cancel immediately\n\n\tcmd := getFDCmd(ctx)\n\n\t// If command is returned, it should have been created with the context\n\t// We can't directly test the internal context, but we verified it's created correctly\n\tif cmd != nil {\n\t\tif cmd.Path == \"\" {\n\t\t\tt.Error(\"command returned with empty path\")\n\t\t}\n\t}\n}\n\n// TestIsFDInstalled verifies fd installation detection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestIsFDInstalled_57": {
+      "name": "TestIsFDInstalled",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 74,
+      "content_hash": "004a092b9500637f361dc92c83e12ea3bc37819c",
+      "content": "func TestIsFDInstalled(t *testing.T) {\n\tinstalled := isFDInstalled()\n\n\t// Verify consistency with actual PATH lookup\n\tfdExists := false\n\tif _, err := exec.LookPath(\"fd\"); err == nil {\n\t\tfdExists = true\n\t}\n\tif _, err := exec.LookPath(\"fdfind\"); err == nil {\n\t\tfdExists = true\n\t}\n\n\tif installed != fdExists {\n\t\tt.Errorf(\"isFDInstalled() = %v, but PATH lookup says %v\", installed, fdExists)\n\t}\n}\n\n// TestIsFDInstalledConsistency verifies getFDCmd and isFDInstalled agree",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestIsFDInstalledConsistency_75": {
+      "name": "TestIsFDInstalledConsistency",
+      "type": "function",
+      "start_line": 75,
+      "end_line": 90,
+      "content_hash": "506abe4128249744099c3c182e20b843e2066d5b",
+      "content": "func TestIsFDInstalledConsistency(t *testing.T) {\n\tctx := context.Background()\n\n\tinstalled := isFDInstalled()\n\tcmd := getFDCmd(ctx)\n\n\tif installed && cmd == nil {\n\t\tt.Error(\"isFDInstalled() is true but getFDCmd() returned nil\")\n\t}\n\n\tif !installed && cmd != nil {\n\t\tt.Error(\"isFDInstalled() is false but getFDCmd() returned a command\")\n\t}\n}\n\n// TestGetFDCmdReturnValue verifies command structure",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetFDCmdReturnValue_91": {
+      "name": "TestGetFDCmdReturnValue",
+      "type": "function",
+      "start_line": 91,
+      "end_line": 108,
+      "content_hash": "464c003858e55b7e00bb8beb7183e993d407e90b",
+      "content": "func TestGetFDCmdReturnValue(t *testing.T) {\n\tctx := context.Background()\n\tcmd := getFDCmd(ctx)\n\n\tif cmd != nil {\n\t\t// Verify command path is set\n\t\tif cmd.Path == \"\" {\n\t\t\tt.Error(\"returned command has empty Path\")\n\t\t}\n\n\t\t// Verify it's an executable path\n\t\tif !isExecutable(cmd.Path) {\n\t\t\tt.Errorf(\"command path is not executable: %s\", cmd.Path)\n\t\t}\n\t}\n}\n\n// TestFDCommandNames verifies command name detection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFDCommandNames_109": {
+      "name": "TestFDCommandNames",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 141,
+      "content_hash": "93a08c6d6be0f725e09401331bf1535fbf1d276c",
+      "content": "func TestFDCommandNames(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tcheckCmd string\n\t\twantName string\n\t}{\n\t\t{\"fd exists\", \"fd\", \"fd\"},\n\t\t{\"fdfind exists\", \"fdfind\", \"fdfind\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif _, err := exec.LookPath(tt.checkCmd); err == nil {\n\t\t\t\tctx := context.Background()\n\t\t\t\tcmd := getFDCmd(ctx)\n\n\t\t\t\tif cmd == nil {\n\t\t\t\t\tt.Errorf(\"%s is in PATH but getFDCmd returned nil\", tt.checkCmd)\n\t\t\t\t\treturn\n\t\t\t\t}\n\n\t\t\t\t// Verify the command name matches\n\t\t\t\tif !contains(cmd.Path, tt.wantName) {\n\t\t\t\t\tt.Errorf(\"expected command to contain %s, got %s\", tt.wantName, cmd.Path)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tt.Skipf(\"%s not installed, skipping\", tt.checkCmd)\n\t\t\t}\n\t\t})\n\t}\n}\n\n// TestFDPrecedence verifies fd is preferred over fdfind",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFDPrecedence_142": {
+      "name": "TestFDPrecedence",
+      "type": "function",
+      "start_line": 142,
+      "end_line": 170,
+      "content_hash": "0436e040c35f6994390f07ccd4faebadac1d24e9",
+      "content": "func TestFDPrecedence(t *testing.T) {\n\tfdExists := false\n\tfdfindExists := false\n\n\tif _, err := exec.LookPath(\"fd\"); err == nil {\n\t\tfdExists = true\n\t}\n\tif _, err := exec.LookPath(\"fdfind\"); err == nil {\n\t\tfdfindExists = true\n\t}\n\n\tif fdExists && fdfindExists {\n\t\tctx := context.Background()\n\t\tcmd := getFDCmd(ctx)\n\n\t\tif cmd == nil {\n\t\t\tt.Fatal(\"both fd and fdfind exist but getFDCmd returned nil\")\n\t\t}\n\n\t\t// Verify \"fd\" is preferred (should be in the path)\n\t\tif !contains(cmd.Path, \"fd\") {\n\t\t\tt.Errorf(\"both fd and fdfind exist, but command is %s (expected fd)\", cmd.Path)\n\t\t}\n\t} else {\n\t\tt.Skip(\"both fd and fdfind must be installed to test precedence\")\n\t}\n}\n\n// Helper function to check if a path is executable",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isExecutable_171": {
+      "name": "isExecutable",
+      "type": "function",
+      "start_line": 171,
+      "end_line": 176,
+      "content_hash": "467a387673930c2f292578a92ff54673c8b59226",
+      "content": "func isExecutable(path string) bool {\n\t_, err := exec.LookPath(path)\n\treturn err == nil\n}\n\n// Helper function to check if string contains substring",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_contains_177": {
+      "name": "contains",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 181,
+      "content_hash": "19973d629fb87e65089469b23084fc913514a4c5",
+      "content": "func contains(s, substr string) bool {\n\treturn len(s) >= len(substr) &&\n\t\t(s[len(s)-len(substr):] == substr ||\n\t\t\tlen(s) > len(substr) && s[len(s)-len(substr)-1:len(s)-len(substr)] == \"/\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

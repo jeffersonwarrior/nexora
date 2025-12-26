@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/impact_analysis.go",
+  "file_hash": "03db35c6f037d4801a3da49b25346a72a164901a",
+  "updated_at": "2025-12-26T17:34:23.899460",
+  "symbols": {
+    "struct_ImpactAnalysisParams_12": {
+      "name": "ImpactAnalysisParams",
+      "type": "struct",
+      "start_line": 12,
+      "end_line": 17,
+      "content_hash": "399a20a846d3fe70c1f838a4ee3da9f2dbe4d9d2",
+      "content": "type ImpactAnalysisParams struct {\n\tSymbolID string `json:\"symbol_id\" description:\"ID of the symbol to analyze\"`\n\tMaxDepth int    `json:\"max_depth,omitempty\" description:\"Maximum depth for transitive analysis (default: 3)\"`\n}\n\n// NewImpactAnalysisTool creates a new impact analysis tool",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewImpactAnalysisTool_18": {
+      "name": "NewImpactAnalysisTool",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 55,
+      "content_hash": "8c9d74fe8cc599406c445d808da16411afd0d3d4",
+      "content": "func NewImpactAnalysisTool(queryEngine *indexer.QueryEngine, graph *indexer.Graph) fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\t\"impact_analysis\",\n\t\t\"Analyze the impact of changes to a symbol using dependency graphs and call relationships\",\n\t\tfunc(ctx context.Context, params ImpactAnalysisParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif graph == nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"impact analysis tool is not available - graph not initialized\"), nil\n\t\t\t}\n\n\t\t\tif params.SymbolID == \"\" {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"symbol_id parameter is required\"), nil\n\t\t\t}\n\n\t\t\t// Set defaults\n\t\t\tif params.MaxDepth == 0 {\n\t\t\t\tparams.MaxDepth = 3\n\t\t\t}\n\n\t\t\t// Get the symbol information\n\t\t\tsymbol, err := getSymbolInfo(ctx, params.SymbolID)\n\t\t\tif err != nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"Failed to get symbol info: %v\", err)), nil\n\t\t\t}\n\t\t\tif symbol == nil {\n\t\t\t\treturn fantasy.NewTextErrorResponse(fmt.Sprintf(\"Symbol '%s' not found\", params.SymbolID)), nil\n\t\t\t}\n\n\t\t\t// Perform impact analysis\n\t\t\tanalysis := graph.GetImpactAnalysis(params.SymbolID, params.MaxDepth)\n\n\t\t\t// Format results\n\t\t\toutput := formatImpactAnalysis(symbol, analysis, params.MaxDepth)\n\t\t\treturn fantasy.NewTextResponse(output), nil\n\t\t},\n\t)\n}\n\n// getSymbolInfo retrieves symbol information from storage",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getSymbolInfo_56": {
+      "name": "getSymbolInfo",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 68,
+      "content_hash": "f38ff08bd32c650d3bc207b219132f8518f9b838",
+      "content": "func getSymbolInfo(ctx context.Context, symbolID string) (*indexer.Symbol, error) {\n\t// This is a simplified implementation - in practice, this would use the storage layer\n\t// For now, we'll return a mock symbol structure\n\treturn &indexer.Symbol{\n\t\tName:    symbolID,\n\t\tType:    \"function\",\n\t\tPackage: \"main\",\n\t\tFile:    fmt.Sprintf(\"%s.go\", symbolID),\n\t\tLine:    1,\n\t}, nil\n}\n\n// formatImpactAnalysis formats the impact analysis results for display",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatImpactAnalysis_69": {
+      "name": "formatImpactAnalysis",
+      "type": "function",
+      "start_line": 69,
+      "end_line": 182,
+      "content_hash": "b10ad4b8cc95fba06a1712c61133f9063769f3c6",
+      "content": "func formatImpactAnalysis(symbol *indexer.Symbol, analysis indexer.ImpactAnalysis, maxDepth int) string {\n\tvar output strings.Builder\n\n\t// Header\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udd2c Impact Analysis for: **%s** `%s`\\n\", symbol.Name, symbol.Type))\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udccd Location: %s:%d\\n\\n\", symbol.File, symbol.Line))\n\n\t// Analysis depth\n\toutput.WriteString(fmt.Sprintf(\"\ud83d\udd0d Analysis depth: %d levels\\n\\n\", maxDepth))\n\n\t// Direct relationships\n\toutput.WriteString(\"## Direct Relationships\\n\\n\")\n\n\tif len(analysis.DirectCalls) > 0 {\n\t\toutput.WriteString(\"### \ud83d\udcde Functions Called (Downstream)\\n\")\n\t\tfor i, call := range analysis.DirectCalls {\n\t\t\toutput.WriteString(fmt.Sprintf(\"%d. `%s`\\n\", i+1, call))\n\t\t}\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\tif len(analysis.DirectCallers) > 0 {\n\t\toutput.WriteString(\"### \ud83d\udcde Functions Called By (Upstream)\\n\")\n\t\tfor i, caller := range analysis.DirectCallers {\n\t\t\toutput.WriteString(fmt.Sprintf(\"%d. `%s`\\n\", i+1, caller))\n\t\t}\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\t// Dependencies\n\toutput.WriteString(\"## Dependencies\\n\\n\")\n\n\tif len(analysis.UpstreamDeps) > 0 {\n\t\toutput.WriteString(\"### \u2b06\ufe0f Upstream Dependencies\\n\")\n\t\toutput.WriteString(\"Functions/packages this symbol depends on:\\n\")\n\t\tfor i, dep := range analysis.UpstreamDeps {\n\t\t\toutput.WriteString(fmt.Sprintf(\"%d. `%s`\\n\", i+1, dep))\n\t\t}\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\tif len(analysis.DownstreamDeps) > 0 {\n\t\toutput.WriteString(\"### \u2b07\ufe0f Downstream Dependencies\\n\")\n\t\toutput.WriteString(\"Functions/packages that depend on this symbol:\\n\")\n\t\tfor i, dep := range analysis.DownstreamDeps {\n\t\t\toutput.WriteString(fmt.Sprintf(\"%d. `%s`\\n\", i+1, dep))\n\t\t}\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\t// Transitive analysis\n\toutput.WriteString(\"## Transitive Impact\\n\\n\")\n\n\tif len(analysis.TransitiveDownstream) > 0 {\n\t\toutput.WriteString(fmt.Sprintf(\"### \ud83c\udf0a Transitive Downstream Impact (%d levels)\\n\", maxDepth))\n\t\toutput.WriteString(\"All functions that might be affected by changes to this symbol:\\n\")\n\t\tfor i, dep := range analysis.TransitiveDownstream {\n\t\t\toutput.WriteString(fmt.Sprintf(\"%d. `\", i+1))\n\t\t\t// Show hierarchy with indentation for transitive relationships\n\t\t\toutput.WriteString(fmt.Sprintf(\"%s`\\n\", dep))\n\t\t}\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\tif len(analysis.TransitiveUpstream) > 0 {\n\t\toutput.WriteString(fmt.Sprintf(\"### \u2b06\ufe0f Transitive Upstream Impact (%d levels)\\n\", maxDepth))\n\t\toutput.WriteString(\"All functions that could affect this symbol:\\n\")\n\t\tfor i, dep := range analysis.TransitiveUpstream {\n\t\t\toutput.WriteString(fmt.Sprintf(\"%d. `%s`\\n\", i+1, dep))\n\t\t}\n\t\toutput.WriteString(\"\\n\")\n\t}\n\n\t// Risk assessment\n\toutput.WriteString(\"## \ud83c\udfaf Risk Assessment\\n\\n\")\n\n\triskLevel := assessRisk(analysis)\n\toutput.WriteString(fmt.Sprintf(\"**Risk Level:** %s\\n\\n\", riskLevel))\n\n\t// Test recommendations\n\toutput.WriteString(\"## \ud83e\uddea Test Recommendations\\n\\n\")\n\toutput.WriteString(\"Based on this analysis, you should test:\\n\\n\")\n\n\tif len(analysis.DownstreamDeps) > 0 {\n\t\toutput.WriteString(\"\u2022 **Downstream consumers** - functions that call this symbol\\n\")\n\t}\n\tif len(analysis.UpstreamDeps) > 0 {\n\t\toutput.WriteString(\"\u2022 **Upstream dependencies** - functions this symbol calls\\n\")\n\t}\n\tif len(analysis.TransitiveDownstream) > 0 {\n\t\toutput.WriteString(\"\u2022 **Transitive impact** - functions indirectly affected\\n\")\n\t}\n\n\t// Add specific testing suggestions\n\tif len(analysis.DirectCallers) > 10 {\n\t\toutput.WriteString(\"\u26a0\ufe0f  High impact - consider integration tests\\n\")\n\t}\n\tif len(analysis.DirectCalls) > 20 {\n\t\toutput.WriteString(\"\u26a0\ufe0f  Complex dependencies - unit test each interface\\n\")\n\t}\n\n\toutput.WriteString(\"\\n\")\n\n\t// Footer with tips\n\toutput.WriteString(\"\ud83d\udca1 **Tips:**\\n\")\n\toutput.WriteString(\"   \u2022 Run integration tests on all downstream dependencies\\n\")\n\toutput.WriteString(\"   \u2022 Check for breaking changes in function signatures\\n\")\n\toutput.WriteString(\"   \u2022 Consider version compatibility for public APIs\\n\")\n\toutput.WriteString(\"   \u2022 Mock upstream dependencies during testing\\n\")\n\n\treturn output.String()\n}\n\n// assessRisk provides a simple risk assessment based on the impact analysis",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_assessRisk_183": {
+      "name": "assessRisk",
+      "type": "function",
+      "start_line": 183,
+      "end_line": 197,
+      "content_hash": "2b43735686b5b977a5ae92a0af51138d93d3b730",
+      "content": "func assessRisk(analysis indexer.ImpactAnalysis) string {\n\ttotalImpact := len(analysis.DirectCallers) +\n\t\tlen(analysis.DownstreamDeps) +\n\t\tlen(analysis.TransitiveDownstream)\n\n\tif totalImpact == 0 {\n\t\treturn \"\ud83d\udfe2 Low (no dependencies)\"\n\t} else if totalImpact < 5 {\n\t\treturn \"\ud83d\udfe1 Medium (limited impact)\"\n\t} else if totalImpact < 20 {\n\t\treturn \"\ud83d\udfe0 High (significant impact)\"\n\t} else {\n\t\treturn \"\ud83d\udd34 Critical (widespread impact)\"\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

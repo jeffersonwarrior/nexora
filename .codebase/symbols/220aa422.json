@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/config/providers/xai_test.go",
+  "file_hash": "9b12459b8f8cfe8c430afda0c28555e229ece522",
+  "updated_at": "2025-12-26T17:34:19.937195",
+  "symbols": {
+    "function_TestXAIProvider_ReturnsValidProvider_10": {
+      "name": "TestXAIProvider_ReturnsValidProvider",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 19,
+      "content_hash": "9f5cf650c1c159b864ee584f75fe32eda0630961",
+      "content": "func TestXAIProvider_ReturnsValidProvider(t *testing.T) {\n\tt.Parallel()\n\tprovider := XAIProvider(nil)\n\n\trequire.NotEmpty(t, provider.ID)\n\trequire.Equal(t, \"xai\", string(provider.ID))\n\trequire.Equal(t, \"xAI\", provider.Name)\n\trequireValidProvider(t, provider)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestXAIProvider_HasGrokModels_20": {
+      "name": "TestXAIProvider_HasGrokModels",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 28,
+      "content_hash": "698f09a3e8d4667f69c56b82afc243c99e6a17eb",
+      "content": "func TestXAIProvider_HasGrokModels(t *testing.T) {\n\tt.Parallel()\n\tprovider := XAIProvider(nil)\n\n\trequire.Len(t, provider.Models, 6)\n\trequire.Equal(t, \"grok-4-1-fast-reasoning\", string(provider.Models[0].ID))\n\trequire.Equal(t, \"Grok 4.1 Fast Reasoning\", provider.Models[0].Name)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestXAIProvider_SkipsIfAlreadyExists_29": {
+      "name": "TestXAIProvider_SkipsIfAlreadyExists",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 38,
+      "content_hash": "170481f6285bc5e63bb262ed3e130de4344d13fc",
+      "content": "func TestXAIProvider_SkipsIfAlreadyExists(t *testing.T) {\n\tt.Parallel()\n\tprovider := XAIProvider(nil)\n\trequire.NotEmpty(t, provider.ID)\n\n\txaiInList := []catwalk.Provider{provider}\n\tresult := XAIProvider(xaiInList)\n\trequire.Empty(t, result.ID)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestXAIProvider_DefaultAPIEndpoint_39": {
+      "name": "TestXAIProvider_DefaultAPIEndpoint",
+      "type": "function",
+      "start_line": 39,
+      "end_line": 45,
+      "content_hash": "6252bda35b58bb61f677c1f8f915cc1c73048b98",
+      "content": "func TestXAIProvider_DefaultAPIEndpoint(t *testing.T) {\n\tt.Setenv(\"XAI_API_ENDPOINT\", \"\")\n\n\tprovider := XAIProvider(nil)\n\trequire.Equal(t, \"https://api.x.ai/v1\", provider.APIEndpoint)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestXAIProvider_RespectEnvVarEndpoint_46": {
+      "name": "TestXAIProvider_RespectEnvVarEndpoint",
+      "type": "function",
+      "start_line": 46,
+      "end_line": 53,
+      "content_hash": "450353744955101b8135cdd6bc040094ae3ffbc1",
+      "content": "func TestXAIProvider_RespectEnvVarEndpoint(t *testing.T) {\n\tcustomEndpoint := \"https://custom.xai.endpoint/v1\"\n\tt.Setenv(\"XAI_API_ENDPOINT\", customEndpoint)\n\n\tprovider := XAIProvider(nil)\n\trequire.Equal(t, customEndpoint, provider.APIEndpoint)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestXAIProvider_OpenAICompat_54": {
+      "name": "TestXAIProvider_OpenAICompat",
+      "type": "function",
+      "start_line": 54,
+      "end_line": 59,
+      "content_hash": "db710b640d9d7f81afa36abecc09d839918ec11f",
+      "content": "func TestXAIProvider_OpenAICompat(t *testing.T) {\n\tt.Parallel()\n\tprovider := XAIProvider(nil)\n\n\trequire.Equal(t, \"openai-compat\", string(provider.Type))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

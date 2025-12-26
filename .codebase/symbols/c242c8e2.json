@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/diff/diff.go",
+  "file_hash": "548b41f6ba711d1a160c4356b7858faf38979840",
+  "updated_at": "2025-12-26T17:34:20.736933",
+  "symbols": {
+    "function_GenerateDiff_10": {
+      "name": "GenerateDiff",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 29,
+      "content_hash": "9f37f710ac0d7872fd683d22628b667d43e42ddd",
+      "content": "func GenerateDiff(beforeContent, afterContent, fileName string) (string, int, int) {\n\tfileName = strings.TrimPrefix(fileName, \"/\")\n\n\tvar (\n\t\tunified   = udiff.Unified(\"a/\"+fileName, \"b/\"+fileName, beforeContent, afterContent)\n\t\tadditions = 0\n\t\tremovals  = 0\n\t)\n\n\tlines := strings.SplitSeq(unified, \"\\n\")\n\tfor line := range lines {\n\t\tif strings.HasPrefix(line, \"+\") && !strings.HasPrefix(line, \"+++\") {\n\t\t\tadditions++\n\t\t} else if strings.HasPrefix(line, \"-\") && !strings.HasPrefix(line, \"---\") {\n\t\t\tremovals++\n\t\t}\n\t}\n\n\treturn unified, additions, removals\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

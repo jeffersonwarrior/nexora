@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/config/providers/local_detector.go",
+  "file_hash": "8051f89e8c2f43f3ff3b8c8642f1401141ed33e6",
+  "updated_at": "2025-12-26T17:34:21.332100",
+  "symbols": {
+    "struct_LocalModel_13": {
+      "name": "LocalModel",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 20,
+      "content_hash": "26daae40135fbf79ad0ef01288c07510ddad8d8e",
+      "content": "type LocalModel struct {\n\tID      string `json:\"id\"`\n\tName    string `json:\"name,omitempty\"` // Friendly display name\n\tContext int    `json:\"context\"`\n\tMatched string `json:\"matched\"`\n}\n\n// LocalProvider represents detected local provider config",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_LocalProvider_21": {
+      "name": "LocalProvider",
+      "type": "struct",
+      "start_line": 21,
+      "end_line": 30,
+      "content_hash": "08cc10eb4568fef6cda1230ce5b49529af5880ae",
+      "content": "type LocalProvider struct {\n\tType     string       `json:\"type\"`\n\tEndpoint string       `json:\"endpoint\"`\n\tAPIKey   string       `json:\"api_key,omitempty\"`\n\tModels   []LocalModel `json:\"models\"`\n\tName     string       `json:\"name\"`\n\tBaseURL  string       `json:\"base_url\"`\n}\n\n// LocalDetector handles auto-detection of local model servers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_LocalDetector_31": {
+      "name": "LocalDetector",
+      "type": "struct",
+      "start_line": 31,
+      "end_line": 36,
+      "content_hash": "fff98a2e8dac7e9fe89e2f169651459670e1f6dd",
+      "content": "type LocalDetector struct {\n\tendpoint string\n\tclient   *http.Client\n}\n\n// NewLocalDetector creates a new detector for the given endpoint",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewLocalDetector_37": {
+      "name": "NewLocalDetector",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 46,
+      "content_hash": "d1cbc64013e806f47bb3fdfdf0ddb8b07402b962",
+      "content": "func NewLocalDetector(endpoint string) *LocalDetector {\n\treturn &LocalDetector{\n\t\tendpoint: strings.TrimSuffix(endpoint, \"/\"),\n\t\tclient: &http.Client{\n\t\t\tTimeout: 10 * time.Second,\n\t\t},\n\t}\n}\n\n// Detect attempts to identify the server type and available models",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Detect_47": {
+      "name": "Detect",
+      "type": "method",
+      "start_line": 47,
+      "end_line": 69,
+      "content_hash": "edeb9daf60010c33f9be0ec9ebeb2a88007c7eee",
+      "content": "func (d *LocalDetector) Detect(serverType, apiKey string) (*LocalProvider, error) {\n\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)\n\tdefer cancel()\n\n\tprovider := &LocalProvider{\n\t\tType:     \"local\",\n\t\tEndpoint: d.endpoint,\n\t\tAPIKey:   apiKey,\n\t\tName:     \"Local Models\",\n\t\tBaseURL:  d.endpoint,\n\t}\n\n\tswitch serverType {\n\tcase \"ollama\":\n\t\treturn d.detectOllama(ctx, provider)\n\tcase \"openai\", \"vllm\", \"lm-studio\":\n\t\treturn d.detectOpenAICompatible(ctx, provider)\n\tdefault:\n\t\t// Auto-detect by trying common endpoints in priority order\n\t\treturn d.autoDetect(ctx, provider)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_detectOllama_70": {
+      "name": "detectOllama",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 131,
+      "content_hash": "886ac0f671f16b43625d976753ebcfc8ebd5f1ac",
+      "content": "func (d *LocalDetector) detectOllama(ctx context.Context, provider *LocalProvider) (*LocalProvider, error) {\n\t// Test /api/tags for Ollama\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", d.endpoint+\"/api/tags\", nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tif provider.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+provider.APIKey)\n\t}\n\n\tresp, err := d.client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"ollama detection failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode == 401 || resp.StatusCode == 403 {\n\t\treturn nil, fmt.Errorf(\"ollama requires API key\")\n\t}\n\n\tif resp.StatusCode != 200 {\n\t\treturn nil, fmt.Errorf(\"ollama /api/tags returned %d\", resp.StatusCode)\n\t}\n\n\tvar ollamaResp struct {\n\t\tModels []struct {\n\t\t\tName string `json:\"name\"`\n\t\t\tSize int64  `json:\"size\"`\n\t\t} `json:\"models\"`\n\t}\n\n\tif err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to parse ollama response: %w\", err)\n\t}\n\n\tfor _, m := range ollamaResp.Models {\n\t\t// Try to get actual context window from model details\n\t\tcontext := d.getOllamaModelDetails(ctx, provider, m.Name)\n\t\tif context == 0 {\n\t\t\t// Fall back to estimation if API query fails\n\t\t\tcontext = d.getOllamaContext(m.Name)\n\t\t}\n\t\tmatched := MatchModelToLibrary(m.Name)\n\n\t\t// Generate friendly name\n\t\tname := m.Name\n\t\tif matched != \"\" {\n\t\t\tname = matched\n\t\t}\n\n\t\tprovider.Models = append(provider.Models, LocalModel{\n\t\t\tID:      m.Name,\n\t\t\tName:    name,\n\t\t\tContext: context,\n\t\t\tMatched: matched,\n\t\t})\n\t}\n\n\treturn provider, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_detectOpenAICompatible_132": {
+      "name": "detectOpenAICompatible",
+      "type": "method",
+      "start_line": 132,
+      "end_line": 202,
+      "content_hash": "d4106e5989c049aa932473c2ca34fbe653d3ce3e",
+      "content": "func (d *LocalDetector) detectOpenAICompatible(ctx context.Context, provider *LocalProvider) (*LocalProvider, error) {\n\t// Test /v1/models for OpenAI-compatible servers\n\treq, err := http.NewRequestWithContext(ctx, \"GET\", d.endpoint+\"/v1/models\", nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tif provider.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+provider.APIKey)\n\t}\n\n\tresp, err := d.client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"openai-compatible detection failed: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode == 401 || resp.StatusCode == 403 {\n\t\treturn nil, fmt.Errorf(\"server requires API key\")\n\t}\n\n\tif resp.StatusCode != 200 {\n\t\treturn nil, fmt.Errorf(\"v1/models returned %d\", resp.StatusCode)\n\t}\n\n\tvar openaiResp struct {\n\t\tData []struct {\n\t\t\tID          string `json:\"id\"`\n\t\t\tObject      string `json:\"object\"`\n\t\t\tCreated     int64  `json:\"created\"`\n\t\t\tOwnedBy     string `json:\"owned_by\"`\n\t\t\tContext     int    `json:\"context_window,omitempty\"` // Some providers\n\t\t\tMaxModelLen int    `json:\"max_model_len,omitempty\"`  // vLLM uses this\n\t\t} `json:\"data\"`\n\t}\n\n\tif err := json.NewDecoder(resp.Body).Decode(&openaiResp); err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to parse openai response: %w\", err)\n\t}\n\n\tfor _, m := range openaiResp.Data {\n\t\t// Try different context window fields\n\t\tcontext := m.Context\n\t\tif context == 0 && m.MaxModelLen > 0 {\n\t\t\t// vLLM returns max_model_len instead of context_window\n\t\t\tcontext = m.MaxModelLen\n\t\t}\n\t\tif context == 0 {\n\t\t\t// Estimate context based on model name if not provided\n\t\t\tcontext = d.estimateContextFromName(m.ID)\n\t\t}\n\n\t\tmatched := MatchModelToLibrary(m.ID)\n\n\t\t// Generate friendly name\n\t\tname := m.ID\n\t\tif matched != \"\" {\n\t\t\tname = matched\n\t\t}\n\n\t\tprovider.Models = append(provider.Models, LocalModel{\n\t\t\tID:      m.ID,\n\t\t\tName:    name,\n\t\t\tContext: context,\n\t\t\tMatched: matched,\n\t\t})\n\t}\n\n\treturn provider, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_autoDetect_203": {
+      "name": "autoDetect",
+      "type": "method",
+      "start_line": 203,
+      "end_line": 217,
+      "content_hash": "5850ee101208e7685e130f3c539fb15d896b5601",
+      "content": "func (d *LocalDetector) autoDetect(ctx context.Context, provider *LocalProvider) (*LocalProvider, error) {\n\t// Try Ollama first\n\tif p, err := d.detectOllama(ctx, provider); err == nil {\n\t\treturn p, nil\n\t}\n\n\t// Try OpenAI compatible\n\tif p, err := d.detectOpenAICompatible(ctx, provider); err == nil {\n\t\treturn p, nil\n\t}\n\n\treturn nil, fmt.Errorf(\"unable to detect server type at %s\", d.endpoint)\n}\n\n// getOllamaModelDetails queries Ollama's /api/show endpoint to get actual context window",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getOllamaModelDetails_218": {
+      "name": "getOllamaModelDetails",
+      "type": "method",
+      "start_line": 218,
+      "end_line": 276,
+      "content_hash": "3d160d45187f5659ecef0233762d1b4d2655a50c",
+      "content": "func (d *LocalDetector) getOllamaModelDetails(ctx context.Context, provider *LocalProvider, modelName string) int {\n\treqBody := fmt.Sprintf(`{\"name\":\"%s\"}`, modelName)\n\treq, err := http.NewRequestWithContext(ctx, \"POST\", d.endpoint+\"/api/show\", strings.NewReader(reqBody))\n\tif err != nil {\n\t\treturn 0\n\t}\n\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\tif provider.APIKey != \"\" {\n\t\treq.Header.Set(\"Authorization\", \"Bearer \"+provider.APIKey)\n\t}\n\n\tresp, err := d.client.Do(req)\n\tif err != nil {\n\t\treturn 0\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != 200 {\n\t\treturn 0\n\t}\n\n\tvar showResp struct {\n\t\tModelInfo struct {\n\t\t\t// Ollama returns model parameters in different fields\n\t\t\tContextLength int `json:\"context_length\"`\n\t\t\tNumCtx        int `json:\"num_ctx\"`\n\t\t} `json:\"model_info\"`\n\t\tDetails struct {\n\t\t\t// Alternative location for context info\n\t\t\tContextLength int `json:\"context_length\"`\n\t\t} `json:\"details\"`\n\t\t// Sometimes it's at the top level\n\t\tContextLength int `json:\"context_length\"`\n\t}\n\n\tif err := json.NewDecoder(resp.Body).Decode(&showResp); err != nil {\n\t\treturn 0\n\t}\n\n\t// Try different fields where context length might be\n\tif showResp.ContextLength > 0 {\n\t\treturn showResp.ContextLength\n\t}\n\tif showResp.ModelInfo.ContextLength > 0 {\n\t\treturn showResp.ModelInfo.ContextLength\n\t}\n\tif showResp.ModelInfo.NumCtx > 0 {\n\t\treturn showResp.ModelInfo.NumCtx\n\t}\n\tif showResp.Details.ContextLength > 0 {\n\t\treturn showResp.Details.ContextLength\n\t}\n\n\treturn 0\n}\n\n// EstimateContext estimates the context window size for a model based on its name\n// This is a public method used by tests and potentially other callers",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_EstimateContext_277": {
+      "name": "EstimateContext",
+      "type": "method",
+      "start_line": 277,
+      "end_line": 281,
+      "content_hash": "9cb925ba01bb52692eaa3658a3bfc3695baef6bc",
+      "content": "func (d *LocalDetector) EstimateContext(modelName string) int {\n\treturn d.getOllamaContext(modelName)\n}\n\n// getOllamaContext estimates context window size based on model name patterns",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getOllamaContext_282": {
+      "name": "getOllamaContext",
+      "type": "method",
+      "start_line": 282,
+      "end_line": 326,
+      "content_hash": "c631e22107ab214ffca9c917d6324e25b28c5cab",
+      "content": "func (d *LocalDetector) getOllamaContext(modelName string) int {\n\tname := strings.ToLower(modelName)\n\n\t// Check for explicit context window indicators first (e.g., \"128k\", \"32k\")\n\tif strings.Contains(name, \"128k\") || strings.Contains(name, \":128k\") {\n\t\treturn 131072 // 128k tokens\n\t}\n\tif strings.Contains(name, \"32k\") || strings.Contains(name, \":32k\") {\n\t\treturn 32768 // 32k tokens\n\t}\n\tif strings.Contains(name, \"16k\") || strings.Contains(name, \":16k\") {\n\t\treturn 16384 // 16k tokens\n\t}\n\n\t// Known Ollama model context windows based on parameter count\n\t// Check specific patterns only (e.g., \"405b\" but NOT just \"405\")\n\tif strings.Contains(name, \"405b\") {\n\t\treturn 131072 // 128k\n\t}\n\tif strings.Contains(name, \"120b\") {\n\t\treturn 131072 // Large models like GPT-OSS-120B\n\t}\n\tif strings.Contains(name, \"72b\") || strings.Contains(name, \"70b\") {\n\t\treturn 131072 // 128k\n\t}\n\tif strings.Contains(name, \"34b\") || strings.Contains(name, \"33b\") {\n\t\treturn 131072 // 128k\n\t}\n\tif strings.Contains(name, \"22b\") {\n\t\treturn 65536 // 64k\n\t}\n\tif strings.Contains(name, \"13b\") {\n\t\treturn 8192\n\t}\n\tif strings.Contains(name, \"8b\") {\n\t\treturn 8192\n\t}\n\tif strings.Contains(name, \"7b\") {\n\t\treturn 8192\n\t}\n\n\t// Default assumption for unknown models\n\treturn 4096\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_estimateContextFromName_327": {
+      "name": "estimateContextFromName",
+      "type": "method",
+      "start_line": 327,
+      "end_line": 371,
+      "content_hash": "95cf5a96c28f6af2eab4a1f572cec19597ac809f",
+      "content": "func (d *LocalDetector) estimateContextFromName(modelID string) int {\n\tname := strings.ToLower(modelID)\n\n\t// Check for explicit context window indicators first (e.g., \"128k\", \"32k\")\n\tif strings.Contains(name, \"128k\") || strings.Contains(name, \":128k\") {\n\t\treturn 131072 // 128k tokens\n\t}\n\tif strings.Contains(name, \"32k\") || strings.Contains(name, \":32k\") {\n\t\treturn 32768 // 32k tokens\n\t}\n\tif strings.Contains(name, \"16k\") || strings.Contains(name, \":16k\") {\n\t\treturn 16384 // 16k tokens\n\t}\n\n\t// Model parameter count patterns (specific patterns only)\n\tif strings.Contains(name, \"405b\") {\n\t\treturn 131072 // 128k\n\t}\n\tif strings.Contains(name, \"120b\") {\n\t\treturn 131072 // Large models like GPT-OSS-120B\n\t}\n\tif strings.Contains(name, \"70b\") {\n\t\treturn 131072 // 128k\n\t}\n\tif strings.Contains(name, \"34b\") {\n\t\treturn 131072 // 128k\n\t}\n\tif strings.Contains(name, \"22b\") {\n\t\treturn 65536 // 64k\n\t}\n\tif strings.Contains(name, \"13b\") {\n\t\treturn 8192\n\t}\n\tif strings.Contains(name, \"8b\") {\n\t\treturn 8192\n\t}\n\tif strings.Contains(name, \"7b\") {\n\t\treturn 8192\n\t}\n\n\t// Default assumption for unknown models\n\treturn 4096\n}\n\n// MatchModelToLibrary matches raw model names to Nexora library equivalents",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_MatchModelToLibrary_372": {
+      "name": "MatchModelToLibrary",
+      "type": "function",
+      "start_line": 372,
+      "end_line": 410,
+      "content_hash": "67731919f49dad487306998e22ad05010b3e75d9",
+      "content": "func MatchModelToLibrary(rawModel string) string {\n\tname := strings.ToLower(rawModel)\n\n\t// Exact matches\n\tif strings.Contains(name, \"llama3.1:405b\") || strings.Contains(name, \"llama-3.1-405b\") {\n\t\treturn \"llama-3.1-405b-instruct\"\n\t}\n\tif strings.Contains(name, \"llama3.1:70b\") || strings.Contains(name, \"llama-3.1-70b\") {\n\t\treturn \"llama-3.1-70b-instruct\"\n\t}\n\tif strings.Contains(name, \"llama3.1:8b\") || strings.Contains(name, \"llama-3.1-8b\") {\n\t\treturn \"llama-3.1-8b-instruct\"\n\t}\n\tif strings.Contains(name, \"codellama:34b\") || strings.Contains(name, \"codellama-34b\") {\n\t\treturn \"codellama-34b-instruct\"\n\t}\n\tif strings.Contains(name, \"mixtral:8x22b\") || strings.Contains(name, \"mixtral-8x22b\") {\n\t\treturn \"mixtral-8x22b-instruct\"\n\t}\n\n\t// Partial matches\n\tif strings.Contains(name, \"70b\") {\n\t\treturn \"llama-3-70b-instruct\"\n\t}\n\tif strings.Contains(name, \"8b\") {\n\t\treturn \"llama-3-8b-instruct\"\n\t}\n\tif strings.Contains(name, \"7b\") {\n\t\treturn \"llama-7b-instruct\"\n\t}\n\tif strings.Contains(name, \"codellama\") {\n\t\treturn \"codellama-7b-instruct\"\n\t}\n\n\t// Fallback\n\treturn rawModel\n}\n\n// PrioritizeModels sorts models by context window priority",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_PrioritizeModels_411": {
+      "name": "PrioritizeModels",
+      "type": "function",
+      "start_line": 411,
+      "end_line": 426,
+      "content_hash": "20bbb932028a58e08d2e3c04a3b3782f1319f880",
+      "content": "func PrioritizeModels(models []LocalModel) []LocalModel {\n\tprioritized := make([]LocalModel, len(models))\n\tcopy(prioritized, models)\n\n\t// Sort: >64k first, then 32-64k, then 32k+\n\tfor i := 0; i < len(prioritized)-1; i++ {\n\t\tfor j := i + 1; j < len(prioritized); j++ {\n\t\t\tif compareContext(prioritized[j].Context, prioritized[i].Context) > 0 {\n\t\t\t\tprioritized[i], prioritized[j] = prioritized[j], prioritized[i]\n\t\t\t}\n\t\t}\n\t}\n\n\treturn prioritized\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_compareContext_427": {
+      "name": "compareContext",
+      "type": "function",
+      "start_line": 427,
+      "end_line": 459,
+      "content_hash": "a8b2b5bff4783ab579c40d2c214b118da810f3c1",
+      "content": "func compareContext(a, b int) int {\n\t// >64k is highest priority\n\tisLargeA := a > 65536\n\tisLargeB := b > 65536\n\n\tif isLargeA && !isLargeB {\n\t\treturn 1\n\t}\n\tif !isLargeA && isLargeB {\n\t\treturn -1\n\t}\n\n\t// 32-64k is medium priority\n\tisMediumA := a >= 32768 && a <= 65536\n\tisMediumB := b >= 32768 && b <= 65536\n\n\tif isMediumA && !isMediumB {\n\t\treturn 1\n\t}\n\tif !isMediumA && isMediumB {\n\t\treturn -1\n\t}\n\n\t// Otherwise, larger context wins\n\tif a > b {\n\t\treturn 1\n\t}\n\tif b > a {\n\t\treturn -1\n\t}\n\n\treturn 0\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

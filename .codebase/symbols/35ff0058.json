@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/util/filter_ref.rs",
+  "file_hash": "e1ddeb8b3859712e5d47631cea60146aeba7f1d1",
+  "updated_at": "2025-12-26T17:34:20.492492",
+  "symbols": {
+    "struct_FilterRef_7": {
+      "name": "FilterRef",
+      "type": "struct",
+      "start_line": 7,
+      "end_line": 12,
+      "content_hash": "ac16d51ff109ef00131c3733721d8d95201a7b76",
+      "content": "pub struct FilterRef<'db, 'txn, I, F> {\n    iter: I,\n    txn: &'txn RoTxn<'db>,\n    f: F,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_13": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 13,
+      "end_line": 18,
+      "content_hash": "5d30262c36ac21515f423a160b06ee77b2992ba3",
+      "content": "impl<'db, 'arena, 'txn, I, F> Iterator for FilterRef<'db, 'txn, I, F>\nwhere\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    F: Fn(&I::Item, &RoTxn) -> Result<bool, GraphError>,\n{\n    type Item = I::Item;",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_19": {
+      "name": "next",
+      "type": "method",
+      "start_line": 19,
+      "end_line": 35,
+      "content_hash": "2886f8f5a165aea599cf16fe359ebc3f11ee0227",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        for item in self.iter.by_ref() {\n            match (self.f)(&item, self.txn) {\n                Ok(result) => {\n                    if result {\n                        return Some(item);\n                    }\n                }\n                Err(e) => {\n                    return Some(Err(e));\n                }\n            }\n        }\n        None\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_FilterRefAdapter_36": {
+      "name": "FilterRefAdapter",
+      "type": "trait",
+      "start_line": 36,
+      "end_line": 45,
+      "content_hash": "0235244bfa485e6d6c34c533a14a787bdffc92b3",
+      "content": "pub trait FilterRefAdapter<'db, 'arena, 'txn>: Iterator {\n    /// FilterRef filters the iterator by taking a reference\n    /// to each item and a transaction.\n    fn filter_ref<F>(\n        self,\n        f: F,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_46": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 46,
+      "end_line": 62,
+      "content_hash": "23632e5af24b700c9c93d651c75a8d4924649855",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >\n    where\n        F: Fn(&Result<TraversalValue<'arena>, GraphError>, &RoTxn) -> Result<bool, GraphError>;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    FilterRefAdapter<'db, 'arena, 'txn> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    #[inline]\n    fn filter_ref<F>(\n        self,\n        f: F,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_63": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 63,
+      "end_line": 79,
+      "content_hash": "9a86f9f773a6153eed656d62992019df46cfd4ef",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >\n    where\n        F: Fn(&Result<TraversalValue<'arena>, GraphError>, &RoTxn) -> Result<bool, GraphError>,\n    {\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: FilterRef {\n                iter: self.inner,\n                txn: self.txn,\n                f,\n            },\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

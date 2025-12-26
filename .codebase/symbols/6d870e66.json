@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/sdk/parser.ts",
+  "file_hash": "ec8a31b6ea480c1a2bdda8bd04589eaf391f8257",
+  "updated_at": "2025-12-26T17:34:25.046132",
+  "symbols": {
+    "function_parseObservations_33": {
+      "name": "parseObservations",
+      "type": "function",
+      "start_line": 33,
+      "end_line": 99,
+      "content_hash": "ebf15bb6ef162472ef7790d50cda7e56f1f7143f",
+      "content": "export function parseObservations(text: string, correlationId?: string): ParsedObservation[] {\n  const observations: ParsedObservation[] = [];\n\n  // Match <observation>...</observation> blocks (non-greedy)\n  const observationRegex = /<observation>([\\s\\S]*?)<\\/observation>/g;\n\n  let match;\n  while ((match = observationRegex.exec(text)) !== null) {\n    const obsContent = match[1];\n\n    // Extract all fields\n    const type = extractField(obsContent, 'type');\n    const title = extractField(obsContent, 'title');\n    const subtitle = extractField(obsContent, 'subtitle');\n    const narrative = extractField(obsContent, 'narrative');\n    const facts = extractArrayElements(obsContent, 'facts', 'fact');\n    const concepts = extractArrayElements(obsContent, 'concepts', 'concept');\n    const files_read = extractArrayElements(obsContent, 'files_read', 'file');\n    const files_modified = extractArrayElements(obsContent, 'files_modified', 'file');\n\n    // NOTE FROM THEDOTMACK: ALWAYS save observations - never skip. 10/24/2025\n    // All fields except type are nullable in schema\n    // If type is missing or invalid, use first type from mode as fallback\n\n    // Determine final type using active mode's valid types\n    const mode = ModeManager.getInstance().getActiveMode();\n    const validTypes = mode.observation_types.map(t => t.id);\n    const fallbackType = validTypes[0]; // First type in mode's list is the fallback\n    let finalType = fallbackType;\n    if (type) {\n      if (validTypes.includes(type.trim())) {\n        finalType = type.trim();\n      } else {\n        logger.warn('PARSER', `Invalid observation type: ${type}, using \"${fallbackType}\"`, { correlationId });\n      }\n    } else {\n      logger.warn('PARSER', `Observation missing type field, using \"${fallbackType}\"`, { correlationId });\n    }\n\n    // All other fields are optional - save whatever we have\n\n    // Filter out type from concepts array (types and concepts are separate dimensions)\n    const cleanedConcepts = concepts.filter(c => c !== finalType);\n\n    if (cleanedConcepts.length !== concepts.length) {\n      logger.warn('PARSER', 'Removed observation type from concepts array', {\n        correlationId,\n        type: finalType,\n        originalConcepts: concepts,\n        cleanedConcepts\n      });\n    }\n\n    observations.push({\n      type: finalType,\n      title,\n      subtitle,\n      facts,\n      narrative,\n      concepts: cleanedConcepts,\n      files_read,\n      files_modified\n    });\n  }\n\n  return observations;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_parseSummary_105": {
+      "name": "parseSummary",
+      "type": "function",
+      "start_line": 105,
+      "end_line": 160,
+      "content_hash": "c89848910fd9016deebc3d20d8a3ac60466c3cf0",
+      "content": "export function parseSummary(text: string, sessionId?: number): ParsedSummary | null {\n  // Check for skip_summary first\n  const skipRegex = /<skip_summary\\s+reason=\"([^\"]+)\"\\s*\\/>/;\n  const skipMatch = skipRegex.exec(text);\n\n  if (skipMatch) {\n    logger.info('PARSER', 'Summary skipped', {\n      sessionId,\n      reason: skipMatch[1]\n    });\n    return null;\n  }\n\n  // Match <summary>...</summary> block (non-greedy)\n  const summaryRegex = /<summary>([\\s\\S]*?)<\\/summary>/;\n  const summaryMatch = summaryRegex.exec(text);\n\n  if (!summaryMatch) {\n    return null;\n  }\n\n  const summaryContent = summaryMatch[1];\n\n  // Extract fields\n  const request = extractField(summaryContent, 'request');\n  const investigated = extractField(summaryContent, 'investigated');\n  const learned = extractField(summaryContent, 'learned');\n  const completed = extractField(summaryContent, 'completed');\n  const next_steps = extractField(summaryContent, 'next_steps');\n  const notes = extractField(summaryContent, 'notes'); // Optional\n\n  // NOTE FROM THEDOTMACK: 100% of the time we must SAVE the summary, even if fields are missing. 10/24/2025 \n  // NEVER DO THIS NONSENSE AGAIN.\n\n  // Validate required fields are present (notes is optional)\n  // if (!request || !investigated || !learned || !completed || !next_steps) {\n  //   logger.warn('PARSER', 'Summary missing required fields', {\n  //     sessionId,\n  //     hasRequest: !!request,\n  //     hasInvestigated: !!investigated,\n  //     hasLearned: !!learned,\n  //     hasCompleted: !!completed,\n  //     hasNextSteps: !!next_steps\n  //   });\n  //   return null;\n  // }\n\n  return {\n    request,\n    investigated,\n    learned,\n    completed,\n    next_steps,\n    notes\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractField_166": {
+      "name": "extractField",
+      "type": "function",
+      "start_line": 166,
+      "end_line": 173,
+      "content_hash": "ed9bb565fff35f510fd60288f471b1dad0192b58",
+      "content": "function extractField(content: string, fieldName: string): string | null {\n  const regex = new RegExp(`<${fieldName}>([^<]*)</${fieldName}>`);\n  const match = regex.exec(content);\n  if (!match) return null;\n\n  const trimmed = match[1].trim();\n  return trimmed === '' ? null : trimmed;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractArrayElements_178": {
+      "name": "extractArrayElements",
+      "type": "function",
+      "start_line": 178,
+      "end_line": 199,
+      "content_hash": "335b159d725947508c6be0da10fbb6034e145b78",
+      "content": "function extractArrayElements(content: string, arrayName: string, elementName: string): string[] {\n  const elements: string[] = [];\n\n  // Match the array block\n  const arrayRegex = new RegExp(`<${arrayName}>(.*?)</${arrayName}>`, 's');\n  const arrayMatch = arrayRegex.exec(content);\n\n  if (!arrayMatch) {\n    return elements;\n  }\n\n  const arrayContent = arrayMatch[1];\n\n  // Extract individual elements\n  const elementRegex = new RegExp(`<${elementName}>([^<]+)</${elementName}>`, 'g');\n  let elementMatch;\n  while ((elementMatch = elementRegex.exec(arrayContent)) !== null) {\n    elements.push(elementMatch[1].trim());\n  }\n\n  return elements;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

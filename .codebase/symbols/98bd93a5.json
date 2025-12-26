@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/bm25/search_bm25.rs",
+  "file_hash": "4a1a6258731b993e5ff1e6871d1f21354c7088d6",
+  "updated_at": "2025-12-26T17:34:22.250861",
+  "symbols": {
+    "trait_SearchBM25Adapter_13": {
+      "name": "SearchBM25Adapter",
+      "type": "trait",
+      "start_line": 13,
+      "end_line": 25,
+      "content_hash": "ea863f67d04fd1b5cc40a3b0a7335582ae4c03fe",
+      "content": "pub trait SearchBM25Adapter<'db, 'arena, 'txn>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    fn search_bm25<K>(\n        self,\n        label: &'arena str,\n        query: &str,\n        k: K,\n    ) -> Result<\n        RoTraversalIterator<\n            'db,\n            'arena,\n            'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_26": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 26,
+      "end_line": 47,
+      "content_hash": "a60bcac77576545a1d418dd4a2b648242d9bdb6d",
+      "content": "            impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n        >,\n        GraphError,\n    >\n    where\n        K: TryInto<usize>,\n        K::Error: std::fmt::Debug;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    SearchBM25Adapter<'db, 'arena, 'txn> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    fn search_bm25<K>(\n        self,\n        label: &'arena str,\n        query: &str,\n        k: K,\n    ) -> Result<\n        RoTraversalIterator<\n            'db,\n            'arena,\n            'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_48": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 48,
+      "end_line": 106,
+      "content_hash": "ceb13e6c806f3e577986b609705a83580598dd77",
+      "content": "            impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n        >,\n        GraphError,\n    >\n    where\n        K: TryInto<usize>,\n        K::Error: std::fmt::Debug,\n    {\n        let results = match self.storage.bm25.as_ref() {\n            Some(s) => s.search(self.txn, query, k.try_into().unwrap(), self.arena)?,\n            None => return Err(GraphError::from(\"BM25 not enabled!\")),\n        };\n\n        let label_as_bytes = label.as_bytes();\n        let iter = results.into_iter().filter_map(move |(id, score)| {\n            if let Ok(Some(value)) = self.storage.nodes_db.get(self.txn, &id) {\n            assert!(\n                value.len() >= LMDB_STRING_HEADER_LENGTH,\n                \"value length does not contain header which means the `label` field was missing from the node on insertion\"\n            );\n            let length_of_label_in_lmdb =\n                u64::from_le_bytes(value[..LMDB_STRING_HEADER_LENGTH].try_into().unwrap()) as usize;\n\n            if length_of_label_in_lmdb != label.len() {\n                return None;\n            }\n\n            assert!(\n                value.len() >= length_of_label_in_lmdb + LMDB_STRING_HEADER_LENGTH,\n                \"value length is not at least the header length plus the label length meaning there has been a corruption on node insertion\"\n            );\n            let label_in_lmdb = &value[LMDB_STRING_HEADER_LENGTH\n                ..LMDB_STRING_HEADER_LENGTH + length_of_label_in_lmdb];\n\n            if label_in_lmdb == label_as_bytes {\n                match Node::<'arena>::from_bincode_bytes(id, value, self.arena) {\n                    Ok(node) => {\n                        return Some(Ok(TraversalValue::NodeWithScore { node, score: score as f64 }));\n                    }\n                    Err(e) => {\n                        println!(\"{} Error decoding node: {:?}\", line!(), e);\n                        return Some(Err(GraphError::ConversionError(e.to_string())));\n                    }\n                }\n            } else {\n                return None;\n            }\n            }\n            None\n        });\n\n        Ok(RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: iter,\n        })\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

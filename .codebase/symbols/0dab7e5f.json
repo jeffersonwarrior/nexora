@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/source/n_from_type.rs",
+  "file_hash": "653198ca04c128cc2bdf733a208c433c1771246b",
+  "updated_at": "2025-12-26T17:34:24.027216",
+  "symbols": {
+    "trait_NFromTypeAdapter_12": {
+      "name": "NFromTypeAdapter",
+      "type": "trait",
+      "start_line": 12,
+      "end_line": 28,
+      "content_hash": "f171cdf553cef21583dfc33a47a975957f2aa27d",
+      "content": "pub trait NFromTypeAdapter<'db, 'arena, 'txn, 's>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    /// Returns an iterator containing the nodes with the given label.\n    ///\n    /// Note that the `label` cannot be empty and must be a valid, existing node label.'\n    /// \n    /// The label is stored before the node properties in LMDB.\n    /// Bincode assures that the fields of a struct are stored in the same order as they are defined in the struct (first to last).\n    ///\n    /// Bincode stores an 8 byte u64 length field before strings.\n    /// Therefore to check the label of a node without deserializing the node, we read the 8 byte header and create a u64 from those bytes.\n    /// We then assert the length is valid to avoid out of bounds panics.\n    ///\n    /// We can the get the label bytes using the header length and the length of the label.\n    ///\n    /// We then compare the label bytes to the given label; deserializing the node into the arena if it matches.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_n_from_type_29": {
+      "name": "n_from_type",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 35,
+      "content_hash": "27dc7ebeb4331ee024834cedaff298e3d526c190",
+      "content": "    fn n_from_type(\n        self,\n        label: &'s str,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_36": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 36,
+      "end_line": 42,
+      "content_hash": "9fe2d0807033bd3a96f9e6028c5fe399f6c4e014",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\nimpl<'db, 'arena, 'txn, 's, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    NFromTypeAdapter<'db, 'arena, 'txn, 's> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    #[inline]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_n_from_type_43": {
+      "name": "n_from_type",
+      "type": "method",
+      "start_line": 43,
+      "end_line": 49,
+      "content_hash": "27dc7ebeb4331ee024834cedaff298e3d526c190",
+      "content": "    fn n_from_type(\n        self,\n        label: &'s str,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_50": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 50,
+      "end_line": 98,
+      "content_hash": "adf8c0a5da9b07f71841b4baa0660f2b04d18a44",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        let label_as_bytes = label.as_bytes();\n        let iter = self.storage.nodes_db.iter(self.txn).unwrap().filter_map(move |item| {\n            if let Ok((id, value)) = item {\n                assert!(\n                    value.len() >= LMDB_STRING_HEADER_LENGTH,\n                    \"value length does not contain header which means the `label` field was missing from the node on insertion\"\n                );\n                let length_of_label_in_lmdb =\n                    u64::from_le_bytes(value[..LMDB_STRING_HEADER_LENGTH].try_into().unwrap()) as usize;\n    \n                if length_of_label_in_lmdb != label.len() {\n                    return None;\n                }\n    \n                assert!(\n                    value.len() >= length_of_label_in_lmdb + LMDB_STRING_HEADER_LENGTH,\n                    \"value length is not at least the header length plus the label length meaning there has been a corruption on node insertion\"\n                );\n                let label_in_lmdb = &value[LMDB_STRING_HEADER_LENGTH\n                    ..LMDB_STRING_HEADER_LENGTH + length_of_label_in_lmdb];\n    \n                if label_in_lmdb == label_as_bytes {\n                    match Node::<'arena>::from_bincode_bytes(id, value, self.arena) {\n                        Ok(node) => {\n                            return Some(Ok(TraversalValue::Node(node)));\n                        }\n                        Err(e) => {\n                            println!(\"{} Error decoding node: {:?}\", line!(), e);\n                            return Some(Err(GraphError::ConversionError(e.to_string())));\n                        }\n                    }\n                } else {\n                    return None;\n                }\n            }\n            None\n\n        }); // should be handled because label may be variable in the future\n\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: iter,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

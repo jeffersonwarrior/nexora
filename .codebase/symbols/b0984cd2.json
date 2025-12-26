@@ -1,0 +1,238 @@
+{
+  "file_path": "/work/internal/tui/styles/theme.go",
+  "file_hash": "66be7d3b856f772900ca9fe1aafbb14f3f31f0cd",
+  "updated_at": "2025-12-26T17:34:21.803735",
+  "symbols": {
+    "struct_Theme_27": {
+      "name": "Theme",
+      "type": "struct",
+      "start_line": 27,
+      "end_line": 102,
+      "content_hash": "4273878f88951db127939e4c8d8b8cf74020f92a",
+      "content": "type Theme struct {\n\tName   string\n\tIsDark bool\n\n\tPrimary   color.Color\n\tSecondary color.Color\n\tTertiary  color.Color\n\tAccent    color.Color\n\n\tBgBase        color.Color\n\tBgBaseLighter color.Color\n\tBgSubtle      color.Color\n\tBgOverlay     color.Color\n\n\tFgBase      color.Color\n\tFgMuted     color.Color\n\tFgHalfMuted color.Color\n\tFgSubtle    color.Color\n\tFgSelected  color.Color\n\n\tBorder      color.Color\n\tBorderFocus color.Color\n\n\tSuccess color.Color\n\tError   color.Color\n\tWarning color.Color\n\tInfo    color.Color\n\n\t// Colors\n\t// White\n\tWhite color.Color\n\n\t// Blues\n\tBlueLight color.Color\n\tBlueDark  color.Color\n\tBlue      color.Color\n\n\t// Yellows\n\tYellow color.Color\n\tCitron color.Color\n\n\t// Greens\n\tGreen      color.Color\n\tGreenDark  color.Color\n\tGreenLight color.Color\n\n\t// Reds\n\tRed      color.Color\n\tRedDark  color.Color\n\tRedLight color.Color\n\tCherry   color.Color\n\n\t// Text selection.\n\tTextSelection lipgloss.Style\n\n\t// LSP and MCP status indicators.\n\tItemOfflineIcon lipgloss.Style\n\tItemBusyIcon    lipgloss.Style\n\tItemErrorIcon   lipgloss.Style\n\tItemOnlineIcon  lipgloss.Style\n\n\t// Editor: Yolo Mode.\n\tYoloIconFocused lipgloss.Style\n\tYoloIconBlurred lipgloss.Style\n\tYoloDotsFocused lipgloss.Style\n\tYoloDotsBlurred lipgloss.Style\n\n\t// oAuth Chooser.\n\tAuthBorderSelected   lipgloss.Style\n\tAuthTextSelected     lipgloss.Style\n\tAuthBorderUnselected lipgloss.Style\n\tAuthTextUnselected   lipgloss.Style\n\n\tstyles *Styles\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Styles_103": {
+      "name": "Styles",
+      "type": "struct",
+      "start_line": 103,
+      "end_line": 135,
+      "content_hash": "c059f88338b7df0478676dd67019d402a7b19866",
+      "content": "type Styles struct {\n\tBase         lipgloss.Style\n\tSelectedBase lipgloss.Style\n\n\tTitle        lipgloss.Style\n\tSubtitle     lipgloss.Style\n\tText         lipgloss.Style\n\tTextSelected lipgloss.Style\n\tMuted        lipgloss.Style\n\tSubtle       lipgloss.Style\n\n\tSuccess lipgloss.Style\n\tError   lipgloss.Style\n\tWarning lipgloss.Style\n\tInfo    lipgloss.Style\n\n\t// Markdown & Chroma\n\tMarkdown ansi.StyleConfig\n\n\t// Inputs\n\tTextInput textinput.Styles\n\tTextArea  textarea.Styles\n\n\t// Help\n\tHelp help.Styles\n\n\t// Diff\n\tDiff diffview.Style\n\n\t// FilePicker\n\tFilePicker filepicker.Styles\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_S_136": {
+      "name": "S",
+      "type": "method",
+      "start_line": 136,
+      "end_line": 142,
+      "content_hash": "197c3a62df35b03f9c5d6baa64960e09f2a52287",
+      "content": "func (t *Theme) S() *Styles {\n\tif t.styles == nil {\n\t\tt.styles = t.buildStyles()\n\t}\n\treturn t.styles\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_buildStyles_143": {
+      "name": "buildStyles",
+      "type": "method",
+      "start_line": 143,
+      "end_line": 497,
+      "content_hash": "d375f800974a034ab5043978ab996314310c1e61",
+      "content": "func (t *Theme) buildStyles() *Styles {\n\tbase := lipgloss.NewStyle().\n\t\tForeground(t.FgBase)\n\treturn &Styles{\n\t\tBase: base,\n\n\t\tSelectedBase: base.Background(t.Primary),\n\n\t\tTitle: base.\n\t\t\tForeground(t.Accent).\n\t\t\tBold(true),\n\n\t\tSubtitle: base.\n\t\t\tForeground(t.Secondary).\n\t\t\tBold(true),\n\n\t\tText:         base,\n\t\tTextSelected: base.Background(t.Primary).Foreground(t.FgSelected),\n\n\t\tMuted: base.Foreground(t.FgMuted),\n\n\t\tSubtle: base.Foreground(t.FgSubtle),\n\n\t\tSuccess: base.Foreground(t.Success),\n\n\t\tError: base.Foreground(t.Error),\n\n\t\tWarning: base.Foreground(t.Warning),\n\n\t\tInfo: base.Foreground(t.Info),\n\n\t\tTextInput: textinput.Styles{\n\t\t\tFocused: textinput.StyleState{\n\t\t\t\tText:        base,\n\t\t\t\tPlaceholder: base.Foreground(t.FgSubtle),\n\t\t\t\tPrompt:      base.Foreground(t.Tertiary),\n\t\t\t\tSuggestion:  base.Foreground(t.FgSubtle),\n\t\t\t},\n\t\t\tBlurred: textinput.StyleState{\n\t\t\t\tText:        base.Foreground(t.FgMuted),\n\t\t\t\tPlaceholder: base.Foreground(t.FgSubtle),\n\t\t\t\tPrompt:      base.Foreground(t.FgMuted),\n\t\t\t\tSuggestion:  base.Foreground(t.FgSubtle),\n\t\t\t},\n\t\t\tCursor: textinput.CursorStyle{\n\t\t\t\tColor: t.Secondary,\n\t\t\t\tShape: tea.CursorBlock,\n\t\t\t\tBlink: true,\n\t\t\t},\n\t\t},\n\t\tTextArea: textarea.Styles{\n\t\t\tFocused: textarea.StyleState{\n\t\t\t\tBase:             base,\n\t\t\t\tText:             base,\n\t\t\t\tLineNumber:       base.Foreground(t.FgSubtle),\n\t\t\t\tCursorLine:       base,\n\t\t\t\tCursorLineNumber: base.Foreground(t.FgSubtle),\n\t\t\t\tPlaceholder:      base.Foreground(t.FgSubtle),\n\t\t\t\tPrompt:           base.Foreground(t.Tertiary),\n\t\t\t},\n\t\t\tBlurred: textarea.StyleState{\n\t\t\t\tBase:             base,\n\t\t\t\tText:             base.Foreground(t.FgMuted),\n\t\t\t\tLineNumber:       base.Foreground(t.FgMuted),\n\t\t\t\tCursorLine:       base,\n\t\t\t\tCursorLineNumber: base.Foreground(t.FgMuted),\n\t\t\t\tPlaceholder:      base.Foreground(t.FgSubtle),\n\t\t\t\tPrompt:           base.Foreground(t.FgMuted),\n\t\t\t},\n\t\t\tCursor: textarea.CursorStyle{\n\t\t\t\tColor: t.Secondary,\n\t\t\t\tShape: tea.CursorBlock,\n\t\t\t\tBlink: true,\n\t\t\t},\n\t\t},\n\n\t\tMarkdown: ansi.StyleConfig{\n\t\t\tDocument: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\t// BlockPrefix: \"\\n\",\n\t\t\t\t\t// BlockSuffix: \"\\n\",\n\t\t\t\t\tColor: stringPtr(charmtone.Smoke.Hex()),\n\t\t\t\t},\n\t\t\t\t// Margin: uintPtr(defaultMargin),\n\t\t\t},\n\t\t\tBlockQuote: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{},\n\t\t\t\tIndent:         uintPtr(1),\n\t\t\t\tIndentToken:    stringPtr(\"\u2502 \"),\n\t\t\t},\n\t\t\tList: ansi.StyleList{\n\t\t\t\tLevelIndent: defaultListIndent,\n\t\t\t},\n\t\t\tHeading: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tBlockSuffix: \"\\n\",\n\t\t\t\t\tColor:       stringPtr(charmtone.Malibu.Hex()),\n\t\t\t\t\tBold:        boolPtr(true),\n\t\t\t\t},\n\t\t\t},\n\t\t\tH1: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix:          \" \",\n\t\t\t\t\tSuffix:          \" \",\n\t\t\t\t\tColor:           stringPtr(charmtone.Zest.Hex()),\n\t\t\t\t\tBackgroundColor: stringPtr(charmtone.Charple.Hex()),\n\t\t\t\t\tBold:            boolPtr(true),\n\t\t\t\t},\n\t\t\t},\n\t\t\tH2: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix: \"## \",\n\t\t\t\t},\n\t\t\t},\n\t\t\tH3: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix: \"### \",\n\t\t\t\t},\n\t\t\t},\n\t\t\tH4: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix: \"#### \",\n\t\t\t\t},\n\t\t\t},\n\t\t\tH5: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix: \"##### \",\n\t\t\t\t},\n\t\t\t},\n\t\t\tH6: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix: \"###### \",\n\t\t\t\t\tColor:  stringPtr(charmtone.Guac.Hex()),\n\t\t\t\t\tBold:   boolPtr(false),\n\t\t\t\t},\n\t\t\t},\n\t\t\tStrikethrough: ansi.StylePrimitive{\n\t\t\t\tCrossedOut: boolPtr(true),\n\t\t\t},\n\t\t\tEmph: ansi.StylePrimitive{\n\t\t\t\tItalic: boolPtr(true),\n\t\t\t},\n\t\t\tStrong: ansi.StylePrimitive{\n\t\t\t\tBold: boolPtr(true),\n\t\t\t},\n\t\t\tHorizontalRule: ansi.StylePrimitive{\n\t\t\t\tColor:  stringPtr(charmtone.Charcoal.Hex()),\n\t\t\t\tFormat: \"\\n--------\\n\",\n\t\t\t},\n\t\t\tItem: ansi.StylePrimitive{\n\t\t\t\tBlockPrefix: \"\u2022 \",\n\t\t\t},\n\t\t\tEnumeration: ansi.StylePrimitive{\n\t\t\t\tBlockPrefix: \". \",\n\t\t\t},\n\t\t\tTask: ansi.StyleTask{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{},\n\t\t\t\tTicked:         \"[\u2713] \",\n\t\t\t\tUnticked:       \"[ ] \",\n\t\t\t},\n\t\t\tLink: ansi.StylePrimitive{\n\t\t\t\tColor:     stringPtr(charmtone.Zinc.Hex()),\n\t\t\t\tUnderline: boolPtr(true),\n\t\t\t},\n\t\t\tLinkText: ansi.StylePrimitive{\n\t\t\t\tColor: stringPtr(charmtone.Guac.Hex()),\n\t\t\t\tBold:  boolPtr(true),\n\t\t\t},\n\t\t\tImage: ansi.StylePrimitive{\n\t\t\t\tColor:     stringPtr(charmtone.Cheeky.Hex()),\n\t\t\t\tUnderline: boolPtr(true),\n\t\t\t},\n\t\t\tImageText: ansi.StylePrimitive{\n\t\t\t\tColor:  stringPtr(charmtone.Squid.Hex()),\n\t\t\t\tFormat: \"Image: {{.text}} \u2192\",\n\t\t\t},\n\t\t\tCode: ansi.StyleBlock{\n\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\tPrefix:          \" \",\n\t\t\t\t\tSuffix:          \" \",\n\t\t\t\t\tColor:           stringPtr(charmtone.Coral.Hex()),\n\t\t\t\t\tBackgroundColor: stringPtr(charmtone.Charcoal.Hex()),\n\t\t\t\t},\n\t\t\t},\n\t\t\tCodeBlock: ansi.StyleCodeBlock{\n\t\t\t\tStyleBlock: ansi.StyleBlock{\n\t\t\t\t\tStylePrimitive: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Charcoal.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tMargin: uintPtr(defaultMargin),\n\t\t\t\t},\n\t\t\t\tChroma: &ansi.Chroma{\n\t\t\t\t\tText: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Smoke.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tError: ansi.StylePrimitive{\n\t\t\t\t\t\tColor:           stringPtr(charmtone.Butter.Hex()),\n\t\t\t\t\t\tBackgroundColor: stringPtr(charmtone.Sriracha.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tComment: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Oyster.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tCommentPreproc: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Bengal.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tKeyword: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Malibu.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tKeywordReserved: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Pony.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tKeywordNamespace: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Pony.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tKeywordType: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Guppy.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tOperator: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Salmon.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tPunctuation: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Zest.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tName: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Smoke.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tNameBuiltin: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Cheeky.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tNameTag: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Mauve.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tNameAttribute: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Hazy.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tNameClass: ansi.StylePrimitive{\n\t\t\t\t\t\tColor:     stringPtr(charmtone.Salt.Hex()),\n\t\t\t\t\t\tUnderline: boolPtr(true),\n\t\t\t\t\t\tBold:      boolPtr(true),\n\t\t\t\t\t},\n\t\t\t\t\tNameDecorator: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Citron.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tNameFunction: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Guac.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tLiteralNumber: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Julep.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tLiteralString: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Cumin.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tLiteralStringEscape: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Bok.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tGenericDeleted: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Coral.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tGenericEmph: ansi.StylePrimitive{\n\t\t\t\t\t\tItalic: boolPtr(true),\n\t\t\t\t\t},\n\t\t\t\t\tGenericInserted: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Guac.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tGenericStrong: ansi.StylePrimitive{\n\t\t\t\t\t\tBold: boolPtr(true),\n\t\t\t\t\t},\n\t\t\t\t\tGenericSubheading: ansi.StylePrimitive{\n\t\t\t\t\t\tColor: stringPtr(charmtone.Squid.Hex()),\n\t\t\t\t\t},\n\t\t\t\t\tBackground: ansi.StylePrimitive{\n\t\t\t\t\t\tBackgroundColor: stringPtr(charmtone.Charcoal.Hex()),\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t\tTable: ansi.StyleTable{\n\t\t\t\tStyleBlock: ansi.StyleBlock{\n\t\t\t\t\tStylePrimitive: ansi.StylePrimitive{},\n\t\t\t\t},\n\t\t\t},\n\t\t\tDefinitionDescription: ansi.StylePrimitive{\n\t\t\t\tBlockPrefix: \"\\n \",\n\t\t\t},\n\t\t},\n\n\t\tHelp: help.Styles{\n\t\t\tShortKey:       base.Foreground(t.FgMuted),\n\t\t\tShortDesc:      base.Foreground(t.FgSubtle),\n\t\t\tShortSeparator: base.Foreground(t.Border),\n\t\t\tEllipsis:       base.Foreground(t.Border),\n\t\t\tFullKey:        base.Foreground(t.FgMuted),\n\t\t\tFullDesc:       base.Foreground(t.FgSubtle),\n\t\t\tFullSeparator:  base.Foreground(t.Border),\n\t\t},\n\n\t\tDiff: diffview.Style{\n\t\t\tDividerLine: diffview.LineStyle{\n\t\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\t\tForeground(t.FgHalfMuted).\n\t\t\t\t\tBackground(t.BgBaseLighter),\n\t\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\t\tForeground(t.FgHalfMuted).\n\t\t\t\t\tBackground(t.BgBaseLighter),\n\t\t\t},\n\t\t\tMissingLine: diffview.LineStyle{\n\t\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\t\tBackground(t.BgBaseLighter),\n\t\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\t\tBackground(t.BgBaseLighter),\n\t\t\t},\n\t\t\tEqualLine: diffview.LineStyle{\n\t\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\t\tForeground(t.FgMuted).\n\t\t\t\t\tBackground(t.BgBase),\n\t\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\t\tForeground(t.FgMuted).\n\t\t\t\t\tBackground(t.BgBase),\n\t\t\t},\n\t\t\tInsertLine: diffview.LineStyle{\n\t\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\t\tForeground(lipgloss.Color(\"#629657\")).\n\t\t\t\t\tBackground(lipgloss.Color(\"#2b322a\")),\n\t\t\t\tSymbol: lipgloss.NewStyle().\n\t\t\t\t\tForeground(lipgloss.Color(\"#629657\")).\n\t\t\t\t\tBackground(lipgloss.Color(\"#323931\")),\n\t\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\t\tBackground(lipgloss.Color(\"#323931\")),\n\t\t\t},\n\t\t\tDeleteLine: diffview.LineStyle{\n\t\t\t\tLineNumber: lipgloss.NewStyle().\n\t\t\t\t\tForeground(lipgloss.Color(\"#a45c59\")).\n\t\t\t\t\tBackground(lipgloss.Color(\"#312929\")),\n\t\t\t\tSymbol: lipgloss.NewStyle().\n\t\t\t\t\tForeground(lipgloss.Color(\"#a45c59\")).\n\t\t\t\t\tBackground(lipgloss.Color(\"#383030\")),\n\t\t\t\tCode: lipgloss.NewStyle().\n\t\t\t\t\tBackground(lipgloss.Color(\"#383030\")),\n\t\t\t},\n\t\t},\n\t\tFilePicker: filepicker.Styles{\n\t\t\tDisabledCursor:   base.Foreground(t.FgMuted),\n\t\t\tCursor:           base.Foreground(t.FgBase),\n\t\t\tSymlink:          base.Foreground(t.FgSubtle),\n\t\t\tDirectory:        base.Foreground(t.Primary),\n\t\t\tFile:             base.Foreground(t.FgBase),\n\t\t\tDisabledFile:     base.Foreground(t.FgMuted),\n\t\t\tDisabledSelected: base.Background(t.BgOverlay).Foreground(t.FgMuted),\n\t\t\tPermission:       base.Foreground(t.FgMuted),\n\t\t\tSelected:         base.Background(t.Primary).Foreground(t.FgBase),\n\t\t\tFileSize:         base.Foreground(t.FgMuted),\n\t\t\tEmptyDirectory:   base.Foreground(t.FgMuted).PaddingLeft(2).SetString(\"Empty directory\"),\n\t\t},\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Manager_498": {
+      "name": "Manager",
+      "type": "struct",
+      "start_line": 498,
+      "end_line": 504,
+      "content_hash": "d116adc0b7b95076b44741c708ec1d4fb876054f",
+      "content": "type Manager struct {\n\tthemes  map[string]*Theme\n\tcurrent *Theme\n}\n\nvar defaultManager *Manager\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_SetDefaultManager_505": {
+      "name": "SetDefaultManager",
+      "type": "function",
+      "start_line": 505,
+      "end_line": 508,
+      "content_hash": "456d63526ab8bccb4a86d5e64ef22302bb6c9493",
+      "content": "func SetDefaultManager(m *Manager) {\n\tdefaultManager = m\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_DefaultManager_509": {
+      "name": "DefaultManager",
+      "type": "function",
+      "start_line": 509,
+      "end_line": 515,
+      "content_hash": "bcf346cd773a644fd7a8f922d48975b9a68b9fad",
+      "content": "func DefaultManager() *Manager {\n\tif defaultManager == nil {\n\t\tdefaultManager = NewManager()\n\t}\n\treturn defaultManager\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CurrentTheme_516": {
+      "name": "CurrentTheme",
+      "type": "function",
+      "start_line": 516,
+      "end_line": 522,
+      "content_hash": "1ce729920b70b3fcfcef8d4ec487d30314fc3d72",
+      "content": "func CurrentTheme() *Theme {\n\tif defaultManager == nil {\n\t\tdefaultManager = NewManager()\n\t}\n\treturn defaultManager.Current()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewManager_523": {
+      "name": "NewManager",
+      "type": "function",
+      "start_line": 523,
+      "end_line": 534,
+      "content_hash": "bcd7796a4da8c4c5255efc0b5f95adcfcd7973ca",
+      "content": "func NewManager() *Manager {\n\tm := &Manager{\n\t\tthemes: make(map[string]*Theme),\n\t}\n\n\tt := NewCharmtoneTheme() // default theme\n\tm.Register(t)\n\tm.current = m.themes[t.Name]\n\n\treturn m\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Register_535": {
+      "name": "Register",
+      "type": "method",
+      "start_line": 535,
+      "end_line": 538,
+      "content_hash": "e6e63a13bb897f7b0efb88bfbc14ff7532dc84da",
+      "content": "func (m *Manager) Register(theme *Theme) {\n\tm.themes[theme.Name] = theme\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Current_539": {
+      "name": "Current",
+      "type": "method",
+      "start_line": 539,
+      "end_line": 542,
+      "content_hash": "803e7629c51bc496380a6b79aeab96db3e32ce6e",
+      "content": "func (m *Manager) Current() *Theme {\n\treturn m.current\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetTheme_543": {
+      "name": "SetTheme",
+      "type": "method",
+      "start_line": 543,
+      "end_line": 550,
+      "content_hash": "8670654545fcada5179c9cb3198fe0626e1f2080",
+      "content": "func (m *Manager) SetTheme(name string) error {\n\tif theme, ok := m.themes[name]; ok {\n\t\tm.current = theme\n\t\treturn nil\n\t}\n\treturn fmt.Errorf(\"theme %s not found\", name)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_List_551": {
+      "name": "List",
+      "type": "method",
+      "start_line": 551,
+      "end_line": 559,
+      "content_hash": "e77be19ac839fc4d766f0af4153bfb4578107c8d",
+      "content": "func (m *Manager) List() []string {\n\tnames := make([]string, 0, len(m.themes))\n\tfor name := range m.themes {\n\t\tnames = append(names, name)\n\t}\n\treturn names\n}\n\n// ParseHex converts hex string to color",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ParseHex_560": {
+      "name": "ParseHex",
+      "type": "function",
+      "start_line": 560,
+      "end_line": 566,
+      "content_hash": "28c90ec877cbfe6651b293f550b65b65ad1e0257",
+      "content": "func ParseHex(hex string) color.Color {\n\tvar r, g, b uint8\n\tfmt.Sscanf(hex, \"#%02x%02x%02x\", &r, &g, &b)\n\treturn color.RGBA{R: r, G: g, B: b, A: 255}\n}\n\n// Alpha returns a color with transparency",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Alpha_567": {
+      "name": "Alpha",
+      "type": "function",
+      "start_line": 567,
+      "end_line": 577,
+      "content_hash": "11cb881156fc92bbf0844d773c6aa8b4797a7607",
+      "content": "func Alpha(c color.Color, alpha uint8) color.Color {\n\tr, g, b, _ := c.RGBA()\n\treturn color.RGBA{\n\t\tR: uint8(r >> 8),\n\t\tG: uint8(g >> 8),\n\t\tB: uint8(b >> 8),\n\t\tA: alpha,\n\t}\n}\n\n// Darken makes a color darker by percentage (0-100)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Darken_578": {
+      "name": "Darken",
+      "type": "function",
+      "start_line": 578,
+      "end_line": 589,
+      "content_hash": "d61b6d41097412e2465b344c2dd88e501cd6a2b4",
+      "content": "func Darken(c color.Color, percent float64) color.Color {\n\tr, g, b, a := c.RGBA()\n\tfactor := 1.0 - percent/100.0\n\treturn color.RGBA{\n\t\tR: uint8(float64(r>>8) * factor),\n\t\tG: uint8(float64(g>>8) * factor),\n\t\tB: uint8(float64(b>>8) * factor),\n\t\tA: uint8(a >> 8),\n\t}\n}\n\n// Lighten makes a color lighter by percentage (0-100)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Lighten_590": {
+      "name": "Lighten",
+      "type": "function",
+      "start_line": 590,
+      "end_line": 600,
+      "content_hash": "4aa4f5efb8aaedd768b8a8fae35e29a385f5fc83",
+      "content": "func Lighten(c color.Color, percent float64) color.Color {\n\tr, g, b, a := c.RGBA()\n\tfactor := percent / 100.0\n\treturn color.RGBA{\n\t\tR: uint8(min(255, float64(r>>8)+255*factor)),\n\t\tG: uint8(min(255, float64(g>>8)+255*factor)),\n\t\tB: uint8(min(255, float64(b>>8)+255*factor)),\n\t\tA: uint8(a >> 8),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ForegroundGrad_601": {
+      "name": "ForegroundGrad",
+      "type": "function",
+      "start_line": 601,
+      "end_line": 631,
+      "content_hash": "f724474b16d2e136b0f56c5a88705aa3f03ed0a9",
+      "content": "func ForegroundGrad(input string, bold bool, color1, color2 color.Color) []string {\n\tif input == \"\" {\n\t\treturn []string{\"\"}\n\t}\n\tt := CurrentTheme()\n\tif len(input) == 1 {\n\t\tstyle := t.S().Base.Foreground(color1)\n\t\tif bold {\n\t\t\tstyle.Bold(true)\n\t\t}\n\t\treturn []string{style.Render(input)}\n\t}\n\tvar clusters []string\n\tgr := uniseg.NewGraphemes(input)\n\tfor gr.Next() {\n\t\tclusters = append(clusters, string(gr.Runes()))\n\t}\n\n\tramp := blendColors(len(clusters), color1, color2)\n\tfor i, c := range ramp {\n\t\tstyle := t.S().Base.Foreground(c)\n\t\tif bold {\n\t\t\tstyle.Bold(true)\n\t\t}\n\t\tclusters[i] = style.Render(clusters[i])\n\t}\n\treturn clusters\n}\n\n// ApplyForegroundGrad renders a given string with a horizontal gradient\n// foreground.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ApplyForegroundGrad_632": {
+      "name": "ApplyForegroundGrad",
+      "type": "function",
+      "start_line": 632,
+      "end_line": 645,
+      "content_hash": "568fa6b6de1ce58fc0b9d23f825ad360015ed7dc",
+      "content": "func ApplyForegroundGrad(input string, color1, color2 color.Color) string {\n\tif input == \"\" {\n\t\treturn \"\"\n\t}\n\tvar o strings.Builder\n\tclusters := ForegroundGrad(input, false, color1, color2)\n\tfor _, c := range clusters {\n\t\tfmt.Fprint(&o, c)\n\t}\n\treturn o.String()\n}\n\n// ApplyBoldForegroundGrad renders a given string with a horizontal gradient\n// foreground.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ApplyBoldForegroundGrad_646": {
+      "name": "ApplyBoldForegroundGrad",
+      "type": "function",
+      "start_line": 646,
+      "end_line": 659,
+      "content_hash": "7d670ebf9378728eac1190d1302ad50a38c7280d",
+      "content": "func ApplyBoldForegroundGrad(input string, color1, color2 color.Color) string {\n\tif input == \"\" {\n\t\treturn \"\"\n\t}\n\tvar o strings.Builder\n\tclusters := ForegroundGrad(input, true, color1, color2)\n\tfor _, c := range clusters {\n\t\tfmt.Fprint(&o, c)\n\t}\n\treturn o.String()\n}\n\n// blendColors returns a slice of colors blended between the given keys.\n// Blending is done in Hcl to stay in gamut.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_blendColors_660": {
+      "name": "blendColors",
+      "type": "function",
+      "start_line": 660,
+      "end_line": 703,
+      "content_hash": "f3701dee2df9e44aad9cca447269876a17f4f83b",
+      "content": "func blendColors(size int, stops ...color.Color) []color.Color {\n\tif len(stops) < 2 {\n\t\treturn nil\n\t}\n\n\tstopsPrime := make([]colorful.Color, len(stops))\n\tfor i, k := range stops {\n\t\tstopsPrime[i], _ = colorful.MakeColor(k)\n\t}\n\n\tnumSegments := len(stopsPrime) - 1\n\tblended := make([]color.Color, 0, size)\n\n\t// Calculate how many colors each segment should have.\n\tsegmentSizes := make([]int, numSegments)\n\tbaseSize := size / numSegments\n\tremainder := size % numSegments\n\n\t// Distribute the remainder across segments.\n\tfor i := range numSegments {\n\t\tsegmentSizes[i] = baseSize\n\t\tif i < remainder {\n\t\t\tsegmentSizes[i]++\n\t\t}\n\t}\n\n\t// Generate colors for each segment.\n\tfor i := range numSegments {\n\t\tc1 := stopsPrime[i]\n\t\tc2 := stopsPrime[i+1]\n\t\tsegmentSize := segmentSizes[i]\n\n\t\tfor j := range segmentSize {\n\t\t\tvar t float64\n\t\t\tif segmentSize > 1 {\n\t\t\t\tt = float64(j) / float64(segmentSize-1)\n\t\t\t}\n\t\t\tc := c1.BlendHcl(c2, t)\n\t\t\tblended = append(blended, c)\n\t\t}\n\t}\n\n\treturn blended\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

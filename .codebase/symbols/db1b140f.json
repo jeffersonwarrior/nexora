@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/.local/tools/modelscan/storage/storage_test.go",
+  "file_hash": "a937d9ec8c812278dec8faab415a59eba8e3edf2",
+  "updated_at": "2025-12-26T17:34:24.321620",
+  "symbols": {
+    "function_TestInitDB_13": {
+      "name": "TestInitDB",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 33,
+      "content_hash": "f4bf82acff4ad420c7169a87288b21aa3e0ec8a6",
+      "content": "func TestInitDB(t *testing.T) {\n\t// Create a temporary directory for testing\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\n\terr := InitDB(dbPath)\n\tif err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\t// Check that database file was created\n\tif _, err := os.Stat(dbPath); os.IsNotExist(err) {\n\t\tt.Error(\"Database file was not created\")\n\t}\n\n\t// Verify database is accessible\n\tif db == nil {\n\t\tt.Error(\"Database connection is nil after InitDB\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestStoreProviderInfo_34": {
+      "name": "TestStoreProviderInfo",
+      "type": "function",
+      "start_line": 34,
+      "end_line": 96,
+      "content_hash": "e187f540a87ebcf16917c5d1419bc444d13f383c",
+      "content": "func TestStoreProviderInfo(t *testing.T) {\n\t// Create temporary database\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\ttestModels := []providers.Model{\n\t\t{\n\t\t\tID:             \"test-model-1\",\n\t\t\tName:           \"Test Model 1\",\n\t\t\tDescription:    \"First test model\",\n\t\t\tCostPer1MIn:    1.0,\n\t\t\tCostPer1MOut:   2.0,\n\t\t\tContextWindow:  8192,\n\t\t\tMaxTokens:      4096,\n\t\t\tSupportsImages: true,\n\t\t\tSupportsTools:  true,\n\t\t\tCanReason:      false,\n\t\t\tCanStream:      true,\n\t\t\tCategories:     []string{\"chat\", \"test\"},\n\t\t},\n\t\t{\n\t\t\tID:             \"test-model-2\",\n\t\t\tName:           \"Test Model 2\",\n\t\t\tDescription:    \"Second test model\",\n\t\t\tCostPer1MIn:    0.5,\n\t\t\tCostPer1MOut:   1.0,\n\t\t\tContextWindow:  16384,\n\t\t\tMaxTokens:      8192,\n\t\t\tSupportsImages: false,\n\t\t\tSupportsTools:  true,\n\t\t\tCanReason:      true,\n\t\t\tCanStream:      true,\n\t\t\tCategories:     []string{\"reasoning\", \"test\"},\n\t\t},\n\t}\n\n\tcapabilities := providers.ProviderCapabilities{\n\t\tSupportsChat:         true,\n\t\tSupportsStreaming:    true,\n\t\tSupportsVision:       true,\n\t\tMaxRequestsPerMinute: 50,\n\t\tMaxTokensPerRequest:  100000,\n\t}\n\n\terr := StoreProviderInfo(\"test-provider\", testModels, capabilities)\n\tif err != nil {\n\t\tt.Fatalf(\"StoreProviderInfo() failed: %v\", err)\n\t}\n\n\t// Verify data was stored by querying the database\n\tvar count int\n\terr = db.QueryRow(\"SELECT COUNT(*) FROM models WHERE provider_name = ?\", \"test-provider\").Scan(&count)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to query models: %v\", err)\n\t}\n\tif count != 2 {\n\t\tt.Errorf(\"Expected 2 models to be stored, got %d\", count)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestStoreEndpointResults_97": {
+      "name": "TestStoreEndpointResults",
+      "type": "function",
+      "start_line": 97,
+      "end_line": 144,
+      "content_hash": "b6d376a766674c2865e3be07c76406130f62be29",
+      "content": "func TestStoreEndpointResults(t *testing.T) {\n\t// Create temporary database\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\t// First store provider info (required for foreign key)\n\terr := StoreProviderInfo(\"test-provider\", []providers.Model{}, providers.ProviderCapabilities{})\n\tif err != nil {\n\t\tt.Fatalf(\"StoreProviderInfo() failed: %v\", err)\n\t}\n\n\ttestEndpoints := []providers.Endpoint{\n\t\t{\n\t\t\tPath:        \"/v1/test\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"Test endpoint\",\n\t\t\tStatus:      providers.StatusWorking,\n\t\t\tLatency:     100000000, // 100ms in nanoseconds\n\t\t},\n\t\t{\n\t\t\tPath:        \"/v1/chat\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Chat endpoint\",\n\t\t\tStatus:      providers.StatusFailed,\n\t\t\tError:       \"Test error\",\n\t\t\tLatency:     50000000, // 50ms\n\t\t},\n\t}\n\n\terr = StoreEndpointResults(\"test-provider\", testEndpoints)\n\tif err != nil {\n\t\tt.Fatalf(\"StoreEndpointResults() failed: %v\", err)\n\t}\n\n\t// Verify data was stored\n\tvar count int\n\terr = db.QueryRow(\"SELECT COUNT(*) FROM endpoints WHERE provider_name = ?\", \"test-provider\").Scan(&count)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to query endpoints: %v\", err)\n\t}\n\tif count != 2 {\n\t\tt.Errorf(\"Expected 2 endpoints to be stored, got %d\", count)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestExportToSQLite_145": {
+      "name": "TestExportToSQLite",
+      "type": "function",
+      "start_line": 145,
+      "end_line": 171,
+      "content_hash": "d5d8e5593dfd703da94dad26583b0685d72624b7",
+      "content": "func TestExportToSQLite(t *testing.T) {\n\t// Create temporary database\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\t// Store some test data\n\ttestModels := []providers.Model{\n\t\t{\n\t\t\tID:          \"export-test-model\",\n\t\t\tName:        \"Export Test Model\",\n\t\t\tDescription: \"Model for export testing\",\n\t\t},\n\t}\n\tif err := StoreProviderInfo(\"export-test\", testModels, providers.ProviderCapabilities{}); err != nil {\n\t\tt.Fatalf(\"StoreProviderInfo() failed: %v\", err)\n\t}\n\n\t// Export should succeed (it's essentially a no-op since we're already using SQLite)\n\terr := ExportToSQLite(dbPath)\n\tif err != nil {\n\t\tt.Errorf(\"ExportToSQLite() failed: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestExportToMarkdown_172": {
+      "name": "TestExportToMarkdown",
+      "type": "function",
+      "start_line": 172,
+      "end_line": 233,
+      "content_hash": "f7928d92b41bd4a7cce7b5bc163caf1d3fc2e411",
+      "content": "func TestExportToMarkdown(t *testing.T) {\n\t// Create temporary database and markdown file\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tmdPath := filepath.Join(tmpDir, \"test.md\")\n\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\t// Store some test data\n\ttestModels := []providers.Model{\n\t\t{\n\t\t\tID:             \"markdown-test-model\",\n\t\t\tName:           \"Markdown Test Model\",\n\t\t\tDescription:    \"Model for markdown testing\",\n\t\t\tCostPer1MIn:    1.0,\n\t\t\tCostPer1MOut:   2.0,\n\t\t\tContextWindow:  8192,\n\t\t\tSupportsImages: true,\n\t\t\tCategories:     []string{\"chat\"},\n\t\t},\n\t}\n\tif err := StoreProviderInfo(\"markdown-test\", testModels, providers.ProviderCapabilities{}); err != nil {\n\t\tt.Fatalf(\"StoreProviderInfo() failed: %v\", err)\n\t}\n\n\t// Export to markdown\n\terr := ExportToMarkdown(mdPath)\n\tif err != nil {\n\t\tt.Fatalf(\"ExportToMarkdown() failed: %v\", err)\n\t}\n\n\t// Check that markdown file was created\n\tif _, err := os.Stat(mdPath); os.IsNotExist(err) {\n\t\tt.Error(\"Markdown file was not created\")\n\t}\n\n\t// Read and verify content\n\tcontent, err := os.ReadFile(mdPath)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read markdown file: %v\", err)\n\t}\n\n\tcontentStr := string(content)\n\tif len(contentStr) == 0 {\n\t\tt.Error(\"Markdown file is empty\")\n\t}\n\n\t// Check for expected content\n\texpectedStrings := []string{\n\t\t\"AI Provider Validation Report\",\n\t\t\"markdown-test\",\n\t\t\"Markdown Test Model\",\n\t}\n\tfor _, expected := range expectedStrings {\n\t\tif !contains(contentStr, expected) {\n\t\t\tt.Errorf(\"Markdown file missing expected content: %q\", expected)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDatabaseTables_234": {
+      "name": "TestDatabaseTables",
+      "type": "function",
+      "start_line": 234,
+      "end_line": 262,
+      "content_hash": "9aa277e47b447f9c2e915dc8363e11f8fc2926dd",
+      "content": "func TestDatabaseTables(t *testing.T) {\n\t// Create temporary database\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\t// Check that all expected tables exist\n\texpectedTables := []string{\n\t\t\"providers\",\n\t\t\"models\",\n\t\t\"endpoints\",\n\t\t\"validation_runs\",\n\t}\n\n\tfor _, table := range expectedTables {\n\t\tvar count int\n\t\tquery := \"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?\"\n\t\terr := db.QueryRow(query, table).Scan(&count)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"Failed to check table %q: %v\", table, err)\n\t\t}\n\t\tif count != 1 {\n\t\t\tt.Errorf(\"Table %q does not exist\", table)\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestModelWithCategories_263": {
+      "name": "TestModelWithCategories",
+      "type": "function",
+      "start_line": 263,
+      "end_line": 299,
+      "content_hash": "d83f257b8fef25c546e0008f6183fc6b4f8ad962",
+      "content": "func TestModelWithCategories(t *testing.T) {\n\t// Create temporary database\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\ttestModel := []providers.Model{\n\t\t{\n\t\t\tID:         \"category-test\",\n\t\t\tName:       \"Category Test Model\",\n\t\t\tCategories: []string{\"chat\", \"coding\", \"reasoning\"},\n\t\t\tCapabilities: map[string]string{\n\t\t\t\t\"vision\": \"high\",\n\t\t\t\t\"tools\":  \"full\",\n\t\t\t},\n\t\t},\n\t}\n\n\terr := StoreProviderInfo(\"category-provider\", testModel, providers.ProviderCapabilities{})\n\tif err != nil {\n\t\tt.Fatalf(\"StoreProviderInfo() failed: %v\", err)\n\t}\n\n\t// Verify categories were stored\n\tvar categoriesJSON string\n\tquery := \"SELECT categories FROM models WHERE model_id = ?\"\n\terr = db.QueryRow(query, \"category-test\").Scan(&categoriesJSON)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to query categories: %v\", err)\n\t}\n\tif categoriesJSON == \"\" {\n\t\tt.Error(\"Categories were not stored\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestUpdateExistingProvider_300": {
+      "name": "TestUpdateExistingProvider",
+      "type": "function",
+      "start_line": 300,
+      "end_line": 346,
+      "content_hash": "d56b4621a21a1ca53418323f0367fc31ebbe44e1",
+      "content": "func TestUpdateExistingProvider(t *testing.T) {\n\t// Create temporary database\n\ttmpDir := t.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"test.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tt.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\t// Store initial data\n\tinitialModel := []providers.Model{\n\t\t{\n\t\t\tID:          \"update-test\",\n\t\t\tName:        \"Initial Name\",\n\t\t\tDescription: \"Initial description\",\n\t\t},\n\t}\n\terr := StoreProviderInfo(\"update-provider\", initialModel, providers.ProviderCapabilities{})\n\tif err != nil {\n\t\tt.Fatalf(\"Initial StoreProviderInfo() failed: %v\", err)\n\t}\n\n\t// Update with new data\n\tupdatedModel := []providers.Model{\n\t\t{\n\t\t\tID:          \"update-test\",\n\t\t\tName:        \"Updated Name\",\n\t\t\tDescription: \"Updated description\",\n\t\t},\n\t}\n\terr = StoreProviderInfo(\"update-provider\", updatedModel, providers.ProviderCapabilities{})\n\tif err != nil {\n\t\tt.Fatalf(\"Update StoreProviderInfo() failed: %v\", err)\n\t}\n\n\t// Verify update\n\tvar name string\n\tquery := \"SELECT name FROM models WHERE model_id = ?\"\n\terr = db.QueryRow(query, \"update-test\").Scan(&name)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to query updated model: %v\", err)\n\t}\n\tif name != \"Updated Name\" {\n\t\tt.Errorf(\"Model name = %q, want %q\", name, \"Updated Name\")\n\t}\n}\n\n// Helper function",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_contains_347": {
+      "name": "contains",
+      "type": "function",
+      "start_line": 347,
+      "end_line": 350,
+      "content_hash": "6c242d02c09ca9857b2051e6a9c86473d04289e2",
+      "content": "func contains(s, substr string) bool {\n\treturn len(s) >= len(substr) && (s == substr || containsHelper(s, substr))\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_containsHelper_351": {
+      "name": "containsHelper",
+      "type": "function",
+      "start_line": 351,
+      "end_line": 359,
+      "content_hash": "4a56437c2c7b73fb98c628ab8160c00b81e7363f",
+      "content": "func containsHelper(s, substr string) bool {\n\tfor i := 0; i <= len(s)-len(substr); i++ {\n\t\tif s[i:i+len(substr)] == substr {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkStoreProviderInfo_360": {
+      "name": "BenchmarkStoreProviderInfo",
+      "type": "function",
+      "start_line": 360,
+      "end_line": 387,
+      "content_hash": "6ac41b16ca36d366a1c9d8cc35386a2b694c08cf",
+      "content": "func BenchmarkStoreProviderInfo(b *testing.B) {\n\ttmpDir := b.TempDir()\n\tdbPath := filepath.Join(tmpDir, \"bench.db\")\n\tif err := InitDB(dbPath); err != nil {\n\t\tb.Fatalf(\"InitDB() failed: %v\", err)\n\t}\n\n\ttestModels := []providers.Model{\n\t\t{\n\t\t\tID:             \"bench-model\",\n\t\t\tName:           \"Benchmark Model\",\n\t\t\tCostPer1MIn:    1.0,\n\t\t\tCostPer1MOut:   2.0,\n\t\t\tContextWindow:  8192,\n\t\t\tMaxTokens:      4096,\n\t\t\tSupportsImages: true,\n\t\t},\n\t}\n\tcapabilities := providers.ProviderCapabilities{\n\t\tSupportsChat: true,\n\t}\n\n\tb.ResetTimer()\n\tfor i := 0; i < b.N; i++ {\n\t\t_ = StoreProviderInfo(\"bench-provider\", testModels, capabilities)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetProviderEndpoints_Complete_388": {
+      "name": "TestGetProviderEndpoints_Complete",
+      "type": "function",
+      "start_line": 388,
+      "end_line": 475,
+      "content_hash": "1856853f8e99c8c9222025f69ea51fa9a28ddb19",
+      "content": "func TestGetProviderEndpoints_Complete(t *testing.T) {\n\tdbPath := \"/tmp/test_endpoints_complete.db\"\n\tdefer os.Remove(dbPath)\n\n\terr := InitDB(dbPath)\n\tif err != nil {\n\t\tt.Fatalf(\"InitDB failed: %v\", err)\n\t}\n\tdefer CloseDB()\n\n\t// Store some endpoints\n\tendpoints := []providers.Endpoint{\n\t\t{\n\t\t\tPath:        \"/v1/chat\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Chat endpoint\",\n\t\t\tStatus:      providers.StatusWorking,\n\t\t\tLatency:     100 * time.Millisecond,\n\t\t},\n\t\t{\n\t\t\tPath:        \"/v1/models\",\n\t\t\tMethod:      \"GET\",\n\t\t\tDescription: \"Models endpoint\",\n\t\t\tStatus:      providers.StatusWorking,\n\t\t\tLatency:     50 * time.Millisecond,\n\t\t},\n\t\t{\n\t\t\tPath:        \"/v1/broken\",\n\t\t\tMethod:      \"POST\",\n\t\t\tDescription: \"Broken endpoint\",\n\t\t\tStatus:      providers.StatusFailed,\n\t\t\tError:       \"timeout\",\n\t\t},\n\t}\n\n\terr = StoreEndpointResults(\"test-provider\", endpoints)\n\tif err != nil {\n\t\tt.Fatalf(\"StoreEndpointResults failed: %v\", err)\n\t}\n\n\t// Test retrieval\n\tretrieved, err := GetProviderEndpoints(\"test-provider\")\n\tif err != nil {\n\t\tt.Fatalf(\"GetProviderEndpoints failed: %v\", err)\n\t}\n\n\tif len(retrieved) != 3 {\n\t\tt.Errorf(\"Expected 3 endpoints, got %d\", len(retrieved))\n\t}\n\n\t// Verify endpoint details\n\tfound := map[string]bool{}\n\tfor _, ep := range retrieved {\n\t\tfound[ep.Path] = true\n\n\t\tif ep.Path == \"/v1/chat\" {\n\t\t\tif ep.Status != providers.StatusWorking {\n\t\t\t\tt.Errorf(\"Expected /v1/chat to have StatusWorking\")\n\t\t\t}\n\t\t\tif ep.Latency != 100*time.Millisecond {\n\t\t\t\tt.Errorf(\"Expected /v1/chat latency 100ms, got %v\", ep.Latency)\n\t\t\t}\n\t\t}\n\n\t\tif ep.Path == \"/v1/broken\" {\n\t\t\tif ep.Status != providers.StatusFailed {\n\t\t\t\tt.Errorf(\"Expected /v1/broken to have StatusFailed\")\n\t\t\t}\n\t\t\tif ep.Error != \"timeout\" {\n\t\t\t\tt.Errorf(\"Expected /v1/broken error 'timeout', got %s\", ep.Error)\n\t\t\t}\n\t\t}\n\t}\n\n\tif !found[\"/v1/chat\"] || !found[\"/v1/models\"] || !found[\"/v1/broken\"] {\n\t\tt.Error(\"Not all endpoints were retrieved\")\n\t}\n\n\t// Test non-existent provider\n\tempty, err := GetProviderEndpoints(\"nonexistent\")\n\tif err != nil {\n\t\tt.Fatalf(\"Expected no error for non-existent provider, got %v\", err)\n\t}\n\tif len(empty) != 0 {\n\t\tt.Errorf(\"Expected 0 endpoints for non-existent provider, got %d\", len(empty))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetProviderEndpoints_NoDatabase_476": {
+      "name": "TestGetProviderEndpoints_NoDatabase",
+      "type": "function",
+      "start_line": 476,
+      "end_line": 488,
+      "content_hash": "07908e23a2eb571d22110f371b42e1faa75aa0a5",
+      "content": "func TestGetProviderEndpoints_NoDatabase(t *testing.T) {\n\t// Test without initializing database\n\tCloseDB() // Make sure DB is closed\n\n\t_, err := GetProviderEndpoints(\"test\")\n\tif err == nil {\n\t\tt.Error(\"Expected error when database not initialized\")\n\t}\n\tif !strings.Contains(err.Error(), \"database not initialized\") {\n\t\tt.Errorf(\"Expected 'database not initialized' error, got: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCloseDB_Multiple_489": {
+      "name": "TestCloseDB_Multiple",
+      "type": "function",
+      "start_line": 489,
+      "end_line": 510,
+      "content_hash": "e7e2831fd7f10963421f6b8159039a1980176099",
+      "content": "func TestCloseDB_Multiple(t *testing.T) {\n\tdbPath := \"/tmp/test_close_multiple.db\"\n\tdefer os.Remove(dbPath)\n\n\terr := InitDB(dbPath)\n\tif err != nil {\n\t\tt.Fatalf(\"InitDB failed: %v\", err)\n\t}\n\n\t// First close\n\terr = CloseDB()\n\tif err != nil {\n\t\tt.Errorf(\"First CloseDB failed: %v\", err)\n\t}\n\n\t// Second close should handle nil db gracefully\n\terr = CloseDB()\n\tif err != nil {\n\t\tt.Errorf(\"Second CloseDB should not error, got: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCloseDB_NilDatabase_511": {
+      "name": "TestCloseDB_NilDatabase",
+      "type": "function",
+      "start_line": 511,
+      "end_line": 520,
+      "content_hash": "6166978f3677eee1eb5e36341bcf6592eed62b2c",
+      "content": "func TestCloseDB_NilDatabase(t *testing.T) {\n\t// Test closing when db is already nil\n\tCloseDB() // Ensure it's nil\n\n\terr := CloseDB()\n\tif err != nil {\n\t\tt.Errorf(\"CloseDB on nil database should not error, got: %v\", err)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAppendProviderDetails_521": {
+      "name": "TestAppendProviderDetails",
+      "type": "function",
+      "start_line": 521,
+      "end_line": 658,
+      "content_hash": "9ad5a7f886aaea2492e7625fdd84b493e8523659",
+      "content": "func TestAppendProviderDetails(t *testing.T) {\n\t// Initialize database with test data\n\tdbPath := \"/tmp/test_markdown_export.db\"\n\tdefer os.Remove(dbPath)\n\n\terr := InitDB(dbPath)\n\tif err != nil {\n\t\tt.Fatalf(\"InitDB failed: %v\", err)\n\t}\n\tdefer CloseDB()\n\n\t// Store some test models\n\tmodels := []providers.Model{\n\t\t{\n\t\t\tID:             \"test-model-1\",\n\t\t\tName:           \"Test Model 1\",\n\t\t\tDescription:    \"First test model\",\n\t\t\tContextWindow:  4096,\n\t\t\tCostPer1MIn:    0.50,\n\t\t\tCostPer1MOut:   1.50,\n\t\t\tSupportsImages: true,\n\t\t\tSupportsTools:  true,\n\t\t\tCanReason:      false,\n\t\t\tCanStream:      true,\n\t\t\tCategories:     []string{\"chat\", \"fast\"},\n\t\t},\n\t\t{\n\t\t\tID:             \"test-model-2\",\n\t\t\tName:           \"Test Model 2\",\n\t\t\tDescription:    \"Second test model\",\n\t\t\tContextWindow:  8192,\n\t\t\tCostPer1MIn:    1.00,\n\t\t\tCostPer1MOut:   2.00,\n\t\t\tSupportsImages: false,\n\t\t\tSupportsTools:  true,\n\t\t\tCanReason:      true,\n\t\t\tCanStream:      true,\n\t\t\tCategories:     []string{\"reasoning\", \"premium\"},\n\t\t},\n\t\t{\n\t\t\tID:             \"test-model-3\",\n\t\t\tName:           \"Test Model 3\",\n\t\t\tDescription:    \"Model without categories\",\n\t\t\tContextWindow:  2048,\n\t\t\tCostPer1MIn:    0.25,\n\t\t\tCostPer1MOut:   0.75,\n\t\t\tSupportsImages: false,\n\t\t\tSupportsTools:  false,\n\t\t\tCanReason:      false,\n\t\t\tCanStream:      false,\n\t\t\tCategories:     []string{}, // Empty categories\n\t\t},\n\t}\n\n\tcapabilities := providers.ProviderCapabilities{\n\t\tSupportsChat:      true,\n\t\tSupportsStreaming: true,\n\t\tSupportsVision:    true,\n\t\t// SupportsTools field does not exist\n\t}\n\n\terr = StoreProviderInfo(\"test-provider\", models, capabilities)\n\tif err != nil {\n\t\tt.Fatalf(\"StoreProviderInfo failed: %v\", err)\n\t}\n\n\t// Create temporary file for export\n\ttmpFile := filepath.Join(t.TempDir(), \"test_export.md\")\n\tfile, err := os.Create(tmpFile)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create temp file: %v\", err)\n\t}\n\tdefer file.Close()\n\n\t// Test appendProviderDetails\n\terr = appendProviderDetails(file, \"test-provider\")\n\tif err != nil {\n\t\tt.Fatalf(\"appendProviderDetails failed: %v\", err)\n\t}\n\n\t// Close file to flush\n\tfile.Close()\n\n\t// Read back and verify content\n\tcontent, err := os.ReadFile(tmpFile)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read exported file: %v\", err)\n\t}\n\n\tcontentStr := string(content)\n\n\t// Verify provider name is present\n\tif !strings.Contains(contentStr, \"test-provider\") {\n\t\tt.Error(\"Provider name not found in export\")\n\t}\n\n\t// Verify model names are present\n\tif !strings.Contains(contentStr, \"Test Model 1\") {\n\t\tt.Error(\"Model 1 name not found in export\")\n\t}\n\tif !strings.Contains(contentStr, \"Test Model 2\") {\n\t\tt.Error(\"Model 2 name not found in export\")\n\t}\n\tif !strings.Contains(contentStr, \"Test Model 3\") {\n\t\tt.Error(\"Model 3 name not found in export\")\n\t}\n\n\t// Verify categories are present\n\tif !strings.Contains(contentStr, \"chat\") {\n\t\tt.Error(\"'chat' category not found in export\")\n\t}\n\tif !strings.Contains(contentStr, \"reasoning\") {\n\t\tt.Error(\"'reasoning' category not found in export\")\n\t}\n\tif !strings.Contains(contentStr, \"general\") {\n\t\tt.Error(\"'general' category not found for model without categories\")\n\t}\n\n\t// Verify feature icons are present\n\tif !strings.Contains(contentStr, \"\ud83d\uddbc\ufe0f\") {\n\t\tt.Error(\"Image support icon not found\")\n\t}\n\tif !strings.Contains(contentStr, \"\ud83d\udd27\") {\n\t\tt.Error(\"Tool support icon not found\")\n\t}\n\tif !strings.Contains(contentStr, \"\ud83e\udde0\") {\n\t\tt.Error(\"Reasoning icon not found\")\n\t}\n\n\t// Verify markdown table structure\n\tif !strings.Contains(contentStr, \"| Name | ID | Context |\") {\n\t\tt.Error(\"Markdown table header not found\")\n\t}\n\tif !strings.Contains(contentStr, \"|------|\") {\n\t\tt.Error(\"Markdown table separator not found\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAppendProviderDetails_Error_659": {
+      "name": "TestAppendProviderDetails_Error",
+      "type": "function",
+      "start_line": 659,
+      "end_line": 684,
+      "content_hash": "8150a546e516ea70858a13c4ff6bd73cb78bd302",
+      "content": "func TestAppendProviderDetails_Error(t *testing.T) {\n\t// Test with non-existent provider (should handle gracefully)\n\ttmpFile := filepath.Join(t.TempDir(), \"test_error.md\")\n\tfile, err := os.Create(tmpFile)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create temp file: %v\", err)\n\t}\n\tdefer file.Close()\n\n\t// Initialize empty database\n\tdbPath := \"/tmp/test_markdown_error.db\"\n\tdefer os.Remove(dbPath)\n\n\terr = InitDB(dbPath)\n\tif err != nil {\n\t\tt.Fatalf(\"InitDB failed: %v\", err)\n\t}\n\tdefer CloseDB()\n\n\t// Try to export non-existent provider\n\terr = appendProviderDetails(file, \"nonexistent-provider\")\n\t// Should complete without error even if no models found\n\tif err != nil {\n\t\tt.Logf(\"appendProviderDetails returned error (may be expected): %v\", err)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

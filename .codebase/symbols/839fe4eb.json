@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/context-engine/scripts/embedder.py",
+  "file_hash": "1238ea111aed1af8fa37b35cbd33b773bcbbcdbf",
+  "updated_at": "2025-12-26T17:34:23.603180",
+  "symbols": {
+    "function__register_qwen3_model_47": {
+      "name": "_register_qwen3_model",
+      "type": "function",
+      "start_line": 47,
+      "end_line": 71,
+      "content_hash": "4a21ef8d2740c886fe536d73b9ed4db29398e25e",
+      "content": "def _register_qwen3_model() -> None:\n    \"\"\"Register Qwen3 ONNX model with FastEmbed (one-time, thread-safe).\"\"\"\n    global _QWEN3_REGISTERED\n    if _QWEN3_REGISTERED:\n        return\n\n    with _QWEN3_REGISTER_LOCK:\n        if _QWEN3_REGISTERED:\n            return\n        try:\n            from fastembed import TextEmbedding\n            from fastembed.common.model_description import ModelSource, PoolingType\n\n            TextEmbedding.add_custom_model(\n                model=QWEN3_MODEL,\n                pooling=PoolingType.DISABLED,\n                normalization=False,\n                sources=ModelSource(hf=QWEN3_MODEL),\n                dim=QWEN3_DIM,\n                model_file=\"dynamic_uint8.onnx\",\n            )\n            _QWEN3_REGISTERED = True\n        except Exception:\n            # Registration failed - model may already exist or fastembed issue\n            pass",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_embedding_model_74": {
+      "name": "get_embedding_model",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 145,
+      "content_hash": "51b57a044c6ab3713e51ba2c08a9c25f24894c58",
+      "content": "def get_embedding_model(model_name: Optional[str] = None) -> Any:\n    \"\"\"Get or create a cached embedding model instance.\n\n    Args:\n        model_name: Model name override. If None, uses EMBEDDING_MODEL env var.\n\n    Returns:\n        TextEmbedding instance (cached per model name).\n    \"\"\"\n    from fastembed import TextEmbedding\n\n    if model_name is None:\n        model_name = os.environ.get(\"EMBEDDING_MODEL\", DEFAULT_MODEL)\n\n    # Register Qwen3 if enabled and requested\n    if QWEN3_ENABLED and \"qwen3\" in model_name.lower():\n        _register_qwen3_model()\n\n    # Check cache first (fast path)\n    cached = _EMBED_MODEL_CACHE.get(model_name)\n    if cached is not None:\n        return cached\n\n    # Double-checked locking for thread safety\n    lock = _EMBED_MODEL_LOCKS.setdefault(model_name, threading.Lock())\n    with lock:\n        cached = _EMBED_MODEL_CACHE.get(model_name)\n        if cached is not None:\n            return cached\n\n        # Robust initialization with cache cleanup on corrupted ONNX downloads.\n        # We've seen fastembed download a truncated ONNX model and then\n        # onnxruntime raises INVALID_PROTOBUF when loading it. When that\n        # happens, we clear FASTEMBED_CACHE_PATH and retry a few times\n        # instead of crashing the whole service.\n        last_exc: Exception | None = None\n        for attempt in range(3):\n            try:\n                model = TextEmbedding(model_name=model_name)\n                # Warmup with common code patterns (best-effort)\n                try:\n                    _ = list(model.embed([\"function\", \"class\", \"import\", \"def\", \"const\"]))\n                except Exception:\n                    pass\n\n                _EMBED_MODEL_CACHE[model_name] = model\n                return model\n            except Exception as e:  # pragma: no cover - defensive path\n                last_exc = e\n                msg = str(e)\n                is_proto_error = \"INVALID_PROTOBUF\" in msg or \"Protobuf parsing failed\" in msg\n                is_size_mismatch = \"Local file sizes do not match the metadata\" in msg\n                if not (is_proto_error or is_size_mismatch):\n                    # Non-cache-related failure \u2013 don't spin.\n                    break\n\n                cache_root = os.environ.get(\"FASTEMBED_CACHE_PATH\", \"/tmp/huggingface/fastembed\")\n                try:\n                    print(\n                        f\"[embedder] Detected corrupt FastEmbed cache at {cache_root} (attempt {attempt + 1}); \"\n                        \"clearing and retrying...\"\n                    )\n                    shutil.rmtree(cache_root, ignore_errors=True)\n                except Exception:\n                    # If we can't delete the cache, just surface the error.\n                    break\n                time.sleep(1.0)\n\n        # If we reach here, all attempts failed.\n        if last_exc is not None:\n            raise last_exc\n        raise RuntimeError(\"Failed to initialize embedding model for unknown reasons\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_is_qwen3_model_148": {
+      "name": "is_qwen3_model",
+      "type": "function",
+      "start_line": 148,
+      "end_line": 152,
+      "content_hash": "7788a3ef21a4f9c3be4b79c649ac7ea1d349f8ee",
+      "content": "def is_qwen3_model(model_name: Optional[str] = None) -> bool:\n    \"\"\"Check if the given or configured model is Qwen3.\"\"\"\n    if model_name is None:\n        model_name = os.environ.get(\"EMBEDDING_MODEL\", DEFAULT_MODEL)\n    return \"qwen3\" in model_name.lower()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_query_instruction_155": {
+      "name": "get_query_instruction",
+      "type": "function",
+      "start_line": 155,
+      "end_line": 157,
+      "content_hash": "f46a98b2046da62587b6b5c3716527cc9299c4c7",
+      "content": "def get_query_instruction() -> str:\n    \"\"\"Get the query instruction prefix for Qwen3 models.\"\"\"\n    return os.environ.get(\"QWEN3_INSTRUCTION_TEXT\", DEFAULT_INSTRUCTION)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_prefix_query_160": {
+      "name": "prefix_query",
+      "type": "function",
+      "start_line": 160,
+      "end_line": 175,
+      "content_hash": "87b202b8139b03939e2b79bf61bdd9d293f1147a",
+      "content": "def prefix_query(query: str, model_name: Optional[str] = None) -> str:\n    \"\"\"Add instruction prefix to query if using Qwen3 with instructions enabled.\n\n    Args:\n        query: The search query text.\n        model_name: Model name override. If None, uses EMBEDDING_MODEL env var.\n\n    Returns:\n        Query with instruction prefix (if applicable) or original query.\n    \"\"\"\n    if not QWEN3_QUERY_INSTRUCTION:\n        return query\n    if not is_qwen3_model(model_name):\n        return query\n    instruction = get_query_instruction()\n    return f\"{instruction} {query}\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_prefix_queries_178": {
+      "name": "prefix_queries",
+      "type": "function",
+      "start_line": 178,
+      "end_line": 193,
+      "content_hash": "89b1240faca3498ef4ced2293c2fa95fdde51873",
+      "content": "def prefix_queries(queries: List[str], model_name: Optional[str] = None) -> List[str]:\n    \"\"\"Add instruction prefix to multiple queries if using Qwen3.\n\n    Args:\n        queries: List of search query texts.\n        model_name: Model name override. If None, uses EMBEDDING_MODEL env var.\n\n    Returns:\n        List of queries with instruction prefixes (if applicable).\n    \"\"\"\n    if not QWEN3_QUERY_INSTRUCTION:\n        return queries\n    if not is_qwen3_model(model_name):\n        return queries\n    instruction = get_query_instruction()\n    return [f\"{instruction} {q}\" for q in queries]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_model_dimension_196": {
+      "name": "get_model_dimension",
+      "type": "function",
+      "start_line": 196,
+      "end_line": 236,
+      "content_hash": "e6efd60f08f577e94bb3a4428d5d78d5a6e3968d",
+      "content": "def get_model_dimension(model_name: Optional[str] = None) -> int:\n    \"\"\"Get the embedding dimension for the specified model.\n\n    Args:\n        model_name: Model name override. If None, uses EMBEDDING_MODEL env var.\n\n    Returns:\n        Embedding dimension for the model.\n    \"\"\"\n    if model_name is None:\n        model_name = os.environ.get(\"EMBEDDING_MODEL\", DEFAULT_MODEL)\n\n    # Qwen3 models: 1024 dimensions\n    if is_qwen3_model(model_name):\n        return QWEN3_DIM\n\n    # Known model dimensions (case-insensitive matching)\n    model_lower = model_name.lower()\n\n    # MiniLM models: 384 dimensions\n    if \"minilm\" in model_lower or \"all-minilm\" in model_lower:\n        return 384\n\n    # BGE-small: 384 dimensions\n    if \"bge-small\" in model_lower:\n        return 384\n\n    # BGE-large: 1024 dimensions\n    if \"bge-large\" in model_lower:\n        return 1024\n\n    # E5 models\n    if \"e5-small\" in model_lower:\n        return 384\n    if \"e5-large\" in model_lower:\n        return 1024\n    if \"e5-base\" in model_lower:\n        return 768\n\n    # Default: BGE-base and similar 768-dimension models\n    return 768",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

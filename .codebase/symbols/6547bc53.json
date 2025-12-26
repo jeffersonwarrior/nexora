@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/internal/indexer/indexer_test.go",
+  "file_hash": "f27134cafe2a10f5e9131990ca74d427f32a367f",
+  "updated_at": "2025-12-26T17:34:22.352108",
+  "symbols": {
+    "function_TestIndexerIntegration_14": {
+      "name": "TestIndexerIntegration",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 26,
+      "content_hash": "86369e0bdff9da9fbd93ca1cb5187e2e825d797f",
+      "content": "func TestIndexerIntegration(t *testing.T) {\n\t// Create temporary directory for test\n\ttempDir, err := os.MkdirTemp(\"\", \"nexora-indexer-test\")\n\trequire.NoError(t, err)\n\tdefer os.RemoveAll(tempDir)\n\n\t// Create test Go files\n\ttestFile := filepath.Join(tempDir, \"test.go\")\n\ttestContent := `package main\n\nimport \"fmt\"\n\n// TestFunction demonstrates a simple function",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestFunction_27": {
+      "name": "TestFunction",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 31,
+      "content_hash": "7255ca0e85f09bab6edfe54abd187ba53538ac3f",
+      "content": "func TestFunction(name string) string {\n\treturn \"Hello, \" + name\n}\n\n// AnotherFunction calls TestFunction",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_AnotherFunction_32": {
+      "name": "AnotherFunction",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 35,
+      "content_hash": "aec0ef17ee89841639896d353c138f27bb8d0bf6",
+      "content": "func AnotherFunction() {\n\tTestFunction(\"world\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TestStruct_36": {
+      "name": "TestStruct",
+      "type": "struct",
+      "start_line": 36,
+      "end_line": 39,
+      "content_hash": "32b344734fa7276c39d832f7593f9f361e859995",
+      "content": "type TestStruct struct {\n\tName string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Method_40": {
+      "name": "Method",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 286,
+      "content_hash": "38d231ddba3b41ef76d4e74d58ad6a424ab07966",
+      "content": "func (t TestStruct) Method() string {\n\treturn TestFunction(t.Name)\n}\n\nconst TestConstant = \"test\"\n\nvar TestVariable = \"variable\"\n`\n\terr = os.WriteFile(testFile, []byte(testContent), 0o644)\n\trequire.NoError(t, err)\n\n\t// Test AST Parser\n\tt.Run(\"AST Parser\", func(t *testing.T) {\n\t\tctx := context.Background()\n\t\tparser := NewASTParser()\n\t\tsymbols, err := parser.ParseDirectory(ctx, tempDir)\n\t\trequire.NoError(t, err)\n\t\trequire.NotEmpty(t, symbols)\n\n\t\t// Check that we found expected symbols\n\t\tsymbolNames := make(map[string]bool)\n\t\tfor _, symbol := range symbols {\n\t\t\tsymbolNames[symbol.Name] = true\n\t\t}\n\n\t\trequire.True(t, symbolNames[\"TestFunction\"], \"Should find TestFunction\")\n\t\trequire.True(t, symbolNames[\"AnotherFunction\"], \"Should find AnotherFunction\")\n\t\trequire.True(t, symbolNames[\"TestStruct\"], \"Should find TestStruct\")\n\t\trequire.True(t, symbolNames[\"TestConstant\"], \"Should find TestConstant\")\n\t\trequire.True(t, symbolNames[\"TestVariable\"], \"Should find TestVariable\")\n\t})\n\n\t// Test Storage\n\tt.Run(\"Storage\", func(t *testing.T) {\n\t\tctx := context.Background()\n\n\t\t// Create indexer\n\t\tdbPath := filepath.Join(tempDir, \"test.db\")\n\t\tindexer, err := NewIndexer(dbPath)\n\t\trequire.NoError(t, err)\n\t\tdefer indexer.Close()\n\n\t\t// Store symbols\n\t\tctx = context.Background()\n\t\tparser := NewASTParser()\n\t\tsymbols, err := parser.ParseDirectory(ctx, tempDir)\n\t\trequire.NoError(t, err)\n\t\trequire.NotEmpty(t, symbols)\n\n\t\t// Store symbols directly as slice\n\t\terr = indexer.StoreSymbols(ctx, symbols)\n\t\trequire.NoError(t, err)\n\n\t\t// Retrieve symbols\n\t\tretrievedSymbols, err := indexer.SearchSymbols(ctx, \"\", 100)\n\t\trequire.NoError(t, err)\n\t\trequire.NotEmpty(t, retrievedSymbols)\n\n\t\t// Check that we can find a specific symbol\n\t\ttestFunc, err := indexer.GetSymbol(ctx, \"TestFunction\")\n\t\trequire.NoError(t, err)\n\t\trequire.NotNil(t, testFunc)\n\t\trequire.Equal(t, \"TestFunction\", testFunc.Name)\n\t\trequire.Equal(t, \"function\", testFunc.Type)\n\t\trequire.Contains(t, testFunc.Doc, \"TestFunction demonstrates\")\n\t})\n\n\t// Test Embeddings\n\tt.Run(\"Embeddings\", func(t *testing.T) {\n\t\tctx := context.Background()\n\n\t\tdbPath := filepath.Join(tempDir, \"test.db\")\n\t\tindexer, err := NewIndexer(dbPath)\n\t\trequire.NoError(t, err)\n\t\tdefer indexer.Close()\n\n\t\tprovider := NewLocalProvider(\"mock\", \"/tmp\")\n\t\tembeddingEngine := NewEmbeddingEngine(provider, indexer)\n\n\t\t// Create test symbols\n\t\tsymbols := []Symbol{\n\t\t\t{\n\t\t\t\tName:      \"TestFunction\",\n\t\t\t\tType:      \"function\",\n\t\t\t\tPackage:   \"main\",\n\t\t\t\tFile:      testFile,\n\t\t\t\tLine:      5,\n\t\t\t\tSignature: \"func TestFunction(name string) string\",\n\t\t\t\tDoc:       \"TestFunction demonstrates a simple function\",\n\t\t\t},\n\t\t}\n\n\t\t// Generate embeddings\n\t\tembeddings, err := embeddingEngine.GenerateSymbolEmbeddings(ctx, symbols)\n\t\trequire.NoError(t, err)\n\t\trequire.Len(t, embeddings, 1)\n\n\t\t// Check embedding properties\n\t\tembedding := embeddings[0]\n\t\trequire.Equal(t, \"TestFunction\", embedding.ID)\n\t\trequire.Equal(t, \"function\", embedding.Type)\n\t\trequire.NotEmpty(t, embedding.Vector)\n\t\trequire.Len(t, embedding.Vector, 384) // Standard embedding size\n\n\t\t// Store embeddings\n\t\terr = indexer.StoreEmbeddings(ctx, embeddings)\n\t\trequire.NoError(t, err)\n\n\t\t// Retrieve embeddings\n\t\tretrievedEmbeddings, err := indexer.GetAllEmbeddings(ctx)\n\t\trequire.NoError(t, err)\n\t\trequire.Len(t, retrievedEmbeddings, 1)\n\t\trequire.Equal(t, embedding.ID, retrievedEmbeddings[0].ID)\n\t})\n\n\t// Test Graph\n\tt.Run(\"Graph\", func(t *testing.T) {\n\t\tctx := context.Background()\n\n\t\tdbPath := filepath.Join(tempDir, \"test.db\")\n\t\tindexer, err := NewIndexer(dbPath)\n\t\trequire.NoError(t, err)\n\t\tdefer indexer.Close()\n\n\t\tctx = context.Background()\n\t\tparser := NewASTParser()\n\t\tsymbols, err := parser.ParseDirectory(ctx, tempDir)\n\t\trequire.NoError(t, err)\n\n\t\t// Convert to symbol map\n\t\tsymbolMap := make(map[string]*Symbol)\n\t\tfor i := range symbols {\n\t\t\ts := &symbols[i]\n\t\t\tsymbolMap[s.Name] = s\n\t\t}\n\n\t\t// Build graph\n\t\tbuilder := NewGraphBuilder()\n\t\tgraph, err := builder.BuildGraph(ctx, symbolMap)\n\t\trequire.NoError(t, err)\n\t\trequire.NotNil(t, graph)\n\t\trequire.NotEmpty(t, graph.Nodes)\n\n\t\t// Check that we have call relationships\n\t\tanotherFunc, exists := graph.Nodes[\"AnotherFunction\"]\n\t\trequire.True(t, exists, \"Should find AnotherFunction in graph\")\n\t\trequire.Greater(t, anotherFunc.CallCount, 0, \"AnotherFunction should call other functions\")\n\n\t\t// Test graph traversal\n\t\tcallees := graph.FindCallees(\"AnotherFunction\")\n\t\trequire.NotEmpty(t, callees, \"AnotherFunction should have callees\")\n\n\t\tcallers := graph.FindCallers(\"TestFunction\")\n\t\trequire.NotEmpty(t, callers, \"TestFunction should have callers\")\n\n\t\t// Test impact analysis\n\t\tanalysis := graph.GetImpactAnalysis(\"TestFunction\", 2)\n\t\trequire.Equal(t, \"TestFunction\", analysis.SymbolID)\n\t\trequire.NotNil(t, analysis.DirectCalls)\n\t\trequire.NotNil(t, analysis.DirectCallers)\n\t})\n\n\t// Test Query Engine\n\tt.Run(\"Query Engine\", func(t *testing.T) {\n\t\tctx := context.Background()\n\n\t\tdbPath := filepath.Join(tempDir, \"test.db\")\n\t\tstorage, err := NewIndexer(dbPath)\n\t\trequire.NoError(t, err)\n\t\tdefer storage.Close()\n\n\t\tprovider := NewLocalProvider(\"mock\", \"/tmp\")\n\t\tembeddingEngine := NewEmbeddingEngine(provider, storage)\n\n\t\t// Setup data\n\t\tctx = context.Background()\n\t\tparser := NewASTParser()\n\t\tsymbols := []Symbol{}\n\t\tparsedSymbols, err := parser.ParseDirectory(ctx, tempDir)\n\t\trequire.NoError(t, err)\n\n\t\tsymbolMap := make(map[string]*Symbol)\n\t\tfor i := range parsedSymbols {\n\t\t\ts := &parsedSymbols[i]\n\t\t\tsymbolMap[s.Name] = s\n\t\t\tsymbols = append(symbols, *s)\n\t\t}\n\n\t\t// Store symbols\n\t\terr = storage.StoreSymbols(ctx, symbols)\n\t\trequire.NoError(t, err)\n\n\t\t// Debug: Check what's in the database\n\t\tcountSymbols, err := storage.db.QueryContext(ctx, \"SELECT COUNT(*) FROM symbols\")\n\t\trequire.NoError(t, err)\n\t\tvar numSymbols int\n\t\tcountSymbols.Next()\n\t\tcountSymbols.Scan(&numSymbols)\n\t\tcountSymbols.Close()\n\t\tt.Logf(\"Found %d symbols in database\", numSymbols)\n\n\t\tcountFts, err := storage.db.QueryContext(ctx, \"SELECT COUNT(*) FROM symbols_fts\")\n\t\trequire.NoError(t, err)\n\t\tvar numFts int\n\t\tcountFts.Next()\n\t\tcountFts.Scan(&numFts)\n\t\tcountFts.Close()\n\t\tt.Logf(\"Found %d entries in symbols_fts\", numFts)\n\n\t\tembeddings, err := embeddingEngine.GenerateSymbolEmbeddings(ctx, symbols)\n\t\trequire.NoError(t, err)\n\t\terr = storage.StoreEmbeddings(ctx, embeddings)\n\t\trequire.NoError(t, err)\n\n\t\tbuilder := NewGraphBuilder()\n\t\tgraph, err := builder.BuildGraph(ctx, symbolMap)\n\t\trequire.NoError(t, err)\n\n\t\t// Create query engine\n\t\tqueryEngine := NewQueryEngine(storage, embeddingEngine)\n\t\tqueryEngine.SetGraph(graph)\n\n\t\t// Test semantic search\n\t\treq := &QueryRequest{\n\t\t\tQuery: \"function that returns a greeting\",\n\t\t\tType:  QueryTypeSemantic,\n\t\t\tLimit: 5,\n\t\t}\n\n\t\tresult, err := queryEngine.Search(ctx, req)\n\t\trequire.NoError(t, err)\n\t\trequire.NotNil(t, result)\n\t\trequire.Equal(t, req.Query, result.Query)\n\n\t\t// Test text search\n\t\treq.Type = QueryTypeText\n\t\tresult, err = queryEngine.Search(ctx, req)\n\t\trequire.NoError(t, err)\n\t\trequire.NotNil(t, result)\n\n\t\t// Test advanced query\n\t\tresults, err := queryEngine.AdvancedQuery(ctx, \"find all functions\")\n\t\trequire.NoError(t, err)\n\t\trequire.NotEmpty(t, results)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMockEmbedding_287": {
+      "name": "TestMockEmbedding",
+      "type": "function",
+      "start_line": 287,
+      "end_line": 308,
+      "content_hash": "3db2910c1ab4333d8a425a14798e5ef955f8cafb",
+      "content": "func TestMockEmbedding(t *testing.T) {\n\tprovider := NewLocalProvider(\"mock\", \"/tmp\")\n\n\tctx := context.Background()\n\tembedding1, err := provider.GenerateEmbedding(ctx, \"test text\")\n\trequire.NoError(t, err)\n\trequire.NotEmpty(t, embedding1)\n\trequire.Len(t, embedding1, 384)\n\n\tembedding2, err := provider.GenerateEmbedding(ctx, \"test text\")\n\trequire.NoError(t, err)\n\trequire.NotEmpty(t, embedding2)\n\trequire.Len(t, embedding2, 384)\n\n\t// Same input should produce same embedding for mock\n\trequire.Equal(t, embedding1, embedding2)\n\n\t// Different input should produce different embedding\n\tembedding3, err := provider.GenerateEmbedding(ctx, \"different text\")\n\trequire.NoError(t, err)\n\trequire.NotEqual(t, embedding1, embedding3)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

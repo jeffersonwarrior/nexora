@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/commands/arguments.go",
+  "file_hash": "80f4f8c538849a22289113d508283f07bed6c7e6",
+  "updated_at": "2025-12-26T17:34:23.129685",
+  "symbols": {
+    "struct_ShowArgumentsDialogMsg_21": {
+      "name": "ShowArgumentsDialogMsg",
+      "type": "struct",
+      "start_line": 21,
+      "end_line": 28,
+      "content_hash": "a075853f7e90f007e76ecf897fddbe7e1b9c9f2e",
+      "content": "type ShowArgumentsDialogMsg struct {\n\tCommandID   string\n\tDescription string\n\tArgNames    []string\n\tOnSubmit    func(args map[string]string) tea.Cmd\n}\n\n// CloseArgumentsDialogMsg is a message that is sent when the arguments dialog is closed.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CloseArgumentsDialogMsg_29": {
+      "name": "CloseArgumentsDialogMsg",
+      "type": "struct",
+      "start_line": 29,
+      "end_line": 36,
+      "content_hash": "a40cffb17f0277e416b790c7a0194274b5ebd164",
+      "content": "type CloseArgumentsDialogMsg struct {\n\tSubmit    bool\n\tCommandID string\n\tContent   string\n\tArgs      map[string]string\n}\n\n// CommandArgumentsDialog represents the commands dialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_CommandArgumentsDialog_37": {
+      "name": "CommandArgumentsDialog",
+      "type": "interface",
+      "start_line": 37,
+      "end_line": 40,
+      "content_hash": "16c662a41bd643a75eff0926424e5494ec83e2ba",
+      "content": "type CommandArgumentsDialog interface {\n\tdialogs.DialogModel\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_commandArgumentsDialogCmp_41": {
+      "name": "commandArgumentsDialogCmp",
+      "type": "struct",
+      "start_line": 41,
+      "end_line": 58,
+      "content_hash": "1c50fd84aac3c8600dd8a96f0866805ed52c4359",
+      "content": "type commandArgumentsDialogCmp struct {\n\twWidth, wHeight int\n\twidth, height   int\n\n\tinputs    []textinput.Model\n\tfocused   int\n\tkeys      ArgumentsDialogKeyMap\n\targuments []Argument\n\thelp      help.Model\n\n\tid          string\n\ttitle       string\n\tname        string\n\tdescription string\n\n\tonSubmit func(args map[string]string) tea.Cmd\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Argument_59": {
+      "name": "Argument",
+      "type": "struct",
+      "start_line": 59,
+      "end_line": 63,
+      "content_hash": "4b41dc1bcee2a8b6382d95d822795a914fe33c9a",
+      "content": "type Argument struct {\n\tName, Title, Description string\n\tRequired                 bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewCommandArgumentsDialog_64": {
+      "name": "NewCommandArgumentsDialog",
+      "type": "function",
+      "start_line": 64,
+      "end_line": 104,
+      "content_hash": "e765bfd06481d393d8d582310253c41ffc129f6f",
+      "content": "func NewCommandArgumentsDialog(\n\tid, title, name, description string,\n\targuments []Argument,\n\tonSubmit func(args map[string]string) tea.Cmd,\n) CommandArgumentsDialog {\n\tt := styles.CurrentTheme()\n\tinputs := make([]textinput.Model, len(arguments))\n\n\tfor i, arg := range arguments {\n\t\tti := textinput.New()\n\t\tti.Placeholder = cmp.Or(arg.Description, \"Enter value for \"+arg.Title)\n\t\tti.SetWidth(40)\n\t\tti.SetVirtualCursor(false)\n\t\tti.Prompt = \"\"\n\n\t\tti.SetStyles(t.S().TextInput)\n\t\t// Only focus the first input initially\n\t\tif i == 0 {\n\t\t\tti.Focus()\n\t\t} else {\n\t\t\tti.Blur()\n\t\t}\n\n\t\tinputs[i] = ti\n\t}\n\n\treturn &commandArgumentsDialogCmp{\n\t\tinputs:      inputs,\n\t\tkeys:        DefaultArgumentsDialogKeyMap(),\n\t\tid:          id,\n\t\tname:        name,\n\t\ttitle:       title,\n\t\tdescription: description,\n\t\targuments:   arguments,\n\t\twidth:       60,\n\t\thelp:        help.New(),\n\t\tonSubmit:    onSubmit,\n\t}\n}\n\n// Init implements CommandArgumentsDialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_105": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 105,
+      "end_line": 109,
+      "content_hash": "ed61a2180f5d96058124de454064080e318a7931",
+      "content": "func (c *commandArgumentsDialogCmp) Init() tea.Cmd {\n\treturn nil\n}\n\n// Update implements CommandArgumentsDialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_110": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 110,
+      "end_line": 165,
+      "content_hash": "1ccb5beee1de91c6868daedc710269b0051ffe39",
+      "content": "func (c *commandArgumentsDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tswitch msg := msg.(type) {\n\tcase tea.WindowSizeMsg:\n\t\tc.wWidth = msg.Width\n\t\tc.wHeight = msg.Height\n\t\tc.width = min(90, c.wWidth)\n\t\tc.height = min(15, c.wHeight)\n\t\tfor i := range c.inputs {\n\t\t\tc.inputs[i].SetWidth(c.width - (paddingHorizontal * 2))\n\t\t}\n\tcase tea.KeyPressMsg:\n\t\tswitch {\n\t\tcase key.Matches(msg, c.keys.Close):\n\t\t\treturn c, util.CmdHandler(dialogs.CloseDialogMsg{})\n\t\tcase key.Matches(msg, c.keys.Confirm):\n\t\t\tif c.focused == len(c.inputs)-1 {\n\t\t\t\targs := make(map[string]string)\n\t\t\t\tfor i, arg := range c.arguments {\n\t\t\t\t\tvalue := c.inputs[i].Value()\n\t\t\t\t\targs[arg.Name] = value\n\t\t\t\t}\n\t\t\t\treturn c, tea.Sequence(\n\t\t\t\t\tutil.CmdHandler(dialogs.CloseDialogMsg{}),\n\t\t\t\t\tc.onSubmit(args),\n\t\t\t\t)\n\t\t\t}\n\t\t\t// Otherwise, move to the next input\n\t\t\tc.inputs[c.focused].Blur()\n\t\t\tc.focused++\n\t\t\tc.inputs[c.focused].Focus()\n\t\tcase key.Matches(msg, c.keys.Next):\n\t\t\t// Move to the next input\n\t\t\tc.inputs[c.focused].Blur()\n\t\t\tc.focused = (c.focused + 1) % len(c.inputs)\n\t\t\tc.inputs[c.focused].Focus()\n\t\tcase key.Matches(msg, c.keys.Previous):\n\t\t\t// Move to the previous input\n\t\t\tc.inputs[c.focused].Blur()\n\t\t\tc.focused = (c.focused - 1 + len(c.inputs)) % len(c.inputs)\n\t\t\tc.inputs[c.focused].Focus()\n\t\tcase key.Matches(msg, c.keys.Close):\n\t\t\treturn c, util.CmdHandler(dialogs.CloseDialogMsg{})\n\t\tdefault:\n\t\t\tvar cmd tea.Cmd\n\t\t\tc.inputs[c.focused], cmd = c.inputs[c.focused].Update(msg)\n\t\t\treturn c, cmd\n\t\t}\n\tcase tea.PasteMsg:\n\t\tvar cmd tea.Cmd\n\t\tc.inputs[c.focused], cmd = c.inputs[c.focused].Update(msg)\n\t\treturn c, cmd\n\t}\n\treturn c, nil\n}\n\n// View implements CommandArgumentsDialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_166": {
+      "name": "View",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 219,
+      "content_hash": "6afedc5de712ce9671a318039295ac9a8b427214",
+      "content": "func (c *commandArgumentsDialogCmp) View() string {\n\tt := styles.CurrentTheme()\n\tbaseStyle := t.S().Base\n\n\ttitle := lipgloss.NewStyle().\n\t\tForeground(t.Primary).\n\t\tBold(true).\n\t\tPadding(0, 1).\n\t\tRender(cmp.Or(c.title, c.name))\n\n\tpromptName := t.S().Text.\n\t\tPadding(0, 1).\n\t\tRender(c.description)\n\n\tinputFields := make([]string, len(c.inputs))\n\tfor i, input := range c.inputs {\n\t\tlabelStyle := baseStyle.Padding(1, 1, 0, 1)\n\n\t\tif i == c.focused {\n\t\t\tlabelStyle = labelStyle.Foreground(t.FgBase).Bold(true)\n\t\t} else {\n\t\t\tlabelStyle = labelStyle.Foreground(t.FgMuted)\n\t\t}\n\n\t\targ := c.arguments[i]\n\t\targName := cmp.Or(arg.Title, arg.Name)\n\t\tif arg.Required {\n\t\t\targName += \"*\"\n\t\t}\n\t\tlabel := labelStyle.Render(argName + \":\")\n\n\t\tfield := t.S().Text.\n\t\t\tPadding(0, 1).\n\t\t\tRender(input.View())\n\n\t\tinputFields[i] = lipgloss.JoinVertical(lipgloss.Left, label, field)\n\t}\n\n\telements := []string{title, promptName}\n\telements = append(elements, inputFields...)\n\n\tc.help.ShowAll = false\n\thelpText := baseStyle.Padding(0, 1).Render(c.help.View(c.keys))\n\telements = append(elements, \"\", helpText)\n\n\tcontent := lipgloss.JoinVertical(lipgloss.Left, elements...)\n\n\treturn baseStyle.Padding(1, 1, 0, 1).\n\t\tBorder(lipgloss.RoundedBorder()).\n\t\tBorderForeground(t.BorderFocus).\n\t\tWidth(c.width).\n\t\tRender(content)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_220": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 220,
+      "end_line": 236,
+      "content_hash": "c81dd6ddbf0d18cc985a6446349d2ff8489f49c0",
+      "content": "func (c *commandArgumentsDialogCmp) Cursor() *tea.Cursor {\n\tif len(c.inputs) == 0 {\n\t\treturn nil\n\t}\n\tcursor := c.inputs[c.focused].Cursor()\n\tif cursor != nil {\n\t\tcursor = c.moveCursor(cursor)\n\t}\n\treturn cursor\n}\n\nconst (\n\theaderHeight      = 3\n\titemHeight        = 3\n\tpaddingHorizontal = 3\n)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_moveCursor_237": {
+      "name": "moveCursor",
+      "type": "method",
+      "start_line": 237,
+      "end_line": 244,
+      "content_hash": "0283c294777727d85a49b5255b5255687b2e3ac8",
+      "content": "func (c *commandArgumentsDialogCmp) moveCursor(cursor *tea.Cursor) *tea.Cursor {\n\trow, col := c.Position()\n\toffset := row + headerHeight + (1+c.focused)*itemHeight\n\tcursor.Y += offset\n\tcursor.X = cursor.X + col + paddingHorizontal\n\treturn cursor\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Position_245": {
+      "name": "Position",
+      "type": "method",
+      "start_line": 245,
+      "end_line": 251,
+      "content_hash": "b31633c3e066187a474edb6b020261d1f4fd6497",
+      "content": "func (c *commandArgumentsDialogCmp) Position() (int, int) {\n\trow := (c.wHeight / 2) - (c.height / 2)\n\tcol := (c.wWidth / 2) - (c.width / 2)\n\treturn row, col\n}\n\n// ID implements CommandArgumentsDialog.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ID_252": {
+      "name": "ID",
+      "type": "method",
+      "start_line": 252,
+      "end_line": 254,
+      "content_hash": "1c433859563dc5e20a4ee1b47c97dfe37fe38e1a",
+      "content": "func (c *commandArgumentsDialogCmp) ID() dialogs.DialogID {\n\treturn argumentsDialogID\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

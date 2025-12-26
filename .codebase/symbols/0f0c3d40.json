@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/internal/agent/panic_protection_test.go",
+  "file_hash": "60b73fc9d418c90649a613d62180659ef7ae7817",
+  "updated_at": "2025-12-26T17:34:20.990259",
+  "symbols": {
+    "function_TestPanicProtection_SafeCreateTool_27": {
+      "name": "TestPanicProtection_SafeCreateTool",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 70,
+      "content_hash": "85e5fa65d5a8447a8afd87eab039adb2683aaf75",
+      "content": "func TestPanicProtection_SafeCreateTool(t *testing.T) {\n\t// Create test environment\n\tenv := setupPanicTestEnv(t)\n\n\t// Create coordinator with minimal config\n\tcoordinator := setupPanicTestCoordinator(t, env)\n\n\t// Test 1: Normal tool creation should work\n\tt.Run(\"NormalToolCreation\", func(t *testing.T) {\n\t\ttool := coordinator.safeCreateTool(func() fantasy.AgentTool {\n\t\t\treturn tools.NewViewTool(nil, env.permissions, env.workingDir)\n\t\t})\n\n\t\tassert.NotNil(t, tool, \"safeCreateTool should return a tool\")\n\n\t\t// Verify the tool works\n\t\tinfo := tool.Info()\n\t\tassert.NotEmpty(t, info.Name, \"tool should have a name\")\n\t})\n\n\t// Test 2: Panicking tool creation should be caught\n\tt.Run(\"PanickingToolCreation\", func(t *testing.T) {\n\t\tpanicked := false\n\t\ttool := coordinator.safeCreateTool(func() fantasy.AgentTool {\n\t\t\tpanicked = true\n\t\t\tpanic(\"intentional panic during tool creation\")\n\t\t})\n\n\t\tassert.True(t, panicked, \"creation function should have been called\")\n\t\tassert.Nil(t, tool, \"safeCreateTool should return nil for panicking creation\")\n\t})\n\n\t// Test 3: Tool creation returning nil should be handled\n\tt.Run(\"NilToolCreation\", func(t *testing.T) {\n\t\ttool := coordinator.safeCreateTool(func() fantasy.AgentTool {\n\t\t\treturn nil\n\t\t})\n\n\t\tassert.Nil(t, tool, \"safeCreateTool should return nil for nil creation result\")\n\t})\n}\n\n// TestPanicProtection_WrapToolWithTimeout tests the wrapToolWithTimeout function\n// protects against panics when calling tool.Info().",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestPanicProtection_WrapToolWithTimeout_71": {
+      "name": "TestPanicProtection_WrapToolWithTimeout",
+      "type": "function",
+      "start_line": 71,
+      "end_line": 111,
+      "content_hash": "741dd33931cade55e30b6136f9f065323cca5b63",
+      "content": "func TestPanicProtection_WrapToolWithTimeout(t *testing.T) {\n\tenv := setupPanicTestEnv(t)\n\tcoordinator := setupPanicTestCoordinator(t, env)\n\n\t// Test 1: Wrap normal tool should work\n\tt.Run(\"NormalTool\", func(t *testing.T) {\n\t\t// Create a simple working tool using the same pattern as in buildTools\n\t\ttool := coordinator.safeCreateTool(func() fantasy.AgentTool {\n\t\t\treturn tools.NewViewTool(nil, env.permissions, env.workingDir)\n\t\t})\n\n\t\tassert.NotNil(t, tool, \"safeCreateTool should return a tool\")\n\n\t\t// Wrap with timeout - should not panic\n\t\twrappedTool := coordinator.wrapToolWithTimeout(tool)\n\t\tassert.NotNil(t, wrappedTool, \"wrapToolWithTimeout should return a wrapped tool\")\n\n\t\t// Verify the tool still works\n\t\tinfo := wrappedTool.Info()\n\t\tassert.NotEmpty(t, info.Name, \"wrapped tool should have a name\")\n\t})\n\n\t// Test 2: Wrap nil tool should be handled\n\tt.Run(\"NilTool\", func(t *testing.T) {\n\t\twrappedTool := coordinator.wrapToolWithTimeout(nil)\n\t\tassert.Nil(t, wrappedTool, \"wrapToolWithTimeout should return nil for nil input\")\n\t})\n\n\t// Test 3: Wrap panicky tool should be caught\n\tt.Run(\"PanickyTool\", func(t *testing.T) {\n\t\t// Create a tool that panics when Info() is called\n\t\tpanickyTool := &PanickyAgentTool{}\n\n\t\t// This should not panic - the panic should be caught\n\t\twrappedTool := coordinator.wrapToolWithTimeout(panickyTool)\n\t\tassert.Nil(t, wrappedTool, \"wrapToolWithTimeout should return nil for panicky tool\")\n\t})\n}\n\n// TestPanicProtection_BuildTools tests that the buildTools function can handle\n// panics from the fantasy library without crashing the application.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestPanicProtection_BuildTools_112": {
+      "name": "TestPanicProtection_BuildTools",
+      "type": "function",
+      "start_line": 112,
+      "end_line": 183,
+      "content_hash": "80331adfeaf82debf39a0742af507a14240afe6f",
+      "content": "func TestPanicProtection_BuildTools(t *testing.T) {\n\tenv := setupPanicTestEnv(t)\n\tcoordinator := setupPanicTestCoordinator(t, env)\n\n\t// Test 1: Build tools with normal agent config should succeed\n\tt.Run(\"NormalAgent\", func(t *testing.T) {\n\t\tagentConfig := config.Agent{\n\t\t\tName:         \"test-agent\",\n\t\t\tModel:        \"test-model\",\n\t\t\tAllowedTools: []string{\"bash\", \"view\", \"write\"},\n\t\t\tAllowedMCP:   nil,\n\t\t}\n\n\t\t// This should not panic\n\t\ttools, err := coordinator.buildTools(context.Background(), agentConfig)\n\t\tassert.NoError(t, err, \"buildTools should not return an error\")\n\t\tassert.NotNil(t, tools, \"tools should not be nil\")\n\n\t\t// Verify that valid tools are included and invalid ones are filtered out\n\t\tvar validTools []string\n\t\tfor _, tool := range tools {\n\t\t\tif tool != nil {\n\t\t\t\tinfo := tool.Info()\n\t\t\t\tif info.Name != \"\" {\n\t\t\t\t\tvalidTools = append(validTools, info.Name)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\t// Should have at least some tools\n\t\tassert.Greater(t, len(validTools), 0, \"Should have at least some valid tools\")\n\t})\n\n\t// Test 2: Build tools with various tools that might cause panics\n\tt.Run(\"PanicRecovery\", func(t *testing.T) {\n\t\tagentConfig := config.Agent{\n\t\t\tName:         \"panic-test-agent\",\n\t\t\tModel:        \"test-model\",\n\t\t\tAllowedTools: []string{\"bash\", \"view\", \"write\", \"edit\", \"multiedit\", \"fetch\"},\n\t\t\tAllowedMCP:   nil,\n\t\t}\n\n\t\t// Capture any panic\n\t\tdefer func() {\n\t\t\tif r := recover(); r != nil {\n\t\t\t\tt.Errorf(\"buildTools should not panic, but got: %v\", r)\n\t\t\t\tt.Errorf(\"Stack trace: %s\", debug.Stack())\n\t\t\t}\n\t\t}()\n\n\t\t// This should not panic even if individual tools fail\n\t\ttools, err := coordinator.buildTools(context.Background(), agentConfig)\n\t\tassert.NoError(t, err, \"buildTools should not return an error even with panicky tools\")\n\t\tassert.NotNil(t, tools, \"tools should not be nil\")\n\n\t\t// Should get some working tools\n\t\tvar workingTools []string\n\t\tfor _, tool := range tools {\n\t\t\tif tool != nil {\n\t\t\t\tinfo := tool.Info()\n\t\t\t\tif info.Name != \"\" {\n\t\t\t\t\tworkingTools = append(workingTools, info.Name)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tassert.Greater(t, len(workingTools), 0, \"Should have some working tools\")\n\t})\n}\n\n// TestPanicProtection_Integration is an integration test that simulates\n// the actual panic scenario that was happening in production.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestPanicProtection_Integration_184": {
+      "name": "TestPanicProtection_Integration",
+      "type": "function",
+      "start_line": 184,
+      "end_line": 245,
+      "content_hash": "01990735224b043d7e16951f0927a0b3e18db5e3",
+      "content": "func TestPanicProtection_Integration(t *testing.T) {\n\tif testing.Short() {\n\t\tt.Skip(\"Skipping integration test in short mode\")\n\t}\n\n\tenv := setupPanicTestEnv(t)\n\tcoordinator := setupPanicTestCoordinator(t, env)\n\n\t// Test with agent config that includes tools with potentially nil schemas\n\tagentConfig := config.Agent{\n\t\tName:  \"integration-test-agent\",\n\t\tModel: \"test-model\",\n\t\tAllowedTools: []string{\n\t\t\t\"bash\", \"view\", \"write\", \"edit\", \"multiedit\",\n\t\t\t\"fetch\", \"grep\", \"glob\", \"ls\", \"download\",\n\t\t\t\"job_output\", \"job_kill\", \"sourcegraph\",\n\t\t},\n\t\tAllowedMCP: nil,\n\t}\n\n\t// This is the exact scenario that was causing the panic\n\tdefer func() {\n\t\tif r := recover(); r != nil {\n\t\t\tt.Errorf(\"Integration test should not panic, but got: %v\", r)\n\t\t\tt.Errorf(\"Stack trace: %s\", debug.Stack())\n\t\t}\n\t}()\n\n\t// This should complete without panic\n\ttools, err := coordinator.buildTools(context.Background(), agentConfig)\n\tassert.NoError(t, err, \"buildTools should not error in integration test\")\n\tassert.NotNil(t, tools, \"tools should not be nil in integration test\")\n\n\t// Verify we got some working tools\n\tvar workingTools []string\n\tfor _, tool := range tools {\n\t\tif tool != nil {\n\t\t\tinfo := tool.Info()\n\t\t\tif info.Name != \"\" {\n\t\t\t\tworkingTools = append(workingTools, info.Name)\n\t\t\t}\n\t\t}\n\t}\n\n\tassert.Greater(t, len(workingTools), 0, \"Should have working tools after panic protection\")\n\n\t// Verify specific expected tools are present\n\texpectedTools := []string{\"bash\", \"view\", \"write\"}\n\tfor _, expected := range expectedTools {\n\t\tfound := false\n\t\tfor _, actual := range workingTools {\n\t\t\tif actual == expected {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.True(t, found, \"Expected tool %s should be present\", expected)\n\t}\n}\n\n// TestPanicProtection_Performance tests that the panic protection\n// doesn't significantly impact performance.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestPanicProtection_Performance_246": {
+      "name": "TestPanicProtection_Performance",
+      "type": "function",
+      "start_line": 246,
+      "end_line": 279,
+      "content_hash": "431e6aaa8ca44eaefa6e0ccc2e632d7643a643f3",
+      "content": "func TestPanicProtection_Performance(t *testing.T) {\n\tif testing.Short() {\n\t\tt.Skip(\"Skipping performance test in short mode\")\n\t}\n\n\tenv := setupPanicTestEnv(t)\n\tcoordinator := setupPanicTestCoordinator(t, env)\n\n\tagentConfig := config.Agent{\n\t\tName:         \"performance-test-agent\",\n\t\tAllowedTools: []string{\"bash\", \"view\", \"write\"},\n\t\tAllowedMCP:   nil,\n\t}\n\n\t// Run multiple iterations to test performance\n\titerations := 10 // Reduced for test performance\n\tstart := time.Now()\n\n\tfor i := 0; i < iterations; i++ {\n\t\ttools, err := coordinator.buildTools(context.Background(), agentConfig)\n\t\tassert.NoError(t, err)\n\t\tassert.NotNil(t, tools)\n\t}\n\n\tduration := time.Since(start)\n\taverageTime := duration / time.Duration(iterations)\n\n\tt.Logf(\"Average buildTools time with panic protection: %v\", averageTime)\n\n\t// Should complete reasonably quickly (adjust threshold as needed)\n\tassert.Less(t, averageTime, 500*time.Millisecond, \"Panic protection should not make tool building too slow\")\n}\n\n// setupPanicTestEnv creates a test environment with all required dependencies",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setupPanicTestEnv_280": {
+      "name": "setupPanicTestEnv",
+      "type": "function",
+      "start_line": 280,
+      "end_line": 312,
+      "content_hash": "2a919cac2b130c3a3f68a26ad7759de4fea70f82",
+      "content": "func setupPanicTestEnv(t *testing.T) fakeEnv {\n\tworkingDir := filepath.Join(t.TempDir(), \"nexora-test\")\n\n\terr := os.MkdirAll(workingDir, 0o755)\n\trequire.NoError(t, err)\n\n\tconn, err := db.Connect(t.Context(), t.TempDir())\n\trequire.NoError(t, err)\n\n\tq := db.New(conn)\n\tsessions := session.NewService(q)\n\tmessages := message.NewService(q)\n\n\tpermissions := permission.NewPermissionService(workingDir, true, []string{})\n\thistory := history.NewService(q, conn)\n\tlspClients := csync.NewMap[string, *lsp.Client]()\n\n\tt.Cleanup(func() {\n\t\tconn.Close()\n\t\tos.RemoveAll(workingDir)\n\t})\n\n\treturn fakeEnv{\n\t\tworkingDir,\n\t\tsessions,\n\t\tmessages,\n\t\tpermissions,\n\t\thistory,\n\t\tlspClients,\n\t}\n}\n\n// setupPanicTestCoordinator creates a coordinator for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_setupPanicTestCoordinator_313": {
+      "name": "setupPanicTestCoordinator",
+      "type": "function",
+      "start_line": 313,
+      "end_line": 346,
+      "content_hash": "d27963f3771c5c7fe71a4b5d9f46b383632216db",
+      "content": "func setupPanicTestCoordinator(t *testing.T, env fakeEnv) *coordinator {\n\t// Create a minimal config\n\tcfg := &config.Config{\n\t\tModels: map[config.SelectedModelType]config.SelectedModel{\n\t\t\t\"large\": {\n\t\t\t\tProvider: \"test\",\n\t\t\t\tModel:    \"test-model\",\n\t\t\t},\n\t\t},\n\t\tOptions: &config.Options{\n\t\t\tAttribution: &config.Attribution{\n\t\t\t\tGeneratedWith: false,\n\t\t\t\tTrailerStyle:  \"\",\n\t\t\t},\n\t\t},\n\t}\n\n\t// Create coordinator directly using the private struct constructor\n\tc := &coordinator{\n\t\tcfg:             cfg,\n\t\tsessions:        env.sessions,\n\t\tmessages:        env.messages,\n\t\tpermissions:     env.permissions,\n\t\thistory:         env.history,\n\t\tlspClients:      env.lspClients,\n\t\taiops:           nil, // aiops\n\t\tsessionLog:      nil, // sessionlog\n\t\tresourceMonitor: nil, // resourceMonitor\n\t}\n\n\treturn c\n}\n\n// errorMessageWriter is a simple writer that captures error messages",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_errorMessageWriter_347": {
+      "name": "errorMessageWriter",
+      "type": "struct",
+      "start_line": 347,
+      "end_line": 350,
+      "content_hash": "3c196a5d8c8d77fb21a0e75292feb556ba55b778",
+      "content": "type errorMessageWriter struct {\n\tmessages *[]string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Write_351": {
+      "name": "Write",
+      "type": "method",
+      "start_line": 351,
+      "end_line": 356,
+      "content_hash": "38f3c56b7306687b38be772318b6be5d8f5d7fbb",
+      "content": "func (w *errorMessageWriter) Write(p []byte) (n int, err error) {\n\t*w.messages = append(*w.messages, string(p))\n\treturn len(p), nil\n}\n\n// PanickyAgentTool is a test tool that panics when Info() is called",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PanickyAgentTool_357": {
+      "name": "PanickyAgentTool",
+      "type": "struct",
+      "start_line": 357,
+      "end_line": 358,
+      "content_hash": "7c86db8fa6c40e23e8830bc01c590672eb26139a",
+      "content": "type PanickyAgentTool struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Run_359": {
+      "name": "Run",
+      "type": "method",
+      "start_line": 359,
+      "end_line": 362,
+      "content_hash": "fed4b16534b6b30f908532af938efd33553d313c",
+      "content": "func (p *PanickyAgentTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\treturn fantasy.NewTextResponse(\"panicky tool output\"), nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Info_363": {
+      "name": "Info",
+      "type": "method",
+      "start_line": 363,
+      "end_line": 367,
+      "content_hash": "a24033abc454e9aa4e53b9d1d85cb96e772b6c0c",
+      "content": "func (p *PanickyAgentTool) Info() fantasy.ToolInfo {\n\tpanic(\"panic in PanickyAgentTool.Info() - simulating fantasy library schema bug\")\n}\n\n// ProviderOptions returns empty provider options",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ProviderOptions_368": {
+      "name": "ProviderOptions",
+      "type": "method",
+      "start_line": 368,
+      "end_line": 372,
+      "content_hash": "285cc82495938ffc1a93f0e4e9aac766e4128aac",
+      "content": "func (p *PanickyAgentTool) ProviderOptions() fantasy.ProviderOptions {\n\treturn fantasy.ProviderOptions{}\n}\n\n// SetProviderOptions sets provider options (no-op for test)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetProviderOptions_373": {
+      "name": "SetProviderOptions",
+      "type": "method",
+      "start_line": 373,
+      "end_line": 375,
+      "content_hash": "3c475b531ef7f05a2fa4a68ca551468aa0f632f1",
+      "content": "func (p *PanickyAgentTool) SetProviderOptions(opts fantasy.ProviderOptions) {\n\t// No-op for test tool\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

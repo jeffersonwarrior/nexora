@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/cerebras_test.go",
+  "file_hash": "9d7cee34344d16a097f765234e3a00bb47e12d52",
+  "updated_at": "2025-12-26T17:34:24.952085",
+  "symbols": {
+    "function_TestCerebrasProvider_11": {
+      "name": "TestCerebrasProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 103,
+      "content_hash": "f595f97f1327d455cb095ce326f51f2e4e757ee3",
+      "content": "func TestCerebrasProvider(t *testing.T) {\n\tt.Run(\"creates provider with correct basic info\", func(t *testing.T) {\n\t\tprovider := CerebrasProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.Equal(t, \"cerebras\", string(provider.ID))\n\t\tassert.Equal(t, \"Cerebras\", provider.Name)\n\t\tassert.Equal(t, \"openai-compat\", string(provider.Type))\n\t\tassert.Equal(t, \"$CEREBRAS_API_KEY\", provider.APIKey)\n\t\tassert.Equal(t, \"https://api.cerebras.ai/v1\", provider.APIEndpoint)\n\t})\n\n\tt.Run(\"creates provider with multiple model types\", func(t *testing.T) {\n\t\tprovider := CerebrasProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\trequire.Len(t, provider.Models, 6)\n\t\tassert.Equal(t, \"zai-glm-4.6\", provider.DefaultLargeModelID)\n\t\tassert.Equal(t, \"llama3.1-8b\", provider.DefaultSmallModelID)\n\t})\n\n\tt.Run(\"does not create if already exists\", func(t *testing.T) {\n\t\texistingProvider := catwalk.Provider{ID: \"cerebras\"}\n\t\tprovider := CerebrasProvider([]catwalk.Provider{existingProvider})\n\n\t\tassert.Equal(t, \"\", string(provider.ID))\n\t})\n\n\tt.Run(\"has gpt-oss-120b ultra-fast model\", func(t *testing.T) {\n\t\tprovider := CerebrasProvider([]catwalk.Provider{})\n\n\t\tvar gptModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"gpt-oss-120b\" {\n\t\t\t\tgptModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, gptModel)\n\t\tassert.Equal(t, \"GPT OSS 120B\", gptModel.Name)\n\t\tassert.Equal(t, 0.35, gptModel.CostPer1MIn)\n\t\tassert.Equal(t, 0.75, gptModel.CostPer1MOut)\n\t})\n\n\tt.Run(\"has llama-3.3-70b reasoning model\", func(t *testing.T) {\n\t\tprovider := CerebrasProvider([]catwalk.Provider{})\n\n\t\tvar llamaModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"llama-3.3-70b\" {\n\t\t\t\tllamaModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, llamaModel)\n\t\tassert.True(t, llamaModel.CanReason)\n\t\tassert.Equal(t, int64(128000), llamaModel.ContextWindow)\n\t})\n\n\tt.Run(\"has qwen-3-235b-a22b-instruct-2507 large model with long context\", func(t *testing.T) {\n\t\tprovider := CerebrasProvider([]catwalk.Provider{})\n\n\t\tvar qwenModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"qwen-3-235b-a22b-instruct-2507\" {\n\t\t\t\tqwenModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, qwenModel)\n\t\tassert.Equal(t, int64(262144), qwenModel.ContextWindow)\n\t\tassert.True(t, qwenModel.CanReason)\n\t})\n\n\tt.Run(\"has zai-glm-4.6 with vision support\", func(t *testing.T) {\n\t\tprovider := CerebrasProvider([]catwalk.Provider{})\n\n\t\tvar glmModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"zai-glm-4.6\" {\n\t\t\t\tglmModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, glmModel)\n\t\tassert.True(t, glmModel.SupportsImages)\n\t\tassert.Equal(t, 0.6, glmModel.CostPer1MIn)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

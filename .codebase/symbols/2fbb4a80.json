@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/util/dedup.rs",
+  "file_hash": "87759f889b9518e3038fbc9a057a1e80e86d57c0",
+  "updated_at": "2025-12-26T17:34:20.092777",
+  "symbols": {
+    "struct_Dedup_6": {
+      "name": "Dedup",
+      "type": "struct",
+      "start_line": 6,
+      "end_line": 10,
+      "content_hash": "fbf635efcfb89805630f5ee853fd2910eb8896cd",
+      "content": "pub struct Dedup<'arena, I> {\n    seen: bumpalo::collections::Vec<'arena, u128>,\n    iter: I,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_11": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 11,
+      "end_line": 16,
+      "content_hash": "f9337a9fc82c3b6bfc33fe4064593ab016f630b8",
+      "content": "impl<'arena, I> Iterator for Dedup<'arena, I>\nwhere\n    I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n{\n    type Item = I::Item;\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_next_17": {
+      "name": "next",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 34,
+      "content_hash": "933d516f48acea1be5daa6e6ca70bc04c3a9ae55",
+      "content": "    fn next(&mut self) -> Option<Self::Item> {\n        match self.iter.next() {\n            Some(item) => match item {\n                Ok(item) => {\n                    if !self.seen.contains(&item.id()) {\n                        self.seen.push(item.id());\n                        Some(Ok(item))\n                    } else {\n                        self.next()\n                    }\n                }\n                _ => Some(item),\n            },\n            None => None,\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_DedupAdapter_35": {
+      "name": "DedupAdapter",
+      "type": "trait",
+      "start_line": 35,
+      "end_line": 36,
+      "content_hash": "49abd1c7b2393e04f87a8f804b1b81e14f6b4156",
+      "content": "pub trait DedupAdapter<'db, 'arena, 'txn>: Iterator {\n    /// Dedup returns an iterator that will return unique items when collected",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_dedup_37": {
+      "name": "dedup",
+      "type": "method",
+      "start_line": 37,
+      "end_line": 42,
+      "content_hash": "1d54ba0299dc919a48325880fd4d4eb686ed0d9d",
+      "content": "    fn dedup(\n        self,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_43": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 43,
+      "end_line": 49,
+      "content_hash": "eaba943bb6119b0594f40f5a563cecaae8f6e5c8",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    DedupAdapter<'db, 'arena, 'txn> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_dedup_50": {
+      "name": "dedup",
+      "type": "method",
+      "start_line": 50,
+      "end_line": 55,
+      "content_hash": "1d54ba0299dc919a48325880fd4d4eb686ed0d9d",
+      "content": "    fn dedup(\n        self,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_56": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 56,
+      "end_line": 70,
+      "content_hash": "a2aaf05c0853efedaf0541bc3d7b72f96cfdca45",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        {\n            RoTraversalIterator {\n                arena: self.arena,\n                storage: self.storage,\n                txn: self.txn,\n                inner: Dedup {\n                    iter: self.inner,\n                    seen: bumpalo::collections::Vec::new_in(self.arena),\n                },\n            }\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

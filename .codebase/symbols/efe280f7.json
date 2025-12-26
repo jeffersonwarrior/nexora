@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/claude/method.go",
+  "file_hash": "d2face86063946d1f223726da3ae4d7dbf16fc69",
+  "updated_at": "2025-12-26T17:34:24.173799",
+  "symbols": {
+    "struct_AuthMethodChooser_17": {
+      "name": "AuthMethodChooser",
+      "type": "struct",
+      "start_line": 17,
+      "end_line": 22,
+      "content_hash": "1072ec0e7f735a79c02a21576e17d71786767844",
+      "content": "type AuthMethodChooser struct {\n\tState        AuthMethod\n\twidth        int\n\tisOnboarding bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAuthMethodChooser_23": {
+      "name": "NewAuthMethodChooser",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 28,
+      "content_hash": "716f18cfb62b968911cf55d18c4f24dbf8c32a63",
+      "content": "func NewAuthMethodChooser() *AuthMethodChooser {\n\treturn &AuthMethodChooser{\n\t\tState: AuthMethodOAuth2,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_29": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 32,
+      "content_hash": "72f9a0972b84ccf2c3ec5d01d7f24830744728ee",
+      "content": "func (a *AuthMethodChooser) Init() tea.Cmd {\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_33": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 33,
+      "end_line": 36,
+      "content_hash": "a45f3cf3d03a63b0300cd632edbe8fa1578b56c0",
+      "content": "func (a *AuthMethodChooser) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\treturn a, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_37": {
+      "name": "View",
+      "type": "method",
+      "start_line": 37,
+      "end_line": 95,
+      "content_hash": "9fdc6ee14862875be592de832c750dccff1bd533",
+      "content": "func (a *AuthMethodChooser) View() string {\n\tt := styles.CurrentTheme()\n\n\twhite := lipgloss.NewStyle().Foreground(t.White)\n\tprimary := lipgloss.NewStyle().Foreground(t.Primary)\n\tsuccess := lipgloss.NewStyle().Foreground(t.Success)\n\n\ttitleStyle := white\n\tif a.isOnboarding {\n\t\ttitleStyle = primary\n\t}\n\n\tquestion := lipgloss.\n\t\tNewStyle().\n\t\tMargin(0, 1).\n\t\tRender(titleStyle.Render(\"How would you like to authenticate with \") + success.Render(\"Anthropic\") + titleStyle.Render(\"?\"))\n\n\tsquareWidth := (a.width - 2) / 2\n\tsquareHeight := squareWidth / 3\n\tif isOdd(squareHeight) {\n\t\tsquareHeight++\n\t}\n\n\tsquare := lipgloss.NewStyle().\n\t\tWidth(squareWidth).\n\t\tHeight(squareHeight).\n\t\tMargin(0, 0).\n\t\tBorder(lipgloss.RoundedBorder())\n\n\tsquareText := lipgloss.NewStyle().\n\t\tWidth(squareWidth - 2).\n\t\tHeight(squareHeight).\n\t\tAlign(lipgloss.Center).\n\t\tAlignVertical(lipgloss.Center)\n\n\toauthBorder := t.AuthBorderSelected\n\toauthText := t.AuthTextSelected\n\tapiKeyBorder := t.AuthBorderUnselected\n\tapiKeyText := t.AuthTextUnselected\n\n\tif a.State == AuthMethodAPIKey {\n\t\toauthBorder, apiKeyBorder = apiKeyBorder, oauthBorder\n\t\toauthText, apiKeyText = apiKeyText, oauthText\n\t}\n\n\treturn lipgloss.JoinVertical(\n\t\tlipgloss.Left,\n\t\tquestion,\n\t\t\"\",\n\t\tlipgloss.JoinHorizontal(\n\t\t\tlipgloss.Center,\n\t\t\tsquare.MarginLeft(1).\n\t\t\t\tInherit(oauthBorder).Render(squareText.Inherit(oauthText).Render(\"Claude Account\\nwith Subscription\")),\n\t\t\tsquare.MarginRight(1).\n\t\t\t\tInherit(apiKeyBorder).Render(squareText.Inherit(apiKeyText).Render(\"API Key\")),\n\t\t),\n\t)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetDefaults_96": {
+      "name": "SetDefaults",
+      "type": "method",
+      "start_line": 96,
+      "end_line": 99,
+      "content_hash": "43e888242513159e939126d350674669a43850ee",
+      "content": "func (a *AuthMethodChooser) SetDefaults() {\n\ta.State = AuthMethodOAuth2\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetWidth_100": {
+      "name": "SetWidth",
+      "type": "method",
+      "start_line": 100,
+      "end_line": 103,
+      "content_hash": "30f3dd82473af8f0a8f7d77258d172044d64178f",
+      "content": "func (a *AuthMethodChooser) SetWidth(w int) {\n\ta.width = w\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ToggleChoice_104": {
+      "name": "ToggleChoice",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 112,
+      "content_hash": "f08bdbaf6b34331f3613746e0675ae06f326bab3",
+      "content": "func (a *AuthMethodChooser) ToggleChoice() {\n\tswitch a.State {\n\tcase AuthMethodAPIKey:\n\t\ta.State = AuthMethodOAuth2\n\tcase AuthMethodOAuth2:\n\t\ta.State = AuthMethodAPIKey\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isOdd_113": {
+      "name": "isOdd",
+      "type": "function",
+      "start_line": 113,
+      "end_line": 115,
+      "content_hash": "e41f47718562ab85fb50c8e0efec499bbb24164a",
+      "content": "func isOdd(n int) bool {\n\treturn n%2 != 0\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

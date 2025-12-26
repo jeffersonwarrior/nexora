@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/bin/cleanup-duplicates.ts",
+  "file_hash": "93fdca542fe5bf6f56c06d0d230f3a72613d55f8",
+  "updated_at": "2025-12-26T17:34:24.287830",
+  "symbols": {
+    "function_main_9": {
+      "name": "main",
+      "type": "function",
+      "start_line": 9,
+      "end_line": 93,
+      "content_hash": "11ba37ad8edb1d1faf215d1a0af8da51a07a2361",
+      "content": "function main() {\n  console.log('Starting duplicate cleanup...\\n');\n\n  const db = new SessionStore();\n\n  // Find and delete duplicate observations\n  console.log('Finding duplicate observations...');\n\n  const duplicateObsQuery = db['db'].prepare(`\n    SELECT sdk_session_id, title, subtitle, type, COUNT(*) as count, GROUP_CONCAT(id) as ids\n    FROM observations\n    GROUP BY sdk_session_id, title, subtitle, type\n    HAVING count > 1\n  `);\n\n  const duplicateObs = duplicateObsQuery.all() as Array<{\n    sdk_session_id: string;\n    title: string;\n    subtitle: string;\n    type: string;\n    count: number;\n    ids: string;\n  }>;\n\n  console.log(`Found ${duplicateObs.length} duplicate observation groups\\n`);\n\n  let deletedObs = 0;\n  for (const dup of duplicateObs) {\n    const ids = dup.ids.split(',').map(id => parseInt(id, 10));\n    const keepId = Math.min(...ids);\n    const deleteIds = ids.filter(id => id !== keepId);\n\n    console.log(`Observation \"${dup.title.substring(0, 60)}...\"`);\n    console.log(`  Found ${dup.count} copies, keeping ID ${keepId}, deleting ${deleteIds.length} duplicates`);\n\n    const deleteStmt = db['db'].prepare(`DELETE FROM observations WHERE id IN (${deleteIds.join(',')})`);\n    deleteStmt.run();\n    deletedObs += deleteIds.length;\n  }\n\n  // Find and delete duplicate summaries\n  console.log('\\n\\nFinding duplicate summaries...');\n\n  const duplicateSumQuery = db['db'].prepare(`\n    SELECT sdk_session_id, request, completed, learned, COUNT(*) as count, GROUP_CONCAT(id) as ids\n    FROM session_summaries\n    GROUP BY sdk_session_id, request, completed, learned\n    HAVING count > 1\n  `);\n\n  const duplicateSum = duplicateSumQuery.all() as Array<{\n    sdk_session_id: string;\n    request: string;\n    completed: string;\n    learned: string;\n    count: number;\n    ids: string;\n  }>;\n\n  console.log(`Found ${duplicateSum.length} duplicate summary groups\\n`);\n\n  let deletedSum = 0;\n  for (const dup of duplicateSum) {\n    const ids = dup.ids.split(',').map(id => parseInt(id, 10));\n    const keepId = Math.min(...ids);\n    const deleteIds = ids.filter(id => id !== keepId);\n\n    console.log(`Summary \"${dup.request.substring(0, 60)}...\"`);\n    console.log(`  Found ${dup.count} copies, keeping ID ${keepId}, deleting ${deleteIds.length} duplicates`);\n\n    const deleteStmt = db['db'].prepare(`DELETE FROM session_summaries WHERE id IN (${deleteIds.join(',')})`);\n    deleteStmt.run();\n    deletedSum += deleteIds.length;\n  }\n\n  db.close();\n\n  console.log('\\n' + '='.repeat(60));\n  console.log('Cleanup Complete!');\n  console.log('='.repeat(60));\n  console.log(`\ud83d\uddd1\ufe0f  Deleted: ${deletedObs} duplicate observations`);\n  console.log(`\ud83d\uddd1\ufe0f  Deleted: ${deletedSum} duplicate summaries`);\n  console.log(`\ud83d\uddd1\ufe0f  Total: ${deletedObs + deletedSum} duplicates removed`);\n  console.log('='.repeat(60));\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/testutil/testingutil.go",
+  "file_hash": "1276eb4a541eaa8c582625afeadbcb3a1e4f0b3f",
+  "updated_at": "2025-12-26T17:34:21.022592",
+  "symbols": {
+    "function_RunWithTimeout_22": {
+      "name": "RunWithTimeout",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 46,
+      "content_hash": "5053e7e621fb4956e594a0087743a25c357404d1",
+      "content": "func RunWithTimeout(t *testing.T, timeout time.Duration, testFunc func(ctx context.Context)) {\n\tt.Helper()\n\n\tctx, cancel := context.WithTimeout(context.Background(), timeout)\n\tdefer cancel()\n\n\tdone := make(chan struct{})\n\n\t// Run the test in a goroutine\n\tgo func() {\n\t\tdefer close(done)\n\t\ttestFunc(ctx)\n\t}()\n\n\tselect {\n\tcase <-done:\n\t\t// Test completed normally\n\tcase <-ctx.Done():\n\t\t// Test timed out\n\t\tt.Fatalf(\"test timed out after %v\", timeout)\n\t}\n}\n\n// RunWithTimeoutAndDeadline runs a test with both a timeout and an explicit deadline\n// This is useful for tests that should complete within a specific time window",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RunWithTimeoutAndDeadline_47": {
+      "name": "RunWithTimeoutAndDeadline",
+      "type": "function",
+      "start_line": 47,
+      "end_line": 81,
+      "content_hash": "b7deaf45abe51a55f4be14a7a79536db4f316d59",
+      "content": "func RunWithTimeoutAndDeadline(t *testing.T, timeout time.Duration, deadline time.Time, testFunc func(ctx context.Context)) {\n\tt.Helper()\n\n\tctx, cancel := context.WithDeadline(context.Background(), deadline)\n\tdefer cancel()\n\n\tif timeout > 0 {\n\t\tvar cancelTimeout context.CancelFunc\n\t\tctx, cancelTimeout = context.WithTimeout(ctx, timeout)\n\t\tdefer cancelTimeout()\n\t}\n\n\tdone := make(chan struct{})\n\n\t// Run the test in a goroutine\n\tgo func() {\n\t\tdefer close(done)\n\t\ttestFunc(ctx)\n\t}()\n\n\tselect {\n\tcase <-done:\n\t\t// Test completed normally\n\tcase <-ctx.Done():\n\t\t// Test timed out or missed deadline\n\t\tif ctx.Err() == context.DeadlineExceeded {\n\t\t\tt.Fatalf(\"test missed deadline %v\", deadline)\n\t\t} else {\n\t\t\tt.Fatalf(\"test timed out after %v\", timeout)\n\t\t}\n\t}\n}\n\n// TimeoutEnvVar returns the timeout duration from an environment variable\n// This allows customizing test timeouts without changing code",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TimeoutEnvVar_82": {
+      "name": "TimeoutEnvVar",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 89,
+      "content_hash": "850e38ca63c82bc750f5803ac4eefbc80b8066d4",
+      "content": "func TimeoutEnvVar(envVar string, defaultTimeout time.Duration) time.Duration {\n\tif s := os.Getenv(envVar); s != \"\" {\n\t\tif d, err := time.ParseDuration(s); err == nil {\n\t\t\treturn d\n\t\t}\n\t}\n\treturn defaultTimeout\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

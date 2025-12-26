@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/aiops/protocol.go",
+  "file_hash": "49ae875e63ab13abd1155e4efb571d15f4796bd5",
+  "updated_at": "2025-12-26T17:34:20.523925",
+  "symbols": {
+    "struct_ErrorResponse_9": {
+      "name": "ErrorResponse",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 13,
+      "content_hash": "c4fcb27fafab057a20886f4ca9c2070adab3b831",
+      "content": "type ErrorResponse struct {\n\tError string `json:\"error\"`\n}\n\n// ResolveEditRequest is the request body for /resolve-edit.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ResolveEditRequest_14": {
+      "name": "ResolveEditRequest",
+      "type": "struct",
+      "start_line": 14,
+      "end_line": 20,
+      "content_hash": "c349adaf367a17d7cf63d792d059cf00835d5b48",
+      "content": "type ResolveEditRequest struct {\n\tFileContent string `json:\"file_content\"`\n\tOldString   string `json:\"old_string\"`\n\tNewString   string `json:\"new_string\"`\n}\n\n// DetectLoopRequest is the request body for /detect-loop.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DetectLoopRequest_21": {
+      "name": "DetectLoopRequest",
+      "type": "struct",
+      "start_line": 21,
+      "end_line": 25,
+      "content_hash": "9917210777cb6fc05515e6be1248476fb7eef41a",
+      "content": "type DetectLoopRequest struct {\n\tCalls []ToolCall `json:\"calls\"`\n}\n\n// DetectDriftRequest is the request body for /detect-drift.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DetectDriftRequest_26": {
+      "name": "DetectDriftRequest",
+      "type": "struct",
+      "start_line": 26,
+      "end_line": 31,
+      "content_hash": "fcd4c640cef4947b71f689db7c223e870ccf6734",
+      "content": "type DetectDriftRequest struct {\n\tTask          string   `json:\"task\"`\n\tRecentActions []Action `json:\"recent_actions\"`\n}\n\n// CompressRequest is the request body for /compress.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CompressRequest_32": {
+      "name": "CompressRequest",
+      "type": "struct",
+      "start_line": 32,
+      "end_line": 37,
+      "content_hash": "85dcbb8bb8f6beeb11efa561580a7e3986d3eb78",
+      "content": "type CompressRequest struct {\n\tContent   string `json:\"content\"`\n\tMaxTokens int    `json:\"max_tokens\"`\n}\n\n// CompressResponse is the response body for /compress.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CompressResponse_38": {
+      "name": "CompressResponse",
+      "type": "struct",
+      "start_line": 38,
+      "end_line": 43,
+      "content_hash": "7a5e652a8c92ddac33e40b021ab4859505c820f2",
+      "content": "type CompressResponse struct {\n\tCompressed string `json:\"compressed\"`\n\tTokenCount int    `json:\"token_count,omitempty\"`\n}\n\n// ValidateToolCallRequest is the request body for /validate-tool.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ValidateToolCallRequest_44": {
+      "name": "ValidateToolCallRequest",
+      "type": "struct",
+      "start_line": 44,
+      "end_line": 49,
+      "content_hash": "e73f9f3c1ba885cc8eb6a373ef0c3976e5f3e4dc",
+      "content": "type ValidateToolCallRequest struct {\n\tTool   string         `json:\"tool\"`\n\tParams map[string]any `json:\"params\"`\n}\n\n// DetectPatternRequest is the request body for /scriptor/detect-pattern.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_DetectPatternRequest_50": {
+      "name": "DetectPatternRequest",
+      "type": "struct",
+      "start_line": 50,
+      "end_line": 52,
+      "content_hash": "60c7e8173062574174fd37ac630d5d8189d24241",
+      "content": "type DetectPatternRequest struct {\n\tCalls []ToolCall `json:\"calls\"`\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

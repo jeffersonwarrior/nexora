@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/internal/shell/comparison_test.go",
+  "file_hash": "44e124eb09534c55f71ba01cc8a01d170251b5f4",
+  "updated_at": "2025-12-26T17:34:23.439795",
+  "symbols": {
+    "function_TestShellPerformanceComparison_10": {
+      "name": "TestShellPerformanceComparison",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 27,
+      "content_hash": "4cc91c8284a0653520fed255b8e1e52eeaaf4552",
+      "content": "func TestShellPerformanceComparison(t *testing.T) {\n\tshell := NewShell(&Options{WorkingDir: t.TempDir()})\n\n\t// Test quick command\n\tstart := time.Now()\n\tstdout, stderr, err := shell.Exec(t.Context(), \"echo 'hello'\")\n\texitCode := ExitCode(err)\n\tduration := time.Since(start)\n\n\trequire.NoError(t, err)\n\trequire.Equal(t, 0, exitCode)\n\trequire.Contains(t, stdout, \"hello\")\n\trequire.Empty(t, stderr)\n\n\tt.Logf(\"Quick command took: %v\", duration)\n}\n\n// Benchmark CPU usage during polling",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_BenchmarkShellPolling_28": {
+      "name": "BenchmarkShellPolling",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 41,
+      "content_hash": "39400a5a9e7ce462476357c3d7152cba3ae113f5",
+      "content": "func BenchmarkShellPolling(b *testing.B) {\n\tshell := NewShell(&Options{WorkingDir: b.TempDir()})\n\n\tb.ReportAllocs()\n\n\tfor b.Loop() {\n\t\t// Use a short sleep to measure polling overhead\n\t\t_, _, err := shell.Exec(b.Context(), \"sleep 0.02\")\n\t\texitCode := ExitCode(err)\n\t\tif err != nil || exitCode != 0 {\n\t\t\tb.Fatalf(\"Command failed: %v, exit code: %d\", err, exitCode)\n\t\t}\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

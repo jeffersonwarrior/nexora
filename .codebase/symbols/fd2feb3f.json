@@ -1,0 +1,194 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/messagebus_test.go",
+  "file_hash": "7479a9649c6a22c67c4fdfabb2df0a99ae4a327d",
+  "updated_at": "2025-12-26T17:34:25.004634",
+  "symbols": {
+    "function_TestInMemoryMessageBus_NewInMemoryMessageBus_14": {
+      "name": "TestInMemoryMessageBus_NewInMemoryMessageBus",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 23,
+      "content_hash": "0f4684dc93688b864fe65f73024d123d33ec48e3",
+      "content": "func TestInMemoryMessageBus_NewInMemoryMessageBus(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\tassert.NotNil(t, bus)\n\tassert.Empty(t, bus.GetStats().Subscribers)\n\tassert.Equal(t, 0, bus.GetStats().MessagesSent)\n\tassert.Equal(t, 0, bus.GetStats().MessagesDelivered)\n\tassert.Equal(t, 0, bus.GetStats().MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_Subscribe_Unsubscribe_24": {
+      "name": "TestInMemoryMessageBus_Subscribe_Unsubscribe",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 52,
+      "content_hash": "4745848a87554225426aff5f2f110073733c9ea4",
+      "content": "func TestInMemoryMessageBus_Subscribe_Unsubscribe(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Subscribe with valid parameters\n\thandler := func(msg TeamMessage) error { return nil }\n\terr := bus.Subscribe(\"agent1\", handler)\n\trequire.NoError(t, err)\n\n\tstats := bus.GetStats()\n\tassert.Equal(t, 1, stats.Subscribers)\n\n\t// Try to subscribe again with same ID\n\terr = bus.Subscribe(\"agent1\", handler)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"already exists\")\n\n\t// Unsubscribe\n\terr = bus.Unsubscribe(\"agent1\")\n\trequire.NoError(t, err)\n\n\tstats = bus.GetStats()\n\tassert.Equal(t, 0, stats.Subscribers)\n\n\t// Try to unsubscribe non-existent subscriber\n\terr = bus.Unsubscribe(\"nonexistent\")\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"not found\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_SubscribeValidation_53": {
+      "name": "TestInMemoryMessageBus_SubscribeValidation",
+      "type": "function",
+      "start_line": 53,
+      "end_line": 67,
+      "content_hash": "da8825919785a6e81a48bb66dc9a397c92d85f05",
+      "content": "func TestInMemoryMessageBus_SubscribeValidation(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\thandler := func(msg TeamMessage) error { return nil }\n\n\t// Empty ID should fail\n\terr := bus.Subscribe(\"\", handler)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"subscriber ID cannot be empty\")\n\n\t// Nil handler should fail\n\terr = bus.Subscribe(\"agent1\", nil)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"handler cannot be nil\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_Send_Success_68": {
+      "name": "TestInMemoryMessageBus_Send_Success",
+      "type": "function",
+      "start_line": 68,
+      "end_line": 107,
+      "content_hash": "a5a849055d16d963cc8084915ab3b7ce7ddc8df3",
+      "content": "func TestInMemoryMessageBus_Send_Success(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Setup receiver\n\tvar receivedMsg TeamMessage\n\tvar receivedOnce sync.Once\n\thandler := func(msg TeamMessage) error {\n\t\treceivedOnce.Do(func() {\n\t\t\treceivedMsg = msg\n\t\t})\n\t\treturn nil\n\t}\n\n\terr := bus.Subscribe(\"receiver\", handler)\n\trequire.NoError(t, err)\n\n\t// Send message\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"receiver\", \"Hello!\")\n\n\terr = bus.Send(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Wait for async delivery\n\ttime.Sleep(10 * time.Millisecond)\n\n\t// Verify message was received\n\tassert.Equal(t, msg.ID, receivedMsg.ID)\n\tassert.Equal(t, msg.From, receivedMsg.From)\n\tassert.Equal(t, msg.To, receivedMsg.To)\n\tassert.Equal(t, msg.Content, receivedMsg.Content)\n\tassert.Equal(t, msg.Type, receivedMsg.Type)\n\n\t// Verify stats\n\tstats := bus.GetStats()\n\tassert.Equal(t, 1, stats.MessagesSent)\n\tassert.Equal(t, 1, stats.MessagesDelivered)\n\tassert.Equal(t, 0, stats.MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_SendRecipientNotFound_108": {
+      "name": "TestInMemoryMessageBus_SendRecipientNotFound",
+      "type": "function",
+      "start_line": 108,
+      "end_line": 125,
+      "content_hash": "dc5a5fcc7cc9af573f98a3d3cc8f46cd2bd84113",
+      "content": "func TestInMemoryMessageBus_SendRecipientNotFound(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Send message to non-existent recipient\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"nonexistent\", \"Hello!\")\n\n\terr := bus.Send(ctx, msg)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"not found\")\n\n\t// Verify stats\n\tstats := bus.GetStats()\n\tassert.Equal(t, 1, stats.MessagesSent)\n\tassert.Equal(t, 0, stats.MessagesDelivered)\n\tassert.Equal(t, 1, stats.MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_SendValidation_126": {
+      "name": "TestInMemoryMessageBus_SendValidation",
+      "type": "function",
+      "start_line": 126,
+      "end_line": 142,
+      "content_hash": "bf64ebba79d44b6bf8500aea80cfee547e6e7c5d",
+      "content": "func TestInMemoryMessageBus_SendValidation(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\tctx := context.Background()\n\n\t// Empty sender should fail\n\tmsg := NewTeamMessage(MessageTypeText, \"\", \"receiver\", \"Hello!\")\n\terr := bus.Send(ctx, msg)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"sender cannot be empty\")\n\n\t// Empty recipient for direct message should fail\n\tmsg = NewTeamMessage(MessageTypeText, \"sender\", \"\", \"Hello!\")\n\terr = bus.Send(ctx, msg)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"recipient cannot be empty\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_Broadcast_Success_143": {
+      "name": "TestInMemoryMessageBus_Broadcast_Success",
+      "type": "function",
+      "start_line": 143,
+      "end_line": 186,
+      "content_hash": "2ad60fc8fba788e000f38a68eff9c88f34a15662",
+      "content": "func TestInMemoryMessageBus_Broadcast_Success(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Setup multiple receivers\n\tvar receivedMsgs []TeamMessage\n\tvar mu sync.Mutex\n\n\thandler := func(msg TeamMessage) error {\n\t\tmu.Lock()\n\t\tdefer mu.Unlock()\n\t\treceivedMsgs = append(receivedMsgs, msg)\n\t\treturn nil\n\t}\n\n\t// Subscribe three agents (including the sender)\n\terr := bus.Subscribe(\"sender\", handler)\n\trequire.NoError(t, err)\n\terr = bus.Subscribe(\"receiver1\", handler)\n\trequire.NoError(t, err)\n\terr = bus.Subscribe(\"receiver2\", handler)\n\trequire.NoError(t, err)\n\n\t// Broadcast message\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"\", \"Broadcast message\")\n\n\terr = bus.Broadcast(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Wait for async delivery\n\ttime.Sleep(20 * time.Millisecond)\n\n\t// Verify message was received by non-senders only\n\tmu.Lock()\n\tassert.Len(t, receivedMsgs, 2) // Should not be received by sender\n\tmu.Unlock()\n\n\t// Verify stats\n\tstats := bus.GetStats()\n\tassert.Equal(t, 2, stats.MessagesSent) // Sent to 2 non-senders\n\tassert.Equal(t, 2, stats.MessagesDelivered)\n\tassert.Equal(t, 0, stats.MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_Broadcast_NoRecipients_187": {
+      "name": "TestInMemoryMessageBus_Broadcast_NoRecipients",
+      "type": "function",
+      "start_line": 187,
+      "end_line": 198,
+      "content_hash": "6c621de757df0d9ed9a24f8f3cc9b9d9017aaa35",
+      "content": "func TestInMemoryMessageBus_Broadcast_NoRecipients(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Broadcast with no subscribers\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"\", \"Broadcast message\")\n\n\terr := bus.Broadcast(ctx, msg)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"no recipients available\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_Broadcast_OnlySender_199": {
+      "name": "TestInMemoryMessageBus_Broadcast_OnlySender",
+      "type": "function",
+      "start_line": 199,
+      "end_line": 215,
+      "content_hash": "eb602a8de25f6f7e940f2d2bd02794c3ef5a145f",
+      "content": "func TestInMemoryMessageBus_Broadcast_OnlySender(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Subscribe only the sender\n\thandler := func(msg TeamMessage) error { return nil }\n\terr := bus.Subscribe(\"sender\", handler)\n\trequire.NoError(t, err)\n\n\t// Broadcast should fail since only sender is subscribed\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"\", \"Broadcast message\")\n\n\terr = bus.Broadcast(ctx, msg)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"no recipients available\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_ContextCancellation_216": {
+      "name": "TestInMemoryMessageBus_ContextCancellation",
+      "type": "function",
+      "start_line": 216,
+      "end_line": 246,
+      "content_hash": "ef0b5d5df82ab82220c0368752affbbadb1af53e",
+      "content": "func TestInMemoryMessageBus_ContextCancellation(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Setup slow handler that checks context\n\tblockingHandler := func(msg TeamMessage) error {\n\t\t// Just simulate a slow operation\n\t\ttime.Sleep(50 * time.Millisecond)\n\t\treturn nil\n\t}\n\n\terr := bus.Subscribe(\"receiver\", blockingHandler)\n\trequire.NoError(t, err)\n\n\t// Send with cancelled context\n\tctx, cancel := context.WithCancel(context.Background())\n\tcancel() // Cancel immediately\n\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"receiver\", \"Hello!\")\n\terr = bus.Send(ctx, msg)\n\trequire.NoError(t, err) // Send itself won't fail, but delivery will\n\n\t// Wait for async delivery\n\ttime.Sleep(50 * time.Millisecond)\n\n\t// Verify stats show failure\n\tstats := bus.GetStats()\n\tassert.Equal(t, 1, stats.MessagesSent)\n\tassert.Equal(t, 0, stats.MessagesDelivered)\n\tassert.Equal(t, 1, stats.MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_HandlerError_247": {
+      "name": "TestInMemoryMessageBus_HandlerError",
+      "type": "function",
+      "start_line": 247,
+      "end_line": 274,
+      "content_hash": "820dbe094b656551bc47a65b3110722014ead42d",
+      "content": "func TestInMemoryMessageBus_HandlerError(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Setup handler that returns an error\n\terrorHandler := func(msg TeamMessage) error {\n\t\treturn assert.AnError\n\t}\n\n\terr := bus.Subscribe(\"receiver\", errorHandler)\n\trequire.NoError(t, err)\n\n\t// Send message\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"receiver\", \"Hello!\")\n\n\terr = bus.Send(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Wait for async delivery\n\ttime.Sleep(10 * time.Millisecond)\n\n\t// Verify stats show failure\n\tstats := bus.GetStats()\n\tassert.Equal(t, 1, stats.MessagesSent)\n\tassert.Equal(t, 0, stats.MessagesDelivered)\n\tassert.Equal(t, 1, stats.MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_Shutdown_275": {
+      "name": "TestInMemoryMessageBus_Shutdown",
+      "type": "function",
+      "start_line": 275,
+      "end_line": 307,
+      "content_hash": "cdab59af5de7d899c7945dd2e7eed2d434e88a14",
+      "content": "func TestInMemoryMessageBus_Shutdown(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Subscribe some handlers\n\thandler := func(msg TeamMessage) error { return nil }\n\n\terr := bus.Subscribe(\"agent1\", handler)\n\trequire.NoError(t, err)\n\terr = bus.Subscribe(\"agent2\", handler)\n\trequire.NoError(t, err)\n\n\t// Verify subscribers\n\tstats := bus.GetStats()\n\tassert.Equal(t, 2, stats.Subscribers)\n\n\t// Shutdown\n\tbus.Shutdown()\n\n\t// Verify subscribers are cleared\n\tstats = bus.GetStats()\n\tassert.Equal(t, 0, stats.Subscribers)\n\n\t// Verify subsequent operations fail\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"receiver\", \"Hello!\")\n\n\terr = bus.Send(ctx, msg)\n\tassert.Error(t, err)\n\n\terr = bus.Broadcast(ctx, msg)\n\tassert.Error(t, err)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_ConcurrentOperations_308": {
+      "name": "TestInMemoryMessageBus_ConcurrentOperations",
+      "type": "function",
+      "start_line": 308,
+      "end_line": 354,
+      "content_hash": "b9c7127bd5e6cd075f830b55dacc9c2f0eb97900",
+      "content": "func TestInMemoryMessageBus_ConcurrentOperations(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Setup multiple concurrent subscribers\n\tnumSubscribers := 10\n\tnumMessages := 5\n\n\tvar wg sync.WaitGroup\n\n\t// Subscribe concurrently\n\tfor i := 0; i < numSubscribers; i++ {\n\t\twg.Add(1)\n\t\tgo func(id int) {\n\t\t\tdefer wg.Done()\n\t\t\thandler := func(msg TeamMessage) error { return nil }\n\t\t\tagentID := fmt.Sprintf(\"agent%d\", id)\n\t\t\tbus.Subscribe(agentID, handler)\n\t\t}(i)\n\t}\n\twg.Wait()\n\n\t// Verify all subscribers are registered\n\tstats := bus.GetStats()\n\tassert.Equal(t, numSubscribers, stats.Subscribers)\n\n\t// Send concurrent messages\n\tctx := context.Background()\n\tfor i := 0; i < numMessages; i++ {\n\t\twg.Add(1)\n\t\tgo func(i int) {\n\t\t\tdefer wg.Done()\n\t\t\tfrom := fmt.Sprintf(\"sender%d\", i)\n\t\t\tto := fmt.Sprintf(\"agent%d\", i%numSubscribers)\n\t\t\tmsg := NewTeamMessage(MessageTypeText, from, to, fmt.Sprintf(\"Message %d\", i))\n\t\t\tbus.Send(ctx, msg)\n\t\t}(i)\n\t}\n\twg.Wait()\n\n\t// Wait for async delivery\n\ttime.Sleep(50 * time.Millisecond)\n\n\t// Verify messages were processed\n\tstats = bus.GetStats()\n\tassert.Equal(t, numMessages, stats.MessagesSent)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMessageBus_GetStats_355": {
+      "name": "TestInMemoryMessageBus_GetStats",
+      "type": "function",
+      "start_line": 355,
+      "end_line": 388,
+      "content_hash": "5be686ba7d435cf634f758b42582914f1eaaf335",
+      "content": "func TestInMemoryMessageBus_GetStats(t *testing.T) {\n\tbus := NewInMemoryMessageBus()\n\n\t// Initial stats\n\tstats := bus.GetStats()\n\tassert.Equal(t, 0, stats.Subscribers)\n\tassert.Equal(t, 0, stats.MessagesSent)\n\tassert.Equal(t, 0, stats.MessagesDelivered)\n\tassert.Equal(t, 0, stats.MessagesFailed)\n\tassert.True(t, stats.Uptime >= 0)\n\n\t// Add subscriber\n\thandler := func(msg TeamMessage) error { return nil }\n\terr := bus.Subscribe(\"agent1\", handler)\n\trequire.NoError(t, err)\n\n\tstats = bus.GetStats()\n\tassert.Equal(t, 1, stats.Subscribers)\n\n\t// Send message\n\tctx := context.Background()\n\tmsg := NewTeamMessage(MessageTypeText, \"sender\", \"agent1\", \"Hello!\")\n\terr = bus.Send(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Wait for async delivery\n\ttime.Sleep(10 * time.Millisecond)\n\n\tstats = bus.GetStats()\n\tassert.Equal(t, 1, stats.MessagesSent)\n\tassert.Equal(t, 1, stats.MessagesDelivered)\n\tassert.Equal(t, 0, stats.MessagesFailed)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewTeamMessage_389": {
+      "name": "TestNewTeamMessage",
+      "type": "function",
+      "start_line": 389,
+      "end_line": 401,
+      "content_hash": "5ad8156ac40fd08ca58cf85a855d3e170d56db02",
+      "content": "func TestNewTeamMessage(t *testing.T) {\n\tmsg := NewTeamMessage(MessageTypeText, \"agent1\", \"agent2\", \"Hello\")\n\n\tassert.NotEmpty(t, msg.ID)\n\tassert.Contains(t, msg.ID, \"agent1\")\n\tassert.Equal(t, MessageTypeText, msg.Type)\n\tassert.Equal(t, \"agent1\", msg.From)\n\tassert.Equal(t, \"agent2\", msg.To)\n\tassert.Equal(t, \"Hello\", msg.Content)\n\tassert.NotNil(t, msg.Data)\n\tassert.NotZero(t, msg.Timestamp)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTeamMessage_AddData_GetData_402": {
+      "name": "TestTeamMessage_AddData_GetData",
+      "type": "function",
+      "start_line": 402,
+      "end_line": 422,
+      "content_hash": "bfe352619bc4016bcf1b3affa6b194b2231b92dc",
+      "content": "func TestTeamMessage_AddData_GetData(t *testing.T) {\n\tmsg := NewTeamMessage(MessageTypeText, \"agent1\", \"agent2\", \"Hello\")\n\n\t// Test adding data\n\tmsg.AddData(\"key1\", \"value1\")\n\tmsg.AddData(\"key2\", 42)\n\n\t// Test getting data\n\tvalue1, exists := msg.GetData(\"key1\")\n\tassert.True(t, exists)\n\tassert.Equal(t, \"value1\", value1)\n\n\tvalue2, exists := msg.GetData(\"key2\")\n\tassert.True(t, exists)\n\tassert.Equal(t, 42, value2)\n\n\t// Test getting non-existent key\n\t_, exists = msg.GetData(\"nonexistent\")\n\tassert.False(t, exists)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMessageType_String_423": {
+      "name": "TestMessageType_String",
+      "type": "function",
+      "start_line": 423,
+      "end_line": 431,
+      "content_hash": "87e527a18b367ac839cbaf993ad073f07db72a8f",
+      "content": "func TestMessageType_String(t *testing.T) {\n\tassert.Equal(t, \"text\", MessageTypeText.String())\n\tassert.Equal(t, \"task\", MessageTypeTask.String())\n\tassert.Equal(t, \"result\", MessageTypeResult.String())\n\tassert.Equal(t, \"status\", MessageTypeStatus.String())\n\tassert.Equal(t, \"error\", MessageTypeError.String())\n\tassert.Equal(t, \"handoff\", MessageTypeHandoff.String())\n\tassert.Equal(t, \"unknown\", MessageType(999).String())\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

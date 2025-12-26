@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/shared/worker-utils.ts",
+  "file_hash": "fcb23e7354e90cfdc47ed716c688afe5944a9e01",
+  "updated_at": "2025-12-26T17:34:22.592430",
+  "symbols": {
+    "function_getWorkerPort_25": {
+      "name": "getWorkerPort",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 34,
+      "content_hash": "8321d4f3c93d3193125e39ee6e4d919669cc5029",
+      "content": "export function getWorkerPort(): number {\n  if (cachedPort !== null) {\n    return cachedPort;\n  }\n\n  const settingsPath = path.join(SettingsDefaultsManager.get('CLAUDE_MEM_DATA_DIR'), 'settings.json');\n  const settings = SettingsDefaultsManager.loadFromFile(settingsPath);\n  cachedPort = parseInt(settings.CLAUDE_MEM_WORKER_PORT, 10);\n  return cachedPort;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getWorkerHost_41": {
+      "name": "getWorkerHost",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 50,
+      "content_hash": "e294975612f090cd00726fd3b4ba943cb3d4dd0c",
+      "content": "export function getWorkerHost(): string {\n  if (cachedHost !== null) {\n    return cachedHost;\n  }\n\n  const settingsPath = path.join(SettingsDefaultsManager.get('CLAUDE_MEM_DATA_DIR'), 'settings.json');\n  const settings = SettingsDefaultsManager.loadFromFile(settingsPath);\n  cachedHost = settings.CLAUDE_MEM_WORKER_HOST;\n  return cachedHost;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_clearPortCache_56": {
+      "name": "clearPortCache",
+      "type": "function",
+      "start_line": 56,
+      "end_line": 59,
+      "content_hash": "ef3283c22e9e5a96013101aad09bb0feb89c6148",
+      "content": "export function clearPortCache(): void {\n  cachedPort = null;\n  cachedHost = null;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isWorkerHealthy_65": {
+      "name": "isWorkerHealthy",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 71,
+      "content_hash": "ac85335081797c035f589e3362acff23498a4f23",
+      "content": "async function isWorkerHealthy(): Promise<boolean> {\n  const port = getWorkerPort();\n  const response = await fetch(`http://127.0.0.1:${port}/api/readiness`, {\n    signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT_MS)\n  });\n  return response.ok;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getPluginVersion_76": {
+      "name": "getPluginVersion",
+      "type": "function",
+      "start_line": 76,
+      "end_line": 80,
+      "content_hash": "57305af485958ee6c5c91c4bbfb4b4b4a30b87d9",
+      "content": "function getPluginVersion(): string {\n  const packageJsonPath = path.join(MARKETPLACE_ROOT, 'package.json');\n  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));\n  return packageJson.version;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getWorkerVersion_85": {
+      "name": "getWorkerVersion",
+      "type": "function",
+      "start_line": 85,
+      "end_line": 95,
+      "content_hash": "c749454e85025bc96bcbc17d6116bb45aa598e61",
+      "content": "async function getWorkerVersion(): Promise<string> {\n  const port = getWorkerPort();\n  const response = await fetch(`http://127.0.0.1:${port}/api/version`, {\n    signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT_MS)\n  });\n  if (!response.ok) {\n    throw new Error(`Failed to get worker version: ${response.status}`);\n  }\n  const data = await response.json() as { version: string };\n  return data.version;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensureWorkerVersionMatches_101": {
+      "name": "ensureWorkerVersionMatches",
+      "type": "function",
+      "start_line": 101,
+      "end_line": 125,
+      "content_hash": "dfc9edf523f9a89580cf2299bff51c441cfd73cb",
+      "content": "async function ensureWorkerVersionMatches(): Promise<void> {\n  const pluginVersion = getPluginVersion();\n  const workerVersion = await getWorkerVersion();\n\n  if (pluginVersion !== workerVersion) {\n    logger.info('SYSTEM', 'Worker version mismatch detected - restarting worker', {\n      pluginVersion,\n      workerVersion\n    });\n\n    // Give files time to sync before restart\n    await new Promise(resolve => setTimeout(resolve, getTimeout(HOOK_TIMEOUTS.PRE_RESTART_SETTLE_DELAY)));\n\n    // Restart the worker\n    await ProcessManager.restart(getWorkerPort());\n\n    // Give it a moment to start\n    await new Promise(resolve => setTimeout(resolve, 1000));\n\n    // Verify it's healthy\n    if (!await isWorkerHealthy()) {\n      throw new Error(`Worker failed to restart after version mismatch. Expected ${pluginVersion}, was running ${workerVersion}`);\n    }\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_startWorker_131": {
+      "name": "startWorker",
+      "type": "function",
+      "start_line": 131,
+      "end_line": 159,
+      "content_hash": "eca7f058a99ab7f1fcff98164d21aa34bdacfdf7",
+      "content": "async function startWorker(): Promise<boolean> {\n  // Clean up legacy PM2 (one-time migration)\n  const dataDir = SettingsDefaultsManager.get('CLAUDE_MEM_DATA_DIR');\n  const pm2MigratedMarker = path.join(dataDir, '.pm2-migrated');\n\n  // Ensure data directory exists (may not exist on fresh install)\n  mkdirSync(dataDir, { recursive: true });\n\n  if (!existsSync(pm2MigratedMarker)) {\n    spawnSync('pm2', ['delete', 'claude-mem-worker'], { stdio: 'ignore' });\n    // Mark migration as complete\n    writeFileSync(pm2MigratedMarker, new Date().toISOString(), 'utf-8');\n    logger.debug('SYSTEM', 'PM2 cleanup completed and marked');\n  }\n\n  const port = getWorkerPort();\n  const result = await ProcessManager.start(port);\n\n  if (!result.success) {\n    logger.error('SYSTEM', 'Failed to start worker', {\n      platform: process.platform,\n      port,\n      error: result.error,\n      marketplaceRoot: MARKETPLACE_ROOT\n    });\n  }\n\n  return result.success;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensureWorkerRunning_166": {
+      "name": "ensureWorkerRunning",
+      "type": "function",
+      "start_line": 166,
+      "end_line": 218,
+      "content_hash": "796310a3319d1c6412415e644a2d531dd4a0a0ef",
+      "content": "export async function ensureWorkerRunning(): Promise<void> {\n  // Check if already healthy (will throw on fetch errors)\n  let healthy = false;\n  try {\n    healthy = await isWorkerHealthy();\n  } catch (error) {\n    // Worker not running or unreachable - continue to start it\n    healthy = false;\n  }\n\n  if (healthy) {\n    // Worker is healthy, but check if version matches\n    await ensureWorkerVersionMatches();\n    return;\n  }\n\n  // Try to start the worker\n  const started = await startWorker();\n\n  if (!started) {\n    const port = getWorkerPort();\n    throw new Error(\n      getWorkerRestartInstructions({\n        port,\n        customPrefix: `Worker service failed to start on port ${port}.`\n      })\n    );\n  }\n\n  // Wait for worker to become responsive after starting\n  // Try up to 5 times with 500ms delays (2.5 seconds total)\n  for (let i = 0; i < 5; i++) {\n    await new Promise(resolve => setTimeout(resolve, 500));\n    try {\n      if (await isWorkerHealthy()) {\n        await ensureWorkerVersionMatches();\n        return;\n      }\n    } catch (error) {\n      // Continue trying\n    }\n  }\n\n  // Worker started but isn't responding\n  const port = getWorkerPort();\n  logger.error('SYSTEM', 'Worker started but not responding to health checks');\n  throw new Error(\n    getWorkerRestartInstructions({\n      port,\n      customPrefix: `Worker service started but is not responding on port ${port}.`\n    })\n  );\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

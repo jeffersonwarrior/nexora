@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/internal/agent/tools/edit_test.go",
+  "file_hash": "01f168d969c0529bb33524c961d7557798b7c670",
+  "updated_at": "2025-12-26T17:34:23.861303",
+  "symbols": {
+    "function_TestTabNormalization_11": {
+      "name": "TestTabNormalization",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 51,
+      "content_hash": "bc4f02dd68c8aff3c3eae9cef8dce61616e56c87",
+      "content": "func TestTabNormalization(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected string\n\t}{\n\t\t{\n\t\t\tname:     \"real tab unchanged\",\n\t\t\tinput:    \"func\\tfoo()\",\n\t\t\texpected: \"func\\tfoo()\",\n\t\t},\n\t\t{\n\t\t\tname:     \"display tab normalized\",\n\t\t\tinput:    \"func\u2192\\tfoo()\",\n\t\t\texpected: \"func\\tfoo()\",\n\t\t},\n\t\t{\n\t\t\tname:     \"partial display tab normalized\",\n\t\t\tinput:    \"func\u2192foo()\",\n\t\t\texpected: \"func\\tfoo()\",\n\t\t},\n\t\t{\n\t\t\tname:     \"no tabs unchanged\",\n\t\t\tinput:    \"func foo()\",\n\t\t\texpected: \"func foo()\",\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple display tabs\",\n\t\t\tinput:    \"func\u2192\\t\u2192\\tfoo()\",\n\t\t\texpected: \"func\\t\\tfoo()\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := normalizeTabIndicators(tt.input)\n\t\t\trequire.Equal(t, tt.expected, result)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAutoExpandContext_52": {
+      "name": "TestAutoExpandContext",
+      "type": "function",
+      "start_line": 52,
+      "end_line": 77,
+      "content_hash": "ab7e9d4050b7f6f8236358d0ccedbe8e3ced1067",
+      "content": "func TestAutoExpandContext(t *testing.T) {\n\t// Create a temporary test file\n\ttmpDir := t.TempDir()\n\ttestFile := tmpDir + \"/test.txt\"\n\n\t// Create a longer file to test proper context expansion\n\tcontent := \"line 1\\nline 2\\nline 3\\ntarget line\\nline 5\\nline 6\\nline 7\"\n\terr := os.WriteFile(testFile, []byte(content), 0o644)\n\trequire.NoError(t, err)\n\n\t// Test context expansion with a unique pattern\n\texpanded, err := autoExpandContext(testFile, \"target line\")\n\trequire.NoError(t, err)\n\n\t// Should include lines before and after (2 before, 2 after)\n\trequire.Contains(t, expanded, \"line 2\")\n\trequire.Contains(t, expanded, \"line 3\")\n\trequire.Contains(t, expanded, \"target line\")\n\trequire.Contains(t, expanded, \"line 5\")\n\trequire.Contains(t, expanded, \"line 6\")\n\n\t// Should not include lines that are too far\n\trequire.NotContains(t, expanded, \"line 1\")\n\trequire.NotContains(t, expanded, \"line 7\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAIErrorMessages_78": {
+      "name": "TestAIErrorMessages",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 110,
+      "content_hash": "3128debb3d24ee07905e9a627bf43aee55df7d18",
+      "content": "func TestAIErrorMessages(t *testing.T) {\n\tfileContent := \"func\\tmain() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\"\n\n\ttests := []struct {\n\t\tname           string\n\t\tpattern        string\n\t\texpectedPrefix string\n\t}{\n\t\t{\n\t\t\tname:           \"tab mismatch\",\n\t\t\tpattern:        \"func\u2192\\tmain()\",\n\t\t\texpectedPrefix: \"TAB_MISMATCH\",\n\t\t},\n\t\t{\n\t\t\tname:           \"pattern not found\",\n\t\t\tpattern:        \"nonexistent\",\n\t\t\texpectedPrefix: \"PATTERN_NOT_FOUND\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tmsg := createAIErrorMessage(\n\t\t\t\tfmt.Errorf(\"test error\"),\n\t\t\t\tfileContent,\n\t\t\t\ttt.pattern,\n\t\t\t)\n\n\t\t\trequire.Contains(t, msg, tt.expectedPrefix)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCountLeadingSpaces_111": {
+      "name": "TestCountLeadingSpaces",
+      "type": "function",
+      "start_line": 111,
+      "end_line": 146,
+      "content_hash": "44a20a234a229f81fe71fd8bc5e09cdd9c42b32c",
+      "content": "func TestCountLeadingSpaces(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected int\n\t}{\n\t\t{\n\t\t\tname:     \"no leading spaces\",\n\t\t\tinput:    \"func()\",\n\t\t\texpected: 0,\n\t\t},\n\t\t{\n\t\t\tname:     \"2 leading spaces\",\n\t\t\tinput:    \"  func()\",\n\t\t\texpected: 2,\n\t\t},\n\t\t{\n\t\t\tname:     \"4 leading spaces\",\n\t\t\tinput:    \"    func()\",\n\t\t\texpected: 4,\n\t\t},\n\t\t{\n\t\t\tname:     \"mixed lines - uses first\",\n\t\t\tinput:    \"  func1()\\n    func2()\",\n\t\t\texpected: 2,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := countLeadingSpaces(tt.input)\n\t\t\trequire.Equal(t, tt.expected, result)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWhitespaceAnalysis_147": {
+      "name": "TestWhitespaceAnalysis",
+      "type": "function",
+      "start_line": 147,
+      "end_line": 164,
+      "content_hash": "aae2b2a8a6be649c0dcc274c2215ed3c2d92e66d",
+      "content": "func TestWhitespaceAnalysis(t *testing.T) {\n\tfileContent := \"func\\tmain() {\\n\\tfmt.Println(\\\"hello\\\")\\n}\"\n\tpatternWithDisplayTabs := \"func\u2192\\tmain()\"\n\tpatternWithRealTabs := \"func\\tmain()\"\n\n\t// Test tab mismatch detection\n\tanalysis1 := AnalyzeWhitespaceDifference(fileContent, patternWithDisplayTabs)\n\trequire.True(t, analysis1[\"has_tab_mismatch\"].(bool))\n\trequire.Equal(t, 1, analysis1[\"display_tabs\"].(int))\n\n\t// Test no mismatch with real tabs\n\tanalysis2 := AnalyzeWhitespaceDifference(fileContent, patternWithRealTabs)\n\trequire.False(t, analysis2[\"has_tab_mismatch\"].(bool))\n\trequire.Equal(t, 0, analysis2[\"display_tabs\"].(int))\n\n\t// Test that pattern with real tabs is found in file\n\trequire.True(t, analysis2[\"pattern_in_file\"].(bool))\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

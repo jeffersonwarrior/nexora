@@ -1,0 +1,249 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/react_planner_test.go",
+  "file_hash": "c4660b128b608b62a85c9763c67bcbf0d14b6b4f",
+  "updated_at": "2025-12-26T17:34:22.791455",
+  "symbols": {
+    "struct_mockTool_13": {
+      "name": "mockTool",
+      "type": "struct",
+      "start_line": 13,
+      "end_line": 16,
+      "content_hash": "b00099827df2b2431a697883e69986864480ce21",
+      "content": "type mockTool struct {\n\tname string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Name_17": {
+      "name": "Name",
+      "type": "method",
+      "start_line": 17,
+      "end_line": 20,
+      "content_hash": "cab7c37571ffe4207b37defa814ba838a6a780f9",
+      "content": "func (m *mockTool) Name() string {\n\treturn m.name\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Execute_21": {
+      "name": "Execute",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 26,
+      "content_hash": "3e2e1ad7a448d46cb57649f2b39fdd0822bbe637",
+      "content": "func (m *mockTool) Execute(ctx context.Context, input map[string]interface{}) (map[string]interface{}, error) {\n\treturn map[string]interface{}{\n\t\t\"result\": fmt.Sprintf(\"mock result from %s\", m.name),\n\t}, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Description_27": {
+      "name": "Description",
+      "type": "method",
+      "start_line": 27,
+      "end_line": 31,
+      "content_hash": "175e2c9df347e4b710086c0057f53648480bc0c3",
+      "content": "func (m *mockTool) Description() string {\n\treturn fmt.Sprintf(\"Mock tool %s for testing\", m.name)\n}\n\n// Mock memory for testing",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_mockMemory_32": {
+      "name": "mockMemory",
+      "type": "struct",
+      "start_line": 32,
+      "end_line": 35,
+      "content_hash": "752f6fe77c611b1ebbcbe8b6c8d1304a655d7ce2",
+      "content": "type mockMemory struct {\n\tmessages []MemoryMessage\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Store_36": {
+      "name": "Store",
+      "type": "method",
+      "start_line": 36,
+      "end_line": 40,
+      "content_hash": "d3c6f07c2a254f80587c9feb6dbbb7df4997955a",
+      "content": "func (m *mockMemory) Store(ctx context.Context, msg MemoryMessage) error {\n\tm.messages = append(m.messages, msg)\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Retrieve_41": {
+      "name": "Retrieve",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 47,
+      "content_hash": "2ee025d365ad181f0f2c5da83c46797946981e96",
+      "content": "func (m *mockMemory) Retrieve(ctx context.Context, query string, limit int) ([]MemoryMessage, error) {\n\tif limit <= 0 || limit > len(m.messages) {\n\t\treturn m.messages, nil\n\t}\n\treturn m.messages[:limit], nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Search_48": {
+      "name": "Search",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 58,
+      "content_hash": "111b5c4f55e37651a23ee886d86e587a7d4c90e3",
+      "content": "func (m *mockMemory) Search(ctx context.Context, pattern string) ([]MemoryMessage, error) {\n\tvar results []MemoryMessage\n\t// No limit specified, return all matches\n\tfor _, msg := range m.messages {\n\t\tif contains(msg.Content, pattern) {\n\t\t\tresults = append(results, msg)\n\t\t}\n\t}\n\treturn results, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Clear_59": {
+      "name": "Clear",
+      "type": "method",
+      "start_line": 59,
+      "end_line": 64,
+      "content_hash": "87b6c305b43174db8aa1b971f744053954fbfb67",
+      "content": "func (m *mockMemory) Clear(ctx context.Context) error {\n\tm.messages = []MemoryMessage{}\n\treturn nil\n}\n\n// Helper function for string containment",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestNewReActPlanner_CreatesPlannerWithDefaults_65": {
+      "name": "TestNewReActPlanner_CreatesPlannerWithDefaults",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 73,
+      "content_hash": "c1c71f57888c2de56896dd3dd898b28cea860c60",
+      "content": "func TestNewReActPlanner_CreatesPlannerWithDefaults(t *testing.T) {\n\tplanner := NewReActPlanner()\n\n\tassert.Equal(t, 5, planner.maxThoughts)\n\tassert.Equal(t, 3, planner.maxActions)\n\tassert.NotNil(t, planner.toolSelector)\n\tassert.Equal(t, \"react_history\", planner.memoryKey)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_WithMaxThoughts_SetsMaxThoughts_74": {
+      "name": "TestReActPlanner_WithMaxThoughts_SetsMaxThoughts",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 79,
+      "content_hash": "fa7f7a25adf1201ec1e698ffab7795c6e0c5cf24",
+      "content": "func TestReActPlanner_WithMaxThoughts_SetsMaxThoughts(t *testing.T) {\n\tplanner := NewReActPlanner().WithMaxThoughts(10)\n\n\tassert.Equal(t, 10, planner.maxThoughts)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_WithMaxActions_SetsMaxActions_80": {
+      "name": "TestReActPlanner_WithMaxActions_SetsMaxActions",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 85,
+      "content_hash": "1aa5109aa7b5ec6782cc339878c237819b73b9ea",
+      "content": "func TestReActPlanner_WithMaxActions_SetsMaxActions(t *testing.T) {\n\tplanner := NewReActPlanner().WithMaxActions(5)\n\n\tassert.Equal(t, 5, planner.maxActions)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_WithToolSelector_SetsCustomSelector_86": {
+      "name": "TestReActPlanner_WithToolSelector_SetsCustomSelector",
+      "type": "function",
+      "start_line": 86,
+      "end_line": 92,
+      "content_hash": "d74860ce7e31f5ab121b78acf28f8f3787dd1947",
+      "content": "func TestReActPlanner_WithToolSelector_SetsCustomSelector(t *testing.T) {\n\tcustomSelector := &DefaultToolSelector{}\n\tplanner := NewReActPlanner().WithToolSelector(customSelector)\n\n\tassert.Equal(t, customSelector, planner.toolSelector)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_Plan_GeneratesBasicPlan_93": {
+      "name": "TestReActPlanner_Plan_GeneratesBasicPlan",
+      "type": "function",
+      "start_line": 93,
+      "end_line": 108,
+      "content_hash": "f67384eca8a464850524dcf2b087fa04a523822c",
+      "content": "func TestReActPlanner_Plan_GeneratesBasicPlan(t *testing.T) {\n\tplanner := NewReActPlanner()\n\tstate := State{\n\t\tTools:    []Tool{},\n\t\tMessages: []MemoryMessage{},\n\t\tContext:  make(map[string]interface{}),\n\t}\n\n\tplan, err := planner.Plan(context.Background(), state, \"test goal\")\n\n\trequire.NoError(t, err)\n\tassert.NotEmpty(t, plan.Steps)\n\tassert.Equal(t, \"think\", plan.Steps[0].Type)\n\tassert.Contains(t, plan.Steps[0].Thought, \"I need to: test goal\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_Plan_WithMemory_IncludesMemoryContext_109": {
+      "name": "TestReActPlanner_Plan_WithMemory_IncludesMemoryContext",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 143,
+      "content_hash": "f072a2fdcc8f947aeaa7f2e7acafab11e7111aa0",
+      "content": "func TestReActPlanner_Plan_WithMemory_IncludesMemoryContext(t *testing.T) {\n\tplanner := NewReActPlanner()\n\tmemory := &mockMemory{\n\t\tmessages: []MemoryMessage{\n\t\t\t{\n\t\t\t\tID:        \"1\",\n\t\t\t\tContent:   \"Previous thought: I need to use tools\",\n\t\t\t\tRole:      \"assistant\",\n\t\t\t\tTimestamp: 1234567890,\n\t\t\t},\n\t\t},\n\t}\n\n\t// Store a message in memory first\n\tctx := context.Background()\n\tmemory.Store(ctx, MemoryMessage{\n\t\tID:        \"1\",\n\t\tContent:   \"Previous thought: I need to use tools\",\n\t\tRole:      \"assistant\",\n\t\tTimestamp: 1234567890,\n\t})\n\n\tstate := State{\n\t\tTools:    []Tool{},\n\t\tMessages: memory.messages, // Use messages from memory\n\t\tContext:  make(map[string]interface{}),\n\t}\n\n\tplan, err := planner.Plan(ctx, state, \"test goal\")\n\n\trequire.NoError(t, err)\n\tassert.NotEmpty(t, plan.Steps)\n\tassert.Contains(t, plan.Steps[0].Thought, \"I will use my memory\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_Plan_WithTools_SelectsAppropriateTool_144": {
+      "name": "TestReActPlanner_Plan_WithTools_SelectsAppropriateTool",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 169,
+      "content_hash": "e7913c08515d6fb8aa124fecb9bd4d8754e632b5",
+      "content": "func TestReActPlanner_Plan_WithTools_SelectsAppropriateTool(t *testing.T) {\n\tplanner := NewReActPlanner()\n\ttool := &mockTool{name: \"EchoTool\"}\n\tstate := State{\n\t\tTools:    []Tool{tool},\n\t\tMessages: []MemoryMessage{},\n\t\tContext:  make(map[string]interface{}),\n\t}\n\n\tplan, err := planner.Plan(context.Background(), state, \"echo this message\")\n\n\trequire.NoError(t, err)\n\tassert.Len(t, plan.Steps, 3) // Initial think, tool action, final think\n\n\t// Check that a tool step was added\n\thasToolStep := false\n\tfor _, step := range plan.Steps {\n\t\tif step.Type == \"tool\" {\n\t\t\thasToolStep = true\n\t\t\tassert.Equal(t, \"EchoTool\", step.ToolName)\n\t\t\tassert.Equal(t, \"echo this message\", step.Parameters[\"message\"])\n\t\t}\n\t}\n\tassert.True(t, hasToolStep, \"Plan should include a tool step\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_Plan_MathGoal_SelectsCalculator_170": {
+      "name": "TestReActPlanner_Plan_MathGoal_SelectsCalculator",
+      "type": "function",
+      "start_line": 170,
+      "end_line": 197,
+      "content_hash": "61324cbe7e69cb1e67b9787abb048793fd87f0c3",
+      "content": "func TestReActPlanner_Plan_MathGoal_SelectsCalculator(t *testing.T) {\n\tplanner := NewReActPlanner()\n\ttools := []Tool{\n\t\t&mockTool{name: \"EchoTool\"},\n\t\t&mockTool{name: \"CalculatorTool\"},\n\t}\n\tstate := State{\n\t\tTools:   tools,\n\t\tContext: map[string]interface{}{},\n\t}\n\n\tplan, err := planner.Plan(context.Background(), state, \"calculate 2 + 2\")\n\n\trequire.NoError(t, err)\n\n\t// Should select CalculatorTool for math goals\n\thasCalculatorStep := false\n\tfor _, step := range plan.Steps {\n\t\tif step.Type == \"tool\" && step.ToolName == \"CalculatorTool\" {\n\t\t\thasCalculatorStep = true\n\t\t\tassert.Equal(t, \"add\", step.Parameters[\"operation\"])\n\t\t\tassert.Equal(t, 1.0, step.Parameters[\"a\"])\n\t\t\tassert.Equal(t, 1.0, step.Parameters[\"b\"])\n\t\t}\n\t}\n\tassert.True(t, hasCalculatorStep, \"Plan should include CalculatorTool for math goal\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_Plan_NoTools_GeneratesThinkingOnly_198": {
+      "name": "TestReActPlanner_Plan_NoTools_GeneratesThinkingOnly",
+      "type": "function",
+      "start_line": 198,
+      "end_line": 215,
+      "content_hash": "59e82b9bb29ca790e33eb13f7b7edcbdda920058",
+      "content": "func TestReActPlanner_Plan_NoTools_GeneratesThinkingOnly(t *testing.T) {\n\tplanner := NewReActPlanner()\n\tstate := State{\n\t\tTools:   []Tool{},\n\t\tContext: map[string]interface{}{},\n\t}\n\n\tplan, err := planner.Plan(context.Background(), state, \"think about something\")\n\n\trequire.NoError(t, err)\n\tassert.Len(t, plan.Steps, 2) // Initial think and final think\n\n\t// Should have no tool steps\n\tfor _, step := range plan.Steps {\n\t\tassert.NotEqual(t, \"tool\", step.Type)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestReActPlanner_generateInitialThought_IncludesAvailableTools_216": {
+      "name": "TestReActPlanner_generateInitialThought_IncludesAvailableTools",
+      "type": "function",
+      "start_line": 216,
+      "end_line": 232,
+      "content_hash": "e615cfa40f4673488f1d4d19fb25d6becf6b5bb4",
+      "content": "func TestReActPlanner_generateInitialThought_IncludesAvailableTools(t *testing.T) {\n\tplanner := NewReActPlanner()\n\ttools := []Tool{\n\t\t&mockTool{name: \"Tool1\"},\n\t\t&mockTool{name: \"Tool2\"},\n\t}\n\tstate := State{\n\t\tTools:   tools,\n\t\tContext: map[string]interface{}{},\n\t}\n\n\tplan, err := planner.Plan(context.Background(), state, \"test goal\")\n\n\trequire.NoError(t, err)\n\tassert.Contains(t, plan.Steps[0].Thought, \"Available tools: Tool1, Tool2\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDefaultToolSelector_SelectTool_SelectsCalculatorForMath_233": {
+      "name": "TestDefaultToolSelector_SelectTool_SelectsCalculatorForMath",
+      "type": "function",
+      "start_line": 233,
+      "end_line": 246,
+      "content_hash": "e741257970288f04928d419b0a87e2ae7c04b132",
+      "content": "func TestDefaultToolSelector_SelectTool_SelectsCalculatorForMath(t *testing.T) {\n\tselector := &DefaultToolSelector{}\n\ttools := []Tool{\n\t\t&mockTool{name: \"EchoTool\"},\n\t\t&mockTool{name: \"CalculatorTool\"},\n\t}\n\n\ttool, params, err := selector.SelectTool(context.Background(), tools, \"calculate something\", []string{})\n\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"CalculatorTool\", tool.Name())\n\tassert.Equal(t, \"add\", params[\"operation\"])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDefaultToolSelector_SelectTool_SelectsEchoForGeneral_247": {
+      "name": "TestDefaultToolSelector_SelectTool_SelectsEchoForGeneral",
+      "type": "function",
+      "start_line": 247,
+      "end_line": 260,
+      "content_hash": "18f44317a3edf9e09d3b7fe92220a4398c1d2220",
+      "content": "func TestDefaultToolSelector_SelectTool_SelectsEchoForGeneral(t *testing.T) {\n\tselector := &DefaultToolSelector{}\n\ttools := []Tool{\n\t\t&mockTool{name: \"EchoTool\"},\n\t\t&mockTool{name: \"CalculatorTool\"},\n\t}\n\n\ttool, params, err := selector.SelectTool(context.Background(), tools, \"tell me something\", []string{})\n\n\trequire.NoError(t, err)\n\tassert.Equal(t, \"EchoTool\", tool.Name())\n\tassert.Equal(t, \"tell me something\", params[\"message\"])\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestDefaultToolSelector_SelectTool_NoTools_ReturnsError_261": {
+      "name": "TestDefaultToolSelector_SelectTool_NoTools_ReturnsError",
+      "type": "function",
+      "start_line": 261,
+      "end_line": 268,
+      "content_hash": "0e9105aec4b2bbe1fd1967a0cc91d2a5896381fa",
+      "content": "func TestDefaultToolSelector_SelectTool_NoTools_ReturnsError(t *testing.T) {\n\tselector := &DefaultToolSelector{}\n\n\t_, _, err := selector.SelectTool(context.Background(), []Tool{}, \"any goal\", []string{})\n\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"no tools available\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

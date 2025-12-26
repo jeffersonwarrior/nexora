@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/log/log.go",
+  "file_hash": "a589bff54b7ccbb94f1f883a80333468f1a57d63",
+  "updated_at": "2025-12-26T17:34:24.944826",
+  "symbols": {
+    "function_Setup_23": {
+      "name": "Setup",
+      "type": "function",
+      "start_line": 23,
+      "end_line": 72,
+      "content_hash": "74ddabf6ff53776a9b14c436150b49c71e57e77c",
+      "content": "func Setup(logFile string, debug bool) {\n\tinitOnce.Do(func() {\n\t\tlogDir := filepath.Dir(logFile)\n\t\terrorLogFile := filepath.Join(logDir, \"nexora-errors.log\")\n\n\t\t// Main log rotator\n\t\tlogRotator := &lumberjack.Logger{\n\t\t\tFilename:   logFile,\n\t\t\tMaxSize:    10,   // Max size in MB\n\t\t\tMaxBackups: 5,    // Number of backups\n\t\t\tMaxAge:     30,   // Days\n\t\t\tCompress:   true, // Enable compression\n\t\t}\n\n\t\t// ERROR log rotator - separate file for all ERROR level messages\n\t\terrorRotator := &lumberjack.Logger{\n\t\t\tFilename:   errorLogFile,\n\t\t\tMaxSize:    50, // Larger for errors\n\t\t\tMaxBackups: 10, // More backups\n\t\t\tMaxAge:     90, // Longer retention\n\t\t\tCompress:   true,\n\t\t}\n\n\t\tlevel := slog.LevelInfo\n\t\tif debug {\n\t\t\tlevel = slog.LevelDebug\n\t\t}\n\n\t\t// Main logger for INFO/DEBUG/WARN\n\t\tmainLogger := slog.NewJSONHandler(logRotator, &slog.HandlerOptions{\n\t\t\tLevel:     level,\n\t\t\tAddSource: true,\n\t\t})\n\n\t\t// ERROR logger - captures only ERROR level\n\t\terrorHandler = slog.NewJSONHandler(errorRotator, &slog.HandlerOptions{\n\t\t\tLevel:     slog.LevelError,\n\t\t\tAddSource: true,\n\t\t})\n\n\t\t// Multi-handler: main for non-errors, error file for errors\n\t\tslog.SetDefault(slog.New(multiHandler{\n\t\t\tmain:   mainLogger,\n\t\t\terrors: errorHandler,\n\t\t}))\n\n\t\tinitialized.Store(true)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_multiHandler_73": {
+      "name": "multiHandler",
+      "type": "struct",
+      "start_line": 73,
+      "end_line": 77,
+      "content_hash": "9e7111e7d2cf13b0e20af08b39dfa8910af586af",
+      "content": "type multiHandler struct {\n\tmain   slog.Handler\n\terrors slog.Handler\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Enabled_78": {
+      "name": "Enabled",
+      "type": "method",
+      "start_line": 78,
+      "end_line": 81,
+      "content_hash": "d0a34ea5fb9348749019523e82cd7eaa7a81a194",
+      "content": "func (mh multiHandler) Enabled(ctx context.Context, level slog.Level) bool {\n\treturn mh.main.Enabled(ctx, level)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Handle_82": {
+      "name": "Handle",
+      "type": "method",
+      "start_line": 82,
+      "end_line": 88,
+      "content_hash": "6af483e6837e44d68c2bb8b63638cf6c12503920",
+      "content": "func (mh multiHandler) Handle(ctx context.Context, r slog.Record) error {\n\tif r.Level >= slog.LevelError {\n\t\treturn mh.errors.Handle(ctx, r)\n\t}\n\treturn mh.main.Handle(ctx, r)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithAttrs_89": {
+      "name": "WithAttrs",
+      "type": "method",
+      "start_line": 89,
+      "end_line": 95,
+      "content_hash": "74d2819fbac66d6f8ca28531b560f9a2e96b75ab",
+      "content": "func (mh multiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {\n\treturn multiHandler{\n\t\tmain:   mh.main.WithAttrs(attrs),\n\t\terrors: mh.errors.WithAttrs(attrs),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_WithGroup_96": {
+      "name": "WithGroup",
+      "type": "method",
+      "start_line": 96,
+      "end_line": 102,
+      "content_hash": "bfdad8bca6ab65a4fa7bdd6bb5ccfdc780145649",
+      "content": "func (mh multiHandler) WithGroup(name string) slog.Handler {\n\treturn multiHandler{\n\t\tmain:   mh.main.WithGroup(name),\n\t\terrors: mh.errors.WithGroup(name),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_Initialized_103": {
+      "name": "Initialized",
+      "type": "function",
+      "start_line": 103,
+      "end_line": 106,
+      "content_hash": "de75f56a82b0d3255a5b960305e856b550dc41c7",
+      "content": "func Initialized() bool {\n\treturn initialized.Load()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_RecoverPanic_107": {
+      "name": "RecoverPanic",
+      "type": "function",
+      "start_line": 107,
+      "end_line": 128,
+      "content_hash": "140dab2676582bfa3a8c8a38d83be652a5d42c67",
+      "content": "func RecoverPanic(name string, cleanup func()) {\n\tif r := recover(); r != nil {\n\t\t// Create a timestamped panic log file\n\t\ttimestamp := time.Now().Format(\"20060102-150405\")\n\t\tfilename := fmt.Sprintf(\"nexora-panic-%s-%s.log\", name, timestamp)\n\n\t\tfile, err := os.Create(filename)\n\t\tif err == nil {\n\t\t\tdefer file.Close()\n\n\t\t\t// Write panic information and stack trace\n\t\t\tfmt.Fprintf(file, \"Panic in %s: %v\\n\\n\", name, r)\n\t\t\tfmt.Fprintf(file, \"Time: %s\\n\\n\", time.Now().Format(time.RFC3339))\n\t\t\tfmt.Fprintf(file, \"Stack Trace:\\n%s\\n\", debug.Stack())\n\n\t\t\t// Execute cleanup function if provided\n\t\t\tif cleanup != nil {\n\t\t\t\tcleanup()\n\t\t\t}\n\t\t}\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

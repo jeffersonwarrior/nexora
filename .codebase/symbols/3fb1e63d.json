@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/claude-mem/scripts/translate-readme/index.ts",
+  "file_hash": "53adbfae2b191f04d368138a9a2a59effaf0394e",
+  "updated_at": "2025-12-26T17:34:19.959077",
+  "symbols": {
+    "function_hashContent_16": {
+      "name": "hashContent",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 18,
+      "content_hash": "c8285936329e7d59c4d9643c67bc6f315527d3fc",
+      "content": "function hashContent(content: string): string {\n  return createHash(\"sha256\").update(content).digest(\"hex\").slice(0, 16);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_readCache_20": {
+      "name": "readCache",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 27,
+      "content_hash": "3f879e56f4ddc5c2dfe5c467f1c3ff4f8371f874",
+      "content": "async function readCache(cachePath: string): Promise<TranslationCache | null> {\n  try {\n    const data = await fs.readFile(cachePath, \"utf-8\");\n    return JSON.parse(data);\n  } catch {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_writeCache_29": {
+      "name": "writeCache",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 31,
+      "content_hash": "4f6f6108c3697e78824323614810d806bb63a41f",
+      "content": "async function writeCache(cachePath: string, cache: TranslationCache): Promise<void> {\n  await fs.writeFile(cachePath, JSON.stringify(cache, null, 2), \"utf-8\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getLanguageName_115": {
+      "name": "getLanguageName",
+      "type": "function",
+      "start_line": 115,
+      "end_line": 117,
+      "content_hash": "784731574e7cda203d2416fc71f0d09bbaa1abb3",
+      "content": "function getLanguageName(code: string): string {\n  return LANGUAGE_NAMES[code.toLowerCase()] || code;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_translateToLanguage_119": {
+      "name": "translateToLanguage",
+      "type": "function",
+      "start_line": 119,
+      "end_line": 244,
+      "content_hash": "9c5ea70dc5533d5a1fec19ed7a90d688c14157be",
+      "content": "async function translateToLanguage(\n  content: string,\n  targetLang: string,\n  options: Pick<TranslationOptions, \"preserveCode\" | \"model\" | \"verbose\">\n): Promise<{ translation: string; costUsd: number }> {\n  const languageName = getLanguageName(targetLang);\n\n  const preserveCodeInstructions = options.preserveCode\n    ? `\nIMPORTANT: Preserve all code blocks exactly as they are. Do NOT translate:\n- Code inside \\`\\`\\` blocks\n- Inline code inside \\` backticks\n- Command examples\n- File paths\n- Variable names, function names, and technical identifiers\n- URLs and links\n`\n    : \"\";\n\n  const prompt = `Translate the following README.md content from English to ${languageName} (${targetLang}).\n\n${preserveCodeInstructions}\nGuidelines:\n- Maintain all Markdown formatting (headers, lists, links, etc.)\n- Keep the same document structure\n- Translate headings, descriptions, and explanatory text naturally\n- Preserve technical accuracy\n- Use appropriate technical terminology for ${languageName}\n- Keep proper nouns (product names, company names) unchanged unless they have official translations\n- Add a small note at the very top of the document (before any other content) in ${languageName}: \"\ud83c\udf10 This is an automated translation. Community corrections are welcome!\"\n\nHere is the README content to translate:\n\n---\n${content}\n---\n\nCRITICAL OUTPUT RULES:\n- Output ONLY the raw translated markdown content\n- Do NOT wrap output in \\`\\`\\`markdown code fences\n- Do NOT add any preamble, explanation, or commentary\n- Start directly with the translation note, then the content\n- The output will be saved directly to a .md file`;\n\n  let translation = \"\";\n  let costUsd = 0;\n  let charCount = 0;\n  const startTime = Date.now();\n\n  const stream = query({\n    prompt,\n    options: {\n      model: options.model || \"sonnet\",\n      systemPrompt: `You are an expert technical translator specializing in software documentation.\nYou translate README files while preserving Markdown formatting and technical accuracy.\nAlways output only the translated content without any surrounding explanation.`,\n      permissionMode: \"bypassPermissions\",\n      allowDangerouslySkipPermissions: true,\n      includePartialMessages: true, // Enable streaming events\n    },\n  });\n\n  // Progress spinner frames\n  const spinnerFrames = [\"\u280b\", \"\u2819\", \"\u2839\", \"\u2838\", \"\u283c\", \"\u2834\", \"\u2826\", \"\u2827\", \"\u2807\", \"\u280f\"];\n  let spinnerIdx = 0;\n\n  for await (const message of stream) {\n    // Handle streaming text deltas\n    if (message.type === \"stream_event\") {\n      const event = message.event as { type: string; delta?: { type: string; text?: string } };\n      if (event.type === \"content_block_delta\" && event.delta?.type === \"text_delta\" && event.delta.text) {\n        translation += event.delta.text;\n        charCount += event.delta.text.length;\n\n        if (options.verbose) {\n          const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);\n          const spinner = spinnerFrames[spinnerIdx++ % spinnerFrames.length];\n          process.stdout.write(`\\r   ${spinner} Translating... ${charCount} chars (${elapsed}s)`);\n        }\n      }\n    }\n\n    // Handle full assistant messages (fallback)\n    if (message.type === \"assistant\") {\n      for (const block of message.message.content) {\n        if (block.type === \"text\" && !translation) {\n          translation = block.text;\n          charCount = translation.length;\n        }\n      }\n    }\n\n    if (message.type === \"result\") {\n      const result = message as SDKResultMessage;\n      if (result.subtype === \"success\") {\n        costUsd = result.total_cost_usd;\n        // Use the result text if we didn't get it from streaming\n        if (!translation && result.result) {\n          translation = result.result;\n          charCount = translation.length;\n        }\n      }\n    }\n  }\n\n  // Clear the progress line\n  if (options.verbose) {\n    process.stdout.write(\"\\r\" + \" \".repeat(60) + \"\\r\");\n  }\n\n  // Strip markdown code fences if Claude wrapped the output\n  let cleaned = translation.trim();\n  if (cleaned.startsWith(\"```markdown\")) {\n    cleaned = cleaned.slice(\"```markdown\".length);\n  } else if (cleaned.startsWith(\"```md\")) {\n    cleaned = cleaned.slice(\"```md\".length);\n  } else if (cleaned.startsWith(\"```\")) {\n    cleaned = cleaned.slice(3);\n  }\n  if (cleaned.endsWith(\"```\")) {\n    cleaned = cleaned.slice(0, -3);\n  }\n  cleaned = cleaned.trim();\n\n  return { translation: cleaned, costUsd };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_translateReadme_246": {
+      "name": "translateReadme",
+      "type": "function",
+      "start_line": 246,
+      "end_line": 408,
+      "content_hash": "547517ef3efe031ecad9a105479102fcd99f5805",
+      "content": "export async function translateReadme(\n  options: TranslationOptions\n): Promise<TranslationJobResult> {\n  const {\n    source,\n    languages,\n    outputDir,\n    pattern = \"README.{lang}.md\",\n    preserveCode = true,\n    model,\n    maxBudgetUsd,\n    verbose = false,\n    force = false,\n  } = options;\n\n  // Run all translations in parallel (up to 10 concurrent)\n  const parallel = Math.min(languages.length, 10);\n\n  // Read source file\n  const sourcePath = path.resolve(source);\n  const content = await fs.readFile(sourcePath, \"utf-8\");\n\n  // Determine output directory\n  const outDir = outputDir ? path.resolve(outputDir) : path.dirname(sourcePath);\n  await fs.mkdir(outDir, { recursive: true });\n\n  // Compute content hash and load cache\n  const sourceHash = hashContent(content);\n  const cachePath = path.join(outDir, \".translation-cache.json\");\n  const cache = await readCache(cachePath);\n  const isHashMatch = cache?.sourceHash === sourceHash;\n\n  const results: TranslationResult[] = [];\n  let totalCostUsd = 0;\n\n  if (verbose) {\n    console.log(`\ud83d\udcd6 Source: ${sourcePath}`);\n    console.log(`\ud83d\udcc2 Output: ${outDir}`);\n    console.log(`\ud83c\udf0d Languages: ${languages.join(\", \")}`);\n    console.log(`\u26a1 Running ${parallel} translations in parallel`);\n    console.log(\"\");\n  }\n\n  // Worker function for a single language\n  async function translateLang(lang: string): Promise<TranslationResult> {\n    const outputFilename = pattern.replace(\"{lang}\", lang);\n    const outputPath = path.join(outDir, outputFilename);\n\n    // Check cache (unless --force)\n    if (!force && isHashMatch && cache?.translations[lang]) {\n      const outputExists = await fs.access(outputPath).then(() => true).catch(() => false);\n      if (outputExists) {\n        if (verbose) {\n          console.log(`   \u2705 ${outputFilename} (cached, unchanged)`);\n        }\n        return { language: lang, outputPath, success: true, cached: true, costUsd: 0 };\n      }\n    }\n\n    if (verbose) {\n      console.log(`\ud83d\udd04 Translating to ${getLanguageName(lang)} (${lang})...`);\n    }\n\n    try {\n      const { translation, costUsd } = await translateToLanguage(content, lang, {\n        preserveCode,\n        model,\n        verbose: verbose && parallel === 1, // Only show progress spinner for sequential\n      });\n\n      await fs.writeFile(outputPath, translation, \"utf-8\");\n\n      if (verbose) {\n        console.log(`   \u2705 Saved to ${outputFilename} ($${costUsd.toFixed(4)})`);\n      }\n\n      return { language: lang, outputPath, success: true, costUsd };\n    } catch (error) {\n      const errorMessage = error instanceof Error ? error.message : String(error);\n      if (verbose) {\n        console.log(`   \u274c ${lang} failed: ${errorMessage}`);\n      }\n      return { language: lang, outputPath, success: false, error: errorMessage };\n    }\n  }\n\n  // Run with concurrency limit\n  async function runWithConcurrency<T>(items: T[], limit: number, fn: (item: T) => Promise<TranslationResult>): Promise<TranslationResult[]> {\n    const results: TranslationResult[] = [];\n    const executing = new Set<Promise<void>>();\n\n    for (const item of items) {\n      // Check budget before starting new translation\n      if (maxBudgetUsd && totalCostUsd >= maxBudgetUsd) {\n        results.push({\n          language: String(item),\n          outputPath: \"\",\n          success: false,\n          error: \"Budget exceeded\",\n        });\n        continue;\n      }\n\n      const p = fn(item).then((result) => {\n        results.push(result);\n        if (result.costUsd) {\n          totalCostUsd += result.costUsd;\n        }\n      });\n\n      // Create a wrapped promise that removes itself when done\n      const wrapped = p.finally(() => {\n        executing.delete(wrapped);\n      });\n\n      executing.add(wrapped);\n\n      // Wait for a slot to open up if we're at the limit\n      if (executing.size >= limit) {\n        await Promise.race(executing);\n      }\n    }\n\n    // Wait for all remaining translations to complete\n    await Promise.all(executing);\n    return results;\n  }\n\n  const translationResults = await runWithConcurrency(languages, parallel, translateLang);\n  results.push(...translationResults);\n\n  // Save updated cache\n  const newCache: TranslationCache = {\n    sourceHash,\n    lastUpdated: new Date().toISOString(),\n    translations: {\n      ...(isHashMatch ? cache?.translations : {}),\n      ...Object.fromEntries(\n        results.filter(r => r.success && !r.cached).map(r => [\n          r.language,\n          { hash: sourceHash, translatedAt: new Date().toISOString(), costUsd: r.costUsd || 0 }\n        ])\n      ),\n    },\n  };\n  await writeCache(cachePath, newCache);\n\n  const successful = results.filter((r) => r.success).length;\n  const failed = results.filter((r) => !r.success).length;\n\n  if (verbose) {\n    console.log(\"\");\n    console.log(`\ud83d\udcca Summary: ${successful} succeeded, ${failed} failed`);\n    console.log(`\ud83d\udcb0 Total cost: $${totalCostUsd.toFixed(4)}`);\n  }\n\n  return {\n    results,\n    totalCostUsd,\n    successful,\n    failed,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_translateLang_290": {
+      "name": "translateLang",
+      "type": "function",
+      "start_line": 290,
+      "end_line": 330,
+      "content_hash": "4fefc5265eaec3e320162b4339aaea170dc8a421",
+      "content": "  async function translateLang(lang: string): Promise<TranslationResult> {\n    const outputFilename = pattern.replace(\"{lang}\", lang);\n    const outputPath = path.join(outDir, outputFilename);\n\n    // Check cache (unless --force)\n    if (!force && isHashMatch && cache?.translations[lang]) {\n      const outputExists = await fs.access(outputPath).then(() => true).catch(() => false);\n      if (outputExists) {\n        if (verbose) {\n          console.log(`   \u2705 ${outputFilename} (cached, unchanged)`);\n        }\n        return { language: lang, outputPath, success: true, cached: true, costUsd: 0 };\n      }\n    }\n\n    if (verbose) {\n      console.log(`\ud83d\udd04 Translating to ${getLanguageName(lang)} (${lang})...`);\n    }\n\n    try {\n      const { translation, costUsd } = await translateToLanguage(content, lang, {\n        preserveCode,\n        model,\n        verbose: verbose && parallel === 1, // Only show progress spinner for sequential\n      });\n\n      await fs.writeFile(outputPath, translation, \"utf-8\");\n\n      if (verbose) {\n        console.log(`   \u2705 Saved to ${outputFilename} ($${costUsd.toFixed(4)})`);\n      }\n\n      return { language: lang, outputPath, success: true, costUsd };\n    } catch (error) {\n      const errorMessage = error instanceof Error ? error.message : String(error);\n      if (verbose) {\n        console.log(`   \u274c ${lang} failed: ${errorMessage}`);\n      }\n      return { language: lang, outputPath, success: false, error: errorMessage };\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runWithConcurrency_333": {
+      "name": "runWithConcurrency",
+      "type": "function",
+      "start_line": 333,
+      "end_line": 372,
+      "content_hash": "53d9a618faa1888365ce4641e254e7806a605527",
+      "content": "  async function runWithConcurrency<T>(items: T[], limit: number, fn: (item: T) => Promise<TranslationResult>): Promise<TranslationResult[]> {\n    const results: TranslationResult[] = [];\n    const executing = new Set<Promise<void>>();\n\n    for (const item of items) {\n      // Check budget before starting new translation\n      if (maxBudgetUsd && totalCostUsd >= maxBudgetUsd) {\n        results.push({\n          language: String(item),\n          outputPath: \"\",\n          success: false,\n          error: \"Budget exceeded\",\n        });\n        continue;\n      }\n\n      const p = fn(item).then((result) => {\n        results.push(result);\n        if (result.costUsd) {\n          totalCostUsd += result.costUsd;\n        }\n      });\n\n      // Create a wrapped promise that removes itself when done\n      const wrapped = p.finally(() => {\n        executing.delete(wrapped);\n      });\n\n      executing.add(wrapped);\n\n      // Wait for a slot to open up if we're at the limit\n      if (executing.size >= limit) {\n        await Promise.race(executing);\n      }\n    }\n\n    // Wait for all remaining translations to complete\n    await Promise.all(executing);\n    return results;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

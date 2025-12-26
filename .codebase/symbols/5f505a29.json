@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_gateway/worker_pool/mod.rs",
+  "file_hash": "ac52f904cdafc8ae2c498e60b5da4d9684efe54b",
+  "updated_at": "2025-12-26T17:34:24.268641",
+  "symbols": {
+    "struct_WorkerPool_21": {
+      "name": "WorkerPool",
+      "type": "struct",
+      "start_line": 21,
+      "end_line": 28,
+      "content_hash": "eefd5d899d413f5809b085c5165609acb8e1653b",
+      "content": "pub struct WorkerPool {\n    tx: Sender<ReqMsg>,\n    write_tx: Sender<ReqMsg>,\n    router: Arc<HelixRouter>,\n    _workers: Vec<Worker>,\n    _writer_worker: Worker,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_WorkerPool_29": {
+      "name": "WorkerPool",
+      "type": "impl",
+      "start_line": 29,
+      "end_line": 29,
+      "content_hash": "5de5083530ea567764586ba9ffc2ff640f66c476",
+      "content": "impl WorkerPool {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_new_30": {
+      "name": "new",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 111,
+      "content_hash": "08b3ece3201b5947084d8319995ad0a2e231ede1",
+      "content": "    pub fn new(\n        workers_core_setter: Arc<CoreSetter>,\n        graph_access: Arc<HelixGraphEngine>,\n        router: Arc<HelixRouter>,\n        io_rt: Arc<Runtime>,\n    ) -> WorkerPool {\n        let (req_tx, req_rx) = flume::bounded::<ReqMsg>(1000);\n        let (cont_tx, cont_rx) = flume::bounded::<ContMsg>(1000);\n\n        // Dedicated channel for write operations - single writer thread\n        let (write_tx, write_rx) = flume::bounded::<ReqMsg>(1000);\n\n        let num_workers = workers_core_setter.num_threads();\n        if num_workers < 2 {\n            panic!(\"The number of workers must be at least 2 for parity to act as a select.\");\n        }\n        if !num_workers.is_multiple_of(2) {\n            println!(\"Expected an even number of workers, got {num_workers}\");\n            panic!(\"The number of workers should be a multiple of 2 for fairness.\");\n        }\n\n        let workers = iter::repeat_n(workers_core_setter, num_workers)\n            .enumerate()\n            .map(|(i, setter)| {\n                Worker::start(\n                    req_rx.clone(),\n                    setter,\n                    Arc::clone(&graph_access),\n                    Arc::clone(&router),\n                    Arc::clone(&io_rt),\n                    (cont_tx.clone(), cont_rx.clone()),\n                    i % 2 == 0,\n                )\n            })\n            .collect();\n\n        // Create the dedicated writer worker (no core pinning needed for single thread)\n        let writer_worker = Worker::start_writer(\n            write_rx,\n            Arc::clone(&graph_access),\n            Arc::clone(&router),\n            Arc::clone(&io_rt),\n        );\n\n        WorkerPool {\n            tx: req_tx,\n            write_tx,\n            router,\n            _workers: workers,\n            _writer_worker: writer_worker,\n        }\n    }\n\n    /// Process a request on the Worker Pool\n    /// Write operations are routed to a dedicated writer thread to ensure proper LMDB locking\n    pub async fn process(&self, req: Request) -> Result<Response, HelixError> {\n        let (ret_tx, ret_rx) = oneshot::channel();\n        let req_name = req.name.clone();\n\n        // Route to dedicated writer thread or reader worker pool\n        let channel = if self.router.is_write_route(&req.name) {\n            &self.write_tx\n        } else {\n            &self.tx\n        };\n\n        channel.send_async((req, ret_tx)).await.map_err(|_| {\n            error!(\"WorkerPool channel closed for request '{req_name}'\");\n            HelixError::Graph(GraphError::New(\"Server is shutting down\".into()))\n        })?;\n\n        // Handle the case where the worker might have dropped the sender\n        // (e.g., worker thread panicked or client disconnected)\n        ret_rx.await.unwrap_or_else(|_| {\n            error!(\"Worker dropped sender without reply for request '{req_name}'\");\n            Err(HelixError::Graph(GraphError::New(\n                \"Internal server error: worker failed to respond\".into(),\n            )))\n        })\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Worker_112": {
+      "name": "Worker",
+      "type": "struct",
+      "start_line": 112,
+      "end_line": 115,
+      "content_hash": "bf3db70c916b780674151b3ad82ca18deaa9b089",
+      "content": "struct Worker {\n    _handle: JoinHandle<()>,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Worker_116": {
+      "name": "Worker",
+      "type": "impl",
+      "start_line": 116,
+      "end_line": 116,
+      "content_hash": "05c6c87cc8ca1b7dfec1021b78017396df22f867",
+      "content": "impl Worker {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_start_117": {
+      "name": "start",
+      "type": "method",
+      "start_line": 117,
+      "end_line": 220,
+      "content_hash": "aebcba8eb8b333f2e84c5b1190b18a6a020c9bae",
+      "content": "    pub fn start(\n        rx: Receiver<ReqMsg>,\n        core_setter: Arc<CoreSetter>,\n        graph_access: Arc<HelixGraphEngine>,\n        router: Arc<HelixRouter>,\n        io_rt: Arc<Runtime>,\n        (cont_tx, cont_rx): (ContChan, Receiver<ContMsg>),\n        parity: bool,\n    ) -> Worker {\n        let handle = std::thread::spawn(move || {\n            core_setter.set_current();\n\n            trace!(\"thread started\");\n\n            // Initialize thread-local metrics buffer\n            helix_metrics::init_thread_local();\n\n            // Set thread local context, so we can access the io runtime\n            let _io_guard = io_rt.enter();\n\n            // To avoid a select, we try_recv on one channel and then wait on the other.\n            // Since we have multiple workers, we use parity to decide which order around,\n            // meaning if there's at least 2 worker threads its a fair select.\n            match parity {\n                true => {\n                    loop {\n                        // cont_rx.try_recv() then rx.recv()\n\n                        match cont_rx.try_recv() {\n                            Ok((ret_chan, cfn)) => {\n                                let result = cfn().map_err(Into::into);\n                                if ret_chan.send(result).is_err() {\n                                    trace!(\n                                        \"Client disconnected before continuation response could be sent\"\n                                    );\n                                }\n                            }\n                            Err(flume::TryRecvError::Disconnected) => {\n                                error!(\"Continuation Channel was dropped\");\n                                break;\n                            }\n                            Err(flume::TryRecvError::Empty) => {}\n                        }\n\n                        match rx.recv() {\n                            Ok((req, ret_chan)) => request_mapper(\n                                req,\n                                ret_chan,\n                                graph_access.clone(),\n                                &router,\n                                &io_rt,\n                                &cont_tx,\n                            ),\n                            Err(flume::RecvError::Disconnected) => {\n                                error!(\"Request Channel was dropped\");\n                                break;\n                            }\n                        }\n                    }\n                }\n                false => {\n                    loop {\n                        // rx.try_recv() then cont_rx.recv()\n\n                        match rx.try_recv() {\n                            Ok((req, ret_chan)) => request_mapper(\n                                req,\n                                ret_chan,\n                                graph_access.clone(),\n                                &router,\n                                &io_rt,\n                                &cont_tx,\n                            ),\n                            Err(flume::TryRecvError::Disconnected) => {\n                                error!(\"Request Channel was dropped\");\n                                break;\n                            }\n                            Err(flume::TryRecvError::Empty) => {}\n                        }\n\n                        match cont_rx.recv() {\n                            Ok((ret_chan, cfn)) => {\n                                let result = cfn().map_err(Into::into);\n                                if ret_chan.send(result).is_err() {\n                                    trace!(\n                                        \"Client disconnected before continuation response could be sent\"\n                                    );\n                                }\n                            }\n                            Err(flume::RecvError::Disconnected) => {\n                                error!(\"Continuation Channel was dropped\");\n                                break;\n                            }\n                        }\n                    }\n                }\n            }\n        });\n        Worker { _handle: handle }\n    }\n\n    /// Start a dedicated writer worker thread\n    /// This thread handles all write operations to ensure proper LMDB locking\n    /// Note: No core pinning for the writer - let the OS scheduler handle it",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_start_writer_221": {
+      "name": "start_writer",
+      "type": "method",
+      "start_line": 221,
+      "end_line": 278,
+      "content_hash": "f43fcd89f88fe762fdfb9ef5a0fca18c7b9dbe11",
+      "content": "    pub fn start_writer(\n        rx: Receiver<ReqMsg>,\n        graph_access: Arc<HelixGraphEngine>,\n        router: Arc<HelixRouter>,\n        io_rt: Arc<Runtime>,\n    ) -> Worker {\n        let handle = std::thread::spawn(move || {\n            trace!(\"writer thread started\");\n\n            // Initialize thread-local metrics buffer\n            helix_metrics::init_thread_local();\n\n            // Set thread local context, so we can access the io runtime\n            let _io_guard = io_rt.enter();\n\n            // Single-threaded writer: process one request at a time, waiting for\n            // any continuations to complete before moving to the next request.\n            loop {\n                match rx.recv() {\n                    Ok((req, ret_chan)) => {\n                        // Create a per-request continuation channel\n                        let (cont_tx, cont_rx) = flume::bounded::<ContMsg>(1);\n\n                        // Process the request\n                        request_mapper(\n                            req,\n                            ret_chan,\n                            graph_access.clone(),\n                            &router,\n                            &io_rt,\n                            &cont_tx,\n                        );\n\n                        // Drop our sender so the channel disconnects when the async future\n                        // (which holds a clone) completes.\n                        drop(cont_tx);\n\n                        // Poll continuation channel until sender is dropped.\n                        while let Ok((ret_chan, cfn)) = cont_rx.recv() {\n                            let result = cfn().map_err(Into::into);\n                            if ret_chan.send(result).is_err() {\n                                trace!(\n                                    \"Client disconnected before continuation response could be sent\"\n                                );\n                            }\n                        }\n                    }\n                    Err(_) => {\n                        trace!(\"Writer request channel was dropped, shutting down\");\n                        break;\n                    }\n                }\n            }\n        });\n        Worker { _handle: handle }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_request_mapper_279": {
+      "name": "request_mapper",
+      "type": "method",
+      "start_line": 279,
+      "end_line": 348,
+      "content_hash": "61a4fd267dee3b737e50ca675591088cf7d902da",
+      "content": "fn request_mapper(\n    request: Request,\n    ret_chan: RetChan,\n    graph_access: Arc<HelixGraphEngine>,\n    router: &HelixRouter,\n    io_rt: &Runtime,\n    cont_tx: &ContChan,\n) {\n    let req_name = request.name.clone();\n    let req_type = request.req_type;\n\n    let res = match request.req_type {\n        RequestType::Query => {\n            if let Some(handler) = router.routes.get(&request.name) {\n                let input = HandlerInput {\n                    request,\n                    graph: graph_access,\n                };\n\n                match handler(input) {\n                    Err(GraphError::IoNeeded(cont_closure)) => {\n                        let fut = cont_closure.0(cont_tx.clone(), ret_chan);\n                        io_rt.spawn(fut);\n                        return;\n                    }\n                    res => Some(res.map_err(Into::into)),\n                }\n            } else {\n                None\n            }\n        }\n        RequestType::MCP => {\n            if let Some(mcp_handler) = router.mcp_routes.get(&request.name) {\n                let mut mcp_input = MCPToolInput {\n                    request,\n                    mcp_backend: Arc::clone(\n                        graph_access\n                            .mcp_backend\n                            .as_ref()\n                            .expect(\"MCP backend not found\"),\n                    ),\n                    mcp_connections: Arc::clone(\n                        graph_access\n                            .mcp_connections\n                            .as_ref()\n                            .expect(\"MCP connections not found\"),\n                    ),\n                    schema: graph_access.storage.storage_config.schema.clone(),\n                };\n                Some(mcp_handler(&mut mcp_input).map_err(Into::into))\n            } else {\n                None\n            }\n        }\n    };\n\n    let res = res.unwrap_or(Err(HelixError::NotFound {\n        ty: req_type,\n        name: req_name.clone(),\n    }));\n\n    // Client may have disconnected before we could send the response.\n    // This is normal behavior - just log at trace level and continue.\n    if ret_chan.send(res).is_err() {\n        trace!(\n            \"Client disconnected before response could be sent for request '{}'\",\n            req_name\n        );\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

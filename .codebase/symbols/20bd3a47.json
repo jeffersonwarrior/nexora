@@ -1,0 +1,183 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helixc/parser/utils.rs",
+  "file_hash": "12c51b479c0aa387ec435518991e1518b2228527",
+  "updated_at": "2025-12-26T17:34:22.676349",
+  "symbols": {
+    "impl_HelixParser_8": {
+      "name": "HelixParser",
+      "type": "impl",
+      "start_line": 8,
+      "end_line": 88,
+      "content_hash": "f2a210567ab1a7ba081344321bf0423ffddaa44f",
+      "content": "impl HelixParser {\n    pub(super) fn parse_id_args(&self, pair: Pair<Rule>) -> Result<Option<IdType>, ParserError> {\n        let p = pair\n            .into_inner()\n            .next()\n            .ok_or_else(|| ParserError::from(\"Missing ID\"))?;\n        match p.as_rule() {\n            Rule::identifier => Ok(Some(IdType::Identifier {\n                value: p.as_str().to_string(),\n                loc: p.loc(),\n            })),\n            Rule::string_literal | Rule::inner_string => Ok(Some(IdType::Literal {\n                value: p.as_str().to_string(),\n                loc: p.loc(),\n            })),\n            _ => Err(ParserError::from(format!(\n                \"Unexpected rule in parse_id_args: {:?}\",\n                p.as_rule()\n            ))),\n        }\n    }\n    pub(super) fn parse_vec_literal(&self, pair: Pair<Rule>) -> Result<Vec<f64>, ParserError> {\n        let pairs = pair.into_inner();\n        let mut vec = Vec::new();\n        for p in pairs {\n            vec.push(\n                p.as_str()\n                    .parse::<f64>()\n                    .map_err(|_| ParserError::from(\"Invalid float value\"))?,\n            );\n        }\n        Ok(vec)\n    }\n\n    pub(super) fn parse_array_literal(\n        &self,\n        pair: Pair<Rule>,\n    ) -> Result<Vec<Expression>, ParserError> {\n        pair.into_inner()\n            .map(|p| self.parse_expression(p))\n            .collect()\n    }\n\n    pub(super) fn parse_string_literal(&self, pair: Pair<Rule>) -> Result<String, ParserError> {\n        let inner = pair\n            .into_inner()\n            .next()\n            .ok_or_else(|| ParserError::from(\"Empty string literal\"))?;\n\n        let mut literal = inner.as_str().to_string();\n        literal.retain(|c| c != '\"');\n        Ok(literal)\n    }\n\n    pub(super) fn parse_to_from(&self, pair: Pair<Rule>) -> Result<EdgeConnection, ParserError> {\n        let pairs = pair.clone().into_inner();\n        let mut from_id = None;\n        let mut to_id = None;\n        // println!(\"pairs: {:?}\", pairs);\n        for p in pairs {\n            match p.as_rule() {\n                Rule::from => {\n                    from_id = self.parse_id_args(p.into_inner().next().unwrap())?;\n                }\n                Rule::to => {\n                    to_id = self.parse_id_args(p.into_inner().next().unwrap())?;\n                }\n                _ => return Err(ParserError::from(format!(\n                    \"Unexpected rule in parse_to_from: {:?}\",\n                    p.as_rule()\n                ))),\n            }\n        }\n        Ok(EdgeConnection {\n            from_id,\n            to_id,\n            loc: pair.loc(),\n        })\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_PairTools_89": {
+      "name": "PairTools",
+      "type": "trait",
+      "start_line": 89,
+      "end_line": 91,
+      "content_hash": "e3528bc5efb92cec43875b94ef82ac0262470e56",
+      "content": "pub trait PairTools<'a> {\n    /// Equivalent to into_inner().next()\n    #[track_caller]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_inner_next_92": {
+      "name": "try_inner_next",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 94,
+      "content_hash": "3cefc39300181e14649b315310b1d581129ec30c",
+      "content": "    fn try_inner_next(self) -> Result<Pair<'a, Rule>, ParserError>;\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "trait_PairsTools_95": {
+      "name": "PairsTools",
+      "type": "trait",
+      "start_line": 95,
+      "end_line": 96,
+      "content_hash": "6fc7d2676535302a32e44fc2b0e8c85fc1510593",
+      "content": "pub trait PairsTools<'a> {\n    /// Equivalent to next()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_next_97": {
+      "name": "try_next",
+      "type": "method",
+      "start_line": 97,
+      "end_line": 99,
+      "content_hash": "09a2a8d19b98c26a8065e915ecbbf4f90e54e9de",
+      "content": "    fn try_next(&mut self) -> Result<Pair<'a, Rule>, ParserError>;\n\n    /// Equivalent to next().into_inner()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_next_inner_100": {
+      "name": "try_next_inner",
+      "type": "method",
+      "start_line": 100,
+      "end_line": 102,
+      "content_hash": "539f89819bb0e60bf9cd1ab5bd892bee6a838b61",
+      "content": "    fn try_next_inner(&mut self) -> Result<Pairs<'a, Rule>, ParserError>;\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_PairTools_103": {
+      "name": "PairTools",
+      "type": "impl",
+      "start_line": 103,
+      "end_line": 104,
+      "content_hash": "bcaf13246b59020c36ffbdb856150b83dba7e0ab",
+      "content": "impl<'a> PairTools<'a> for Pair<'a, Rule> {\n    #[track_caller]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_inner_next_105": {
+      "name": "try_inner_next",
+      "type": "method",
+      "start_line": 105,
+      "end_line": 112,
+      "content_hash": "6347d149f2a8307905389a9cd30afd6d3cc97682",
+      "content": "    fn try_inner_next(self) -> Result<Pair<'a, Rule>, ParserError> {\n        let err_msg = format!(\"Expected inner next got {self:?}\");\n        self.into_inner()\n            .next()\n            .ok_or_else(|| ParserError::from(err_msg))\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_PairTools_113": {
+      "name": "PairTools",
+      "type": "impl",
+      "start_line": 113,
+      "end_line": 114,
+      "content_hash": "1e77cdd8a8f445a83bddc83db4aad5be1f553a2c",
+      "content": "impl<'a> PairTools<'a> for Result<Pair<'a, Rule>, ParserError> {\n    #[track_caller]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_inner_next_115": {
+      "name": "try_inner_next",
+      "type": "method",
+      "start_line": 115,
+      "end_line": 125,
+      "content_hash": "ce1349923adf1bde01a9a8427cec889622b6f6b5",
+      "content": "    fn try_inner_next(self) -> Result<Pair<'a, Rule>, ParserError> {\n        match self {\n            Ok(pair) => pair\n                .into_inner()\n                .next()\n                .ok_or_else(|| ParserError::from(\"Expected inner next\")),\n            Err(e) => Err(e),\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_PairsTools_126": {
+      "name": "PairsTools",
+      "type": "impl",
+      "start_line": 126,
+      "end_line": 126,
+      "content_hash": "ff0362cea3cefa18f693b1d11b0bfa8dc2c72bc5",
+      "content": "impl<'a> PairsTools<'a> for Pairs<'a, Rule> {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_next_127": {
+      "name": "try_next",
+      "type": "method",
+      "start_line": 127,
+      "end_line": 131,
+      "content_hash": "76d924a5ed5a0870ec122d0d15f6c9f245ca09e3",
+      "content": "    fn try_next(&mut self) -> Result<Pair<'a, Rule>, ParserError> {\n        self.next()\n            .ok_or_else(|| ParserError::from(\"Expected next\"))\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_next_inner_132": {
+      "name": "try_next_inner",
+      "type": "method",
+      "start_line": 132,
+      "end_line": 139,
+      "content_hash": "aeae619b86346aeb5e5c44ac705d89f246b9050c",
+      "content": "    fn try_next_inner(&mut self) -> Result<Pairs<'a, Rule>, ParserError> {\n        match self.next() {\n            Some(pair) => Ok(pair.into_inner()),\n            None => Err(ParserError::from(\"Expected next inner\")),\n        }\n    }\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_PairsTools_140": {
+      "name": "PairsTools",
+      "type": "impl",
+      "start_line": 140,
+      "end_line": 140,
+      "content_hash": "40b5a351991378398421eba7bcc8f63e3091c8b5",
+      "content": "impl<'a> PairsTools<'a> for Result<Pairs<'a, Rule>, ParserError> {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_next_141": {
+      "name": "try_next",
+      "type": "method",
+      "start_line": 141,
+      "end_line": 147,
+      "content_hash": "53cfa5d46a9ccab99fb9fbb077bcaa7a784bd05e",
+      "content": "    fn try_next(&mut self) -> Result<Pair<'a, Rule>, ParserError> {\n        match self {\n            Ok(pairs) => pairs.try_next(),\n            Err(e) => Err(e.clone()),\n        }\n    }\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_try_next_inner_148": {
+      "name": "try_next_inner",
+      "type": "method",
+      "start_line": 148,
+      "end_line": 154,
+      "content_hash": "ad4f80ccae0d2582a50e0ee8f4855ce5c97ab85e",
+      "content": "    fn try_next_inner(&mut self) -> Result<Pairs<'a, Rule>, ParserError> {\n        match self {\n            Ok(pairs) => pairs.try_next_inner(),\n            Err(e) => Err(e.clone()),\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

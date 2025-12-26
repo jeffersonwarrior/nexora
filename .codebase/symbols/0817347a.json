@@ -1,0 +1,150 @@
+{
+  "file_path": "/work/internal/agent/state/phase.go",
+  "file_hash": "4474f5ec70a65292f3e9d1395055d11d1f58c8eb",
+  "updated_at": "2025-12-26T17:34:22.240677",
+  "symbols": {
+    "struct_PhaseContext_9": {
+      "name": "PhaseContext",
+      "type": "struct",
+      "start_line": 9,
+      "end_line": 31,
+      "content_hash": "e713a878630645d9113ee8eb0c31409dcfa10851",
+      "content": "type PhaseContext struct {\n\tmu sync.RWMutex\n\n\t// Phase identification\n\tCurrentPhase     int\n\tTotalPhases      int\n\tPhaseDescription string\n\n\t// Timing\n\tPhaseStartTime   time.Time\n\tExpectedDuration time.Duration\n\tTotalStartTime   time.Time\n\n\t// Progress indicators\n\tFilesChanged []string\n\tTestsPassed  bool\n\tBlockers     []string\n\n\t// Phase history\n\tCompletedPhases []CompletedPhase\n}\n\n// CompletedPhase represents a finished phase.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CompletedPhase_32": {
+      "name": "CompletedPhase",
+      "type": "struct",
+      "start_line": 32,
+      "end_line": 43,
+      "content_hash": "16beae2ed36d9c73d1e3c229c4a6a6097b3afea4",
+      "content": "type CompletedPhase struct {\n\tPhaseNumber int\n\tDescription string\n\tStartTime   time.Time\n\tEndTime     time.Time\n\tDuration    time.Duration\n\tFileCount   int\n\tTestsPassed bool\n\tSuccess     bool\n}\n\n// NewPhaseContext creates a new phase context.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewPhaseContext_44": {
+      "name": "NewPhaseContext",
+      "type": "function",
+      "start_line": 44,
+      "end_line": 55,
+      "content_hash": "8920fa8130916defe544364a856395910bdc952f",
+      "content": "func NewPhaseContext(totalPhases int) *PhaseContext {\n\treturn &PhaseContext{\n\t\tCurrentPhase:    0,\n\t\tTotalPhases:     totalPhases,\n\t\tTotalStartTime:  time.Now(),\n\t\tFilesChanged:    make([]string, 0),\n\t\tCompletedPhases: make([]CompletedPhase, 0),\n\t\tBlockers:        make([]string, 0),\n\t}\n}\n\n// StartPhase begins a new phase.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_StartPhase_56": {
+      "name": "StartPhase",
+      "type": "method",
+      "start_line": 56,
+      "end_line": 69,
+      "content_hash": "e18d984f9383e86d0503968f83802c75e73cc3c1",
+      "content": "func (pc *PhaseContext) StartPhase(phaseNumber int, description string, expectedDuration time.Duration) {\n\tpc.mu.Lock()\n\tdefer pc.mu.Unlock()\n\n\tpc.CurrentPhase = phaseNumber\n\tpc.PhaseDescription = description\n\tpc.PhaseStartTime = time.Now()\n\tpc.ExpectedDuration = expectedDuration\n\tpc.FilesChanged = make([]string, 0)\n\tpc.TestsPassed = false\n\tpc.Blockers = make([]string, 0)\n}\n\n// CompletePhase marks the current phase as complete.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CompletePhase_70": {
+      "name": "CompletePhase",
+      "type": "method",
+      "start_line": 70,
+      "end_line": 88,
+      "content_hash": "8bab13ae188b692aebccd642ae07bd0ce18df71a",
+      "content": "func (pc *PhaseContext) CompletePhase(success bool) {\n\tpc.mu.Lock()\n\tdefer pc.mu.Unlock()\n\n\tcompleted := CompletedPhase{\n\t\tPhaseNumber: pc.CurrentPhase,\n\t\tDescription: pc.PhaseDescription,\n\t\tStartTime:   pc.PhaseStartTime,\n\t\tEndTime:     time.Now(),\n\t\tDuration:    time.Since(pc.PhaseStartTime),\n\t\tFileCount:   len(pc.FilesChanged),\n\t\tTestsPassed: pc.TestsPassed,\n\t\tSuccess:     success,\n\t}\n\n\tpc.CompletedPhases = append(pc.CompletedPhases, completed)\n}\n\n// RecordFileChange adds a file to the current phase's changed files.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordFileChange_89": {
+      "name": "RecordFileChange",
+      "type": "method",
+      "start_line": 89,
+      "end_line": 102,
+      "content_hash": "2cc2a72422aa915564a35119fc4f206a12092382",
+      "content": "func (pc *PhaseContext) RecordFileChange(filePath string) {\n\tpc.mu.Lock()\n\tdefer pc.mu.Unlock()\n\n\t// Avoid duplicates\n\tfor _, existing := range pc.FilesChanged {\n\t\tif existing == filePath {\n\t\t\treturn\n\t\t}\n\t}\n\tpc.FilesChanged = append(pc.FilesChanged, filePath)\n}\n\n// MarkTestsPassed marks tests as passing for the current phase.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_MarkTestsPassed_103": {
+      "name": "MarkTestsPassed",
+      "type": "method",
+      "start_line": 103,
+      "end_line": 110,
+      "content_hash": "f1a25ad9c1a99279b3e5c4a076f8cbf66402ddb1",
+      "content": "func (pc *PhaseContext) MarkTestsPassed(passed bool) {\n\tpc.mu.Lock()\n\tdefer pc.mu.Unlock()\n\n\tpc.TestsPassed = passed\n}\n\n// AddBlocker adds a blocker to the current phase.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddBlocker_111": {
+      "name": "AddBlocker",
+      "type": "method",
+      "start_line": 111,
+      "end_line": 118,
+      "content_hash": "86f3dec010ce77df6f929756ddfddf117f26e102",
+      "content": "func (pc *PhaseContext) AddBlocker(blocker string) {\n\tpc.mu.Lock()\n\tdefer pc.mu.Unlock()\n\n\tpc.Blockers = append(pc.Blockers, blocker)\n}\n\n// GetCurrentPhaseInfo returns information about the current phase.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCurrentPhaseInfo_119": {
+      "name": "GetCurrentPhaseInfo",
+      "type": "method",
+      "start_line": 119,
+      "end_line": 135,
+      "content_hash": "e75f9999fb28f9fe142d9b9d3ec24940b66cb378",
+      "content": "func (pc *PhaseContext) GetCurrentPhaseInfo() PhaseInfo {\n\tpc.mu.RLock()\n\tdefer pc.mu.RUnlock()\n\n\treturn PhaseInfo{\n\t\tPhaseNumber:      pc.CurrentPhase,\n\t\tTotalPhases:      pc.TotalPhases,\n\t\tDescription:      pc.PhaseDescription,\n\t\tElapsed:          time.Since(pc.PhaseStartTime),\n\t\tExpectedDuration: pc.ExpectedDuration,\n\t\tFilesChanged:     len(pc.FilesChanged),\n\t\tTestsPassed:      pc.TestsPassed,\n\t\tHasBlockers:      len(pc.Blockers) > 0,\n\t}\n}\n\n// GetTotalProgress returns overall progress information.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetTotalProgress_136": {
+      "name": "GetTotalProgress",
+      "type": "method",
+      "start_line": 136,
+      "end_line": 161,
+      "content_hash": "d6b943f9c151c6cdabf2c61c5176211d3a7c6d48",
+      "content": "func (pc *PhaseContext) GetTotalProgress() TotalProgress {\n\tpc.mu.RLock()\n\tdefer pc.mu.RUnlock()\n\n\tcompletedCount := len(pc.CompletedPhases)\n\tsuccessCount := 0\n\ttotalFileChanges := 0\n\n\tfor _, phase := range pc.CompletedPhases {\n\t\tif phase.Success {\n\t\t\tsuccessCount++\n\t\t}\n\t\ttotalFileChanges += phase.FileCount\n\t}\n\n\treturn TotalProgress{\n\t\tTotalPhases:      pc.TotalPhases,\n\t\tCompletedPhases:  completedCount,\n\t\tSuccessfulPhases: successCount,\n\t\tCurrentPhase:     pc.CurrentPhase,\n\t\tTotalElapsed:     time.Since(pc.TotalStartTime),\n\t\tTotalFileChanges: totalFileChanges,\n\t}\n}\n\n// IsPhaseTimeout checks if the current phase has exceeded expected duration.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsPhaseTimeout_162": {
+      "name": "IsPhaseTimeout",
+      "type": "method",
+      "start_line": 162,
+      "end_line": 176,
+      "content_hash": "78237898e351ead06837c143c1e85cc5664968a1",
+      "content": "func (pc *PhaseContext) IsPhaseTimeout(multiplier float64) bool {\n\tpc.mu.RLock()\n\tdefer pc.mu.RUnlock()\n\n\tif pc.ExpectedDuration == 0 {\n\t\treturn false // No timeout set\n\t}\n\n\telapsed := time.Since(pc.PhaseStartTime)\n\tthreshold := time.Duration(float64(pc.ExpectedDuration) * multiplier)\n\n\treturn elapsed > threshold\n}\n\n// PhaseInfo provides snapshot of current phase.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_PhaseInfo_177": {
+      "name": "PhaseInfo",
+      "type": "struct",
+      "start_line": 177,
+      "end_line": 188,
+      "content_hash": "f1a52082c3a4a719daec84f65ff816788a5d10fe",
+      "content": "type PhaseInfo struct {\n\tPhaseNumber      int\n\tTotalPhases      int\n\tDescription      string\n\tElapsed          time.Duration\n\tExpectedDuration time.Duration\n\tFilesChanged     int\n\tTestsPassed      bool\n\tHasBlockers      bool\n}\n\n// TotalProgress provides overview of all phases.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TotalProgress_189": {
+      "name": "TotalProgress",
+      "type": "struct",
+      "start_line": 189,
+      "end_line": 196,
+      "content_hash": "a722ebca70645e0482fa3920d48bbe888e4f3468",
+      "content": "type TotalProgress struct {\n\tTotalPhases      int\n\tCompletedPhases  int\n\tSuccessfulPhases int\n\tCurrentPhase     int\n\tTotalElapsed     time.Duration\n\tTotalFileChanges int\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

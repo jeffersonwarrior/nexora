@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/vscode-extension/context-engine-uploader/mcp_bridge.js",
+  "file_hash": "b7e0c4a35a4a6d9d39a554897aab1640c975a5ea",
+  "updated_at": "2025-12-26T17:34:22.258037",
+  "symbols": {
+    "function_createBridgeManager_1": {
+      "name": "createBridgeManager",
+      "type": "function",
+      "start_line": 1,
+      "end_line": 226,
+      "content_hash": "55742b704467d8682ef66649e9216bf080c1dbd0",
+      "content": "function createBridgeManager(deps) {\n  const vscode = deps.vscode;\n  const spawn = deps.spawn;\n  const log = deps.log;\n\n  const getEffectiveConfig = deps.getEffectiveConfig;\n  const resolveBridgeWorkspacePath = deps.resolveBridgeWorkspacePath;\n  const normalizeBridgeUrl = deps.normalizeBridgeUrl;\n  const normalizeWorkspaceForBridge = deps.normalizeWorkspaceForBridge;\n  const resolveBridgeCliInvocation = deps.resolveBridgeCliInvocation;\n  const attachOutput = deps.attachOutput;\n  const terminateProcess = deps.terminateProcess;\n  const scheduleMcpConfigRefreshAfterBridge = deps.scheduleMcpConfigRefreshAfterBridge;\n\n  let httpBridgeProcess;\n  let httpBridgePort;\n  let httpBridgeWorkspace;\n  let stopInFlight;\n\n  function getState() {\n    return {\n      process: httpBridgeProcess,\n      port: httpBridgePort,\n      workspace: httpBridgeWorkspace,\n    };\n  }\n\n  function isRunning() {\n    return !!httpBridgeProcess;\n  }\n\n  function requiresHttpBridge(serverMode, transportMode) {\n    return serverMode === 'bridge' && transportMode === 'http';\n  }\n\n  function resolveBridgeHttpUrl() {\n    try {\n      const settings = getEffectiveConfig();\n      let port = Number(settings.get('mcpBridgePort') || 30810);\n      if (!Number.isFinite(port) || port <= 0) {\n        port = 30810;\n      }\n      const hostname = '127.0.0.1';\n      return `http://${hostname}:${port}/mcp`;\n    } catch (error) {\n      log(`Failed to resolve bridge HTTP URL: ${error instanceof Error ? error.message : String(error)}`);\n      return undefined;\n    }\n  }\n\n  function resolveHttpBridgeOptions() {\n    try {\n      const settings = getEffectiveConfig();\n      const serverModeRaw = settings.get('mcpServerMode') || 'bridge';\n      const transportModeRaw = settings.get('mcpTransportMode') || 'sse-remote';\n      const serverMode = typeof serverModeRaw === 'string' ? serverModeRaw.trim() : 'bridge';\n      const transportMode = typeof transportModeRaw === 'string' ? transportModeRaw.trim() : 'sse-remote';\n      if (serverMode !== 'bridge') {\n        vscode.window.showWarningMessage('Context Engine Uploader: MCP server mode is not \"bridge\"; HTTP bridge will connect to raw endpoints.');\n      }\n      if (transportMode !== 'http') {\n        log('Context Engine Uploader: MCP transport mode is not \"http\"; HTTP bridge will still start but downstream configs may expect SSE.');\n      }\n      const workspacePath = resolveBridgeWorkspacePath();\n      if (!workspacePath) {\n        vscode.window.showErrorMessage('Context Engine Uploader: open a workspace or set contextEngineUploader.targetPath before starting HTTP MCP bridge.');\n        return undefined;\n      }\n      let indexerUrl = (settings.get('mcpIndexerUrl') || 'http://localhost:8003/mcp').trim();\n      let memoryUrl = (settings.get('mcpMemoryUrl') || 'http://localhost:8002/mcp').trim();\n      indexerUrl = normalizeBridgeUrl(indexerUrl);\n      memoryUrl = normalizeBridgeUrl(memoryUrl);\n      let port = Number(settings.get('mcpBridgePort') || 30810);\n      if (!Number.isFinite(port) || port <= 0) {\n        port = 30810;\n      }\n      return {\n        workspacePath,\n        indexerUrl,\n        memoryUrl,\n        port,\n      };\n    } catch (error) {\n      log(`Failed to resolve HTTP bridge options: ${error instanceof Error ? error.message : String(error)}`);\n      return undefined;\n    }\n  }\n\n  async function start() {\n    if (httpBridgeProcess) {\n      vscode.window.showInformationMessage(`Context Engine HTTP MCP bridge already running on port ${httpBridgePort || 'unknown'}.`);\n      return httpBridgePort;\n    }\n    const options = resolveHttpBridgeOptions();\n    if (!options) {\n      return undefined;\n    }\n    const invocation = resolveBridgeCliInvocation();\n    if (!invocation) {\n      vscode.window.showErrorMessage('Context Engine Uploader: unable to locate ctxce CLI for HTTP bridge.');\n      return undefined;\n    }\n    const cliArgs = ['mcp-http-serve'];\n    if (options.workspacePath) {\n      cliArgs.push('--workspace', normalizeWorkspaceForBridge(options.workspacePath));\n    }\n    if (options.indexerUrl) {\n      cliArgs.push('--indexer-url', options.indexerUrl);\n    }\n    if (options.memoryUrl) {\n      cliArgs.push('--memory-url', options.memoryUrl);\n    }\n    if (options.port) {\n      cliArgs.push('--port', String(options.port));\n    }\n    const finalArgs = [...invocation.args, ...cliArgs];\n    log(`Starting HTTP MCP bridge via ${invocation.command} ${finalArgs.join(' ')}`);\n    const child = spawn(invocation.command, finalArgs, {\n      cwd: options.workspacePath,\n      env: process.env,\n    });\n    httpBridgeProcess = child;\n    httpBridgePort = options.port;\n    httpBridgeWorkspace = options.workspacePath;\n    attachOutput(child, 'mcp-http');\n    child.on('exit', (code, signal) => {\n      log(`HTTP MCP bridge exited with code ${code} signal ${signal || ''}`.trim());\n      if (httpBridgeProcess === child) {\n        httpBridgeProcess = undefined;\n        httpBridgePort = undefined;\n        httpBridgeWorkspace = undefined;\n      }\n    });\n    child.on('error', error => {\n      log(`HTTP MCP bridge process error: ${error instanceof Error ? error.message : String(error)}`);\n      if (httpBridgeProcess === child) {\n        httpBridgeProcess = undefined;\n        httpBridgePort = undefined;\n        httpBridgeWorkspace = undefined;\n      }\n    });\n    vscode.window.showInformationMessage(`Context Engine HTTP MCP bridge listening on http://127.0.0.1:${options.port}/mcp`);\n    if (typeof scheduleMcpConfigRefreshAfterBridge === 'function') {\n      scheduleMcpConfigRefreshAfterBridge();\n    }\n    return options.port;\n  }\n\n  function stop() {\n    if (!httpBridgeProcess) {\n      return Promise.resolve();\n    }\n    if (stopInFlight) {\n      return stopInFlight;\n    }\n    const proc = httpBridgeProcess;\n    stopInFlight = terminateProcess(\n      proc,\n      'mcp-http',\n      () => {\n        if (httpBridgeProcess === proc) {\n          httpBridgeProcess = undefined;\n          httpBridgePort = undefined;\n          httpBridgeWorkspace = undefined;\n        }\n      }\n    ).finally(() => {\n      stopInFlight = undefined;\n    });\n    return stopInFlight;\n  }\n\n  async function ensureReadyForConfigs() {\n    try {\n      if (httpBridgeProcess) {\n        return true;\n      }\n      await start();\n      return !!httpBridgeProcess;\n    } catch (error) {\n      log(`Failed to ensure HTTP bridge is ready: ${error instanceof Error ? error.message : String(error)}`);\n      return false;\n    }\n  }\n\n  async function handleSettingsChanged() {\n    const config = getEffectiveConfig();\n    const shouldRun = !!config.get('autoStartMcpBridge', false);\n    const wasRunning = !!httpBridgeProcess;\n    if (httpBridgeProcess) {\n      await stop();\n    }\n    if (shouldRun || wasRunning) {\n      const transportModeRaw = config.get('mcpTransportMode') || 'sse-remote';\n      const serverModeRaw = config.get('mcpServerMode') || 'bridge';\n      const transportMode = (typeof transportModeRaw === 'string' ? transportModeRaw.trim() : 'sse-remote') || 'sse-remote';\n      const serverMode = (typeof serverModeRaw === 'string' ? serverModeRaw.trim() : 'bridge') || 'bridge';\n      if (requiresHttpBridge(serverMode, transportMode)) {\n        await start();\n      } else {\n        log('Context Engine Uploader: HTTP bridge settings changed, but current MCP wiring does not use the HTTP bridge; not restarting HTTP bridge.');\n      }\n    }\n  }\n\n  function dispose() {\n    try {\n      // Best-effort shutdown; ignore errors\n      stop().catch(() => {});\n    } catch (_) {\n      // ignore\n    }\n  }\n\n  return {\n    getState,\n    isRunning,\n    requiresHttpBridge,\n    resolveBridgeHttpUrl,\n    ensureReadyForConfigs,\n    start,\n    stop,\n    handleSettingsChanged,\n    dispose,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getState_20": {
+      "name": "getState",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 26,
+      "content_hash": "4a76d009733dc512fdce9000a0fe426a25ed2906",
+      "content": "  function getState() {\n    return {\n      process: httpBridgeProcess,\n      port: httpBridgePort,\n      workspace: httpBridgeWorkspace,\n    };\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isRunning_28": {
+      "name": "isRunning",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 30,
+      "content_hash": "0fe285083e12a4fedc4a8324b390f871bd1956a7",
+      "content": "  function isRunning() {\n    return !!httpBridgeProcess;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_requiresHttpBridge_32": {
+      "name": "requiresHttpBridge",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 34,
+      "content_hash": "41fb8a410a62bf3bff0e3afbbb6193f68e79bba1",
+      "content": "  function requiresHttpBridge(serverMode, transportMode) {\n    return serverMode === 'bridge' && transportMode === 'http';\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveBridgeHttpUrl_36": {
+      "name": "resolveBridgeHttpUrl",
+      "type": "function",
+      "start_line": 36,
+      "end_line": 49,
+      "content_hash": "c578e6a37655445289971b814690680722879dfc",
+      "content": "  function resolveBridgeHttpUrl() {\n    try {\n      const settings = getEffectiveConfig();\n      let port = Number(settings.get('mcpBridgePort') || 30810);\n      if (!Number.isFinite(port) || port <= 0) {\n        port = 30810;\n      }\n      const hostname = '127.0.0.1';\n      return `http://${hostname}:${port}/mcp`;\n    } catch (error) {\n      log(`Failed to resolve bridge HTTP URL: ${error instanceof Error ? error.message : String(error)}`);\n      return undefined;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveHttpBridgeOptions_51": {
+      "name": "resolveHttpBridgeOptions",
+      "type": "function",
+      "start_line": 51,
+      "end_line": 87,
+      "content_hash": "2a0bc9385213ff172ef01c6e24af02e3c1dfe714",
+      "content": "  function resolveHttpBridgeOptions() {\n    try {\n      const settings = getEffectiveConfig();\n      const serverModeRaw = settings.get('mcpServerMode') || 'bridge';\n      const transportModeRaw = settings.get('mcpTransportMode') || 'sse-remote';\n      const serverMode = typeof serverModeRaw === 'string' ? serverModeRaw.trim() : 'bridge';\n      const transportMode = typeof transportModeRaw === 'string' ? transportModeRaw.trim() : 'sse-remote';\n      if (serverMode !== 'bridge') {\n        vscode.window.showWarningMessage('Context Engine Uploader: MCP server mode is not \"bridge\"; HTTP bridge will connect to raw endpoints.');\n      }\n      if (transportMode !== 'http') {\n        log('Context Engine Uploader: MCP transport mode is not \"http\"; HTTP bridge will still start but downstream configs may expect SSE.');\n      }\n      const workspacePath = resolveBridgeWorkspacePath();\n      if (!workspacePath) {\n        vscode.window.showErrorMessage('Context Engine Uploader: open a workspace or set contextEngineUploader.targetPath before starting HTTP MCP bridge.');\n        return undefined;\n      }\n      let indexerUrl = (settings.get('mcpIndexerUrl') || 'http://localhost:8003/mcp').trim();\n      let memoryUrl = (settings.get('mcpMemoryUrl') || 'http://localhost:8002/mcp').trim();\n      indexerUrl = normalizeBridgeUrl(indexerUrl);\n      memoryUrl = normalizeBridgeUrl(memoryUrl);\n      let port = Number(settings.get('mcpBridgePort') || 30810);\n      if (!Number.isFinite(port) || port <= 0) {\n        port = 30810;\n      }\n      return {\n        workspacePath,\n        indexerUrl,\n        memoryUrl,\n        port,\n      };\n    } catch (error) {\n      log(`Failed to resolve HTTP bridge options: ${error instanceof Error ? error.message : String(error)}`);\n      return undefined;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_start_89": {
+      "name": "start",
+      "type": "function",
+      "start_line": 89,
+      "end_line": 147,
+      "content_hash": "453a78b827cdcedcec57b77dd2b7d464549a0e71",
+      "content": "  async function start() {\n    if (httpBridgeProcess) {\n      vscode.window.showInformationMessage(`Context Engine HTTP MCP bridge already running on port ${httpBridgePort || 'unknown'}.`);\n      return httpBridgePort;\n    }\n    const options = resolveHttpBridgeOptions();\n    if (!options) {\n      return undefined;\n    }\n    const invocation = resolveBridgeCliInvocation();\n    if (!invocation) {\n      vscode.window.showErrorMessage('Context Engine Uploader: unable to locate ctxce CLI for HTTP bridge.');\n      return undefined;\n    }\n    const cliArgs = ['mcp-http-serve'];\n    if (options.workspacePath) {\n      cliArgs.push('--workspace', normalizeWorkspaceForBridge(options.workspacePath));\n    }\n    if (options.indexerUrl) {\n      cliArgs.push('--indexer-url', options.indexerUrl);\n    }\n    if (options.memoryUrl) {\n      cliArgs.push('--memory-url', options.memoryUrl);\n    }\n    if (options.port) {\n      cliArgs.push('--port', String(options.port));\n    }\n    const finalArgs = [...invocation.args, ...cliArgs];\n    log(`Starting HTTP MCP bridge via ${invocation.command} ${finalArgs.join(' ')}`);\n    const child = spawn(invocation.command, finalArgs, {\n      cwd: options.workspacePath,\n      env: process.env,\n    });\n    httpBridgeProcess = child;\n    httpBridgePort = options.port;\n    httpBridgeWorkspace = options.workspacePath;\n    attachOutput(child, 'mcp-http');\n    child.on('exit', (code, signal) => {\n      log(`HTTP MCP bridge exited with code ${code} signal ${signal || ''}`.trim());\n      if (httpBridgeProcess === child) {\n        httpBridgeProcess = undefined;\n        httpBridgePort = undefined;\n        httpBridgeWorkspace = undefined;\n      }\n    });\n    child.on('error', error => {\n      log(`HTTP MCP bridge process error: ${error instanceof Error ? error.message : String(error)}`);\n      if (httpBridgeProcess === child) {\n        httpBridgeProcess = undefined;\n        httpBridgePort = undefined;\n        httpBridgeWorkspace = undefined;\n      }\n    });\n    vscode.window.showInformationMessage(`Context Engine HTTP MCP bridge listening on http://127.0.0.1:${options.port}/mcp`);\n    if (typeof scheduleMcpConfigRefreshAfterBridge === 'function') {\n      scheduleMcpConfigRefreshAfterBridge();\n    }\n    return options.port;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_stop_149": {
+      "name": "stop",
+      "type": "function",
+      "start_line": 149,
+      "end_line": 171,
+      "content_hash": "849d246bb289fefbc66cb7a15211c9aec53cd67b",
+      "content": "  function stop() {\n    if (!httpBridgeProcess) {\n      return Promise.resolve();\n    }\n    if (stopInFlight) {\n      return stopInFlight;\n    }\n    const proc = httpBridgeProcess;\n    stopInFlight = terminateProcess(\n      proc,\n      'mcp-http',\n      () => {\n        if (httpBridgeProcess === proc) {\n          httpBridgeProcess = undefined;\n          httpBridgePort = undefined;\n          httpBridgeWorkspace = undefined;\n        }\n      }\n    ).finally(() => {\n      stopInFlight = undefined;\n    });\n    return stopInFlight;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensureReadyForConfigs_173": {
+      "name": "ensureReadyForConfigs",
+      "type": "function",
+      "start_line": 173,
+      "end_line": 184,
+      "content_hash": "5bc400b95c39efa8e623afce293fbe368c8d2f95",
+      "content": "  async function ensureReadyForConfigs() {\n    try {\n      if (httpBridgeProcess) {\n        return true;\n      }\n      await start();\n      return !!httpBridgeProcess;\n    } catch (error) {\n      log(`Failed to ensure HTTP bridge is ready: ${error instanceof Error ? error.message : String(error)}`);\n      return false;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_handleSettingsChanged_186": {
+      "name": "handleSettingsChanged",
+      "type": "function",
+      "start_line": 186,
+      "end_line": 204,
+      "content_hash": "250a02611f1307a9044354b9340b9d7641874800",
+      "content": "  async function handleSettingsChanged() {\n    const config = getEffectiveConfig();\n    const shouldRun = !!config.get('autoStartMcpBridge', false);\n    const wasRunning = !!httpBridgeProcess;\n    if (httpBridgeProcess) {\n      await stop();\n    }\n    if (shouldRun || wasRunning) {\n      const transportModeRaw = config.get('mcpTransportMode') || 'sse-remote';\n      const serverModeRaw = config.get('mcpServerMode') || 'bridge';\n      const transportMode = (typeof transportModeRaw === 'string' ? transportModeRaw.trim() : 'sse-remote') || 'sse-remote';\n      const serverMode = (typeof serverModeRaw === 'string' ? serverModeRaw.trim() : 'bridge') || 'bridge';\n      if (requiresHttpBridge(serverMode, transportMode)) {\n        await start();\n      } else {\n        log('Context Engine Uploader: HTTP bridge settings changed, but current MCP wiring does not use the HTTP bridge; not restarting HTTP bridge.');\n      }\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_dispose_206": {
+      "name": "dispose",
+      "type": "function",
+      "start_line": 206,
+      "end_line": 213,
+      "content_hash": "473c90e6d432134d7a05e24d22ae617643f36fe3",
+      "content": "  function dispose() {\n    try {\n      // Best-effort shutdown; ignore errors\n      stop().catch(() => {});\n    } catch (_) {\n      // ignore\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

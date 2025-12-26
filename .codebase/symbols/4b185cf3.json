@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/oauth/token.go",
+  "file_hash": "555c44ca97c53f40bd37452cd8a4802f5e232271",
+  "updated_at": "2025-12-26T17:34:20.354935",
+  "symbols": {
+    "struct_Token_8": {
+      "name": "Token",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 15,
+      "content_hash": "49df8dc0102844e0a7036bc3c89a590b83e39ae0",
+      "content": "type Token struct {\n\tAccessToken  string `json:\"access_token\"`\n\tRefreshToken string `json:\"refresh_token\"`\n\tExpiresIn    int    `json:\"expires_in\"`\n\tExpiresAt    int64  `json:\"expires_at\"`\n}\n\n// SetExpiresAt calculates and sets the ExpiresAt field based on the current time and ExpiresIn.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetExpiresAt_16": {
+      "name": "SetExpiresAt",
+      "type": "method",
+      "start_line": 16,
+      "end_line": 20,
+      "content_hash": "61ba47efbbdc588d21d3c28196084480a8368d0d",
+      "content": "func (t *Token) SetExpiresAt() {\n\tt.ExpiresAt = time.Now().Add(time.Duration(t.ExpiresIn) * time.Second).Unix()\n}\n\n// IsExpired checks if the token is expired or about to expire (within 10% of its lifetime).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsExpired_21": {
+      "name": "IsExpired",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 23,
+      "content_hash": "0345e9cc6427630c3eef6bca7293f3498637d7ef",
+      "content": "func (t *Token) IsExpired() bool {\n\treturn time.Now().Unix() >= (t.ExpiresAt - int64(t.ExpiresIn)/10)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

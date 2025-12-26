@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/cmd/aiops_cmd_test.go",
+  "file_hash": "1b2b7044e664119fbc81d38b054a7c88404403e5",
+  "updated_at": "2025-12-26T17:34:23.041214",
+  "symbols": {
+    "function_TestAIOpsCmd_10": {
+      "name": "TestAIOpsCmd",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 31,
+      "content_hash": "ec1619657ef63f47bd594138c482f147e449445c",
+      "content": "func TestAIOpsCmd(t *testing.T) {\n\tt.Run(\"Command has correct metadata\", func(t *testing.T) {\n\t\tassert.Equal(t, \"aiops\", aiopsCmd.Use)\n\t\tassert.Equal(t, \"Manage AI Operations service\", aiopsCmd.Short)\n\t\tassert.Contains(t, aiopsCmd.Long, \"AI Operations\")\n\t})\n\n\tt.Run(\"Has subcommands\", func(t *testing.T) {\n\t\tsubcommands := aiopsCmd.Commands()\n\t\tassert.NotEmpty(t, subcommands, \"Should have subcommands\")\n\n\t\tcmdNames := make([]string, 0)\n\t\tfor _, cmd := range subcommands {\n\t\t\tcmdNames = append(cmdNames, cmd.Use)\n\t\t}\n\n\t\t// Verify expected subcommands\n\t\tassert.Contains(t, cmdNames, \"status\")\n\t\tassert.Contains(t, cmdNames, \"test\")\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAIOpsStatusCmd_32": {
+      "name": "TestAIOpsStatusCmd",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 48,
+      "content_hash": "ad4790d05cd570b599e690dfaf0f5d91b4995303",
+      "content": "func TestAIOpsStatusCmd(t *testing.T) {\n\t// Find the status subcommand\n\tvar statusCmd *cobra.Command\n\tfor _, cmd := range aiopsCmd.Commands() {\n\t\tif cmd.Use == \"status\" {\n\t\t\tstatusCmd = cmd\n\t\t\tbreak\n\t\t}\n\t}\n\n\tassert.NotNil(t, statusCmd, \"Should have status subcommand\")\n\tif statusCmd != nil {\n\t\tassert.Equal(t, \"status\", statusCmd.Use)\n\t\tassert.NotNil(t, statusCmd.RunE)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestAIOpsTestCmd_49": {
+      "name": "TestAIOpsTestCmd",
+      "type": "function",
+      "start_line": 49,
+      "end_line": 64,
+      "content_hash": "127098dbe695806067aa16aad0612716eadff854",
+      "content": "func TestAIOpsTestCmd(t *testing.T) {\n\t// Find the test subcommand\n\tvar testCmd *cobra.Command\n\tfor _, cmd := range aiopsCmd.Commands() {\n\t\tif cmd.Use == \"test\" {\n\t\t\ttestCmd = cmd\n\t\t\tbreak\n\t\t}\n\t}\n\n\tassert.NotNil(t, testCmd, \"Should have test subcommand\")\n\tif testCmd != nil {\n\t\tassert.Equal(t, \"test\", testCmd.Use)\n\t\tassert.NotNil(t, testCmd.RunE)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

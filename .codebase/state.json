@@ -1,0 +1,45 @@
+{
+  "workspace_path": "/work",
+  "created_at": "2025-12-26T17:22:03.599974",
+  "updated_at": "2025-12-26T17:34:25.159413",
+  "qdrant_collection": "workspace",
+  "indexing_status": {
+    "state": "indexing",
+    "started_at": "2025-12-26T17:22:31.381788",
+    "progress": {
+      "files_processed": 0,
+      "total_files": null
+    }
+  },
+  "active_repo_slug": "work",
+  "serving_repo_slug": "work",
+  "serving_collection": "workspace",
+  "indexing_config": {
+    "embedding_model": "BAAI/bge-base-en-v1.5",
+    "embedding_provider": "fastembed",
+    "refrag_mode": false,
+    "qwen3_embedding_enabled": false,
+    "index_semantic_chunks": true,
+    "index_micro_chunks": false,
+    "micro_chunk_tokens": 16,
+    "micro_chunk_stride": 8,
+    "max_micro_chunks_per_file": 2000,
+    "index_chunk_lines": null,
+    "index_chunk_overlap": null,
+    "use_tree_sitter": true,
+    "index_use_enhanced_ast": true,
+    "mini_vec_dim": 64,
+    "lex_sparse_mode": false
+  },
+  "indexing_config_hash": "e3d014cf54ab8774c392081542f31ca33700fdcc",
+  "last_activity": {
+    "timestamp": "2025-12-26T17:34:25.159090",
+    "action": "scan-completed",
+    "file_path": "",
+    "details": {
+      "files_seen": 2057,
+      "files_indexed": 2054,
+      "chunks_indexed": 10505
+    }
+  }
+}

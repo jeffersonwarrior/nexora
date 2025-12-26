@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/db/messages.sql.go",
+  "file_hash": "5b01171affdaa596c9104b30f66d99071c4d20e6",
+  "updated_at": "2025-12-26T17:34:24.282668",
+  "symbols": {
+    "struct_CreateMessageParams_30": {
+      "name": "CreateMessageParams",
+      "type": "struct",
+      "start_line": 30,
+      "end_line": 39,
+      "content_hash": "b34f4082d85781f32d2c4a0bc3530f1ddc2b8bdf",
+      "content": "type CreateMessageParams struct {\n\tID               string         `json:\"id\"`\n\tSessionID        string         `json:\"session_id\"`\n\tRole             string         `json:\"role\"`\n\tParts            string         `json:\"parts\"`\n\tModel            sql.NullString `json:\"model\"`\n\tProvider         sql.NullString `json:\"provider\"`\n\tIsSummaryMessage int64          `json:\"is_summary_message\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateMessage_40": {
+      "name": "CreateMessage",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 70,
+      "content_hash": "bc682c2ef3aa030583c8c80ed4f1b88a6b55ab4d",
+      "content": "func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {\n\trow := q.queryRow(ctx, q.createMessageStmt, createMessage,\n\t\targ.ID,\n\t\targ.SessionID,\n\t\targ.Role,\n\t\targ.Parts,\n\t\targ.Model,\n\t\targ.Provider,\n\t\targ.IsSummaryMessage,\n\t)\n\tvar i Message\n\terr := row.Scan(\n\t\t&i.ID,\n\t\t&i.SessionID,\n\t\t&i.Role,\n\t\t&i.Parts,\n\t\t&i.Model,\n\t\t&i.CreatedAt,\n\t\t&i.UpdatedAt,\n\t\t&i.FinishedAt,\n\t\t&i.Provider,\n\t\t&i.IsSummaryMessage,\n\t)\n\treturn i, err\n}\n\nconst deleteMessage = `-- name: DeleteMessage :exec\nDELETE FROM messages\nWHERE id = ?\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DeleteMessage_71": {
+      "name": "DeleteMessage",
+      "type": "method",
+      "start_line": 71,
+      "end_line": 80,
+      "content_hash": "2055236930242ef08f9b90f1bcc5e01d8b30a344",
+      "content": "func (q *Queries) DeleteMessage(ctx context.Context, id string) error {\n\t_, err := q.exec(ctx, q.deleteMessageStmt, deleteMessage, id)\n\treturn err\n}\n\nconst deleteSessionMessages = `-- name: DeleteSessionMessages :exec\nDELETE FROM messages\nWHERE session_id = ?\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_DeleteSessionMessages_81": {
+      "name": "DeleteSessionMessages",
+      "type": "method",
+      "start_line": 81,
+      "end_line": 91,
+      "content_hash": "d651b5c55825cebe70d8584bb317ec1690e2decc",
+      "content": "func (q *Queries) DeleteSessionMessages(ctx context.Context, sessionID string) error {\n\t_, err := q.exec(ctx, q.deleteSessionMessagesStmt, deleteSessionMessages, sessionID)\n\treturn err\n}\n\nconst getMessage = `-- name: GetMessage :one\nSELECT id, session_id, role, parts, model, created_at, updated_at, finished_at, provider, is_summary_message\nFROM messages\nWHERE id = ? LIMIT 1\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetMessage_92": {
+      "name": "GetMessage",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 116,
+      "content_hash": "01cc9dd1cd03aa369540a1856056817b32a65857",
+      "content": "func (q *Queries) GetMessage(ctx context.Context, id string) (Message, error) {\n\trow := q.queryRow(ctx, q.getMessageStmt, getMessage, id)\n\tvar i Message\n\terr := row.Scan(\n\t\t&i.ID,\n\t\t&i.SessionID,\n\t\t&i.Role,\n\t\t&i.Parts,\n\t\t&i.Model,\n\t\t&i.CreatedAt,\n\t\t&i.UpdatedAt,\n\t\t&i.FinishedAt,\n\t\t&i.Provider,\n\t\t&i.IsSummaryMessage,\n\t)\n\treturn i, err\n}\n\nconst listMessagesBySession = `-- name: ListMessagesBySession :many\nSELECT id, session_id, role, parts, model, created_at, updated_at, finished_at, provider, is_summary_message\nFROM messages\nWHERE session_id = ?\nORDER BY created_at ASC\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListMessagesBySession_117": {
+      "name": "ListMessagesBySession",
+      "type": "method",
+      "start_line": 117,
+      "end_line": 159,
+      "content_hash": "0f70a7f589f4d0476f0cc33058b0807a51bcbfeb",
+      "content": "func (q *Queries) ListMessagesBySession(ctx context.Context, sessionID string) ([]Message, error) {\n\trows, err := q.query(ctx, q.listMessagesBySessionStmt, listMessagesBySession, sessionID)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer rows.Close()\n\titems := []Message{}\n\tfor rows.Next() {\n\t\tvar i Message\n\t\tif err := rows.Scan(\n\t\t\t&i.ID,\n\t\t\t&i.SessionID,\n\t\t\t&i.Role,\n\t\t\t&i.Parts,\n\t\t\t&i.Model,\n\t\t\t&i.CreatedAt,\n\t\t\t&i.UpdatedAt,\n\t\t\t&i.FinishedAt,\n\t\t\t&i.Provider,\n\t\t\t&i.IsSummaryMessage,\n\t\t); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\titems = append(items, i)\n\t}\n\tif err := rows.Close(); err != nil {\n\t\treturn nil, err\n\t}\n\tif err := rows.Err(); err != nil {\n\t\treturn nil, err\n\t}\n\treturn items, nil\n}\n\nconst updateMessage = `-- name: UpdateMessage :exec\nUPDATE messages\nSET\n    parts = ?,\n    finished_at = ?,\n    updated_at = strftime('%s', 'now')\nWHERE id = ?\n`\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_UpdateMessageParams_160": {
+      "name": "UpdateMessageParams",
+      "type": "struct",
+      "start_line": 160,
+      "end_line": 165,
+      "content_hash": "722acaae0f14a3f3241a7658f8e6eaac32a4c4a6",
+      "content": "type UpdateMessageParams struct {\n\tParts      string        `json:\"parts\"`\n\tFinishedAt sql.NullInt64 `json:\"finished_at\"`\n\tID         string        `json:\"id\"`\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_UpdateMessage_166": {
+      "name": "UpdateMessage",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 169,
+      "content_hash": "13b02ec18e1f76923be1ba089b6768bcd1cf630d",
+      "content": "func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) error {\n\t_, err := q.exec(ctx, q.updateMessageStmt, updateMessage, arg.Parts, arg.FinishedAt, arg.ID)\n\treturn err\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

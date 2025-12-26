@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/context-engine/tests/test_decoder_flag_bypass.py",
+  "file_hash": "13d13b5b1fa9467b6a8db4c1e6d9f7a2ad9c7c04",
+  "updated_at": "2025-12-26T17:34:20.720156",
+  "symbols": {
+    "function_test_decoder_disabled_by_default_8": {
+      "name": "test_decoder_disabled_by_default",
+      "type": "function",
+      "start_line": 8,
+      "end_line": 11,
+      "content_hash": "4d35c058145f90fab863854e61782bda931784de",
+      "content": "def test_decoder_disabled_by_default(monkeypatch):\n    # Default: off\n    monkeypatch.delenv(\"REFRAG_DECODER\", raising=False)\n    assert is_decoder_enabled() is False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_client_runtime_guard_14": {
+      "name": "test_client_runtime_guard",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 19,
+      "content_hash": "d6d0b0a153427bf1875e1a245c68e37fbf00e33b",
+      "content": "def test_client_runtime_guard(monkeypatch):\n    # Ensure creating the client checks runtime but does not enable anything\n    monkeypatch.setenv(\"REFRAG_DECODER\", \"0\")\n    monkeypatch.setenv(\"REFRAG_RUNTIME\", \"llamacpp\")\n    c = LlamaCppRefragClient()\n    assert c.base_url.startswith(\"http://\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_generate_guard_raises_when_disabled_22": {
+      "name": "test_generate_guard_raises_when_disabled",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 30,
+      "content_hash": "80ac434587e649a1b4226690ec0586edac6338ae",
+      "content": "def test_generate_guard_raises_when_disabled(monkeypatch):\n    monkeypatch.setenv(\"REFRAG_DECODER\", \"0\")\n    monkeypatch.setenv(\"REFRAG_RUNTIME\", \"llamacpp\")\n    c = LlamaCppRefragClient()\n    try:\n        c.generate_with_soft_embeddings(\"hello\", soft_embeddings=[[0.0] * 10])\n        assert False, \"should have raised\"\n    except RuntimeError as e:\n        assert \"disabled\" in str(e).lower()",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/security.ts",
+  "file_hash": "bf1da14618454e00884b309a5bd9e929f3d58412",
+  "updated_at": "2025-12-26T17:34:21.194770",
+  "symbols": {
+    "function_validateProjectDir_19": {
+      "name": "validateProjectDir",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 69,
+      "content_hash": "9f376f0273b5561124d8031051ea36ef8c4c21b5",
+      "content": "export function validateProjectDir(projectDir: string): string {\n  // First resolve .. and . components\n  const resolved = path.resolve(projectDir);\n\n  // Use realpathSync to follow all symlinks and get the true path\n  // This prevents symlink-based escapes to forbidden directories\n  let realPath: string;\n  try {\n    realPath = fs.realpathSync(resolved);\n  } catch (error) {\n    throw new Error(`Project directory does not exist or is inaccessible: ${resolved}`);\n  }\n\n  // Check it's not a system directory (check the REAL path, not the symlink)\n  const forbiddenPrefixes = [\n    \"/etc\",\n    \"/usr\",\n    \"/bin\",\n    \"/sbin\",\n    \"/var\",\n    \"/tmp\",\n    \"/dev\",\n    \"/proc\",\n    \"/sys\",\n    \"/boot\",\n    \"/run\",\n    \"/root\",\n    \"/System\",\n    \"/Library\",\n    \"/private/var\",\n    \"/private/etc\",\n    \"C:\\\\Windows\",\n    \"C:\\\\Program Files\",\n    \"C:\\\\Program Files (x86)\",\n  ];\n\n  const normalizedPath = realPath.toLowerCase();\n  for (const prefix of forbiddenPrefixes) {\n    if (normalizedPath.startsWith(prefix.toLowerCase())) {\n      throw new Error(`Cannot use system directory as project: ${prefix}`);\n    }\n  }\n\n  // Verify it's actually a directory (realpathSync already confirmed it exists)\n  const stats = fs.statSync(realPath);\n  if (!stats.isDirectory()) {\n    throw new Error(`Project path is not a directory: ${realPath}`);\n  }\n\n  return realPath;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validateFeatureId_74": {
+      "name": "validateFeatureId",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 84,
+      "content_hash": "9342ee1d829f71b5dabdd2dd112dc302f1f315ed",
+      "content": "export function validateFeatureId(id: string): string {\n  if (!/^[a-zA-Z0-9_-]+$/.test(id)) {\n    throw new Error(\n      \"Invalid feature ID: only alphanumeric, dash, and underscore allowed\"\n    );\n  }\n  if (id.length > 64) {\n    throw new Error(\"Feature ID too long (max 64 characters)\");\n  }\n  return id;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validateSessionName_92": {
+      "name": "validateSessionName",
+      "type": "function",
+      "start_line": 92,
+      "end_line": 94,
+      "content_hash": "0a65b5eb1e5fbb1645c4c27e527b4ec68816b8a6",
+      "content": "export function validateSessionName(name: string): boolean {\n  return /^cc-(worker|planner)-[a-zA-Z0-9_-]+-[a-z0-9]{6,}$/.test(name);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_shellQuote_100": {
+      "name": "shellQuote",
+      "type": "function",
+      "start_line": 100,
+      "end_line": 104,
+      "content_hash": "9e494a112c5986b60ce0515bef1e1369ffa3461c",
+      "content": "export function shellQuote(s: string): string {\n  // Single quotes prevent all interpretation, but we need to escape\n  // any single quotes in the string itself\n  return \"'\" + s.replace(/'/g, \"'\\\"'\\\"'\") + \"'\";\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validateCommand_162": {
+      "name": "validateCommand",
+      "type": "function",
+      "start_line": 162,
+      "end_line": 187,
+      "content_hash": "b154974174876a98f345a2f463c17fee7eaedd66",
+      "content": "export function validateCommand(command: string): string {\n  // Check for dangerous patterns BEFORE trimming (security-critical)\n  for (const pattern of DANGEROUS_PATTERNS) {\n    if (command.includes(pattern)) {\n      throw new Error(\n        `Command contains disallowed shell operator: ${pattern}`\n      );\n    }\n  }\n\n  // Now safe to trim\n  const trimmed = command.trim();\n\n  // Check against allowed patterns\n  const isAllowed = ALLOWED_COMMAND_PATTERNS.some((pattern) =>\n    pattern.test(trimmed)\n  );\n\n  if (!isAllowed) {\n    throw new Error(\n      `Command not in allowed list. Allowed: npm test, pytest, cargo test, go test, make test, etc.`\n    );\n  }\n\n  return trimmed;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sanitizeOutput_193": {
+      "name": "sanitizeOutput",
+      "type": "function",
+      "start_line": 193,
+      "end_line": 206,
+      "content_hash": "634503dcffc15523bd970bddb26e314b77cab8f7",
+      "content": "export function sanitizeOutput(output: string, maxLength: number = 5000): string {\n  let sanitized = output;\n\n  // Remove home directory paths\n  const homeDir = os.homedir();\n  sanitized = sanitized.replace(new RegExp(homeDir, \"g\"), \"~\");\n\n  // Truncate if too long\n  if (sanitized.length > maxLength) {\n    sanitized = sanitized.substring(0, maxLength) + \"\\n... (truncated)\";\n  }\n\n  return sanitized;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

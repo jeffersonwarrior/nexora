@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/context-engine/scripts/warm_start.py",
+  "file_hash": "67f435b2698034da88b7c5d48322ddfdfb75055b",
+  "updated_at": "2025-12-26T17:34:24.488783",
+  "symbols": {
+    "function_derive_vector_name_10": {
+      "name": "derive_vector_name",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 23,
+      "content_hash": "a05f50616a40e2a6a027f940acee99a94c3cb7fa",
+      "content": "def derive_vector_name(model_name: str) -> str:\n    name = model_name.strip().lower()\n    if \"bge-base-en-v1.5\" in name:\n        return \"fast-bge-base-en-v1.5\"\n    if \"minilm\" in name:\n        return \"fast-all-minilm-l6-v2\"\n    # Qwen3-Embedding ONNX model\n    if \"qwen3-embedding\" in name:\n        return \"fast-qwen3-embedding-0.6b\"\n    for ch in [\"/\", \".\", \" \", \"_\"]:\n        name = name.replace(ch, \"-\")\n    while \"--\" in name:\n        name = name.replace(\"--\", \"-\")\n    return name",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_embedding_model_26": {
+      "name": "get_embedding_model",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 35,
+      "content_hash": "d70b7f1c99300c5c7d23fed932dc8d2883334a16",
+      "content": "def get_embedding_model(model_name: str):\n    \"\"\"Get embedding model with Qwen3 support via embedder factory.\"\"\"\n    try:\n        from scripts.embedder import get_embedding_model as _get_model\n        return _get_model(model_name)\n    except ImportError:\n        pass\n    # Fallback to direct fastembed\n    from fastembed import TextEmbedding\n    return TextEmbedding(model_name=model_name)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_38": {
+      "name": "main",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 95,
+      "content_hash": "22dad6f86ec643e169ab8878480991f107cf9481",
+      "content": "def main():\n    parser = argparse.ArgumentParser(description=\"Warm start embeddings + Qdrant HNSW\")\n    parser.add_argument(\n        \"--query\",\n        \"-q\",\n        default=\"warm start probe\",\n        help=\"Probe text to embed and search\",\n    )\n    parser.add_argument(\n        \"--ef\", type=int, default=256, help=\"HNSW ef (search) to warm caches\"\n    )\n    parser.add_argument(\n        \"--limit\", type=int, default=3, help=\"Number of points to request\"\n    )\n    args = parser.parse_args()\n\n    QDRANT_URL = os.environ.get(\"QDRANT_URL\", \"http://qdrant:6333\")\n    COLLECTION = os.environ.get(\"COLLECTION_NAME\", \"codebase\")\n    MODEL = os.environ.get(\"EMBEDDING_MODEL\", \"BAAI/bge-base-en-v1.5\")\n\n    print(\n        f\"Warm start: qdrant={QDRANT_URL} collection={COLLECTION} model={MODEL} ef={args.ef}\"\n    )\n\n    client = QdrantClient(url=QDRANT_URL)\n    model = get_embedding_model(MODEL)\n    vec_name = derive_vector_name(MODEL)\n\n    # Trigger model download/init\n    vec = next(model.embed([args.query])).tolist()\n\n    # Attempt new query_points API first\n    try:\n        qp = client.query_points(\n            collection_name=COLLECTION,\n            query=vec,\n            using=vec_name,\n            search_params=models.SearchParams(hnsw_ef=args.ef),\n            limit=args.limit,\n            with_payload=False,\n        )\n        _ = qp\n        print(\"Warm start via query_points: OK\")\n        return\n    except Exception:\n        pass\n\n    # Fallback to search API\n    try:\n        _ = client.search(\n            collection_name=COLLECTION,\n            query_vector={\"name\": vec_name, \"vector\": vec},\n            limit=args.limit,\n            with_payload=False,\n        )\n        print(\"Warm start via search: OK\")\n    except Exception as e:\n        print(f\"Warm start failed: {e}\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

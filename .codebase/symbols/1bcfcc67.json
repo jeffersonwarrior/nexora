@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/setup_reranker.py",
+  "file_hash": "fccecd60cf83586045bac963e8fb9d34019e5255",
+  "updated_at": "2025-12-26T17:34:22.450252",
+  "symbols": {
+    "function_upsert_env_line_10": {
+      "name": "upsert_env_line",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 27,
+      "content_hash": "f907484272a8738fd01b557d517fdcc68ab652d3",
+      "content": "def upsert_env_line(path: Path, key: str, value: str):\n    try:\n        lines = path.read_text().splitlines()\n    except FileNotFoundError:\n        lines = []\n    replaced = False\n    new_lines = []\n    for ln in lines:\n        if ln.strip().startswith(f\"{key}=\"):\n            new_lines.append(f\"{key}={value}\")\n            replaced = True\n        else:\n            new_lines.append(ln)\n    if not replaced:\n        if new_lines and new_lines[-1].strip() != \"\":\n            new_lines.append(\"\")\n        new_lines.append(f\"{key}={value}\")\n    path.write_text(\"\\n\".join(new_lines) + \"\\n\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_30": {
+      "name": "main",
+      "type": "function",
+      "start_line": 30,
+      "end_line": 85,
+      "content_hash": "39eb1955ba3a03ec4df0d35d4082a5d31edf10eb",
+      "content": "def main():\n    p = argparse.ArgumentParser(\n        description=\"Download ONNX cross-encoder + tokenizer and set .env paths\"\n    )\n    p.add_argument(\"--onnx-url\", required=True, help=\"Direct URL to .onnx model file\")\n    p.add_argument(\n        \"--tokenizer-url\", required=True, help=\"Direct URL to tokenizer.json file\"\n    )\n    p.add_argument(\n        \"--dest\",\n        default=\"models\",\n        help=\"Destination directory under repo root (default: models)\",\n    )\n    p.add_argument(\n        \"--onnx-filename\", default=None, help=\"Optional override for ONNX filename\"\n    )\n    p.add_argument(\n        \"--tokenizer-filename\",\n        default=None,\n        help=\"Optional override for tokenizer filename\",\n    )\n    args = p.parse_args()\n\n    dest_dir = ROOT / args.dest\n    dest_dir.mkdir(parents=True, exist_ok=True)\n\n    onnx_name = args.onnx_filename or Path(args.onnx_url).name or \"reranker.onnx\"\n    tok_name = (\n        args.tokenizer_filename or Path(args.tokenizer_url).name or \"tokenizer.json\"\n    )\n\n    onnx_path = dest_dir / onnx_name\n    tok_path = dest_dir / tok_name\n\n    print(f\"Downloading ONNX model to {onnx_path} ...\")\n    urlretrieve(args.onnx_url, onnx_path)\n    print(f\"Downloading tokenizer to {tok_path} ...\")\n    urlretrieve(args.tokenizer_url, tok_path)\n\n    # Paths inside the container map to /work\n    container_onnx = f\"/work/{args.dest.rstrip('/')}/{onnx_name}\"\n    container_tok = f\"/work/{args.dest.rstrip('/')}/{tok_name}\"\n\n    # Update .env and .env.example\n    env_path = ROOT / \".env\"\n    env_example = ROOT / \".env.example\"\n    upsert_env_line(env_path, \"RERANKER_ONNX_PATH\", container_onnx)\n    upsert_env_line(env_path, \"RERANKER_TOKENIZER_PATH\", container_tok)\n    upsert_env_line(env_example, \"RERANKER_ONNX_PATH\", container_onnx)\n    upsert_env_line(env_example, \"RERANKER_TOKENIZER_PATH\", container_tok)\n\n    print(\"\\nUpdated .env and .env.example:\")\n    print(f\"  RERANKER_ONNX_PATH={container_onnx}\")\n    print(f\"  RERANKER_TOKENIZER_PATH={container_tok}\")\n    print(\"\\nNext steps:\")\n    print(\"  - Run: make rerank-local\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

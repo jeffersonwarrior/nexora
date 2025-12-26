@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/agent/tools/mcp/reliability_test.go",
+  "file_hash": "a0d4adbd559941e12b8b714f843c85567258b650",
+  "updated_at": "2025-12-26T17:34:25.144663",
+  "symbols": {
+    "function_TestDefaultRetryConfig_14": {
+      "name": "TestDefaultRetryConfig",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 23,
+      "content_hash": "b1597b76d7224a7821b29307995b7fdca5750e7e",
+      "content": "func TestDefaultRetryConfig(t *testing.T) {\n\tcfg := DefaultRetryConfig()\n\n\tassert.Equal(t, 3, cfg.MaxRetries)\n\tassert.Equal(t, 1*time.Second, cfg.InitialDelay)\n\tassert.Equal(t, 30*time.Second, cfg.MaxDelay)\n\tassert.Equal(t, 2.0, cfg.Multiplier)\n\tassert.Equal(t, 0.1, cfg.Jitter)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCalculateBackoff_24": {
+      "name": "TestCalculateBackoff",
+      "type": "function",
+      "start_line": 24,
+      "end_line": 54,
+      "content_hash": "caf1eb1c4d31242521949dc16bb870b264adf205",
+      "content": "func TestCalculateBackoff(t *testing.T) {\n\tcfg := RetryConfig{\n\t\tInitialDelay: 1 * time.Second,\n\t\tMaxDelay:     30 * time.Second,\n\t\tMultiplier:   2.0,\n\t\tJitter:       0.0, // Disable jitter for deterministic tests\n\t}\n\n\ttests := []struct {\n\t\tname     string\n\t\tattempt  int\n\t\texpected time.Duration\n\t}{\n\t\t{\"attempt 0\", 0, 1 * time.Second},\n\t\t{\"attempt 1\", 1, 2 * time.Second},\n\t\t{\"attempt 2\", 2, 4 * time.Second},\n\t\t{\"attempt 3\", 3, 8 * time.Second},\n\t\t{\"attempt 4\", 4, 16 * time.Second},\n\t\t{\"attempt 5 (capped)\", 5, 30 * time.Second}, // Should be capped at MaxDelay\n\t\t{\"attempt 10 (capped)\", 10, 30 * time.Second},\n\t\t{\"negative attempt\", -1, 1 * time.Second},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := calculateBackoff(cfg, tt.attempt)\n\t\t\tassert.Equal(t, tt.expected, result)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConnectionError_55": {
+      "name": "TestConnectionError",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 78,
+      "content_hash": "1f479a5e739194a597a7f6abdce10bad8b54a73b",
+      "content": "func TestConnectionError(t *testing.T) {\n\tt.Run(\"error message format\", func(t *testing.T) {\n\t\tcause := errors.New(\"connection refused\")\n\t\terr := &ConnectionError{\n\t\t\tMCPName:   \"test-mcp\",\n\t\t\tType:      \"stdio\",\n\t\t\tAttempt:   3,\n\t\t\tCause:     cause,\n\t\t\tTimestamp: time.Now(),\n\t\t}\n\n\t\tassert.Contains(t, err.Error(), \"test-mcp\")\n\t\tassert.Contains(t, err.Error(), \"attempt 3\")\n\t\tassert.Contains(t, err.Error(), \"connection refused\")\n\t})\n\n\tt.Run(\"unwrap returns cause\", func(t *testing.T) {\n\t\tcause := errors.New(\"original error\")\n\t\terr := &ConnectionError{Cause: cause}\n\n\t\tassert.Equal(t, cause, errors.Unwrap(err))\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestConnectionError_IsRetryable_79": {
+      "name": "TestConnectionError_IsRetryable",
+      "type": "function",
+      "start_line": 79,
+      "end_line": 149,
+      "content_hash": "ab3d9e8e5f8103084954b51a8e258205e0aa6e91",
+      "content": "func TestConnectionError_IsRetryable(t *testing.T) {\n\ttests := []struct {\n\t\tname      string\n\t\tcause     error\n\t\tretryable bool\n\t}{\n\t\t{\n\t\t\tname:      \"nil cause\",\n\t\t\tcause:     nil,\n\t\t\tretryable: false,\n\t\t},\n\t\t{\n\t\t\tname:      \"context canceled\",\n\t\t\tcause:     context.Canceled,\n\t\t\tretryable: false,\n\t\t},\n\t\t{\n\t\t\tname:      \"context deadline exceeded\",\n\t\t\tcause:     context.DeadlineExceeded,\n\t\t\tretryable: false,\n\t\t},\n\t\t{\n\t\t\tname:      \"connection refused\",\n\t\t\tcause:     errors.New(\"connection refused\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"connection reset\",\n\t\t\tcause:     errors.New(\"connection reset by peer\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"EOF error\",\n\t\t\tcause:     errors.New(\"unexpected EOF\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"timeout error\",\n\t\t\tcause:     errors.New(\"operation timeout\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"temporary failure\",\n\t\t\tcause:     errors.New(\"temporary failure in name resolution\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"no such host\",\n\t\t\tcause:     errors.New(\"no such host\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"network unreachable\",\n\t\t\tcause:     errors.New(\"network is unreachable\"),\n\t\t\tretryable: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"generic error\",\n\t\t\tcause:     errors.New(\"something went wrong\"),\n\t\t\tretryable: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\terr := &ConnectionError{Cause: tt.cause}\n\t\t\tassert.Equal(t, tt.retryable, err.IsRetryable())\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestContainsIgnoreCase_150": {
+      "name": "TestContainsIgnoreCase",
+      "type": "function",
+      "start_line": 150,
+      "end_line": 174,
+      "content_hash": "7075b7d76913b6f39401b59c6f5fd942d45b0cbe",
+      "content": "func TestContainsIgnoreCase(t *testing.T) {\n\ttests := []struct {\n\t\ts      string\n\t\tsubstr string\n\t\twant   bool\n\t}{\n\t\t{\"connection refused\", \"connection\", true},\n\t\t{\"CONNECTION REFUSED\", \"connection\", true},\n\t\t{\"Connection Refused\", \"CONNECTION\", true},\n\t\t{\"hello world\", \"WORLD\", true},\n\t\t{\"HELLO WORLD\", \"world\", true},\n\t\t{\"\", \"test\", false},\n\t\t{\"test\", \"\", true},\n\t\t{\"abc\", \"abcd\", false},\n\t\t{\"timeout occurred\", \"timeout\", true},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.s+\"_\"+tt.substr, func(t *testing.T) {\n\t\t\tgot := containsIgnoreCase(tt.s, tt.substr)\n\t\t\tassert.Equal(t, tt.want, got)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHealthMonitor_175": {
+      "name": "TestHealthMonitor",
+      "type": "function",
+      "start_line": 175,
+      "end_line": 254,
+      "content_hash": "5fa840f3c1dd800e3a7124e02ca0c8bf1db089e9",
+      "content": "func TestHealthMonitor(t *testing.T) {\n\tt.Run(\"create new health monitor\", func(t *testing.T) {\n\t\tmonitor := NewHealthMonitor(10 * time.Second)\n\t\trequire.NotNil(t, monitor)\n\t\tassert.Equal(t, 10*time.Second, monitor.checkInterval)\n\t\tassert.NotNil(t, monitor.healthStatus)\n\t})\n\n\tt.Run(\"default check interval\", func(t *testing.T) {\n\t\tmonitor := NewHealthMonitor(0)\n\t\tassert.Equal(t, 30*time.Second, monitor.checkInterval)\n\t})\n\n\tt.Run(\"start and stop\", func(t *testing.T) {\n\t\tmonitor := NewHealthMonitor(100 * time.Millisecond)\n\n\t\tctx := context.Background()\n\t\tmonitor.Start(ctx)\n\n\t\t// Starting again should be a no-op\n\t\tmonitor.Start(ctx)\n\n\t\t// Give it a moment to start\n\t\ttime.Sleep(50 * time.Millisecond)\n\n\t\tmonitor.Stop()\n\n\t\t// Stopping again should be safe\n\t\tmonitor.Stop()\n\t})\n\n\tt.Run(\"get health status\", func(t *testing.T) {\n\t\tmonitor := NewHealthMonitor(1 * time.Second)\n\n\t\t// No status initially\n\t\t_, ok := monitor.GetHealthStatus(\"nonexistent\")\n\t\tassert.False(t, ok)\n\n\t\t// Set a status manually for testing\n\t\tmonitor.mu.Lock()\n\t\tmonitor.healthStatus[\"test-mcp\"] = &HealthStatus{\n\t\t\tName:             \"test-mcp\",\n\t\t\tHealthy:          true,\n\t\t\tLastCheck:        time.Now(),\n\t\t\tConsecutiveFails: 0,\n\t\t}\n\t\tmonitor.mu.Unlock()\n\n\t\tstatus, ok := monitor.GetHealthStatus(\"test-mcp\")\n\t\tassert.True(t, ok)\n\t\tassert.True(t, status.Healthy)\n\t\tassert.Equal(t, \"test-mcp\", status.Name)\n\t})\n\n\tt.Run(\"get all health status\", func(t *testing.T) {\n\t\tmonitor := NewHealthMonitor(1 * time.Second)\n\n\t\t// Set statuses manually for testing\n\t\tnow := time.Now()\n\t\tmonitor.mu.Lock()\n\t\tmonitor.healthStatus[\"mcp-1\"] = &HealthStatus{\n\t\t\tName:      \"mcp-1\",\n\t\t\tHealthy:   true,\n\t\t\tLastCheck: now,\n\t\t}\n\t\tmonitor.healthStatus[\"mcp-2\"] = &HealthStatus{\n\t\t\tName:      \"mcp-2\",\n\t\t\tHealthy:   false,\n\t\t\tLastCheck: now,\n\t\t\tLastError: errors.New(\"connection failed\"),\n\t\t}\n\t\tmonitor.mu.Unlock()\n\n\t\tallStatus := monitor.GetAllHealthStatus()\n\t\tassert.Len(t, allStatus, 2)\n\t\tassert.True(t, allStatus[\"mcp-1\"].Healthy)\n\t\tassert.False(t, allStatus[\"mcp-2\"].Healthy)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestGetHealthMonitor_255": {
+      "name": "TestGetHealthMonitor",
+      "type": "function",
+      "start_line": 255,
+      "end_line": 267,
+      "content_hash": "960399da31f73df783554d03955cff71ff556c51",
+      "content": "func TestGetHealthMonitor(t *testing.T) {\n\t// Reset global state for testing\n\tglobalHealthMonitorOnce = sync.Once{}\n\tglobalHealthMonitor = nil\n\n\tmonitor1 := GetHealthMonitor()\n\trequire.NotNil(t, monitor1)\n\n\t// Should return the same instance\n\tmonitor2 := GetHealthMonitor()\n\tassert.Same(t, monitor1, monitor2)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMCPError_268": {
+      "name": "TestMCPError",
+      "type": "function",
+      "start_line": 268,
+      "end_line": 298,
+      "content_hash": "45a32acafa3fe49d59b30cca813b06e42a76106e",
+      "content": "func TestMCPError(t *testing.T) {\n\tt.Run(\"error with cause\", func(t *testing.T) {\n\t\tcause := errors.New(\"underlying error\")\n\t\terr := NewMCPError(ErrCodeConnectionFailed, \"connection failed\", cause)\n\n\t\tassert.Contains(t, err.Error(), \"CONNECTION_FAILED\")\n\t\tassert.Contains(t, err.Error(), \"connection failed\")\n\t\tassert.Contains(t, err.Error(), \"underlying error\")\n\t\tassert.Equal(t, cause, errors.Unwrap(err))\n\t})\n\n\tt.Run(\"error without cause\", func(t *testing.T) {\n\t\terr := NewMCPError(ErrCodeDisabled, \"MCP is disabled\", nil)\n\n\t\tassert.Contains(t, err.Error(), \"DISABLED\")\n\t\tassert.Contains(t, err.Error(), \"MCP is disabled\")\n\t\tassert.Nil(t, errors.Unwrap(err))\n\t})\n\n\tt.Run(\"error with details\", func(t *testing.T) {\n\t\tdetails := map[string]any{\n\t\t\t\"mcp_name\": \"test-mcp\",\n\t\t\t\"attempt\":  3,\n\t\t}\n\t\terr := NewMCPErrorWithDetails(ErrCodeTimeout, \"operation timed out\", details, nil)\n\n\t\tassert.Equal(t, ErrCodeTimeout, err.Code)\n\t\tassert.Equal(t, details, err.Details)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestMCPErrorCode_String_299": {
+      "name": "TestMCPErrorCode_String",
+      "type": "function",
+      "start_line": 299,
+      "end_line": 322,
+      "content_hash": "d94453f8ff321af966c0c8fa76a01a2f173ecb39",
+      "content": "func TestMCPErrorCode_String(t *testing.T) {\n\ttests := []struct {\n\t\tcode     MCPErrorCode\n\t\texpected string\n\t}{\n\t\t{ErrCodeUnknown, \"UNKNOWN\"},\n\t\t{ErrCodeNotConfigured, \"NOT_CONFIGURED\"},\n\t\t{ErrCodeDisabled, \"DISABLED\"},\n\t\t{ErrCodeConnectionFailed, \"CONNECTION_FAILED\"},\n\t\t{ErrCodeTimeout, \"TIMEOUT\"},\n\t\t{ErrCodeToolNotFound, \"TOOL_NOT_FOUND\"},\n\t\t{ErrCodeToolExecutionFailed, \"TOOL_EXECUTION_FAILED\"},\n\t\t{ErrCodeInvalidInput, \"INVALID_INPUT\"},\n\t\t{ErrCodePermissionDenied, \"PERMISSION_DENIED\"},\n\t\t{MCPErrorCode(999), \"UNKNOWN\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.expected, func(t *testing.T) {\n\t\t\tassert.Equal(t, tt.expected, tt.code.String())\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestWrapError_323": {
+      "name": "TestWrapError",
+      "type": "function",
+      "start_line": 323,
+      "end_line": 402,
+      "content_hash": "ee13296d022284a4ac1cbf519327a8c0475427fc",
+      "content": "func TestWrapError(t *testing.T) {\n\ttests := []struct {\n\t\tname         string\n\t\terr          error\n\t\tmcpName      string\n\t\texpectedCode MCPErrorCode\n\t}{\n\t\t{\n\t\t\tname:         \"nil error\",\n\t\t\terr:          nil,\n\t\t\tmcpName:      \"test\",\n\t\t\texpectedCode: 0, // Should return nil\n\t\t},\n\t\t{\n\t\t\tname:         \"deadline exceeded\",\n\t\t\terr:          context.DeadlineExceeded,\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeTimeout,\n\t\t},\n\t\t{\n\t\t\tname:         \"context canceled\",\n\t\t\terr:          context.Canceled,\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeConnectionFailed,\n\t\t},\n\t\t{\n\t\t\tname:         \"not configured error\",\n\t\t\terr:          errors.New(\"mcp not configured\"),\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeNotConfigured,\n\t\t},\n\t\t{\n\t\t\tname:         \"not found error\",\n\t\t\terr:          errors.New(\"mcp not found\"),\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeNotConfigured,\n\t\t},\n\t\t{\n\t\t\tname:         \"disabled error\",\n\t\t\terr:          errors.New(\"mcp is disabled\"),\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeDisabled,\n\t\t},\n\t\t{\n\t\t\tname:         \"connection error\",\n\t\t\terr:          errors.New(\"connection refused\"),\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeConnectionFailed,\n\t\t},\n\t\t{\n\t\t\tname:         \"EOF error\",\n\t\t\terr:          errors.New(\"unexpected EOF\"),\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeConnectionFailed,\n\t\t},\n\t\t{\n\t\t\tname:         \"unknown error\",\n\t\t\terr:          errors.New(\"something went wrong\"),\n\t\t\tmcpName:      \"test-mcp\",\n\t\t\texpectedCode: ErrCodeUnknown,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := WrapError(tt.err, tt.mcpName)\n\n\t\t\tif tt.err == nil {\n\t\t\t\tassert.Nil(t, result)\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\tmcpErr, ok := result.(*MCPError)\n\t\t\trequire.True(t, ok)\n\t\t\tassert.Equal(t, tt.expectedCode, mcpErr.Code)\n\t\t\tassert.Contains(t, mcpErr.Message, tt.mcpName)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestHealthStatus_403": {
+      "name": "TestHealthStatus",
+      "type": "function",
+      "start_line": 403,
+      "end_line": 433,
+      "content_hash": "24fd740bad4622527d085567f8a51e7c2a260ede",
+      "content": "func TestHealthStatus(t *testing.T) {\n\tt.Run(\"healthy status\", func(t *testing.T) {\n\t\tstatus := HealthStatus{\n\t\t\tName:             \"test-mcp\",\n\t\t\tHealthy:          true,\n\t\t\tLastCheck:        time.Now(),\n\t\t\tConsecutiveFails: 0,\n\t\t\tLatency:          50 * time.Millisecond,\n\t\t}\n\n\t\tassert.True(t, status.Healthy)\n\t\tassert.Zero(t, status.ConsecutiveFails)\n\t\tassert.Nil(t, status.LastError)\n\t})\n\n\tt.Run(\"unhealthy status\", func(t *testing.T) {\n\t\tstatus := HealthStatus{\n\t\t\tName:             \"test-mcp\",\n\t\t\tHealthy:          false,\n\t\t\tLastCheck:        time.Now(),\n\t\t\tLastError:        errors.New(\"connection timeout\"),\n\t\t\tConsecutiveFails: 3,\n\t\t\tLatency:          5 * time.Second,\n\t\t}\n\n\t\tassert.False(t, status.Healthy)\n\t\tassert.Equal(t, 3, status.ConsecutiveFails)\n\t\tassert.NotNil(t, status.LastError)\n\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

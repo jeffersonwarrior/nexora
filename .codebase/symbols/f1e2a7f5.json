@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_context_answer_fallback.py",
+  "file_hash": "046447246bc70b839b96f08cf5b8cbaab4a59158",
+  "updated_at": "2025-12-26T17:34:22.432995",
+  "symbols": {
+    "function_test_context_answer_has_no_filesystem_fallback_when_no_hits_6": {
+      "name": "test_context_answer_has_no_filesystem_fallback_when_no_hits",
+      "type": "function",
+      "start_line": 6,
+      "end_line": 27,
+      "content_hash": "7f1fa4f08908f51f497b40f049b442a02c9d29fb",
+      "content": "async def test_context_answer_has_no_filesystem_fallback_when_no_hits():\n    \"\"\"When retrieval yields no spans, we do NOT glob or read the host filesystem.\n    Citations may be empty, and that's expected.\n    \"\"\"\n    from scripts.mcp_indexer_server import context_answer\n    import scripts.mcp_indexer_server as srv\n\n    # Mock embedding model to avoid loading real model\n    with patch.object(srv, \"_get_embedding_model\", return_value=None):\n        out = await context_answer(\n            query=\"Describe module roles\",\n            limit=3,\n            per_path=1,\n            include_snippet=True,\n            path_glob=[\"scripts/hybrid_search.py\"],\n            # Force a very unlikely match to simulate empty retrieval\n            language=\"nonexistentlang\",\n        )\n        assert isinstance(out, dict)\n        # No fallback: citations can be empty\n        cits = out.get(\"citations\") or []\n        assert len(cits) == 0",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

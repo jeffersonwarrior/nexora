@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/integration_test.go",
+  "file_hash": "5b54bef69a6c03371ee957bd40fbd0e742c4e023",
+  "updated_at": "2025-12-26T17:34:23.826716",
+  "symbols": {
+    "function_TestTeam_ExecuteTask_Integration_12": {
+      "name": "TestTeam_ExecuteTask_Integration",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 42,
+      "content_hash": "cfdacc17572a7bb4602d20fe69b13d2d04d49a9f",
+      "content": "func TestTeam_ExecuteTask_Integration(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\n\t// Create agents with different capabilities\n\tmemory := &MockMemory{}\n\tagent1 := NewAgent(WithMemory(memory))\n\tagent2 := NewAgent(WithMemory(&MockMemory{}))\n\n\t// Add agents to team\n\trequire.NoError(t, team.AddAgent(\"calc-agent\", agent1))\n\trequire.NoError(t, team.AddAgent(\"echo-agent\", agent2))\n\n\tctx := context.Background()\n\n\t// Test task execution through team\n\ttask := Task{\n\t\tID:          \"test-task\",\n\t\tDescription: \"Calculate 2+2\",\n\t\tPriority:    1,\n\t\tData: map[string]interface{}{\n\t\t\t\"required_capabilities\": []string{\"calculator\"},\n\t\t},\n\t}\n\n\t// Just test that the method doesn't panic\n\t_, err := team.ExecuteTask(ctx, task)\n\t// It might fail since no actual calculator capability is registered\n\t_ = err\n}\n\n// TestCoordinator_GetTaskResult_Integration tests retrieving task results",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_GetTaskResult_Integration_43": {
+      "name": "TestCoordinator_GetTaskResult_Integration",
+      "type": "function",
+      "start_line": 43,
+      "end_line": 71,
+      "content_hash": "766107879a060300c0f3d03fa8c7c73e7d0c0f7c",
+      "content": "func TestCoordinator_GetTaskResult_Integration(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\tteam.AddAgent(\"agent1\", agent)\n\n\tctx := context.Background()\n\n\t// Execute a task\n\ttask := Task{\n\t\tID:          \"test-task\",\n\t\tDescription: \"Test task\",\n\t\tPriority:    1,\n\t}\n\n\tresult, err := coordinator.ExecuteTask(ctx, task)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, result)\n\n\t// Test GetTaskResult\n\tretrievedResult, err := coordinator.GetTaskResult(\"test-task\")\n\tassert.NotNil(t, retrievedResult)\n\tassert.NoError(t, err)\n}\n\n// TestCoordinator_GetActiveTasks_Integration tests retrieving active tasks",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_GetActiveTasks_Integration_72": {
+      "name": "TestCoordinator_GetActiveTasks_Integration",
+      "type": "function",
+      "start_line": 72,
+      "end_line": 102,
+      "content_hash": "e4c87cea078645b109b96be7177229e8f19c8510",
+      "content": "func TestCoordinator_GetActiveTasks_Integration(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\tctx := context.Background()\n\n\t// Submit tasks without executing\n\ttask1 := &Task{ID: \"task1\", Description: \"Task 1\", Priority: 1}\n\ttask2 := &Task{ID: \"task2\", Description: \"Task 2\", Priority: 2}\n\n\tcoordinator.SubmitTask(ctx, task1)\n\tcoordinator.SubmitTask(ctx, task2)\n\n\t// Get active tasks\n\tactive := coordinator.GetActiveTasks()\n\t// Find the tasks by ID\n\tfound1, found2 := false, false\n\tfor _, exec := range active {\n\t\tif exec.Task.ID == \"task1\" {\n\t\t\tfound1 = true\n\t\t}\n\t\tif exec.Task.ID == \"task2\" {\n\t\t\tfound2 = true\n\t\t}\n\t}\n\tassert.True(t, found1)\n\tassert.True(t, found2)\n\tassert.Equal(t, 2, len(active))\n}\n\n// TestCoordinator_GetStats_Integration tests coordinator statistics",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestCoordinator_GetStats_Integration_103": {
+      "name": "TestCoordinator_GetStats_Integration",
+      "type": "function",
+      "start_line": 103,
+      "end_line": 127,
+      "content_hash": "f25d069212f39154051a4ee60288996c580270a1",
+      "content": "func TestCoordinator_GetStats_Integration(t *testing.T) {\n\tteam := NewTeam(\"test-team\")\n\tcoordinator := NewCoordinator(team)\n\n\tmemory := &MockMemory{}\n\tagent := NewAgent(WithMemory(memory))\n\n\tteam.AddAgent(\"agent1\", agent)\n\n\tctx := context.Background()\n\n\t// Execute some tasks\n\ttask1 := Task{ID: \"task1\", Description: \"Task 1\", Priority: 1}\n\n\tcoordinator.ExecuteTask(ctx, task1)\n\n\t// Get stats\n\tstats := coordinator.GetStats()\n\t// stats is a map[string]interface{}, so we need to check fields\n\tassert.NotNil(t, stats)\n\tassert.NotNil(t, stats[\"completed_tasks\"])\n\tassert.Equal(t, 0, stats[\"active_tasks\"])\n}\n\n// TestTask_DataOperations tests additional task data operations",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTask_DataOperations_128": {
+      "name": "TestTask_DataOperations",
+      "type": "function",
+      "start_line": 128,
+      "end_line": 142,
+      "content_hash": "14dc6e757bdab35f19d5f7b9ddbc1a0135250b3c",
+      "content": "func TestTask_DataOperations(t *testing.T) {\n\ttask := NewTask(\"Test task with different data\", 0)\n\n\t// Test various data types\n\ttask.SetData(\"number\", 42)\n\ttask.SetData(\"string\", \"test\")\n\ttask.SetData(\"bool\", true)\n\ttask.SetData(\"slice\", []string{\"a\", \"b\", \"c\"})\n\n\t// Test that data was set\n\tassert.NotNil(t, task.Data)\n\tassert.Equal(t, 42, task.Data[\"number\"])\n\tassert.Equal(t, \"test\", task.Data[\"string\"])\n\tassert.Equal(t, true, task.Data[\"bool\"])\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

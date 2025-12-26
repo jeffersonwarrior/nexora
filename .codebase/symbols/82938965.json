@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_impl/utils.py",
+  "file_hash": "4289d7e8bab030075340ed428ce391a21ccb200e",
+  "updated_at": "2025-12-26T17:34:24.968495",
+  "symbols": {
+    "function_safe_int_62": {
+      "name": "safe_int",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 69,
+      "content_hash": "38b4c3d4ce21a22d5391d6ce7e67f614ca0c2685",
+      "content": "def safe_int(value, default=0, logger=None, context=\"\"):\n    \"\"\"Safely convert value to int with fallback.\"\"\"\n    try:\n        if value is None or (isinstance(value, str) and value.strip() == \"\"):\n            return default\n        return int(value)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_safe_float_72": {
+      "name": "safe_float",
+      "type": "function",
+      "start_line": 72,
+      "end_line": 79,
+      "content_hash": "692d49bcb877e8e51a72f1e165d7e3769b1d3c92",
+      "content": "def safe_float(value, default=0.0, logger=None, context=\"\"):\n    \"\"\"Safely convert value to float with fallback.\"\"\"\n    try:\n        if value is None or (isinstance(value, str) and value.strip() == \"\"):\n            return default\n        return float(value)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_safe_bool_82": {
+      "name": "safe_bool",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 96,
+      "content_hash": "ed1b6ad724966a32f85fe8eb530cf9d1d940bc9e",
+      "content": "def safe_bool(value, default=False, logger=None, context=\"\"):\n    \"\"\"Safely convert value to bool with fallback.\"\"\"\n    try:\n        if value is None or (isinstance(value, str) and value.strip() == \"\"):\n            return default\n        if isinstance(value, bool):\n            return value\n        s = str(value).strip().lower()\n        if s in {\"1\", \"true\", \"yes\", \"on\"}:\n            return True\n        if s in {\"0\", \"false\", \"no\", \"off\"}:\n            return False\n        return default\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__coerce_bool_102": {
+      "name": "_coerce_bool",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 113,
+      "content_hash": "4feb6bf6fb4ad4a2ee12f70b3f63a80c22a0b1f2",
+      "content": "def _coerce_bool(x: Any, default: bool = False) -> bool:\n    \"\"\"Coerce value to boolean.\"\"\"\n    if isinstance(x, bool):\n        return x\n    if x is None:\n        return default\n    s = str(x).strip().lower()\n    if s in {\"1\", \"true\", \"yes\", \"on\"}:\n        return True\n    if s in {\"0\", \"false\", \"no\", \"off\"}:\n        return False\n    return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__coerce_int_116": {
+      "name": "_coerce_int",
+      "type": "function",
+      "start_line": 116,
+      "end_line": 123,
+      "content_hash": "0d2a9d24050b432e6ef7f3091d80fc21ea1f2a66",
+      "content": "def _coerce_int(x: Any, default: int = 0) -> int:\n    \"\"\"Coerce value to integer.\"\"\"\n    try:\n        if x is None or (isinstance(x, str) and x.strip() == \"\"):\n            return default\n        return int(x)\n    except (ValueError, TypeError):\n        return default",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__coerce_str_126": {
+      "name": "_coerce_str",
+      "type": "function",
+      "start_line": 126,
+      "end_line": 130,
+      "content_hash": "154f84ca077ab20e6f92b9c7515de7e9e90cc493",
+      "content": "def _coerce_str(x: Any, default: str = \"\") -> str:\n    \"\"\"Coerce value to string.\"\"\"\n    if x is None:\n        return default\n    return str(x)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__coerce_value_string_133": {
+      "name": "_coerce_value_string",
+      "type": "function",
+      "start_line": 133,
+      "end_line": 146,
+      "content_hash": "1c4e0d74a5103bbb3b6ba3f7affd3353b2381e07",
+      "content": "def _coerce_value_string(v: str) -> Any:\n    \"\"\"Coerce a string value, trying JSON then Python literal eval.\"\"\"\n    # Try JSON\n    try:\n        return json.loads(v)\n    except json.JSONDecodeError:\n        pass\n    # Try Python literal (e.g., \"['a','b']\")\n    try:\n        return _ast.literal_eval(v)\n    except (ValueError, SyntaxError):\n        pass\n    # As-is string\n    return v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__maybe_parse_jsonish_152": {
+      "name": "_maybe_parse_jsonish",
+      "type": "function",
+      "start_line": 152,
+      "end_line": 169,
+      "content_hash": "379a1b2982fdcb02c8017a86f257117c50ab6a48",
+      "content": "def _maybe_parse_jsonish(obj: Any) -> Optional[Dict[str, Any]]:\n    \"\"\"Attempt to parse object as JSON dict.\"\"\"\n    if isinstance(obj, dict):\n        return obj\n    if not isinstance(obj, str):\n        return None\n    s = obj.strip()\n    if not s:\n        return None\n    try:\n        return json.loads(s)\n    except json.JSONDecodeError:\n        pass\n    try:\n        return json.loads(\"{\" + s + \"}\")\n    except json.JSONDecodeError:\n        pass\n    return None",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__looks_jsonish_string_172": {
+      "name": "_looks_jsonish_string",
+      "type": "function",
+      "start_line": 172,
+      "end_line": 184,
+      "content_hash": "017fc3840225852368caa11acbd822ad6107325e",
+      "content": "def _looks_jsonish_string(s: Any) -> bool:\n    \"\"\"Check if string looks like JSON.\"\"\"\n    if not isinstance(s, str):\n        return False\n    t = s.strip()\n    if not t:\n        return False\n    if t.startswith(\"{\") and \":\" in t:\n        return True\n    if t.endswith(\"}\"):\n        return True\n    # quick heuristics for comma/colon pairs often seen when args are concatenated\n    return (\",\" in t and \":\" in t) or ('\":' in t)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__parse_kv_string_187": {
+      "name": "_parse_kv_string",
+      "type": "function",
+      "start_line": 187,
+      "end_line": 213,
+      "content_hash": "49edaab5c8826299347b53d7c5592ee67e10c817",
+      "content": "def _parse_kv_string(s: str) -> Dict[str, Any]:\n    \"\"\"Parse non-JSON strings like \"a=1&b=2\" or \"query=[\\\"a\\\",\\\"b\\\"]\" into a dict.\n    \n    Values are JSON-decoded when possible; else literal-eval; else kept as raw strings.\n    \"\"\"\n    out: Dict[str, Any] = {}\n    try:\n        if not isinstance(s, str) or not s.strip():\n            return out\n        # Try query-string form first\n        if (\"=\" in s) and (\"{\" not in s) and (\":\" not in s):\n            qs = _urlparse.parse_qs(s, keep_blank_values=True)\n            for k, vals in qs.items():\n                v = vals[-1] if vals else \"\"\n                out[k] = _coerce_value_string(v)\n            return out\n        # Fallback: split on commas for simple \"k=v,k2=v2\" forms\n        if (\"=\" in s) and (\",\" in s):\n            for part in s.split(\",\"):\n                if \"=\" not in part:\n                    continue\n                k, v = part.split(\"=\", 1)\n                out[k.strip()] = _coerce_value_string(v.strip())\n            return out\n    except Exception:\n        return {}\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__extract_kwargs_payload_216": {
+      "name": "_extract_kwargs_payload",
+      "type": "function",
+      "start_line": 216,
+      "end_line": 242,
+      "content_hash": "b71168c0a2c1816cb6d48ea38102aece3f3ca8d2",
+      "content": "def _extract_kwargs_payload(kwargs: Any) -> Dict[str, Any]:\n    \"\"\"Extract kwargs payload from potentially nested/stringified input.\"\"\"\n    try:\n        # Handle kwargs being passed as a string \"{}\" by some MCP clients\n        if isinstance(kwargs, str):\n            parsed = _maybe_parse_jsonish(kwargs)\n            if isinstance(parsed, dict):\n                kwargs = parsed\n            else:\n                return {}\n\n        if isinstance(kwargs, dict) and \"kwargs\" in kwargs:\n            inner = kwargs.get(\"kwargs\")\n            if isinstance(inner, dict):\n                return inner\n            parsed = _maybe_parse_jsonish(inner)\n            if isinstance(parsed, dict):\n                return parsed\n            # Fallback: accept query-string or k=v,k2=v2 strings\n            if isinstance(inner, str):\n                kv = _parse_kv_string(inner)\n                if isinstance(kv, dict) and kv:\n                    return kv\n            return {}\n    except Exception:\n        return {}\n    return {}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__to_str_list_relaxed_248": {
+      "name": "_to_str_list_relaxed",
+      "type": "function",
+      "start_line": 248,
+      "end_line": 343,
+      "content_hash": "16df264adf80d961bc90b6f82403c72510ff528e",
+      "content": "def _to_str_list_relaxed(x: Any) -> List[str]:\n    \"\"\"Coerce various inputs to list[str]. Accepts JSON strings like \"[\\\"a\\\",\\\"b\\\"]\".\"\"\"\n    if x is None:\n        return []\n    if isinstance(x, (list, tuple)):\n        flat: List[str] = []\n        for item in x:\n            flat.extend(_to_str_list_relaxed(item))\n        return [t for t in flat if t.strip()]\n    if isinstance(x, str):\n        s = x.strip()\n        if not s:\n            return []\n\n        def _normalize_tokens(val: Any, depth: int = 0) -> List[str]:\n            if depth > 10:\n                text = str(val).strip()\n                return [text] if text else []\n            if isinstance(val, (list, tuple)):\n                tokens: List[str] = []\n                for item in val:\n                    tokens.extend(_normalize_tokens(item, depth + 1))\n                return tokens\n\n            text = str(val).strip()\n            if not text:\n                return []\n\n            seen: set[str] = set()\n            current = text\n            while True:\n                if not current:\n                    return []\n                key = f\"{depth}:{current}\"\n                if key in seen:\n                    return [current]\n                seen.add(key)\n\n                if len(current) >= 2 and current[0] == current[-1] and current[0] in {'\"', \"'\"}:\n                    current = current[1:-1].strip()\n                    continue\n\n                changed = False\n                if current.startswith('/\"'):\n                    current = current[2:].strip()\n                    changed = True\n                if current.endswith('\"/'):\n                    current = current[:-2].strip()\n                    changed = True\n                if current.endswith('/\"'):\n                    current = current[:-2].strip()\n                    changed = True\n                if changed:\n                    continue\n\n                parsed = None\n                for parser in (json.loads, _ast.literal_eval):\n                    try:\n                        parsed = parser(current)\n                    except Exception:\n                        continue\n                    else:\n                        break\n                if isinstance(parsed, (list, tuple)):\n                    tokens: List[str] = []\n                    for item in parsed:\n                        tokens.extend(_normalize_tokens(item, depth + 1))\n                    return tokens\n                if isinstance(parsed, str):\n                    current = parsed.strip()\n                    continue\n                if parsed is not None:\n                    current = str(parsed).strip()\n                    continue\n\n                maybe = current.replace('\\\\\"', '\"').replace(\"\\\\'\", \"'\")\n                if maybe != current:\n                    current = maybe.strip()\n                    continue\n\n                # Only split on commas if it looks like a simple list of identifiers,\n                # NOT natural language prose. Heuristic: if any part has internal spaces\n                # (multi-word), it's likely prose - don't split.\n                if ',' in current:\n                    parts = [p.strip() for p in current.split(',')]\n                    has_prose = any(' ' in p for p in parts if p)\n                    if not has_prose:\n                        tokens: List[str] = []\n                        for part in parts:\n                            tokens.extend(_normalize_tokens(part, depth + 1))\n                        return tokens\n\n                return [current]\n\n        return [t for t in _normalize_tokens(s) if t.strip()]\n    return [str(x)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__normalize_tokens_262": {
+      "name": "_normalize_tokens",
+      "type": "function",
+      "start_line": 262,
+      "end_line": 340,
+      "content_hash": "0fd02ac73c412fa1c649e447b2aa597cf8b580bb",
+      "content": "        def _normalize_tokens(val: Any, depth: int = 0) -> List[str]:\n            if depth > 10:\n                text = str(val).strip()\n                return [text] if text else []\n            if isinstance(val, (list, tuple)):\n                tokens: List[str] = []\n                for item in val:\n                    tokens.extend(_normalize_tokens(item, depth + 1))\n                return tokens\n\n            text = str(val).strip()\n            if not text:\n                return []\n\n            seen: set[str] = set()\n            current = text\n            while True:\n                if not current:\n                    return []\n                key = f\"{depth}:{current}\"\n                if key in seen:\n                    return [current]\n                seen.add(key)\n\n                if len(current) >= 2 and current[0] == current[-1] and current[0] in {'\"', \"'\"}:\n                    current = current[1:-1].strip()\n                    continue\n\n                changed = False\n                if current.startswith('/\"'):\n                    current = current[2:].strip()\n                    changed = True\n                if current.endswith('\"/'):\n                    current = current[:-2].strip()\n                    changed = True\n                if current.endswith('/\"'):\n                    current = current[:-2].strip()\n                    changed = True\n                if changed:\n                    continue\n\n                parsed = None\n                for parser in (json.loads, _ast.literal_eval):\n                    try:\n                        parsed = parser(current)\n                    except Exception:\n                        continue\n                    else:\n                        break\n                if isinstance(parsed, (list, tuple)):\n                    tokens: List[str] = []\n                    for item in parsed:\n                        tokens.extend(_normalize_tokens(item, depth + 1))\n                    return tokens\n                if isinstance(parsed, str):\n                    current = parsed.strip()\n                    continue\n                if parsed is not None:\n                    current = str(parsed).strip()\n                    continue\n\n                maybe = current.replace('\\\\\"', '\"').replace(\"\\\\'\", \"'\")\n                if maybe != current:\n                    current = maybe.strip()\n                    continue\n\n                # Only split on commas if it looks like a simple list of identifiers,\n                # NOT natural language prose. Heuristic: if any part has internal spaces\n                # (multi-word), it's likely prose - don't split.\n                if ',' in current:\n                    parts = [p.strip() for p in current.split(',')]\n                    has_prose = any(' ' in p for p in parts if p)\n                    if not has_prose:\n                        tokens: List[str] = []\n                        for part in parts:\n                            tokens.extend(_normalize_tokens(part, depth + 1))\n                        return tokens\n\n                return [current]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__split_ident_349": {
+      "name": "_split_ident",
+      "type": "function",
+      "start_line": 349,
+      "end_line": 358,
+      "content_hash": "f22ddaa3994987b614c5499a88275f34d00d57d3",
+      "content": "def _split_ident(s: str) -> List[str]:\n    \"\"\"Split identifier into tokens (handles camelCase, snake_case, etc.).\"\"\"\n    parts = re.split(r\"[^A-Za-z0-9]+\", s)\n    out = []\n    for p in parts:\n        if not p:\n            continue\n        segs = re.findall(r\"[A-Z]?[a-z]+|[A-Z]+(?![a-z])|\\d+\", p)\n        out.extend([x for x in segs if x])\n    return [x.lower() for x in out if x and x.lower() not in _STOP]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__tokens_from_queries_361": {
+      "name": "_tokens_from_queries",
+      "type": "function",
+      "start_line": 361,
+      "end_line": 372,
+      "content_hash": "48515cb3d13a7a3efec402bd00fd6613f471d24d",
+      "content": "def _tokens_from_queries(qs: List[str]) -> List[str]:\n    \"\"\"Extract unique tokens from a list of query strings.\"\"\"\n    toks = []\n    for q in qs:\n        toks.extend(_split_ident(q))\n    seen = set()\n    out = []\n    for t in toks:\n        if t not in seen:\n            out.append(t)\n            seen.add(t)\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__env_overrides_383": {
+      "name": "_env_overrides",
+      "type": "function",
+      "start_line": 383,
+      "end_line": 399,
+      "content_hash": "1585db0f2440f209792e91d08232e314a8a9ab86",
+      "content": "def _env_overrides(pairs: Dict[str, str]):\n    \"\"\"Temporarily override environment variables.\"\"\"\n    old_vals = {}\n    for k, v in pairs.items():\n        old_vals[k] = _os.environ.get(k)\n        if v is None:\n            _os.environ.pop(k, None)\n        else:\n            _os.environ[k] = str(v)\n    try:\n        yield\n    finally:\n        for k, old_v in old_vals.items():\n            if old_v is None:\n                _os.environ.pop(k, None)\n            else:\n                _os.environ[k] = old_v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__primary_identifier_from_queries_405": {
+      "name": "_primary_identifier_from_queries",
+      "type": "function",
+      "start_line": 405,
+      "end_line": 436,
+      "content_hash": "7b2bde788c563bfb1f8cfffdaacfa54f93819289",
+      "content": "def _primary_identifier_from_queries(qs: List[str]) -> str:\n    \"\"\"Best-effort extraction of the main CONSTANT_NAME or IDENTIFIER from queries.\n\n    Catches ALL_CAPS, snake_case, camelCase, and lowercase identifiers.\n    \"\"\"\n    try:\n        cand: List[str] = []\n        for q in qs:\n            for t in re.findall(r\"[A-Za-z_][A-Za-z0-9_]*\", q or \"\"):\n                if len(t) < 2:\n                    continue\n                is_all_caps = t.isupper()\n                has_underscore = \"_\" in t\n                is_camel = any(c.isupper() for c in t[1:]) and any(c.islower() for c in t)\n                is_longer_lower = t.islower() and len(t) >= 3\n                if is_all_caps or has_underscore or is_camel or is_longer_lower:\n                    cand.append(t)\n        if not cand:\n            return \"\"\n        # Prefer stronger identifiers: ALL_CAPS > camelCase > snake_case > lowercase\n        def _score(c: str):\n            if c.isupper():\n                return (3, len(c))\n            if \"_\" in c:\n                return (2, len(c))\n            if any(ch.isupper() for ch in c[1:]):\n                return (1, len(c))\n            return (0, len(c))\n        cand.sort(key=_score, reverse=True)\n        return cand[0] if cand else \"\"\n    except Exception:\n        return \"\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__score_425": {
+      "name": "_score",
+      "type": "function",
+      "start_line": 425,
+      "end_line": 432,
+      "content_hash": "a728708d472d03c2f03b565862b12450baee945f",
+      "content": "        def _score(c: str):\n            if c.isupper():\n                return (3, len(c))\n            if \"_\" in c:\n                return (2, len(c))\n            if any(ch.isupper() for ch in c[1:]):\n                return (1, len(c))\n            return (0, len(c))",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/traversal_core/ops/source/v_from_type.rs",
+  "file_hash": "2f4b19950baeaa3cb90516d2bb66f92626028a66",
+  "updated_at": "2025-12-26T17:34:21.746781",
+  "symbols": {
+    "trait_VFromTypeAdapter_7": {
+      "name": "VFromTypeAdapter",
+      "type": "trait",
+      "start_line": 7,
+      "end_line": 12,
+      "content_hash": "84a08bda4e89b7cf6efed2dd273df4e5142169b2",
+      "content": "pub trait VFromTypeAdapter<'db, 'arena, 'txn>:\n    Iterator<Item = Result<TraversalValue<'arena>, GraphError>>\n{\n    /// Returns an iterator containing the vector with the given label.\n    ///\n    /// Note that the `label` cannot be empty and must be a valid, existing vector label.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_v_from_type_13": {
+      "name": "v_from_type",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 20,
+      "content_hash": "433c80454ce22b03d56c5de8f6ee8a62037ce39d",
+      "content": "    fn v_from_type(\n        self,\n        label: &'arena str,\n        get_vector_data: bool,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_21": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 21,
+      "end_line": 28,
+      "content_hash": "69729ce91c00472d22cf2f1d248071d00437b6b7",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    >;\n}\n\nimpl<'db, 'arena, 'txn, I: Iterator<Item = Result<TraversalValue<'arena>, GraphError>>>\n    VFromTypeAdapter<'db, 'arena, 'txn> for RoTraversalIterator<'db, 'arena, 'txn, I>\n{\n    #[inline]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_v_from_type_29": {
+      "name": "v_from_type",
+      "type": "method",
+      "start_line": 29,
+      "end_line": 36,
+      "content_hash": "433c80454ce22b03d56c5de8f6ee8a62037ce39d",
+      "content": "    fn v_from_type(\n        self,\n        label: &'arena str,\n        get_vector_data: bool,\n    ) -> RoTraversalIterator<\n        'db,\n        'arena,\n        'txn,",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_Iterator_37": {
+      "name": "Iterator",
+      "type": "impl",
+      "start_line": 37,
+      "end_line": 111,
+      "content_hash": "43aff36cbeb1b9cbcb43494328084482825c4c22",
+      "content": "        impl Iterator<Item = Result<TraversalValue<'arena>, GraphError>>,\n    > {\n        let label_bytes = label.as_bytes();\n        let iter = self\n            .storage\n            .vectors\n            .vector_properties_db\n            .iter(self.txn)\n            .unwrap()\n            .filter_map(move |item| {\n                if let Ok((id, value)) = item {\n\n\n                    // get label via bytes directly\n                    assert!(\n                        value.len() >= LMDB_STRING_HEADER_LENGTH,\n                        \"value length does not contain header which means the `label` field was missing from the node on insertion\"\n                    );\n                    let length_of_label_in_lmdb =\n                        u64::from_le_bytes(value[..LMDB_STRING_HEADER_LENGTH].try_into().unwrap()) as usize;\n                    assert!(\n                        value.len() >= length_of_label_in_lmdb + LMDB_STRING_HEADER_LENGTH,\n                        \"value length is not at least the header length plus the label length meaning there has been a corruption on node insertion\"\n                    );\n                    let label_in_lmdb = &value[LMDB_STRING_HEADER_LENGTH\n                        ..LMDB_STRING_HEADER_LENGTH + length_of_label_in_lmdb];\n\n\n                    // get deleted via bytes directly\n                    \n                    // skip single byte for version\n                    let version_index = length_of_label_in_lmdb + LMDB_STRING_HEADER_LENGTH;\n\n                    // get bool for deleted \n                    let deleted_index = version_index + 1;\n                    let deleted = value[deleted_index] == 1;\n\n                    if deleted {\n                        return None;\n                    }\n        \n                    if label_in_lmdb == label_bytes {\n                        let vector_without_data = VectorWithoutData::from_bincode_bytes(self.arena, value, id)\n                                    .map_err(|e| VectorError::ConversionError(e.to_string()))\n                                    .ok()?;\n        \n                        if get_vector_data {\n                            let mut vector = match self.storage.vectors.get_raw_vector_data(self.txn, id, label, self.arena) {\n                                Ok(bytes) => bytes,\n                                Err(VectorError::VectorDeleted) => return None,\n                                Err(e) => return Some(Err(GraphError::from(e))),\n                            };\n                            vector.expand_from_vector_without_data(vector_without_data);\n                            return Some(Ok(TraversalValue::Vector(vector)));\n                        } else {\n                            return Some(Ok(TraversalValue::VectorNodeWithoutVectorData(\n                                vector_without_data\n                            )));\n                        }\n                    } else {\n                        return None;\n                    }\n                   \n                }\n                None\n            });\n\n        RoTraversalIterator {\n            storage: self.storage,\n            arena: self.arena,\n            txn: self.txn,\n            inner: iter,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

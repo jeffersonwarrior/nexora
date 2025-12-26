@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/agent/agents/integration.go",
+  "file_hash": "f3a24c0826fd08cdb9ed883b0a1025eab2df5533",
+  "updated_at": "2025-12-26T17:34:20.728801",
+  "symbols": {
+    "struct_AgentIntegration_10": {
+      "name": "AgentIntegration",
+      "type": "struct",
+      "start_line": 10,
+      "end_line": 14,
+      "content_hash": "1b52a7d9b46336303ed1c6615c1d2d96927e8b32",
+      "content": "type AgentIntegration struct {\n\texecutor *AgentExecutor\n}\n\n// NewAgentIntegration creates a new integration instance",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewAgentIntegration_15": {
+      "name": "NewAgentIntegration",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 29,
+      "content_hash": "0f5bf20cf146146aa6ad15efde50a7a193e351c5",
+      "content": "func NewAgentIntegration() *AgentIntegration {\n\tregistry := NewAgentRegistry()\n\n\t// Load agents from the agents directory\n\t_ = registry.LoadAgentsFromDirectory(\".\")\n\n\texecutor := NewAgentExecutor(registry)\n\n\treturn &AgentIntegration{\n\t\texecutor: executor,\n\t}\n}\n\n// SelectAgentForInput chooses the best agent for a given input using the new trigger system\n// This can be called from the existing agent coordinator to decide which agent to use",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SelectAgentForInput_30": {
+      "name": "SelectAgentForInput",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 50,
+      "content_hash": "6005cc203ce5a1d745e2603ce6541247388a86ed",
+      "content": "func (ai *AgentIntegration) SelectAgentForInput(ctx context.Context, input string, tools []string) (*config.Agent, error) {\n\t// Use the new trigger system to find the best agent\n\tagent, _, err := ai.executor.ExecuteForInput(ctx, input, tools)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Convert to the existing Agent format\n\t// This bridges the new agents with the old system\n\tnexoraAgent := &config.Agent{\n\t\tID:           agent.Name,\n\t\tName:         agent.Name,\n\t\tDescription:  agent.Description,\n\t\tModel:        config.SelectedModelTypeLarge, // Default to large model\n\t\tAllowedTools: agent.Tools,\n\t}\n\n\treturn nexoraAgent, nil\n}\n\n// ListAvailableAgents returns all available agents in a format compatible with the existing system",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListAvailableAgents_51": {
+      "name": "ListAvailableAgents",
+      "type": "method",
+      "start_line": 51,
+      "end_line": 76,
+      "content_hash": "066f186de857c77f5c0ec150a58f1eac6137e523",
+      "content": "func (ai *AgentIntegration) ListAvailableAgents() []*config.Agent {\n\tagents := ai.executor.ListAgents()\n\tvar nexoraAgents []*config.Agent\n\n\tfor _, agentName := range agents {\n\t\tagent, exists := ai.executor.GetAgent(agentName)\n\t\tif !exists {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Convert to nexora Agent format\n\t\tnexoraAgent := &config.Agent{\n\t\t\tID:           agent.Name,\n\t\t\tName:         agent.Name,\n\t\t\tDescription:  agent.Description,\n\t\t\tModel:        config.SelectedModelTypeLarge,\n\t\t\tAllowedTools: agent.Tools,\n\t\t}\n\n\t\tnexoraAgents = append(nexoraAgents, nexoraAgent)\n\t}\n\n\treturn nexoraAgents\n}\n\n// ExplainCurrentSelection explains why the current agent was selected",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ExplainCurrentSelection_77": {
+      "name": "ExplainCurrentSelection",
+      "type": "method",
+      "start_line": 77,
+      "end_line": 81,
+      "content_hash": "ea4d686795baea8a9bf350245ff3d95e29b3aae0",
+      "content": "func (ai *AgentIntegration) ExplainCurrentSelection(input string) string {\n\treturn ai.executor.ExplainTriggering(input)\n}\n\n// GetAgentColor returns the visual color for an agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAgentColor_82": {
+      "name": "GetAgentColor",
+      "type": "method",
+      "start_line": 82,
+      "end_line": 91,
+      "content_hash": "596a843d27b4525b93525f7d20c4b0d6dce8106a",
+      "content": "func (ai *AgentIntegration) GetAgentColor(agentName string) string {\n\tagent, exists := ai.executor.GetAgent(agentName)\n\tif !exists {\n\t\treturn \"\"\n\t}\n\treturn agent.Color\n}\n\n// ShouldUseLegacyAgent determines if we should fall back to the legacy agent system\n// This provides backward compatibility while we migrate to the new system",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShouldUseLegacyAgent_92": {
+      "name": "ShouldUseLegacyAgent",
+      "type": "method",
+      "start_line": 92,
+      "end_line": 98,
+      "content_hash": "701e521ca1e921f24573c9ad20664e955c98f95a",
+      "content": "func (ai *AgentIntegration) ShouldUseLegacyAgent(input string) bool {\n\t// If no new agents match, use legacy\n\tagent := ai.executor.registry.MatchAgent(input)\n\treturn agent == nil\n}\n\n// AddNewAgent allows dynamic creation of agents at runtime",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_AddNewAgent_99": {
+      "name": "AddNewAgent",
+      "type": "method",
+      "start_line": 99,
+      "end_line": 103,
+      "content_hash": "a0842229fdc1f5fe0fa728c5c4e602af0767bebe",
+      "content": "func (ai *AgentIntegration) AddNewAgent(config *AgentConfig) error {\n\treturn ai.executor.CreateAgent(config)\n}\n\n// RemoveAgent allows removal of agents at runtime",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RemoveAgent_104": {
+      "name": "RemoveAgent",
+      "type": "method",
+      "start_line": 104,
+      "end_line": 108,
+      "content_hash": "a0e427b0c4e4588c5b256a0bd48c5b7a18b681db",
+      "content": "func (ai *AgentIntegration) RemoveAgent(agentName string) error {\n\treturn ai.executor.RemoveAgent(agentName)\n}\n\n// GetAgentTriggers returns the triggers for a specific agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAgentTriggers_109": {
+      "name": "GetAgentTriggers",
+      "type": "method",
+      "start_line": 109,
+      "end_line": 117,
+      "content_hash": "0614e260a5ea07e3a5c369c47bba1f08f0b9e9f9",
+      "content": "func (ai *AgentIntegration) GetAgentTriggers(agentName string) []string {\n\tagent, exists := ai.executor.GetAgent(agentName)\n\tif !exists {\n\t\treturn nil\n\t}\n\treturn agent.Triggers\n}\n\n// GetAgentSystemPrompt returns the system prompt for a specific agent",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAgentSystemPrompt_118": {
+      "name": "GetAgentSystemPrompt",
+      "type": "method",
+      "start_line": 118,
+      "end_line": 124,
+      "content_hash": "841c3206996da7722db38e834db5df656701cc11",
+      "content": "func (ai *AgentIntegration) GetAgentSystemPrompt(agentName string) string {\n\tagent, exists := ai.executor.GetAgent(agentName)\n\tif !exists {\n\t\treturn \"\"\n\t}\n\treturn agent.SystemPrompt\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

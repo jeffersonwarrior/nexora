@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/internal/agent/tools/diagnostics.go",
+  "file_hash": "2622d69033180ac044195ff8ed2c7d55e46c8e0d",
+  "updated_at": "2025-12-26T17:34:20.342319",
+  "symbols": {
+    "struct_DiagnosticsParams_18": {
+      "name": "DiagnosticsParams",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 26,
+      "content_hash": "c6044e920cf03ced4d26bb67b29d35f45a278064",
+      "content": "type DiagnosticsParams struct {\n\tFilePath string `json:\"file_path,omitempty\" description:\"The path to the file to get diagnostics for (leave w empty for project diagnostics)\"`\n}\n\nconst DiagnosticsToolName = \"lsp_diagnostics\"\n\n//go:embed diagnostics.md\nvar diagnosticsDescription []byte\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewDiagnosticsTool_27": {
+      "name": "NewDiagnosticsTool",
+      "type": "function",
+      "start_line": 27,
+      "end_line": 40,
+      "content_hash": "d445aac91e9ad4a54502b01582d0d5126839e8b6",
+      "content": "func NewDiagnosticsTool(lspClients *csync.Map[string, *lsp.Client]) fantasy.AgentTool {\n\treturn fantasy.NewAgentTool(\n\t\tDiagnosticsToolName,\n\t\tstring(diagnosticsDescription),\n\t\tfunc(ctx context.Context, params DiagnosticsParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {\n\t\t\tif lspClients.Len() == 0 {\n\t\t\t\treturn fantasy.NewTextErrorResponse(\"no LSP clients available\"), nil\n\t\t\t}\n\t\t\tnotifyLSPs(ctx, lspClients, params.FilePath)\n\t\t\toutput := getDiagnostics(params.FilePath, lspClients)\n\t\t\treturn fantasy.NewTextResponse(output), nil\n\t\t})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_notifyLSPs_41": {
+      "name": "notifyLSPs",
+      "type": "function",
+      "start_line": 41,
+      "end_line": 54,
+      "content_hash": "505b985facdbd67d3949b67a3b30a44a0e5048de",
+      "content": "func notifyLSPs(ctx context.Context, lsps *csync.Map[string, *lsp.Client], filepath string) {\n\tif filepath == \"\" {\n\t\treturn\n\t}\n\tfor client := range lsps.Seq() {\n\t\tif !client.HandlesFile(filepath) {\n\t\t\tcontinue\n\t\t}\n\t\t_ = client.OpenFileOnDemand(ctx, filepath)\n\t\t_ = client.NotifyChange(ctx, filepath)\n\t\tclient.WaitForDiagnostics(ctx, 5*time.Second)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getDiagnostics_55": {
+      "name": "getDiagnostics",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 100,
+      "content_hash": "0d67f6eb40ed772da5e5722601962f68ff362ce4",
+      "content": "func getDiagnostics(filePath string, lsps *csync.Map[string, *lsp.Client]) string {\n\tfileDiagnostics := []string{}\n\tprojectDiagnostics := []string{}\n\n\tfor lspName, client := range lsps.Seq2() {\n\t\tfor location, diags := range client.GetDiagnostics() {\n\t\t\tpath, err := location.Path()\n\t\t\tif err != nil {\n\t\t\t\tslog.Error(\"Failed to convert diagnostic location URI to path\", \"uri\", location, \"error\", err)\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tisCurrentFile := path == filePath\n\t\t\tfor _, diag := range diags {\n\t\t\t\tformattedDiag := formatDiagnostic(path, diag, lspName)\n\t\t\t\tif isCurrentFile {\n\t\t\t\t\tfileDiagnostics = append(fileDiagnostics, formattedDiag)\n\t\t\t\t} else {\n\t\t\t\t\tprojectDiagnostics = append(projectDiagnostics, formattedDiag)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\tsortDiagnostics(fileDiagnostics)\n\tsortDiagnostics(projectDiagnostics)\n\n\tvar output strings.Builder\n\twriteDiagnostics(&output, \"file_diagnostics\", fileDiagnostics)\n\twriteDiagnostics(&output, \"project_diagnostics\", projectDiagnostics)\n\n\tif len(fileDiagnostics) > 0 || len(projectDiagnostics) > 0 {\n\t\tfileErrors := countSeverity(fileDiagnostics, \"Error\")\n\t\tfileWarnings := countSeverity(fileDiagnostics, \"Warn\")\n\t\tprojectErrors := countSeverity(projectDiagnostics, \"Error\")\n\t\tprojectWarnings := countSeverity(projectDiagnostics, \"Warn\")\n\t\toutput.WriteString(\"\\n<diagnostic_summary>\\n\")\n\t\tfmt.Fprintf(&output, \"Current file: %d errors, %d warnings\\n\", fileErrors, fileWarnings)\n\t\tfmt.Fprintf(&output, \"Project: %d errors, %d warnings\\n\", projectErrors, projectWarnings)\n\t\toutput.WriteString(\"</diagnostic_summary>\\n\")\n\t}\n\n\tout := output.String()\n\tslog.Debug(\"Diagnostics\", \"output\", out)\n\treturn out\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_writeDiagnostics_101": {
+      "name": "writeDiagnostics",
+      "type": "function",
+      "start_line": 101,
+      "end_line": 114,
+      "content_hash": "d8e9ad99270c9c93f49cf9b6b146ccdeabb0f841",
+      "content": "func writeDiagnostics(output *strings.Builder, tag string, in []string) {\n\tif len(in) == 0 {\n\t\treturn\n\t}\n\toutput.WriteString(\"\\n<\" + tag + \">\\n\")\n\tif len(in) > 10 {\n\t\toutput.WriteString(strings.Join(in[:10], \"\\n\"))\n\t\tfmt.Fprintf(output, \"\\n... and %d more diagnostics\", len(in)-10)\n\t} else {\n\t\toutput.WriteString(strings.Join(in, \"\\n\"))\n\t}\n\toutput.WriteString(\"\\n</\" + tag + \">\\n\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sortDiagnostics_115": {
+      "name": "sortDiagnostics",
+      "type": "function",
+      "start_line": 115,
+      "end_line": 126,
+      "content_hash": "c84c1896a2daf9a70eb6f1168c69058324818a1b",
+      "content": "func sortDiagnostics(in []string) []string {\n\tsort.Slice(in, func(i, j int) bool {\n\t\tiIsError := strings.HasPrefix(in[i], \"Error\")\n\t\tjIsError := strings.HasPrefix(in[j], \"Error\")\n\t\tif iIsError != jIsError {\n\t\t\treturn iIsError // Errors come first\n\t\t}\n\t\treturn in[i] < in[j] // Then alphabetically\n\t})\n\treturn in\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDiagnostic_127": {
+      "name": "formatDiagnostic",
+      "type": "function",
+      "start_line": 127,
+      "end_line": 176,
+      "content_hash": "59074e1e033576a5fc3af9f2d54de0cc6f7521d0",
+      "content": "func formatDiagnostic(pth string, diagnostic protocol.Diagnostic, source string) string {\n\tseverity := \"Info\"\n\tswitch diagnostic.Severity {\n\tcase protocol.SeverityError:\n\t\tseverity = \"Error\"\n\tcase protocol.SeverityWarning:\n\t\tseverity = \"Warn\"\n\tcase protocol.SeverityHint:\n\t\tseverity = \"Hint\"\n\t}\n\n\tlocation := fmt.Sprintf(\"%s:%d:%d\", pth, diagnostic.Range.Start.Line+1, diagnostic.Range.Start.Character+1)\n\n\tsourceInfo := \"\"\n\tif diagnostic.Source != \"\" {\n\t\tsourceInfo = diagnostic.Source\n\t} else if source != \"\" {\n\t\tsourceInfo = source\n\t}\n\n\tcodeInfo := \"\"\n\tif diagnostic.Code != nil {\n\t\tcodeInfo = fmt.Sprintf(\"[%v]\", diagnostic.Code)\n\t}\n\n\ttagsInfo := \"\"\n\tif len(diagnostic.Tags) > 0 {\n\t\ttags := []string{}\n\t\tfor _, tag := range diagnostic.Tags {\n\t\t\tswitch tag {\n\t\t\tcase protocol.Unnecessary:\n\t\t\t\ttags = append(tags, \"unnecessary\")\n\t\t\tcase protocol.Deprecated:\n\t\t\t\ttags = append(tags, \"deprecated\")\n\t\t\t}\n\t\t}\n\t\tif len(tags) > 0 {\n\t\t\ttagsInfo = fmt.Sprintf(\" (%s)\", strings.Join(tags, \", \"))\n\t\t}\n\t}\n\n\treturn fmt.Sprintf(\"%s: %s [%s]%s%s %s\",\n\t\tseverity,\n\t\tlocation,\n\t\tsourceInfo,\n\t\tcodeInfo,\n\t\ttagsInfo,\n\t\tdiagnostic.Message)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_countSeverity_177": {
+      "name": "countSeverity",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 185,
+      "content_hash": "5e2ea42910ddc608d6ffa46257562748466e07ab",
+      "content": "func countSeverity(diagnostics []string, severity string) int {\n\tcount := 0\n\tfor _, diag := range diagnostics {\n\t\tif strings.HasPrefix(diag, severity) {\n\t\t\tcount++\n\t\t}\n\t}\n\treturn count\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

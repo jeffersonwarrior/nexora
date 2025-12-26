@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/tests/test_decoder_prompt_mode.py",
+  "file_hash": "530d26338b5dca7de052abd5948b24102b6debb7",
+  "updated_at": "2025-12-26T17:34:22.033199",
+  "symbols": {
+    "function_test_prompt_mode_routes_and_builds_payload_4": {
+      "name": "test_prompt_mode_routes_and_builds_payload",
+      "type": "function",
+      "start_line": 4,
+      "end_line": 26,
+      "content_hash": "78e8abbcbd107f030a6929b726ecd6e06d199707",
+      "content": "def test_prompt_mode_routes_and_builds_payload(monkeypatch):\n    # Enable decoder and prompt mode\n    monkeypatch.setenv(\"REFRAG_DECODER\", \"1\")\n    monkeypatch.setenv(\"REFRAG_RUNTIME\", \"llamacpp\")\n    monkeypatch.setenv(\"REFRAG_DECODER_MODE\", \"prompt\")\n\n    called = {}\n\n    def fake_post(path, payload):\n        called[\"path\"] = path\n        called[\"payload\"] = payload\n        return {\"content\": \"ok\"}\n\n    c = LlamaCppRefragClient(base_url=\"http://fake\")\n    # monkeypatch internal transport\n    c._post = fake_post  # type: ignore\n\n    out = c.generate_with_soft_embeddings(\"Hello\")\n    assert out == \"ok\"\n    assert called[\"path\"] == \"/completion\"\n    assert \"prompt\" in called[\"payload\"] and called[\"payload\"][\"prompt\"].startswith(\n        \"Hello\"\n    )",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fake_post_12": {
+      "name": "fake_post",
+      "type": "function",
+      "start_line": 12,
+      "end_line": 15,
+      "content_hash": "8702f9aee4aa153a4dd4d5ce3ad1fbed0bf3d015",
+      "content": "    def fake_post(path, payload):\n        called[\"path\"] = path\n        called[\"payload\"] = payload\n        return {\"content\": \"ok\"}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

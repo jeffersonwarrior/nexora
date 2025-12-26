@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/internal/agent/multi_session_coordinator.go",
+  "file_hash": "306306b030357327ac6ac42e6b2abd61d79776c8",
+  "updated_at": "2025-12-26T17:34:24.483174",
+  "symbols": {
+    "struct_MultiSessionCoordinator_28": {
+      "name": "MultiSessionCoordinator",
+      "type": "struct",
+      "start_line": 28,
+      "end_line": 37,
+      "content_hash": "2cba990fefe5f8a1816be8cbff562dcf292794eb",
+      "content": "type MultiSessionCoordinator struct {\n\tcfg          *config.Config\n\tsessions     session.Service\n\tmessages     message.Service\n\twindows      map[string]*SessionWindow\n\tactiveID     string\n\twindowMu     sync.RWMutex\n\tconversation *ConversationLoopManager\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewMultiSessionCoordinator_38": {
+      "name": "NewMultiSessionCoordinator",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 52,
+      "content_hash": "615008af1e9d51daee67bada501d072e7f2fc493",
+      "content": "func NewMultiSessionCoordinator(\n\tcfg *config.Config,\n\tsessions session.Service,\n\tmessages message.Service,\n) *MultiSessionCoordinator {\n\treturn &MultiSessionCoordinator{\n\t\tcfg:          cfg,\n\t\tsessions:     sessions,\n\t\tmessages:     messages,\n\t\twindows:      make(map[string]*SessionWindow),\n\t\tactiveID:     \"\",\n\t\tconversation: NewConversationLoopManager(),\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateWindow_53": {
+      "name": "CreateWindow",
+      "type": "method",
+      "start_line": 53,
+      "end_line": 79,
+      "content_hash": "3aef0839c1c36d905ed8861a8fe44f0b0e5d89d1",
+      "content": "func (m *MultiSessionCoordinator) CreateWindow(ctx context.Context, title, prompt string) (string, error) {\n\tid := uuid.New().String()\n\n\t// Build agent for this window (Claude-style isolation)\n\tagentCfg, ok := m.cfg.Agents[config.AgentCoder]\n\tif !ok {\n\t\treturn \"\", errors.New(\"coder agent not configured\")\n\t}\n\n\tagent, err := m.buildWindowAgent(ctx, agentCfg)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\twindow := NewSessionWindow(id, title, agent)\n\n\tm.windowMu.Lock()\n\tm.windows[id] = window\n\tif m.activeID == \"\" {\n\t\tm.activeID = id\n\t\twindow.IsActive = true\n\t}\n\tm.windowMu.Unlock()\n\n\treturn id, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SwitchWindow_80": {
+      "name": "SwitchWindow",
+      "type": "method",
+      "start_line": 80,
+      "end_line": 102,
+      "content_hash": "10c67e984ee1f265b3978635fc2a496d18203a43",
+      "content": "func (m *MultiSessionCoordinator) SwitchWindow(sessionID string) error {\n\tm.windowMu.Lock()\n\tdefer m.windowMu.Unlock()\n\n\toldWindow, oldExists := m.windows[m.activeID]\n\tnewWindow, newExists := m.windows[sessionID]\n\n\tif !newExists {\n\t\treturn fmt.Errorf(\"window %s not found\", sessionID)\n\t}\n\n\t// Deactivate old\n\tif oldExists {\n\t\toldWindow.IsActive = false\n\t}\n\n\t// Activate new\n\tnewWindow.IsActive = true\n\tm.activeID = sessionID\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ListWindows_103": {
+      "name": "ListWindows",
+      "type": "method",
+      "start_line": 103,
+      "end_line": 116,
+      "content_hash": "7eed4235b80c13fa7cd6812992c43cd674fb4524",
+      "content": "func (m *MultiSessionCoordinator) ListWindows() []SessionWindow {\n\tm.windowMu.RLock()\n\tdefer m.windowMu.RUnlock()\n\n\tvar windows []SessionWindow\n\tfor _, w := range m.windows {\n\t\t// Copy without agent to avoid serialization issues\n\t\tcopy := *w\n\t\tcopy.Agent = nil\n\t\twindows = append(windows, copy)\n\t}\n\treturn windows\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ForkWindow_117": {
+      "name": "ForkWindow",
+      "type": "method",
+      "start_line": 117,
+      "end_line": 136,
+      "content_hash": "36a57d07b4748d05726b1b8c4876580fabba3287",
+      "content": "func (m *MultiSessionCoordinator) ForkWindow(parentID, prompt string) (string, error) {\n\tparent, exists := m.windows[parentID]\n\tif !exists {\n\t\treturn \"\", fmt.Errorf(\"parent window %s not found\", parentID)\n\t}\n\n\t// Create fork with parent history as context\n\tnewID, err := m.CreateWindow(context.Background(), \"Fork: \"+parent.Title, prompt)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tnewWindow := m.windows[newID]\n\tnewWindow.ForkParent = parentID\n\t// Copy recent history for context\n\tnewWindow.History = append([]message.Message(nil), parent.History[len(parent.History)-10:]...)\n\n\treturn newID, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Run_137": {
+      "name": "Run",
+      "type": "method",
+      "start_line": 137,
+      "end_line": 163,
+      "content_hash": "040d0bec4e4df4590dd40f924ce5f2aa5ab28522",
+      "content": "func (m *MultiSessionCoordinator) Run(ctx context.Context, windowID, prompt string, attachments ...message.Attachment) (*fantasy.AgentResult, error) {\n\tm.windowMu.RLock()\n\twindow, exists := m.windows[windowID]\n\tm.windowMu.RUnlock()\n\n\tif !exists {\n\t\treturn nil, fmt.Errorf(\"window %s not found\", windowID)\n\t}\n\n\t// Record tool use for auto-continue\n\tm.conversation.RecordToolUse(windowID, \"user_prompt\")\n\n\tresult, err := window.Agent.Run(ctx, SessionAgentCall{\n\t\tSessionID:   windowID,\n\t\tPrompt:      prompt,\n\t\tAttachments: attachments,\n\t})\n\n\tif err == nil {\n\t\t// Add result to window history\n\t\twindow.AddMessage(message.NewAssistantMessage(result.Content))\n\t\tm.conversation.RecordToolResult(windowID, \"agent_response\", result.Content)\n\t}\n\n\treturn result, err\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ActiveWindow_164": {
+      "name": "ActiveWindow",
+      "type": "method",
+      "start_line": 164,
+      "end_line": 169,
+      "content_hash": "06fcb84e0d4d89924f04acf0ad1a3fc94734646e",
+      "content": "func (m *MultiSessionCoordinator) ActiveWindow() string {\n\tm.windowMu.RLock()\n\tdefer m.windowMu.RUnlock()\n\treturn m.activeID\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_buildWindowAgent_170": {
+      "name": "buildWindowAgent",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 185,
+      "content_hash": "01e3c3358c509566823f9fd5e7c9d2befc84ee68",
+      "content": "func (m *MultiSessionCoordinator) buildWindowAgent(ctx context.Context, agentCfg config.AgentConfig) (SessionAgent, error) {\n\t// Delegate to existing coordinator logic for agent creation\n\tprompt, err := coderPrompt(prompt.WithWorkingDir(m.cfg.WorkingDir()))\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Use existing agent building pattern from coordinator.go\n\tagent, err := m.buildAgent(ctx, prompt, agentCfg)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn agent, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_buildAgent_186": {
+      "name": "buildAgent",
+      "type": "method",
+      "start_line": 186,
+      "end_line": 190,
+      "content_hash": "3aafed707302223f0dabbd34dc35da3b9f10d321",
+      "content": "func (m *MultiSessionCoordinator) buildAgent(ctx context.Context, prompt string, agentCfg config.AgentConfig) (SessionAgent, error) {\n\t// Copy from existing coordinator.buildAgent logic\n\t// This needs to be implemented based on coordinator.go patterns\n\treturn nil, fmt.Errorf(\"buildAgent implementation required - copy from coordinator\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

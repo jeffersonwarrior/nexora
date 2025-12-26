@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/claude/oauth.go",
+  "file_hash": "cc97e812011adfcb3b399ccd022d6a624e9ea209",
+  "updated_at": "2025-12-26T17:34:23.870945",
+  "symbols": {
+    "struct_ValidationCompletedMsg_36": {
+      "name": "ValidationCompletedMsg",
+      "type": "struct",
+      "start_line": 36,
+      "end_line": 40,
+      "content_hash": "fc0837b8814b54438a922d33a7da680ec173c96b",
+      "content": "type ValidationCompletedMsg struct {\n\tState OAuthValidationState\n\tToken *oauth.Token\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_AuthenticationCompleteMsg_41": {
+      "name": "AuthenticationCompleteMsg",
+      "type": "struct",
+      "start_line": 41,
+      "end_line": 42,
+      "content_hash": "0c98953de32e45f25acfe43b0ab24b81b8d327ec",
+      "content": "type AuthenticationCompleteMsg struct{}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_OAuth2_43": {
+      "name": "OAuth2",
+      "type": "struct",
+      "start_line": 43,
+      "end_line": 61,
+      "content_hash": "d39365ed1f4d7cad2de276ef6b63596871fd661b",
+      "content": "type OAuth2 struct {\n\tState           OAuthState\n\tValidationState OAuthValidationState\n\twidth           int\n\tisOnboarding    bool\n\n\t// URL page\n\terr       error\n\tverifier  string\n\tchallenge string\n\tURL       string\n\turlId     string\n\ttoken     *oauth.Token\n\n\t// Code input page\n\tCodeInput textinput.Model\n\tspinner   spinner.Model\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewOAuth2_62": {
+      "name": "NewOAuth2",
+      "type": "function",
+      "start_line": 62,
+      "end_line": 67,
+      "content_hash": "9e4eff44077b4c214e40138e620c88d962c04970",
+      "content": "func NewOAuth2() *OAuth2 {\n\treturn &OAuth2{\n\t\tState: OAuthStateURL,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_68": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 68,
+      "end_line": 105,
+      "content_hash": "c0b770b9321f31567bd733d59097d4a0576575c6",
+      "content": "func (o *OAuth2) Init() tea.Cmd {\n\tt := styles.CurrentTheme()\n\n\tverifier, challenge, err := claude.GetChallenge()\n\tif err != nil {\n\t\to.err = err\n\t\treturn nil\n\t}\n\n\turl, err := claude.AuthorizeURL(verifier, challenge)\n\tif err != nil {\n\t\to.err = err\n\t\treturn nil\n\t}\n\n\to.verifier = verifier\n\to.challenge = challenge\n\to.URL = url\n\n\th := xxh3.New()\n\t_, _ = h.WriteString(o.URL)\n\to.urlId = fmt.Sprintf(\"id=%x\", h.Sum(nil))\n\n\to.CodeInput = textinput.New()\n\to.CodeInput.Placeholder = \"Paste or type\"\n\to.CodeInput.SetVirtualCursor(false)\n\to.CodeInput.Prompt = \"> \"\n\to.CodeInput.SetStyles(t.S().TextInput)\n\to.CodeInput.SetWidth(50)\n\n\to.spinner = spinner.New(\n\t\tspinner.WithSpinner(spinner.Dot),\n\t\tspinner.WithStyle(t.S().Base.Foreground(t.Green)),\n\t)\n\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_106": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 106,
+      "end_line": 134,
+      "content_hash": "6da721f84a8dfbd7bb53998b8ceec6b5a3659b0d",
+      "content": "func (o *OAuth2) Update(msg tea.Msg) (util.Model, tea.Cmd) {\n\tvar cmds []tea.Cmd\n\n\tswitch msg := msg.(type) {\n\tcase ValidationCompletedMsg:\n\t\to.ValidationState = msg.State\n\t\to.token = msg.Token\n\t\tswitch o.ValidationState {\n\t\tcase OAuthValidationStateError:\n\t\t\to.CodeInput.Focus()\n\t\t}\n\t\to.updatePrompt()\n\t}\n\n\tif o.ValidationState == OAuthValidationStateVerifying {\n\t\tvar cmd tea.Cmd\n\t\to.spinner, cmd = o.spinner.Update(msg)\n\t\tcmds = append(cmds, cmd)\n\t\to.updatePrompt()\n\t}\n\t{\n\t\tvar cmd tea.Cmd\n\t\to.CodeInput, cmd = o.CodeInput.Update(msg)\n\t\tcmds = append(cmds, cmd)\n\t}\n\n\treturn o, tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ValidationConfirm_135": {
+      "name": "ValidationConfirm",
+      "type": "method",
+      "start_line": 135,
+      "end_line": 154,
+      "content_hash": "ab7293f451af51651d1b93ee5cef83388035a80c",
+      "content": "func (o *OAuth2) ValidationConfirm() (util.Model, tea.Cmd) {\n\tvar cmds []tea.Cmd\n\n\tswitch {\n\tcase o.State == OAuthStateURL:\n\t\t_ = browser.OpenURL(o.URL)\n\t\to.State = OAuthStateCode\n\t\tcmds = append(cmds, o.CodeInput.Focus())\n\tcase o.ValidationState == OAuthValidationStateNone || o.ValidationState == OAuthValidationStateError:\n\t\to.CodeInput.Blur()\n\t\to.ValidationState = OAuthValidationStateVerifying\n\t\tcmds = append(cmds, o.spinner.Tick, o.validateCode)\n\tcase o.ValidationState == OAuthValidationStateValid:\n\t\tcmds = append(cmds, func() tea.Msg { return AuthenticationCompleteMsg{} })\n\t}\n\n\to.updatePrompt()\n\treturn o, tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_155": {
+      "name": "View",
+      "type": "method",
+      "start_line": 155,
+      "end_line": 215,
+      "content_hash": "e5c08a042cc43c5030e57d41a85e3fe4121b9661",
+      "content": "func (o *OAuth2) View() string {\n\tt := styles.CurrentTheme()\n\n\twhiteStyle := lipgloss.NewStyle().Foreground(t.White)\n\tprimaryStyle := lipgloss.NewStyle().Foreground(t.Primary)\n\tsuccessStyle := lipgloss.NewStyle().Foreground(t.Success)\n\terrorStyle := lipgloss.NewStyle().Foreground(t.Error)\n\n\ttitleStyle := whiteStyle\n\tif o.isOnboarding {\n\t\ttitleStyle = primaryStyle\n\t}\n\n\tswitch {\n\tcase o.err != nil:\n\t\treturn lipgloss.NewStyle().\n\t\t\tMargin(0, 1).\n\t\t\tForeground(t.Error).\n\t\t\tRender(o.err.Error())\n\tcase o.State == OAuthStateURL:\n\t\theading := lipgloss.\n\t\t\tNewStyle().\n\t\t\tMargin(0, 1).\n\t\t\tRender(titleStyle.Render(\"Press enter key to open the following \") + successStyle.Render(\"URL\") + titleStyle.Render(\":\"))\n\n\t\treturn lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\theading,\n\t\t\t\"\",\n\t\t\tlipgloss.NewStyle().\n\t\t\t\tMargin(0, 1).\n\t\t\t\tForeground(t.FgMuted).\n\t\t\t\tHyperlink(o.URL, o.urlId).\n\t\t\t\tRender(o.displayUrl()),\n\t\t)\n\tcase o.State == OAuthStateCode:\n\t\tvar heading string\n\n\t\tswitch o.ValidationState {\n\t\tcase OAuthValidationStateNone:\n\t\t\tst := lipgloss.NewStyle().Margin(0, 1)\n\t\t\theading = st.Render(titleStyle.Render(\"Enter the \") + successStyle.Render(\"code\") + titleStyle.Render(\" you received.\"))\n\t\tcase OAuthValidationStateVerifying:\n\t\t\theading = titleStyle.Margin(0, 1).Render(\"Verifying...\")\n\t\tcase OAuthValidationStateValid:\n\t\t\theading = successStyle.Margin(0, 1).Render(\"Validated.\")\n\t\tcase OAuthValidationStateError:\n\t\t\theading = errorStyle.Margin(0, 1).Render(\"Invalid. Try again?\")\n\t\t}\n\n\t\treturn lipgloss.JoinVertical(\n\t\t\tlipgloss.Left,\n\t\t\theading,\n\t\t\t\"\",\n\t\t\t\" \"+o.CodeInput.View(),\n\t\t)\n\tdefault:\n\t\tpanic(\"claude oauth2: invalid state\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetDefaults_216": {
+      "name": "SetDefaults",
+      "type": "method",
+      "start_line": 216,
+      "end_line": 222,
+      "content_hash": "d48e21823df2558f2adf7665cede771128d4caec",
+      "content": "func (o *OAuth2) SetDefaults() {\n\to.State = OAuthStateURL\n\to.ValidationState = OAuthValidationStateNone\n\to.CodeInput.SetValue(\"\")\n\to.err = nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetWidth_223": {
+      "name": "SetWidth",
+      "type": "method",
+      "start_line": 223,
+      "end_line": 227,
+      "content_hash": "4b209ca141bf2435738c944269a863359abb5ed4",
+      "content": "func (o *OAuth2) SetWidth(w int) {\n\to.width = w\n\to.CodeInput.SetWidth(w - 4)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetError_228": {
+      "name": "SetError",
+      "type": "method",
+      "start_line": 228,
+      "end_line": 231,
+      "content_hash": "205d33a385f45c4364238593089eae7a718bd9fa",
+      "content": "func (o *OAuth2) SetError(err error) {\n\to.err = err\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_validateCode_232": {
+      "name": "validateCode",
+      "type": "method",
+      "start_line": 232,
+      "end_line": 239,
+      "content_hash": "5f8485b650e62bac8399ac12206df8b0ea5fea43",
+      "content": "func (o *OAuth2) validateCode() tea.Msg {\n\ttoken, err := claude.ExchangeToken(context.Background(), o.CodeInput.Value(), o.verifier)\n\tif err != nil || token == nil {\n\t\treturn ValidationCompletedMsg{State: OAuthValidationStateError}\n\t}\n\treturn ValidationCompletedMsg{State: OAuthValidationStateValid, Token: token}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_updatePrompt_240": {
+      "name": "updatePrompt",
+      "type": "method",
+      "start_line": 240,
+      "end_line": 254,
+      "content_hash": "1f67c492dfe9a02fed5c2809df4940aac669637f",
+      "content": "func (o *OAuth2) updatePrompt() {\n\tswitch o.ValidationState {\n\tcase OAuthValidationStateNone:\n\t\to.CodeInput.Prompt = \"> \"\n\tcase OAuthValidationStateVerifying:\n\t\to.CodeInput.Prompt = o.spinner.View() + \" \"\n\tcase OAuthValidationStateValid:\n\t\to.CodeInput.Prompt = styles.CheckIcon + \" \"\n\tcase OAuthValidationStateError:\n\t\to.CodeInput.Prompt = styles.ErrorIcon + \" \"\n\t}\n}\n\n// Remove query params for display\n// e.g., \"https://claude.ai/oauth/authorize?...\" -> \"https://claude.ai/oauth/authorize...\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_displayUrl_255": {
+      "name": "displayUrl",
+      "type": "method",
+      "start_line": 255,
+      "end_line": 267,
+      "content_hash": "e9fd6d966d2fb40de5b9726d92dcd9f1d0c2673d",
+      "content": "func (o *OAuth2) displayUrl() string {\n\tparsed, err := url.Parse(o.URL)\n\tif err != nil {\n\t\treturn o.URL\n\t}\n\n\tif parsed.RawQuery != \"\" {\n\t\tparsed.RawQuery = \"\"\n\t\treturn parsed.String() + \"...\"\n\t}\n\n\treturn o.URL\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

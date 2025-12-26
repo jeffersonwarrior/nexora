@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/context-engine/scripts/warm_all_collections.py",
+  "file_hash": "3265c6f0f9da54dd41f2683b903747876ee137a0",
+  "updated_at": "2025-12-26T17:34:24.038233",
+  "symbols": {
+    "function_main_10": {
+      "name": "main",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 57,
+      "content_hash": "f04fa0fce0412f23d717f1eff5e95dec21598116",
+      "content": "def main():\n    # Get configuration from environment\n    qdrant_url = os.environ.get(\"QDRANT_URL\", \"http://qdrant:6333\")\n    ef = os.environ.get(\"EF\", \"256\")\n    limit = os.environ.get(\"LIMIT\", \"3\")\n\n    print(f\"Connecting to Qdrant at {qdrant_url}\")\n\n    # Connect to Qdrant\n    client = QdrantClient(url=qdrant_url)\n\n    # Get all collections\n    try:\n        collections_response = client.get_collections()\n        collections = [c.name for c in collections_response.collections]\n        print(f\"Found collections: {collections}\")\n    except Exception as e:\n        print(f\"Error getting collections: {e}\")\n        sys.exit(1)\n\n    # Warm each collection\n    for collection_name in collections:\n        print(f\"Warming collection: {collection_name}\")\n        try:\n            # Set environment variable for the collection name\n            env = os.environ.copy()\n            env[\"COLLECTION_NAME\"] = collection_name\n\n            result = subprocess.run(\n                [\n                    \"python\",\n                    \"/app/scripts/warm_start.py\",\n                    \"--ef\", ef,\n                    \"--limit\", limit\n                ],\n                capture_output=True,\n                text=True,\n                check=True,\n                env=env\n            )\n            print(f\"Successfully warmed {collection_name}\")\n        except subprocess.CalledProcessError as e:\n            print(f\"Error warming {collection_name}: {e}\")\n            print(f\"stdout: {e.stdout}\")\n            print(f\"stderr: {e.stderr}\")\n            sys.exit(1)\n\n    print(\"All collections warmed successfully\")",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

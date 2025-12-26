@@ -1,0 +1,117 @@
+{
+  "file_path": "/work/.local/tools/modelscan/sdk/agent/memory_test.go",
+  "file_hash": "9b0c77f924e013ff14f73f452a3b3e9fc36968d2",
+  "updated_at": "2025-12-26T17:34:20.219518",
+  "symbols": {
+    "function_TestMemoryMemoryMessage_14": {
+      "name": "TestMemoryMemoryMessage",
+      "type": "function",
+      "start_line": 14,
+      "end_line": 31,
+      "content_hash": "855f12ae436fceffe9a821ad279d7c64851c5303",
+      "content": "func TestMemoryMemoryMessage(t *testing.T) {\n\tnow := time.Now().UnixNano()\n\tmsg := MemoryMessage{\n\t\tID:        \"test-id\",\n\t\tRole:      \"user\",\n\t\tContent:   \"Hello, world!\",\n\t\tMetadata:  map[string]interface{}{\"source\": \"test\"},\n\t\tTimestamp: now,\n\t}\n\n\tassert.Equal(t, \"test-id\", msg.ID)\n\tassert.Equal(t, \"user\", msg.Role)\n\tassert.Equal(t, \"Hello, world!\", msg.Content)\n\tassert.Equal(t, \"test\", msg.Metadata[\"source\"])\n\tassert.Equal(t, now, msg.Timestamp)\n}\n\n// TestInMemoryMemory_Store_StoresMessage tests storing messages",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Store_StoresMessage_32": {
+      "name": "TestInMemoryMemory_Store_StoresMessage",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 54,
+      "content_hash": "7d8fc1ca242b0dbb389cd00542d2338440cc7a91",
+      "content": "func TestInMemoryMemory_Store_StoresMessage(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\tmsg := MemoryMessage{\n\t\tRole:    \"user\",\n\t\tContent: \"Test message\",\n\t}\n\n\terr := memory.Store(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Retrieve the message\n\tmessages, err := memory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.Len(t, messages, 1)\n\tassert.Equal(t, \"user\", messages[0].Role)\n\tassert.Equal(t, \"Test message\", messages[0].Content)\n\tassert.NotEmpty(t, messages[0].ID)\n\tassert.NotEmpty(t, messages[0].Timestamp)\n}\n\n// TestInMemoryMemory_Store_WithID_RespectsID tests that storing with ID preserves it",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Store_WithID_RespectsID_55": {
+      "name": "TestInMemoryMemory_Store_WithID_RespectsID",
+      "type": "function",
+      "start_line": 55,
+      "end_line": 75,
+      "content_hash": "b43c94d9789222ad7b5b91304202e9ebfa13e8f9",
+      "content": "func TestInMemoryMemory_Store_WithID_RespectsID(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\tmsg := MemoryMessage{\n\t\tID:      \"custom-id\",\n\t\tRole:    \"user\",\n\t\tContent: \"Test message\",\n\t}\n\n\terr := memory.Store(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Retrieve the message\n\tmessages, err := memory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.Len(t, messages, 1)\n\tassert.Equal(t, \"custom-id\", messages[0].ID)\n}\n\n// TestInMemoryMemory_Retrieve_WithLimit_RespectsLimit tests retrieval with limit",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Retrieve_WithLimit_RespectsLimit_76": {
+      "name": "TestInMemoryMemory_Retrieve_WithLimit_RespectsLimit",
+      "type": "function",
+      "start_line": 76,
+      "end_line": 101,
+      "content_hash": "3d653c1d307b298ba2e01c879a951582878aa025",
+      "content": "func TestInMemoryMemory_Retrieve_WithLimit_RespectsLimit(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\t// Store 5 messages\n\tfor i := 0; i < 5; i++ {\n\t\tmsg := MemoryMessage{\n\t\t\tRole:    \"user\",\n\t\t\tContent: \"Message \" + string(rune('A'+i)),\n\t\t}\n\t\terr := memory.Store(ctx, msg)\n\t\trequire.NoError(t, err)\n\t}\n\n\t// Retrieve with limit 3\n\tmessages, err := memory.Retrieve(ctx, \"\", 3)\n\trequire.NoError(t, err)\n\trequire.Len(t, messages, 3)\n\n\t// Should get the most recent 3 messages\n\tassert.Equal(t, \"Message E\", messages[0].Content)\n\tassert.Equal(t, \"Message D\", messages[1].Content)\n\tassert.Equal(t, \"Message C\", messages[2].Content)\n}\n\n// TestInMemoryMemory_Retrieve_WithQuery_FiltersByContent tests retrieval with query",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Retrieve_WithQuery_FiltersByContent_102": {
+      "name": "TestInMemoryMemory_Retrieve_WithQuery_FiltersByContent",
+      "type": "function",
+      "start_line": 102,
+      "end_line": 132,
+      "content_hash": "88f5b28136e36fc04c407c653d79386b32c2d190",
+      "content": "func TestInMemoryMemory_Retrieve_WithQuery_FiltersByContent(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\t// Store messages with different content\n\tmessages := []MemoryMessage{\n\t\t{Role: \"user\", Content: \"The weather is nice today\"},\n\t\t{Role: \"assistant\", Content: \"Yes, it's perfect for a walk\"},\n\t\t{Role: \"user\", Content: \"What about tomorrow?\"},\n\t\t{Role: \"assistant\", Content: \"Tomorrow will be rainy\"},\n\t}\n\n\tfor _, msg := range messages {\n\t\terr := memory.Store(ctx, msg)\n\t\trequire.NoError(t, err)\n\t}\n\n\t// Search for \"weather\"\n\tweatherMessages, err := memory.Retrieve(ctx, \"weather\", 10)\n\trequire.NoError(t, err)\n\trequire.Len(t, weatherMessages, 1)\n\tassert.Contains(t, weatherMessages[0].Content, \"weather\")\n\n\t// Search for \"tomorrow\" - both messages contain \"tomorrow\"\n\ttomorrowMessages, err := memory.Retrieve(ctx, \"tomorrow\", 10)\n\trequire.NoError(t, err)\n\trequire.Len(t, tomorrowMessages, 2)\n\tassert.Contains(t, strings.ToLower(tomorrowMessages[0].Content), \"tomorrow\")\n}\n\n// TestInMemoryMemory_Search_FindsMatchingMessages tests search functionality",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Search_FindsMatchingMessages_133": {
+      "name": "TestInMemoryMemory_Search_FindsMatchingMessages",
+      "type": "function",
+      "start_line": 133,
+      "end_line": 161,
+      "content_hash": "72bc2343c8d07cf6ef1ce2962f2ce87acab64173",
+      "content": "func TestInMemoryMemory_Search_FindsMatchingMessages(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\t// Store messages\n\tmessages := []MemoryMessage{\n\t\t{Role: \"user\", Content: \"How do I create a function in Python?\"},\n\t\t{Role: \"assistant\", Content: \"To create a function in Python, use def\"},\n\t\t{Role: \"user\", Content: \"What about JavaScript functions?\"},\n\t\t{Role: \"assistant\", Content: \"JavaScript functions can be declared with function\"},\n\t}\n\n\tfor _, msg := range messages {\n\t\terr := memory.Store(ctx, msg)\n\t\trequire.NoError(t, err)\n\t}\n\n\t// Search for \"function\"\n\tresults, err := memory.Search(ctx, \"function\")\n\trequire.NoError(t, err)\n\trequire.Len(t, results, 4) // All messages containing \"function\"\n\n\t// Search for \"Python\"\n\tpythonResults, err := memory.Search(ctx, \"Python\")\n\trequire.NoError(t, err)\n\trequire.Len(t, pythonResults, 2) // User question and assistant answer about Python\n}\n\n// TestInMemoryMemory_Clear_RemovesAllMessages tests clearing memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Clear_RemovesAllMessages_162": {
+      "name": "TestInMemoryMemory_Clear_RemovesAllMessages",
+      "type": "function",
+      "start_line": 162,
+      "end_line": 191,
+      "content_hash": "e801eda6317cd43798c5ea6d0b796f3ce03da9d2",
+      "content": "func TestInMemoryMemory_Clear_RemovesAllMessages(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\t// Store some messages\n\tfor i := 0; i < 3; i++ {\n\t\tmsg := MemoryMessage{\n\t\t\tRole:    \"user\",\n\t\t\tContent: \"Message \" + string(rune('A'+i)),\n\t\t}\n\t\terr := memory.Store(ctx, msg)\n\t\trequire.NoError(t, err)\n\t}\n\n\t// Verify messages exist\n\tmessages, err := memory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.NotEmpty(t, messages)\n\n\t// Clear memory\n\terr = memory.Clear(ctx)\n\trequire.NoError(t, err)\n\n\t// Verify messages are gone\n\tmessages, err = memory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.Empty(t, messages)\n}\n\n// TestInMemoryMemory_Capacity_LimitsStorage tests capacity limits",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Capacity_LimitsStorage_192": {
+      "name": "TestInMemoryMemory_Capacity_LimitsStorage",
+      "type": "function",
+      "start_line": 192,
+      "end_line": 218,
+      "content_hash": "0fbf153124e360b83e97182451909747b7299f51",
+      "content": "func TestInMemoryMemory_Capacity_LimitsStorage(t *testing.T) {\n\t// Create memory with capacity of 3\n\tmemory := NewInMemoryMemory(WithCapacity(3))\n\tctx := context.Background()\n\n\t// Store 5 messages\n\tfor i := 0; i < 5; i++ {\n\t\tmsg := MemoryMessage{\n\t\t\tRole:    \"user\",\n\t\t\tContent: \"Message \" + string(rune('A'+i)),\n\t\t}\n\t\terr := memory.Store(ctx, msg)\n\t\trequire.NoError(t, err)\n\t}\n\n\t// Should only have the most recent 3 messages\n\tmessages, err := memory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.Len(t, messages, 3)\n\n\t// Should have messages C, D, E (A and B were evicted)\n\tassert.Equal(t, \"Message E\", messages[0].Content)\n\tassert.Equal(t, \"Message D\", messages[1].Content)\n\tassert.Equal(t, \"Message C\", messages[2].Content)\n}\n\n// TestInMemoryMemory_Expiration_RemovesOldMessages tests message expiration",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_Expiration_RemovesOldMessages_219": {
+      "name": "TestInMemoryMemory_Expiration_RemovesOldMessages",
+      "type": "function",
+      "start_line": 219,
+      "end_line": 253,
+      "content_hash": "2f63fe76afd7d3214b8b99fe7d821743ea4988ae",
+      "content": "func TestInMemoryMemory_Expiration_RemovesOldMessages(t *testing.T) {\n\t// Create memory with 1 hour expiration\n\tmemory := NewInMemoryMemory(WithExpiration(time.Hour))\n\tctx := context.Background()\n\n\t// Store a message\n\tmsg := MemoryMessage{\n\t\tRole:    \"user\",\n\t\tContent: \"Recent message\",\n\t}\n\terr := memory.Store(ctx, msg)\n\trequire.NoError(t, err)\n\n\t// Should have the message\n\tmessages, err := memory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.Len(t, messages, 1)\n\n\t// Create memory with 1 nanosecond expiration (already expired)\n\texpiredMemory := NewInMemoryMemory(WithExpiration(time.Nanosecond))\n\n\t// Store a message\n\terr = expiredMemory.Store(ctx, MemoryMessage{\n\t\tRole:    \"user\",\n\t\tContent: \"Expired message\",\n\t})\n\trequire.NoError(t, err)\n\n\t// Should not have the message due to expiration\n\tmessages, err = expiredMemory.Retrieve(ctx, \"\", 10)\n\trequire.NoError(t, err)\n\trequire.Empty(t, messages)\n}\n\n// TestInMemoryMemory_ConcurrentAccess tests concurrent access to memory",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestInMemoryMemory_ConcurrentAccess_254": {
+      "name": "TestInMemoryMemory_ConcurrentAccess",
+      "type": "function",
+      "start_line": 254,
+      "end_line": 281,
+      "content_hash": "54ffe54fafb4b0274fada97d793b14a592601343",
+      "content": "func TestInMemoryMemory_ConcurrentAccess(t *testing.T) {\n\tmemory := NewInMemoryMemory()\n\tctx := context.Background()\n\n\t// Store messages concurrently\n\tdone := make(chan bool, 10)\n\tfor i := 0; i < 10; i++ {\n\t\tgo func(index int) {\n\t\t\tmsg := MemoryMessage{\n\t\t\t\tRole:    \"user\",\n\t\t\t\tContent: \"Concurrent message \" + string(rune('A'+index)),\n\t\t\t}\n\t\t\terr := memory.Store(ctx, msg)\n\t\t\tassert.NoError(t, err)\n\t\t\tdone <- true\n\t\t}(i)\n\t}\n\n\t// Wait for all goroutines to complete\n\tfor i := 0; i < 10; i++ {\n\t\t<-done\n\t}\n\n\t// Should have all 10 messages\n\tmessages, err := memory.Retrieve(ctx, \"\", 20)\n\trequire.NoError(t, err)\n\trequire.Len(t, messages, 10)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

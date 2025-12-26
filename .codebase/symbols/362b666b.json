@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/dist/utils/security.js",
+  "file_hash": "515fdb31eeb738c7e3dbc0041b5dac81fc22afd9",
+  "updated_at": "2025-12-26T17:34:23.605711",
+  "symbols": {
+    "function_validateProjectDir_17": {
+      "name": "validateProjectDir",
+      "type": "function",
+      "start_line": 17,
+      "end_line": 63,
+      "content_hash": "ea1409933f213327a5a9aebc0f15da27fa4db897",
+      "content": "export function validateProjectDir(projectDir) {\n    // First resolve .. and . components\n    const resolved = path.resolve(projectDir);\n    // Use realpathSync to follow all symlinks and get the true path\n    // This prevents symlink-based escapes to forbidden directories\n    let realPath;\n    try {\n        realPath = fs.realpathSync(resolved);\n    }\n    catch (error) {\n        throw new Error(`Project directory does not exist or is inaccessible: ${resolved}`);\n    }\n    // Check it's not a system directory (check the REAL path, not the symlink)\n    const forbiddenPrefixes = [\n        \"/etc\",\n        \"/usr\",\n        \"/bin\",\n        \"/sbin\",\n        \"/var\",\n        \"/tmp\",\n        \"/dev\",\n        \"/proc\",\n        \"/sys\",\n        \"/boot\",\n        \"/run\",\n        \"/root\",\n        \"/System\",\n        \"/Library\",\n        \"/private/var\",\n        \"/private/etc\",\n        \"C:\\\\Windows\",\n        \"C:\\\\Program Files\",\n        \"C:\\\\Program Files (x86)\",\n    ];\n    const normalizedPath = realPath.toLowerCase();\n    for (const prefix of forbiddenPrefixes) {\n        if (normalizedPath.startsWith(prefix.toLowerCase())) {\n            throw new Error(`Cannot use system directory as project: ${prefix}`);\n        }\n    }\n    // Verify it's actually a directory (realpathSync already confirmed it exists)\n    const stats = fs.statSync(realPath);\n    if (!stats.isDirectory()) {\n        throw new Error(`Project path is not a directory: ${realPath}`);\n    }\n    return realPath;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validateFeatureId_67": {
+      "name": "validateFeatureId",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 75,
+      "content_hash": "0e6f8a7be84074824256b86209a1d7d95a62be26",
+      "content": "export function validateFeatureId(id) {\n    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {\n        throw new Error(\"Invalid feature ID: only alphanumeric, dash, and underscore allowed\");\n    }\n    if (id.length > 64) {\n        throw new Error(\"Feature ID too long (max 64 characters)\");\n    }\n    return id;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validateSessionName_80": {
+      "name": "validateSessionName",
+      "type": "function",
+      "start_line": 80,
+      "end_line": 82,
+      "content_hash": "3996e0341a37ec4a97e7f473c966cc2cfb088988",
+      "content": "export function validateSessionName(name) {\n    return /^cc-(worker|planner)-[a-zA-Z0-9_-]+-[a-z0-9]+$/.test(name);\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_shellQuote_87": {
+      "name": "shellQuote",
+      "type": "function",
+      "start_line": 87,
+      "end_line": 91,
+      "content_hash": "fada2a27050dc180e3d822cefbcc2d951db854f9",
+      "content": "export function shellQuote(s) {\n    // Single quotes prevent all interpretation, but we need to escape\n    // any single quotes in the string itself\n    return \"'\" + s.replace(/'/g, \"'\\\"'\\\"'\") + \"'\";\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_validateCommand_140": {
+      "name": "validateCommand",
+      "type": "function",
+      "start_line": 140,
+      "end_line": 154,
+      "content_hash": "8402a96461c90b6efef9cb632eb425f485a49de0",
+      "content": "export function validateCommand(command) {\n    const trimmed = command.trim();\n    // Check for dangerous patterns\n    for (const pattern of DANGEROUS_PATTERNS) {\n        if (trimmed.includes(pattern)) {\n            throw new Error(`Command contains disallowed shell operator: ${pattern}`);\n        }\n    }\n    // Check against allowed patterns\n    const isAllowed = ALLOWED_COMMAND_PATTERNS.some((pattern) => pattern.test(trimmed));\n    if (!isAllowed) {\n        throw new Error(`Command not in allowed list. Allowed: npm test, pytest, cargo test, go test, make test, etc.`);\n    }\n    return trimmed;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_sanitizeOutput_159": {
+      "name": "sanitizeOutput",
+      "type": "function",
+      "start_line": 159,
+      "end_line": 169,
+      "content_hash": "4ac3218a31e41aef9a92d603848f953aa5ef6dc7",
+      "content": "export function sanitizeOutput(output, maxLength = 5000) {\n    let sanitized = output;\n    // Remove home directory paths\n    const homeDir = os.homedir();\n    sanitized = sanitized.replace(new RegExp(homeDir, \"g\"), \"~\");\n    // Truncate if too long\n    if (sanitized.length > maxLength) {\n        sanitized = sanitized.substring(0, maxLength) + \"\\n... (truncated)\";\n    }\n    return sanitized;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

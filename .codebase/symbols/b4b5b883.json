@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/internal/fsext/lookup.go",
+  "file_hash": "5300f8d17614d9262431884692ec792b187d3e9d",
+  "updated_at": "2025-12-26T17:34:20.434423",
+  "symbols": {
+    "function_Lookup_19": {
+      "name": "Lookup",
+      "type": "function",
+      "start_line": 19,
+      "end_line": 58,
+      "content_hash": "40b450b1697174caa2a040f204be8cf65b354e27",
+      "content": "func Lookup(dir string, targets ...string) ([]string, error) {\n\tif len(targets) == 0 {\n\t\treturn nil, nil\n\t}\n\n\tvar found []string\n\n\terr := traverseUp(dir, func(cwd string, owner int) error {\n\t\tfor _, target := range targets {\n\t\t\tfpath := filepath.Join(cwd, target)\n\t\t\terr := probeEnt(fpath, owner)\n\n\t\t\t// skip to the next file on permission denied\n\t\t\tif errors.Is(err, os.ErrNotExist) ||\n\t\t\t\terrors.Is(err, os.ErrPermission) {\n\t\t\t\tcontinue\n\t\t\t}\n\n\t\t\tif err != nil {\n\t\t\t\treturn fmt.Errorf(\"error probing file %s: %w\", fpath, err)\n\t\t\t}\n\n\t\t\tfound = append(found, fpath)\n\t\t}\n\n\t\treturn nil\n\t})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn found, nil\n}\n\n// LookupClosest searches for a target file or directory starting from dir\n// and walking up the directory tree until found or root or home is reached.\n// It also checks the ownership of files to ensure that the search does\n// not cross ownership boundaries.\n// Returns the full path to the target if found, empty string and false otherwise.\n// The search includes the starting directory itself.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_LookupClosest_59": {
+      "name": "LookupClosest",
+      "type": "function",
+      "start_line": 59,
+      "end_line": 87,
+      "content_hash": "ced36edfdef5457bc1b49e4e3ede68c9fc47e35d",
+      "content": "func LookupClosest(dir, target string) (string, bool) {\n\tvar found string\n\n\terr := traverseUp(dir, func(cwd string, owner int) error {\n\t\tfpath := filepath.Join(cwd, target)\n\n\t\terr := probeEnt(fpath, owner)\n\t\tif errors.Is(err, os.ErrNotExist) {\n\t\t\treturn nil\n\t\t}\n\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"error probing file %s: %w\", fpath, err)\n\t\t}\n\n\t\tif cwd == home.Dir() {\n\t\t\treturn filepath.SkipAll\n\t\t}\n\n\t\tfound = fpath\n\t\treturn filepath.SkipAll\n\t})\n\n\treturn found, err == nil && found != \"\"\n}\n\n// traverseUp walks up from given directory up until filesystem root reached.\n// It passes absolute path of current directory and staring directory owner ID\n// to callback function. It is up to user to check ownership.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_traverseUp_88": {
+      "name": "traverseUp",
+      "type": "function",
+      "start_line": 88,
+      "end_line": 119,
+      "content_hash": "08432e638043ceb14a722d74b4274b2f46971847",
+      "content": "func traverseUp(dir string, walkFn func(dir string, owner int) error) error {\n\tcwd, err := filepath.Abs(dir)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"cannot convert CWD to absolute path: %w\", err)\n\t}\n\n\towner, err := Owner(dir)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"cannot get ownership: %w\", err)\n\t}\n\n\tfor {\n\t\terr := walkFn(cwd, owner)\n\t\tif err == nil || errors.Is(err, filepath.SkipDir) {\n\t\t\tparent := filepath.Dir(cwd)\n\t\t\tif parent == cwd {\n\t\t\t\treturn nil\n\t\t\t}\n\n\t\t\tcwd = parent\n\t\t\tcontinue\n\t\t}\n\n\t\tif errors.Is(err, filepath.SkipAll) {\n\t\t\treturn nil\n\t\t}\n\n\t\treturn err\n\t}\n}\n\n// probeEnt checks if entity at given path exists and belongs to given owner",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_probeEnt_120": {
+      "name": "probeEnt",
+      "type": "function",
+      "start_line": 120,
+      "end_line": 141,
+      "content_hash": "484fbdf76accadf6702f433c6781b48bf4fdb9a7",
+      "content": "func probeEnt(fspath string, owner int) error {\n\t_, err := os.Stat(fspath)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"cannot stat %s: %w\", fspath, err)\n\t}\n\n\t// special case for ownership check bypass\n\tif owner == -1 {\n\t\treturn nil\n\t}\n\n\tfowner, err := Owner(fspath)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"cannot get ownership for %s: %w\", fspath, err)\n\t}\n\n\tif fowner != owner {\n\t\treturn os.ErrPermission\n\t}\n\n\treturn nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

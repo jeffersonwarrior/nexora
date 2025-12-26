@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/internal/config/providers/mistral_codestral_test.go",
+  "file_hash": "fb42108b40bdcc79a57c595e5e6b3a9d1220f3fc",
+  "updated_at": "2025-12-26T17:34:21.256725",
+  "symbols": {
+    "function_TestMistralCodestralProvider_11": {
+      "name": "TestMistralCodestralProvider",
+      "type": "function",
+      "start_line": 11,
+      "end_line": 73,
+      "content_hash": "0b210132be6377b460298fedebca18c787c16d3f",
+      "content": "func TestMistralCodestralProvider(t *testing.T) {\n\tt.Run(\"creates provider with correct basic info\", func(t *testing.T) {\n\t\tprovider := MistralCodestralProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\tassert.Equal(t, \"mistral-codestral\", string(provider.ID))\n\t\tassert.Equal(t, \"Mistral (Codestral)\", provider.Name)\n\t\tassert.Equal(t, \"openai-compat\", string(provider.Type))\n\t\tassert.Equal(t, \"$MISTRAL_API_KEY\", provider.APIKey)\n\t\tassert.Equal(t, \"https://api.mistral.ai/v1\", provider.APIEndpoint)\n\t})\n\n\tt.Run(\"creates provider with codestral models\", func(t *testing.T) {\n\t\tprovider := MistralCodestralProvider([]catwalk.Provider{})\n\n\t\trequire.NotNil(t, provider)\n\t\trequire.Len(t, provider.Models, 2)\n\t\tassert.Equal(t, \"codestral-25-08\", provider.DefaultLargeModelID)\n\t\tassert.Equal(t, \"codestral-25-08\", provider.DefaultSmallModelID)\n\t})\n\n\tt.Run(\"does not create if already exists\", func(t *testing.T) {\n\t\texistingProvider := catwalk.Provider{ID: \"mistral-codestral\"}\n\t\tprovider := MistralCodestralProvider([]catwalk.Provider{existingProvider})\n\n\t\tassert.Equal(t, \"\", string(provider.ID))\n\t})\n\n\tt.Run(\"has codestral model\", func(t *testing.T) {\n\t\tprovider := MistralCodestralProvider([]catwalk.Provider{})\n\n\t\tvar codestralModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"codestral-25-08\" {\n\t\t\t\tcodestralModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, codestralModel)\n\t\tassert.Equal(t, \"Codestral\", codestralModel.Name)\n\t\tassert.Equal(t, 0.3, codestralModel.CostPer1MIn)\n\t\tassert.Equal(t, 0.9, codestralModel.CostPer1MOut)\n\t\tassert.True(t, codestralModel.CanReason)\n\t\tassert.False(t, codestralModel.SupportsImages)\n\t})\n\n\tt.Run(\"has codestral embed model\", func(t *testing.T) {\n\t\tprovider := MistralCodestralProvider([]catwalk.Provider{})\n\n\t\tvar embedModel *catwalk.Model\n\t\tfor i := range provider.Models {\n\t\t\tif provider.Models[i].ID == \"codestral-embed-25-05\" {\n\t\t\t\tembedModel = &provider.Models[i]\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\trequire.NotNil(t, embedModel)\n\t\tassert.Equal(t, \"Codestral Embed\", embedModel.Name)\n\t\tassert.False(t, embedModel.CanReason)\n\t})\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

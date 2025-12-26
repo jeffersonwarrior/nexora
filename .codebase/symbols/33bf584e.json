@@ -1,0 +1,216 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/commands/loader.go",
+  "file_hash": "b2b5a8c0aec66c6a2c1c66559d29308e45379421",
+  "updated_at": "2025-12-26T17:34:22.783013",
+  "symbols": {
+    "struct_commandLoader_28": {
+      "name": "commandLoader",
+      "type": "struct",
+      "start_line": 28,
+      "end_line": 31,
+      "content_hash": "79937ac6fe6858b65bc87b6109629d57ec586d07",
+      "content": "type commandLoader struct {\n\tsources []commandSource\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_commandSource_32": {
+      "name": "commandSource",
+      "type": "struct",
+      "start_line": 32,
+      "end_line": 36,
+      "content_hash": "b37595296f5369daf99c082e2e09099540cb0c33",
+      "content": "type commandSource struct {\n\tpath   string\n\tprefix string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_LoadCustomCommands_37": {
+      "name": "LoadCustomCommands",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 49,
+      "content_hash": "2dbe431ec94e2a581e0caf98de5d03e3da3db3aa",
+      "content": "func LoadCustomCommands() ([]Command, error) {\n\tcfg := config.Get()\n\tif cfg == nil {\n\t\treturn nil, fmt.Errorf(\"config not loaded\")\n\t}\n\n\tloader := &commandLoader{\n\t\tsources: buildCommandSources(cfg),\n\t}\n\n\treturn loader.loadAll()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_buildCommandSources_50": {
+      "name": "buildCommandSources",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 77,
+      "content_hash": "173c47bf950d45e49cdd0d04c3ad29b4d3c73110",
+      "content": "func buildCommandSources(cfg *config.Config) []commandSource {\n\tvar sources []commandSource\n\n\t// XDG config directory\n\tif dir := getXDGCommandsDir(); dir != \"\" {\n\t\tsources = append(sources, commandSource{\n\t\t\tpath:   dir,\n\t\t\tprefix: userCommandPrefix,\n\t\t})\n\t}\n\n\t// Home directory\n\tif home := home.Dir(); home != \"\" {\n\t\tsources = append(sources, commandSource{\n\t\t\tpath:   filepath.Join(home, \".nexora\", \"commands\"),\n\t\t\tprefix: userCommandPrefix,\n\t\t})\n\t}\n\n\t// Project directory\n\tsources = append(sources, commandSource{\n\t\tpath:   filepath.Join(cfg.Options.DataDirectory, \"commands\"),\n\t\tprefix: projectCommandPrefix,\n\t})\n\n\treturn sources\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getXDGCommandsDir_78": {
+      "name": "getXDGCommandsDir",
+      "type": "function",
+      "start_line": 78,
+      "end_line": 90,
+      "content_hash": "ef7ae01f71d3f57e60299b4d9585c2868a6a9f42",
+      "content": "func getXDGCommandsDir() string {\n\txdgHome := os.Getenv(\"XDG_CONFIG_HOME\")\n\tif xdgHome == \"\" {\n\t\tif home := home.Dir(); home != \"\" {\n\t\t\txdgHome = filepath.Join(home, \".config\")\n\t\t}\n\t}\n\tif xdgHome != \"\" {\n\t\treturn filepath.Join(xdgHome, \"nexora\", \"commands\")\n\t}\n\treturn \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadAll_91": {
+      "name": "loadAll",
+      "type": "method",
+      "start_line": 91,
+      "end_line": 102,
+      "content_hash": "ef63f582e658a32c1c4f96e695e36d128ffedc2e",
+      "content": "func (l *commandLoader) loadAll() ([]Command, error) {\n\tvar commands []Command\n\n\tfor _, source := range l.sources {\n\t\tif cmds, err := l.loadFromSource(source); err == nil {\n\t\t\tcommands = append(commands, cmds...)\n\t\t}\n\t}\n\n\treturn commands, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadFromSource_103": {
+      "name": "loadFromSource",
+      "type": "method",
+      "start_line": 103,
+      "end_line": 126,
+      "content_hash": "a5bb317aa088c1e1acec0eae1f0d720026d1b77b",
+      "content": "func (l *commandLoader) loadFromSource(source commandSource) ([]Command, error) {\n\tif err := ensureDir(source.path); err != nil {\n\t\treturn nil, err\n\t}\n\n\tvar commands []Command\n\n\terr := filepath.WalkDir(source.path, func(path string, d fs.DirEntry, err error) error {\n\t\tif err != nil || d.IsDir() || !isMarkdownFile(d.Name()) {\n\t\t\treturn err\n\t\t}\n\n\t\tcmd, err := l.loadCommand(path, source.path, source.prefix)\n\t\tif err != nil {\n\t\t\treturn nil // Skip invalid files\n\t\t}\n\n\t\tcommands = append(commands, cmd)\n\t\treturn nil\n\t})\n\n\treturn commands, err\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_loadCommand_127": {
+      "name": "loadCommand",
+      "type": "method",
+      "start_line": 127,
+      "end_line": 143,
+      "content_hash": "b0d11ff187826e1ce32557b7cffeaed049dd2735",
+      "content": "func (l *commandLoader) loadCommand(path, baseDir, prefix string) (Command, error) {\n\tcontent, err := os.ReadFile(path)\n\tif err != nil {\n\t\treturn Command{}, err\n\t}\n\n\tid := buildCommandID(path, baseDir, prefix)\n\tdesc := fmt.Sprintf(\"Custom command from %s\", filepath.Base(path))\n\n\treturn Command{\n\t\tID:          id,\n\t\tTitle:       id,\n\t\tDescription: desc,\n\t\tHandler:     createCommandHandler(id, desc, string(content)),\n\t}, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_buildCommandID_144": {
+      "name": "buildCommandID",
+      "type": "function",
+      "start_line": 144,
+      "end_line": 156,
+      "content_hash": "67dd27e169aaa8c889b8e2ae3034b060dcc9b2a8",
+      "content": "func buildCommandID(path, baseDir, prefix string) string {\n\trelPath, _ := filepath.Rel(baseDir, path)\n\tparts := strings.Split(relPath, string(filepath.Separator))\n\n\t// Remove .md extension from last part\n\tif len(parts) > 0 {\n\t\tlastIdx := len(parts) - 1\n\t\tparts[lastIdx] = strings.TrimSuffix(parts[lastIdx], filepath.Ext(parts[lastIdx]))\n\t}\n\n\treturn prefix + strings.Join(parts, \":\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createCommandHandler_157": {
+      "name": "createCommandHandler",
+      "type": "function",
+      "start_line": 157,
+      "end_line": 176,
+      "content_hash": "0b0e35947c02108e8fc4f3e96f78091d1c369020",
+      "content": "func createCommandHandler(id, desc, content string) func(Command) tea.Cmd {\n\treturn func(cmd Command) tea.Cmd {\n\t\targs := extractArgNames(content)\n\n\t\tif len(args) == 0 {\n\t\t\treturn util.CmdHandler(CommandRunCustomMsg{\n\t\t\t\tContent: content,\n\t\t\t})\n\t\t}\n\t\treturn util.CmdHandler(ShowArgumentsDialogMsg{\n\t\t\tCommandID:   id,\n\t\t\tDescription: desc,\n\t\t\tArgNames:    args,\n\t\t\tOnSubmit: func(args map[string]string) tea.Cmd {\n\t\t\t\treturn execUserPrompt(content, args)\n\t\t\t},\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_execUserPrompt_177": {
+      "name": "execUserPrompt",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 188,
+      "content_hash": "e882265858c40f963895ba19a26b77cb725113c8",
+      "content": "func execUserPrompt(content string, args map[string]string) tea.Cmd {\n\treturn func() tea.Msg {\n\t\tfor name, value := range args {\n\t\t\tplaceholder := \"$\" + name\n\t\t\tcontent = strings.ReplaceAll(content, placeholder, value)\n\t\t}\n\t\treturn CommandRunCustomMsg{\n\t\t\tContent: content,\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_extractArgNames_189": {
+      "name": "extractArgNames",
+      "type": "function",
+      "start_line": 189,
+      "end_line": 208,
+      "content_hash": "e62ecc2d6d241c623f296275baa1db119e5f0254",
+      "content": "func extractArgNames(content string) []string {\n\tmatches := namedArgPattern.FindAllStringSubmatch(content, -1)\n\tif len(matches) == 0 {\n\t\treturn nil\n\t}\n\n\tseen := make(map[string]bool)\n\tvar args []string\n\n\tfor _, match := range matches {\n\t\targ := match[1]\n\t\tif !seen[arg] {\n\t\t\tseen[arg] = true\n\t\t\targs = append(args, arg)\n\t\t}\n\t}\n\n\treturn args\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensureDir_209": {
+      "name": "ensureDir",
+      "type": "function",
+      "start_line": 209,
+      "end_line": 215,
+      "content_hash": "e174c40bb9e06020a6ad3ce1900b5a144b3df24d",
+      "content": "func ensureDir(path string) error {\n\tif _, err := os.Stat(path); os.IsNotExist(err) {\n\t\treturn os.MkdirAll(path, 0o755)\n\t}\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_isMarkdownFile_216": {
+      "name": "isMarkdownFile",
+      "type": "function",
+      "start_line": 216,
+      "end_line": 219,
+      "content_hash": "7903ce400c9ed672d2fd35468a742bb9889db615",
+      "content": "func isMarkdownFile(name string) bool {\n\treturn strings.HasSuffix(strings.ToLower(name), \".md\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CommandRunCustomMsg_220": {
+      "name": "CommandRunCustomMsg",
+      "type": "struct",
+      "start_line": 220,
+      "end_line": 223,
+      "content_hash": "8771b9de920703eade38c9369edfa502996c3956",
+      "content": "type CommandRunCustomMsg struct {\n\tContent string\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_loadMCPPrompts_224": {
+      "name": "loadMCPPrompts",
+      "type": "function",
+      "start_line": 224,
+      "end_line": 240,
+      "content_hash": "c58f8679e939daece4eff4d23dcd66e6cb4b3863",
+      "content": "func loadMCPPrompts() []Command {\n\tvar commands []Command\n\tfor mcpName, prompts := range mcp.Prompts() {\n\t\tfor _, prompt := range prompts {\n\t\t\tkey := mcpName + \":\" + prompt.Name\n\t\t\tcommands = append(commands, Command{\n\t\t\t\tID:          key,\n\t\t\t\tTitle:       cmp.Or(prompt.Title, prompt.Name),\n\t\t\t\tDescription: prompt.Description,\n\t\t\t\tHandler:     createMCPPromptHandler(mcpName, prompt.Name, prompt),\n\t\t\t})\n\t\t}\n\t}\n\n\treturn commands\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createMCPPromptHandler_241": {
+      "name": "createMCPPromptHandler",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 254,
+      "content_hash": "fa17b49baa8cc4feef75c6ae2604230f7197be97",
+      "content": "func createMCPPromptHandler(mcpName, promptName string, prompt *mcp.Prompt) func(Command) tea.Cmd {\n\treturn func(cmd Command) tea.Cmd {\n\t\tif len(prompt.Arguments) == 0 {\n\t\t\treturn execMCPPrompt(mcpName, promptName, nil)\n\t\t}\n\t\treturn util.CmdHandler(ShowMCPPromptArgumentsDialogMsg{\n\t\t\tPrompt: prompt,\n\t\t\tOnSubmit: func(args map[string]string) tea.Cmd {\n\t\t\t\treturn execMCPPrompt(mcpName, promptName, args)\n\t\t\t},\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_execMCPPrompt_255": {
+      "name": "execMCPPrompt",
+      "type": "function",
+      "start_line": 255,
+      "end_line": 268,
+      "content_hash": "825c26bb81f2bcfe769da2cff7a3cdd9ce8dc05b",
+      "content": "func execMCPPrompt(clientName, promptName string, args map[string]string) tea.Cmd {\n\treturn func() tea.Msg {\n\t\tctx := context.Background()\n\t\tresult, err := mcp.GetPromptMessages(ctx, clientName, promptName, args)\n\t\tif err != nil {\n\t\t\treturn util.ReportError(err)\n\t\t}\n\n\t\treturn chat.SendMsg{\n\t\t\tText: strings.Join(result, \" \"),\n\t\t}\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ShowMCPPromptArgumentsDialogMsg_269": {
+      "name": "ShowMCPPromptArgumentsDialogMsg",
+      "type": "struct",
+      "start_line": 269,
+      "end_line": 272,
+      "content_hash": "9837729bf1a13edb89c7a220bc85d3c3a3d667f0",
+      "content": "type ShowMCPPromptArgumentsDialogMsg struct {\n\tPrompt   *mcp.Prompt\n\tOnSubmit func(arg map[string]string) tea.Cmd\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

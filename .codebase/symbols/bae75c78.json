@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/context-engine/scripts/refrag_phi.py",
+  "file_hash": "b64f52d9ea6df70435b47bbeba5e96fa3ef9e42d",
+  "updated_at": "2025-12-26T17:34:21.721711",
+  "symbols": {
+    "function_load_phi_matrix_16": {
+      "name": "load_phi_matrix",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 26,
+      "content_hash": "dbb7814a214bf027707a3650b5ec99361a55c585",
+      "content": "def load_phi_matrix(path: str) -> Matrix:\n    with open(path, \"r\", encoding=\"utf-8\") as f:\n        m = json.load(f)\n    if not isinstance(m, list) or not m or not isinstance(m[0], list):\n        raise ValueError(\"\u03c6 must be a 2D JSON array\")\n    # Validate rectangular shape\n    cols = len(m[0])\n    for row in m:\n        if len(row) != cols:\n            raise ValueError(\"\u03c6 must be rectangular (consistent number of columns)\")\n    return m  # shape (d_in, d_model)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_project_29": {
+      "name": "project",
+      "type": "function",
+      "start_line": 29,
+      "end_line": 41,
+      "content_hash": "04429f3736dc8089d3a5760264979f6d655e0917",
+      "content": "def project(vec: List[float], phi: Matrix) -> List[float]:\n    d_in = len(phi)\n    if len(vec) != d_in:\n        raise ValueError(f\"vec length {len(vec)} != \u03c6 rows {d_in}\")\n    d_model = len(phi[0])\n    out = [0.0] * d_model\n    # y_j = sum_i x_i * \u03c6_{i,j}\n    for i in range(d_in):\n        xi = float(vec[i])\n        row = phi[i]\n        for j in range(d_model):\n            out[j] += xi * float(row[j])\n    return out",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_project_batch_44": {
+      "name": "project_batch",
+      "type": "function",
+      "start_line": 44,
+      "end_line": 45,
+      "content_hash": "23766113547a50933238f00bfd07e5285640b769",
+      "content": "def project_batch(vectors: List[List[float]], phi: Matrix) -> List[List[float]]:\n    return [project(v, phi) for v in vectors]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

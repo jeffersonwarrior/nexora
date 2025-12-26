@@ -1,0 +1,139 @@
+{
+  "file_path": "/work/internal/tui/components/dialogs/models/list.go",
+  "file_hash": "d4291e8de6a831505f97e450087ccf3235f15197",
+  "updated_at": "2025-12-26T17:34:20.701779",
+  "symbols": {
+    "struct_ModelListComponent_19": {
+      "name": "ModelListComponent",
+      "type": "struct",
+      "start_line": 19,
+      "end_line": 24,
+      "content_hash": "59ea7079e9800986347f786c623e3daab5219ec7",
+      "content": "type ModelListComponent struct {\n\tlist      listModel\n\tmodelType int\n\tproviders []catwalk.Provider\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_modelKey_25": {
+      "name": "modelKey",
+      "type": "function",
+      "start_line": 25,
+      "end_line": 31,
+      "content_hash": "c5e77018ca30fb906d43a1415190838d595df9a1",
+      "content": "func modelKey(providerID, modelID string) string {\n\tif providerID == \"\" || modelID == \"\" {\n\t\treturn \"\"\n\t}\n\treturn providerID + \":\" + modelID\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewModelListComponent_32": {
+      "name": "NewModelListComponent",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 56,
+      "content_hash": "5e03dd93db494656f9eef5a911b24bd6dd2a247c",
+      "content": "func NewModelListComponent(keyMap list.KeyMap, inputPlaceholder string, shouldResize bool) *ModelListComponent {\n\tt := styles.CurrentTheme()\n\tinputStyle := t.S().Base.PaddingLeft(1).PaddingBottom(1)\n\toptions := []list.ListOption{\n\t\tlist.WithKeyMap(keyMap),\n\t\tlist.WithWrapNavigation(),\n\t}\n\tif shouldResize {\n\t\toptions = append(options, list.WithResizeByList())\n\t}\n\tmodelList := list.NewFilterableGroupedList(\n\t\t[]list.Group[list.CompletionItem[ModelOption]]{},\n\t\tlist.WithFilterInputStyle(inputStyle),\n\t\tlist.WithFilterPlaceholder(inputPlaceholder),\n\t\tlist.WithFilterListOptions(\n\t\t\toptions...,\n\t\t),\n\t)\n\n\treturn &ModelListComponent{\n\t\tlist:      modelList,\n\t\tmodelType: LargeModelType,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Init_57": {
+      "name": "Init",
+      "type": "method",
+      "start_line": 57,
+      "end_line": 79,
+      "content_hash": "ac47b9f8b7b180beb73bf90e713f383028333bc9",
+      "content": "func (m *ModelListComponent) Init() tea.Cmd {\n\tvar cmds []tea.Cmd\n\tif len(m.providers) == 0 {\n\t\tcfg := config.Get()\n\t\tproviders, err := config.Providers(cfg)\n\t\tfilteredProviders := []catwalk.Provider{}\n\t\tfor _, p := range providers {\n\t\t\thasAPIKeyEnv := strings.HasPrefix(p.APIKey, \"$\")\n\t\t\tnoKeyRequired := p.APIKey == \"\" || p.ID == \"nexora\"\n\t\t\tif (hasAPIKeyEnv && p.ID != catwalk.InferenceProviderAzure) || noKeyRequired {\n\t\t\t\tfilteredProviders = append(filteredProviders, p)\n\t\t\t}\n\t\t}\n\n\t\tm.providers = filteredProviders\n\t\tif err != nil {\n\t\t\tcmds = append(cmds, util.ReportError(err))\n\t\t}\n\t}\n\tcmds = append(cmds, m.list.Init(), m.SetModelType(m.modelType))\n\treturn tea.Batch(cmds...)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Update_80": {
+      "name": "Update",
+      "type": "method",
+      "start_line": 80,
+      "end_line": 85,
+      "content_hash": "32da209828b06a50348710242b89e0fac201e641",
+      "content": "func (m *ModelListComponent) Update(msg tea.Msg) (*ModelListComponent, tea.Cmd) {\n\tu, cmd := m.list.Update(msg)\n\tm.list = u.(listModel)\n\treturn m, cmd\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_View_86": {
+      "name": "View",
+      "type": "method",
+      "start_line": 86,
+      "end_line": 89,
+      "content_hash": "97a4fd0957936f6c1594cdaa9a60f08cf952c99b",
+      "content": "func (m *ModelListComponent) View() string {\n\treturn m.list.View()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Cursor_90": {
+      "name": "Cursor",
+      "type": "method",
+      "start_line": 90,
+      "end_line": 93,
+      "content_hash": "ae0ebdd76b1b048b491e8096b99371d8b70f567d",
+      "content": "func (m *ModelListComponent) Cursor() *tea.Cursor {\n\treturn m.list.Cursor()\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetSize_94": {
+      "name": "SetSize",
+      "type": "method",
+      "start_line": 94,
+      "end_line": 97,
+      "content_hash": "e9a284b846657ef73ba314f339f6978ef32cf26f",
+      "content": "func (m *ModelListComponent) SetSize(width, height int) tea.Cmd {\n\treturn m.list.SetSize(width, height)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SelectedModel_98": {
+      "name": "SelectedModel",
+      "type": "method",
+      "start_line": 98,
+      "end_line": 107,
+      "content_hash": "87c1f653359c7a9eb1377c8ae2ecabe2e249a110",
+      "content": "func (m *ModelListComponent) SelectedModel() *ModelOption {\n\ts := m.list.SelectedItem()\n\tif s == nil {\n\t\treturn nil\n\t}\n\tsv := *s\n\tmodel := sv.Value()\n\treturn &model\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetModelType_108": {
+      "name": "SetModelType",
+      "type": "method",
+      "start_line": 108,
+      "end_line": 402,
+      "content_hash": "3ff3d5459a5259932173e017c92ecb132cd0a766",
+      "content": "func (m *ModelListComponent) SetModelType(modelType int) tea.Cmd {\n\tt := styles.CurrentTheme()\n\tm.modelType = modelType\n\n\tvar groups []list.Group[list.CompletionItem[ModelOption]]\n\t// first none section\n\tselectedItemID := \"\"\n\titemsByKey := make(map[string]list.CompletionItem[ModelOption])\n\n\tcfg := config.Get()\n\tvar currentModel config.SelectedModel\n\tselectedType := config.SelectedModelTypeLarge\n\tif m.modelType == LargeModelType {\n\t\tcurrentModel = cfg.Models[config.SelectedModelTypeLarge]\n\t\tselectedType = config.SelectedModelTypeLarge\n\t} else {\n\t\tcurrentModel = cfg.Models[config.SelectedModelTypeSmall]\n\t\tselectedType = config.SelectedModelTypeSmall\n\t}\n\trecentItems := cfg.RecentModels[selectedType]\n\n\tconfiguredIcon := t.S().Base.Foreground(t.Success).Render(styles.CheckIcon)\n\tconfigured := fmt.Sprintf(\"%s %s\", configuredIcon, t.S().Subtle.Render(\"Configured\"))\n\n\t// Create a map to track which providers we've already added\n\taddedProviders := make(map[string]bool)\n\n\t// First, add any configured providers that are not in the known providers list\n\t// These should appear at the top of the list\n\tknownProviders, err := config.Providers(cfg)\n\tif err != nil {\n\t\treturn util.ReportError(err)\n\t}\n\tfor providerID, providerConfig := range cfg.Providers.Seq2() {\n\t\tif providerConfig.Disable {\n\t\t\tcontinue\n\t\t}\n\n\t\t// Check if this provider is not in the known providers list\n\t\tif !slices.ContainsFunc(knownProviders, func(p catwalk.Provider) bool { return p.ID == catwalk.InferenceProvider(providerID) }) ||\n\t\t\t!slices.ContainsFunc(m.providers, func(p catwalk.Provider) bool { return p.ID == catwalk.InferenceProvider(providerID) }) {\n\t\t\t// Convert config provider to provider.Provider format\n\t\t\tconfigProvider := catwalk.Provider{\n\t\t\t\tName:   providerConfig.Name,\n\t\t\t\tID:     catwalk.InferenceProvider(providerID),\n\t\t\t\tModels: make([]catwalk.Model, len(providerConfig.Models)),\n\t\t\t}\n\n\t\t\t// Convert models\n\t\t\tfor i, model := range providerConfig.Models {\n\t\t\t\tconfigProvider.Models[i] = catwalk.Model{\n\t\t\t\t\tID:                     model.ID,\n\t\t\t\t\tName:                   model.Name,\n\t\t\t\t\tCostPer1MIn:            model.CostPer1MIn,\n\t\t\t\t\tCostPer1MOut:           model.CostPer1MOut,\n\t\t\t\t\tCostPer1MInCached:      model.CostPer1MInCached,\n\t\t\t\t\tCostPer1MOutCached:     model.CostPer1MOutCached,\n\t\t\t\t\tContextWindow:          model.ContextWindow,\n\t\t\t\t\tDefaultMaxTokens:       model.DefaultMaxTokens,\n\t\t\t\t\tCanReason:              model.CanReason,\n\t\t\t\t\tReasoningLevels:        model.ReasoningLevels,\n\t\t\t\t\tDefaultReasoningEffort: model.DefaultReasoningEffort,\n\t\t\t\t\tSupportsImages:         model.SupportsImages,\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// Add this unknown provider to the list\n\t\t\tname := configProvider.Name\n\t\t\tif name == \"\" {\n\t\t\t\tname = string(configProvider.ID)\n\t\t\t}\n\t\t\tsection := list.NewItemSection(name)\n\t\t\tsection.SetInfo(configured)\n\t\t\tgroup := list.Group[list.CompletionItem[ModelOption]]{\n\t\t\t\tSection: section,\n\t\t\t}\n\t\t\tfor _, model := range configProvider.Models {\n\t\t\t\tmodelOption := ModelOption{\n\t\t\t\t\tProvider: configProvider,\n\t\t\t\t\tModel:    model,\n\t\t\t\t}\n\t\t\t\tkey := modelKey(string(configProvider.ID), model.ID)\n\t\t\t\titem := list.NewCompletionItem(\n\t\t\t\t\tmodel.Name,\n\t\t\t\t\tmodelOption,\n\t\t\t\t\tlist.WithCompletionID(key),\n\t\t\t\t)\n\t\t\t\titemsByKey[key] = item\n\n\t\t\t\tgroup.Items = append(group.Items, item)\n\t\t\t\tif model.ID == currentModel.Model && string(configProvider.ID) == currentModel.Provider {\n\t\t\t\t\tselectedItemID = item.ID()\n\t\t\t\t}\n\t\t\t}\n\t\t\tgroups = append(groups, group)\n\n\t\t\taddedProviders[providerID] = true\n\t\t}\n\t}\n\n\t// Sort providers to move Mistral and OpenRouter to the bottom\n\tsortedProviders := make([]catwalk.Provider, len(m.providers))\n\tcopy(sortedProviders, m.providers)\n\tslices.SortStableFunc(sortedProviders, func(a, b catwalk.Provider) int {\n\t\taIsMistral := a.ID == \"mistral\"\n\t\tbIsMistral := b.ID == \"mistral\"\n\t\taIsOpenRouter := a.ID == catwalk.InferenceProviderOpenRouter\n\t\tbIsOpenRouter := b.ID == catwalk.InferenceProviderOpenRouter\n\n\t\tif aIsMistral && !bIsMistral {\n\t\t\treturn -1\n\t\t}\n\t\tif bIsMistral && !aIsMistral {\n\t\t\treturn 1\n\t\t}\n\t\tif aIsOpenRouter && !bIsOpenRouter {\n\t\t\treturn 1\n\t\t}\n\t\tif bIsOpenRouter && !aIsOpenRouter {\n\t\t\treturn -1\n\t\t}\n\t\t// Keep original order for all other providers\n\t\treturn 0\n\t})\n\n\t// Add Local Models provider\n\tlocalProvider := catwalk.Provider{\n\t\tID:   \"local\",\n\t\tName: \"Local Models\",\n\t\tType: \"openai\", // Local providers use OpenAI-compatible API\n\t}\n\n\t// Check if local provider is configured\n\tlocalConfig, localConfigured := cfg.Providers.Get(\"local\")\n\tif !localConfigured || !localConfig.Disable {\n\t\tname := localProvider.Name\n\t\tif localConfigured && localConfig.Name != \"\" {\n\t\t\tname = localConfig.Name\n\t\t}\n\n\t\tsection := list.NewItemSection(name)\n\t\tif localConfigured {\n\t\t\tsection.SetInfo(configured)\n\t\t}\n\t\tgroup := list.Group[list.CompletionItem[ModelOption]]{\n\t\t\tSection: section,\n\t\t}\n\n\t\t// Add a placeholder model for Local Models\n\t\tmodelOption := ModelOption{\n\t\t\tProvider: localProvider,\n\t\t\tModel: catwalk.Model{\n\t\t\t\tID:   \"local-models\",\n\t\t\t\tName: \"Configure Local Models...\",\n\t\t\t},\n\t\t}\n\t\tkey := modelKey(\"local\", \"local-models\")\n\t\titem := list.NewCompletionItem(\n\t\t\tmodelOption.Model.Name,\n\t\t\tmodelOption,\n\t\t\tlist.WithCompletionID(key),\n\t\t)\n\t\titemsByKey[key] = item\n\t\tgroup.Items = append(group.Items, item)\n\t\tgroups = append(groups, group)\n\t\taddedProviders[\"local\"] = true\n\t}\n\n\t// Then add the known providers from the predefined list\n\tfor _, provider := range sortedProviders {\n\t\t// Skip if we already added this provider as an unknown provider\n\t\tif addedProviders[string(provider.ID)] {\n\t\t\tcontinue\n\t\t}\n\n\t\tproviderConfig, providerConfigured := cfg.Providers.Get(string(provider.ID))\n\t\tif providerConfigured && providerConfig.Disable {\n\t\t\tcontinue\n\t\t}\n\n\t\tdisplayProvider := provider\n\t\tif providerConfigured {\n\t\t\tdisplayProvider.Name = cmp.Or(providerConfig.Name, displayProvider.Name)\n\t\t\tmodelIndex := make(map[string]int, len(displayProvider.Models))\n\t\t\tfor i, model := range displayProvider.Models {\n\t\t\t\tmodelIndex[model.ID] = i\n\t\t\t}\n\t\t\tfor _, model := range providerConfig.Models {\n\t\t\t\tif model.ID == \"\" {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tif idx, ok := modelIndex[model.ID]; ok {\n\t\t\t\t\tif model.Name != \"\" {\n\t\t\t\t\t\tdisplayProvider.Models[idx].Name = model.Name\n\t\t\t\t\t}\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tif model.Name == \"\" {\n\t\t\t\t\tmodel.Name = model.ID\n\t\t\t\t}\n\t\t\t\tdisplayProvider.Models = append(displayProvider.Models, model)\n\t\t\t\tmodelIndex[model.ID] = len(displayProvider.Models) - 1\n\t\t\t}\n\t\t}\n\n\t\tname := displayProvider.Name\n\t\tif name == \"\" {\n\t\t\tname = string(displayProvider.ID)\n\t\t}\n\n\t\tsection := list.NewItemSection(name)\n\t\tif providerConfigured {\n\t\t\tsection.SetInfo(configured)\n\t\t}\n\t\tgroup := list.Group[list.CompletionItem[ModelOption]]{\n\t\t\tSection: section,\n\t\t}\n\t\tfor _, model := range displayProvider.Models {\n\t\t\tmodelOption := ModelOption{\n\t\t\t\tProvider: displayProvider,\n\t\t\t\tModel:    model,\n\t\t\t}\n\t\t\tkey := modelKey(string(displayProvider.ID), model.ID)\n\t\t\titem := list.NewCompletionItem(\n\t\t\t\tmodel.Name,\n\t\t\t\tmodelOption,\n\t\t\t\tlist.WithCompletionID(key),\n\t\t\t)\n\t\t\titemsByKey[key] = item\n\t\t\tgroup.Items = append(group.Items, item)\n\t\t\tif model.ID == currentModel.Model && string(displayProvider.ID) == currentModel.Provider {\n\t\t\t\tselectedItemID = item.ID()\n\t\t\t}\n\t\t}\n\t\tgroups = append(groups, group)\n\t}\n\n\tif len(recentItems) > 0 {\n\t\trecentSection := list.NewItemSection(\"Recently used\")\n\t\trecentGroup := list.Group[list.CompletionItem[ModelOption]]{\n\t\t\tSection: recentSection,\n\t\t}\n\t\tvar validRecentItems []config.SelectedModel\n\t\tfor _, recent := range recentItems {\n\t\t\tkey := modelKey(recent.Provider, recent.Model)\n\t\t\toption, ok := itemsByKey[key]\n\t\t\tif !ok {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tvalidRecentItems = append(validRecentItems, recent)\n\t\t\trecentID := fmt.Sprintf(\"recent::%s\", key)\n\t\t\tmodelOption := option.Value()\n\t\t\tproviderName := modelOption.Provider.Name\n\t\t\tif providerName == \"\" {\n\t\t\t\tproviderName = string(modelOption.Provider.ID)\n\t\t\t}\n\t\t\titem := list.NewCompletionItem(\n\t\t\t\tmodelOption.Model.Name,\n\t\t\t\toption.Value(),\n\t\t\t\tlist.WithCompletionID(recentID),\n\t\t\t\tlist.WithCompletionShortcut(providerName),\n\t\t\t)\n\t\t\trecentGroup.Items = append(recentGroup.Items, item)\n\t\t\tif recent.Model == currentModel.Model && recent.Provider == currentModel.Provider {\n\t\t\t\tselectedItemID = recentID\n\t\t\t}\n\t\t}\n\n\t\tif len(validRecentItems) != len(recentItems) {\n\t\t\tif err := cfg.SetConfigField(fmt.Sprintf(\"recent_models.%s\", selectedType), validRecentItems); err != nil {\n\t\t\t\treturn util.ReportError(err)\n\t\t\t}\n\t\t}\n\n\t\tif len(recentGroup.Items) > 0 {\n\t\t\tgroups = append([]list.Group[list.CompletionItem[ModelOption]]{recentGroup}, groups...)\n\t\t}\n\t}\n\n\tvar cmds []tea.Cmd\n\n\tcmd := m.list.SetGroups(groups)\n\n\tif cmd != nil {\n\t\tcmds = append(cmds, cmd)\n\t}\n\tcmd = m.list.SetSelected(selectedItemID)\n\tif cmd != nil {\n\t\tcmds = append(cmds, cmd)\n\t}\n\n\treturn tea.Sequence(cmds...)\n}\n\n// GetModelType returns the current model type",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetModelType_403": {
+      "name": "GetModelType",
+      "type": "method",
+      "start_line": 403,
+      "end_line": 406,
+      "content_hash": "a4755afbffd9cd85da66bcc3ce5c9fcf154721ee",
+      "content": "func (m *ModelListComponent) GetModelType() int {\n\treturn m.modelType\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_SetInputPlaceholder_407": {
+      "name": "SetInputPlaceholder",
+      "type": "method",
+      "start_line": 407,
+      "end_line": 409,
+      "content_hash": "e0e23ed0ea06e23074c861773d8d25f2f89a1e13",
+      "content": "func (m *ModelListComponent) SetInputPlaceholder(placeholder string) {\n\tm.list.SetInputPlaceholder(placeholder)\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

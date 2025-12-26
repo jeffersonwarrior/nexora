@@ -1,0 +1,161 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/migrate.rs",
+  "file_hash": "7fe4f6fea07cd325b5d9c37c8e0ac5fd85c0dfce",
+  "updated_at": "2025-12-26T17:34:21.545207",
+  "symbols": {
+    "struct_V1Config_18": {
+      "name": "V1Config",
+      "type": "struct",
+      "start_line": 18,
+      "end_line": 26,
+      "content_hash": "437709d4fa25d81858977393d56ee2c485194286",
+      "content": "struct V1Config {\n    vector_config: V1VectorConfig,\n    graph_config: V1GraphConfig,\n    db_max_size_gb: u32,\n    mcp: bool,\n    bm25: bool,\n}\n\n#[derive(Debug, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_V1VectorConfig_27": {
+      "name": "V1VectorConfig",
+      "type": "struct",
+      "start_line": 27,
+      "end_line": 34,
+      "content_hash": "d888060b29dfc6c4d8d432cbc0cf59f8961bec8e",
+      "content": "struct V1VectorConfig {\n    m: u32,\n    ef_construction: u32,\n    ef_search: u32,\n    db_max_size: u32,\n}\n\n#[derive(Debug, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_V1GraphConfig_35": {
+      "name": "V1GraphConfig",
+      "type": "struct",
+      "start_line": 35,
+      "end_line": 40,
+      "content_hash": "2caa5d4cb10d3b990ad6f3381aaef4a8a8c22e26",
+      "content": "struct V1GraphConfig {\n    secondary_indices: Vec<String>,\n}\n\n#[derive(Debug)]\n#[allow(unused)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MigrationContext_41": {
+      "name": "MigrationContext",
+      "type": "struct",
+      "start_line": 41,
+      "end_line": 137,
+      "content_hash": "1d7515ba46ae3f5e338f3f9961ea09d442295403",
+      "content": "struct MigrationContext {\n    project_dir: PathBuf,\n    project_name: String,\n    v1_config: V1Config,\n    hx_files: Vec<PathBuf>,\n    queries_dir: String,\n    instance_name: String,\n    port: u16,\n    dry_run: bool,\n    no_backup: bool,\n}\n\npub async fn run(\n    path: Option<String>,\n    queries_dir: String,\n    instance_name: String,\n    port: u16,\n    dry_run: bool,\n    no_backup: bool,\n) -> Result<()> {\n    let project_dir = match path {\n        Some(p) => PathBuf::from(p),\n        None => env::current_dir()?,\n    };\n\n    print_status(\"MIGRATE\", \"Detecting v1 project structure\");\n\n    // Step 1: Detect and validate v1 project\n    let v1_config = detect_and_parse_v1_config(&project_dir)?;\n    let hx_files = find_hx_files(&project_dir)?;\n\n    let project_name = project_dir\n        .file_name()\n        .and_then(|name| name.to_str())\n        .unwrap_or(\"helix-project\")\n        .to_string();\n\n    print_success(&format!(\n        \"Found v1 project '{}' with {} .hx files\",\n        project_name,\n        hx_files.len()\n    ));\n\n    // Step 2: Check if v2 project already exists\n    let helix_toml_path = project_dir.join(\"helix.toml\");\n    if helix_toml_path.exists() {\n        return Err(project_error(\"helix.toml already exists in this directory\")\n            .with_hint(\"This appears to be a v2 project already. Migration not needed.\")\n            .into());\n    }\n\n    let migration_ctx = MigrationContext {\n        project_dir,\n        project_name,\n        v1_config,\n        hx_files,\n        queries_dir,\n        instance_name,\n        port,\n        dry_run,\n        no_backup,\n    };\n\n    if dry_run {\n        print_status(\"DRY-RUN\", \"Showing planned migration changes\");\n        show_migration_plan(&migration_ctx)?;\n        return Ok(());\n    }\n\n    // Step 3: Perform migration\n    print_status(\"MIGRATE\", \"Starting migration to v2 format\");\n\n    // Create backup if requested\n    if !no_backup {\n        create_backup(&migration_ctx)?;\n    }\n\n    // Migrate home directory structure\n    migrate_home_directory(&migration_ctx)?;\n\n    // Create queries directory and move files\n    migrate_file_structure(&migration_ctx)?;\n\n    // Create v2 config\n    create_v2_config(&migration_ctx)?;\n\n    print_success(&format!(\n        \"Successfully migrated project to v2 format with instance '{}'\",\n        migration_ctx.instance_name\n    ));\n\n    // Provide enhanced guidance for both local and cloud users\n    provide_post_migration_guidance(&migration_ctx)?;\n\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_detect_and_parse_v1_config_138": {
+      "name": "detect_and_parse_v1_config",
+      "type": "function",
+      "start_line": 138,
+      "end_line": 215,
+      "content_hash": "a1c37875db88e7c4d8b351a2bc6d2259da804be4",
+      "content": "fn detect_and_parse_v1_config(project_dir: &Path) -> Result<V1Config> {\n    let config_path = project_dir.join(\"config.hx.json\");\n\n    if !config_path.exists() {\n        return Err(CliError::new(\"No config.hx.json file found\")\n            .with_hint(\"This doesn't appear to be a v1 Helix project\")\n            .into());\n    }\n\n    let config_content = fs::read_to_string(&config_path).map_err(|e| {\n        CliError::new(\"Failed to read config.hx.json\").with_caused_by(e.to_string())\n    })?;\n\n    let json: JsonValue = serde_json::from_str(&config_content).map_err(|e| {\n        CliError::new(\"Failed to parse config.hx.json\").with_caused_by(e.to_string())\n    })?;\n\n    // Parse vector_config\n    let vector_config_json = json\n        .get(\"vector_config\")\n        .ok_or_else(|| CliError::new(\"Missing vector_config in config.hx.json\"))?;\n\n    let vector_config = V1VectorConfig {\n        m: vector_config_json\n            .get(\"m\")\n            .and_then(|v| v.as_u64())\n            .unwrap_or(16) as u32,\n        ef_construction: vector_config_json\n            .get(\"ef_construction\")\n            .and_then(|v| v.as_u64())\n            .unwrap_or(128) as u32,\n        ef_search: vector_config_json\n            .get(\"ef_search\")\n            .and_then(|v| v.as_u64())\n            .unwrap_or(768) as u32,\n        db_max_size: vector_config_json\n            .get(\"db_max_size\")\n            .and_then(|v| v.as_u64())\n            .unwrap_or(20) as u32,\n    };\n\n    // Parse graph_config\n    let graph_config_json = json\n        .get(\"graph_config\")\n        .ok_or_else(|| CliError::new(\"Missing graph_config in config.hx.json\"))?;\n\n    let secondary_indices = graph_config_json\n        .get(\"secondary_indices\")\n        .and_then(|v| v.as_array())\n        .map(|arr| {\n            arr.iter()\n                .filter_map(|v| v.as_str())\n                .map(|s| s.to_string())\n                .collect()\n        })\n        .unwrap_or_default();\n\n    let graph_config = V1GraphConfig { secondary_indices };\n\n    // Parse other config fields\n    let db_max_size_gb = json\n        .get(\"db_max_size_gb\")\n        .and_then(|v| v.as_u64())\n        .unwrap_or(vector_config.db_max_size as u64) as u32;\n\n    let mcp = json.get(\"mcp\").and_then(|v| v.as_bool()).unwrap_or(true);\n\n    let bm25 = json.get(\"bm25\").and_then(|v| v.as_bool()).unwrap_or(true);\n\n    Ok(V1Config {\n        vector_config,\n        graph_config,\n        db_max_size_gb,\n        mcp,\n        bm25,\n    })\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_find_hx_files_216": {
+      "name": "find_hx_files",
+      "type": "function",
+      "start_line": 216,
+      "end_line": 253,
+      "content_hash": "7af7429d067cedd47d28cab2b671d863ecf82e98",
+      "content": "fn find_hx_files(project_dir: &Path) -> Result<Vec<PathBuf>> {\n    let mut hx_files = Vec::new();\n\n    // Check for schema.hx\n    let schema_path = project_dir.join(\"schema.hx\");\n    if !schema_path.exists() {\n        return Err(CliError::new(\"No schema.hx file found\")\n            .with_hint(\"This doesn't appear to be a v1 Helix project\")\n            .into());\n    }\n    hx_files.push(schema_path);\n\n    // Find all other .hx files\n    for entry in fs::read_dir(project_dir).map_err(|e| {\n        CliError::new(\"Failed to read project directory\").with_caused_by(e.to_string())\n    })? {\n        let entry = entry?;\n        let path = entry.path();\n\n        if let Some(extension) = path.extension()\n            && extension == \"hx\"\n            && path.file_name() != Some(\"schema.hx\".as_ref())\n        {\n            hx_files.push(path);\n        }\n    }\n\n    if hx_files.len() == 1 {\n        return Err(\n            CliError::new(\"No query files (.hx) found besides schema.hx\")\n                .with_hint(\"This doesn't appear to be a complete v1 project\")\n                .into(),\n        );\n    }\n\n    Ok(hx_files)\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_show_migration_plan_254": {
+      "name": "show_migration_plan",
+      "type": "function",
+      "start_line": 254,
+      "end_line": 348,
+      "content_hash": "cfeca20097f496e82d88738b50c4aed13464d607",
+      "content": "fn show_migration_plan(ctx: &MigrationContext) -> Result<()> {\n    print_newline();\n    print_header(&format!(\"\ud83d\udccb Migration Plan for '{}':\", ctx.project_name));\n    print_field(\"Project directory\", &ctx.project_dir.display().to_string());\n    print_newline();\n\n    print_header(\"\ud83d\udcc1 File Structure Changes:\");\n    print_field(\"Create directory\", &ctx.queries_dir);\n    print_field(\"Create directory\", \".helix/v1-backup/\");\n    for hx_file in &ctx.hx_files {\n        let file_name = hx_file.file_name().unwrap().to_string_lossy();\n        let dest_path = PathBuf::from(&ctx.queries_dir).join(&*file_name);\n        print_field(\n            \"Move file\",\n            &format!(\"{} \u2192 {}\", file_name, dest_path.display()),\n        );\n    }\n    print_field(\"Create file\", \"helix.toml\");\n\n    if !ctx.no_backup {\n        print_field(\"Create backup\", \".helix/v1-backup/config.hx.json\");\n    } else {\n        print_field(\"Remove file\", \"config.hx.json\");\n    }\n\n    print_newline();\n    print_header(\"\ud83c\udfe0 Home Directory Migration:\");\n    let home_dir =\n        dirs::home_dir().ok_or_else(|| CliError::new(\"Could not find home directory\"))?;\n    let v1_helix_dir = home_dir.join(\".helix\");\n    if v1_helix_dir.exists() {\n        let v2_marker = v1_helix_dir.join(\".v2\");\n        if v2_marker.exists() {\n            print_field(\n                \"Already migrated\",\n                \"~/.helix directory already migrated to v2\",\n            );\n        } else {\n            print_field(\"Create backup\", \"~/.helix \u2192 ~/.helix-v1-backup\");\n            if v1_helix_dir.join(\"dockerdev\").exists() {\n                print_field(\n                    \"Clean up Docker\",\n                    \"Stop/remove helix-dockerdev containers and images\",\n                );\n            }\n            print_field(\n                \"Clean directory\",\n                \"Remove all except ~/.helix/credentials and ~/.helix/repo\",\n            );\n            if v1_helix_dir.join(\"credentials\").exists() {\n                print_field(\"Preserve file\", \"~/.helix/credentials\");\n            }\n            if v1_helix_dir.join(\"repo\").exists() {\n                print_field(\"Preserve directory\", \"~/.helix/repo\");\n            }\n            print_field(\"Mark migrated\", \"Create ~/.helix/.v2 marker file\");\n        }\n    } else {\n        print_field(\"No action needed\", \"~/.helix directory not found\");\n    }\n\n    print_newline();\n    print_header(\"\u2699\ufe0f  Configuration Migration:\");\n    print_field(\"Instance name\", &ctx.instance_name);\n    print_field(\"Instance port\", &ctx.port.to_string());\n    print_field(\n        \"Vector config\",\n        &format!(\n            \"m={}, ef_construction={}, ef_search={}\",\n            ctx.v1_config.vector_config.m,\n            ctx.v1_config.vector_config.ef_construction,\n            ctx.v1_config.vector_config.ef_search\n        ),\n    );\n    print_field(\n        \"Database max size\",\n        &format!(\"{}GB\", ctx.v1_config.db_max_size_gb),\n    );\n    print_field(\"MCP enabled\", &ctx.v1_config.mcp.to_string());\n    print_field(\"BM25 enabled\", &ctx.v1_config.bm25.to_string());\n    print_field(\n        \"Secondary indices\",\n        &ctx.v1_config\n            .graph_config\n            .secondary_indices\n            .len()\n            .to_string(),\n    );\n\n    print_newline();\n    print_line(\"To perform the migration, run the same command without --dry-run\");\n\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_backup_349": {
+      "name": "create_backup",
+      "type": "function",
+      "start_line": 349,
+      "end_line": 367,
+      "content_hash": "b16c2c8aa965cc7f8f44ee7ed2de227ee9fe56f8",
+      "content": "fn create_backup(ctx: &MigrationContext) -> Result<()> {\n    print_status(\"BACKUP\", \"Creating backup of v1 files\");\n\n    // Create .helix/v1-backup directory\n    let backup_dir = ctx.project_dir.join(\".helix/v1-backup\");\n    fs::create_dir_all(&backup_dir).map_err(|e| {\n        CliError::new(\"Failed to create backup directory\").with_caused_by(e.to_string())\n    })?;\n\n    let backup_path = backup_dir.join(\"config.hx.json\");\n    let original_path = ctx.project_dir.join(\"config.hx.json\");\n\n    fs::copy(&original_path, &backup_path)\n        .map_err(|e| CliError::new(\"Failed to create backup\").with_caused_by(e.to_string()))?;\n\n    print_success(\"Created backup: .helix/v1-backup/config.hx.json\");\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_migrate_file_structure_368": {
+      "name": "migrate_file_structure",
+      "type": "function",
+      "start_line": 368,
+      "end_line": 402,
+      "content_hash": "4af3541ab17207d843f12a01d334cc430c953b99",
+      "content": "fn migrate_file_structure(ctx: &MigrationContext) -> Result<()> {\n    print_status(\"FILES\", \"Migrating file structure\");\n\n    // Create queries directory\n    let queries_dir_path = ctx.project_dir.join(&ctx.queries_dir);\n    fs::create_dir_all(&queries_dir_path).map_err(|e| {\n        CliError::new(\"Failed to create queries directory\").with_caused_by(e.to_string())\n    })?;\n\n    // Move .hx files\n    for hx_file in &ctx.hx_files {\n        let file_name = hx_file.file_name().unwrap();\n        let dest_path = queries_dir_path.join(file_name);\n\n        fs::rename(hx_file, &dest_path).map_err(|e| {\n            CliError::new(format!(\"Failed to move {}\", hx_file.display()))\n                .with_caused_by(e.to_string())\n        })?;\n\n        print_info(&format!(\n            \"Moved {} to {}\",\n            file_name.to_string_lossy(),\n            PathBuf::from(&ctx.queries_dir).display()\n        ));\n    }\n\n    // Remove or backup config.hx.json\n    let config_path = ctx.project_dir.join(\"config.hx.json\");\n    fs::remove_file(&config_path).map_err(|e| {\n        CliError::new(\"Failed to remove config.hx.json\").with_caused_by(e.to_string())\n    })?;\n\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_v2_config_403": {
+      "name": "create_v2_config",
+      "type": "function",
+      "start_line": 403,
+      "end_line": 464,
+      "content_hash": "c11d5520330e60f14e4586ce2d8fc5c78d2b3b37",
+      "content": "fn create_v2_config(ctx: &MigrationContext) -> Result<()> {\n    print_status(\"CONFIG\", \"Creating helix.toml configuration\");\n\n    // Create vector config\n    let vector_config = VectorConfig {\n        m: ctx.v1_config.vector_config.m,\n        ef_construction: ctx.v1_config.vector_config.ef_construction,\n        ef_search: ctx.v1_config.vector_config.ef_search,\n        db_max_size_gb: ctx.v1_config.db_max_size_gb,\n    };\n\n    // Create graph config\n    let graph_config = GraphConfig {\n        secondary_indices: ctx.v1_config.graph_config.secondary_indices.clone(),\n    };\n\n    // Create db config\n    let db_config = DbConfig {\n        vector_config,\n        graph_config,\n        mcp: ctx.v1_config.mcp,\n        bm25: ctx.v1_config.bm25,\n        schema: None,\n        embedding_model: Some(\"text-embedding-ada-002\".to_string()),\n        graphvis_node_label: None,\n    };\n\n    // Create local instance config\n    let local_config = LocalInstanceConfig {\n        port: Some(ctx.port),\n        build_mode: BuildMode::Debug,\n        db_config,\n    };\n\n    // Create local instances map\n    let mut local = HashMap::new();\n    local.insert(ctx.instance_name.clone(), local_config);\n\n    // Create project config\n    let project_config = ProjectConfig {\n        name: ctx.project_name.clone(),\n        queries: PathBuf::from(&ctx.queries_dir),\n        container_runtime: ContainerRuntime::Docker,\n    };\n\n    // Create final helix config\n    let helix_config = HelixConfig {\n        project: project_config,\n        local,\n        cloud: HashMap::new(),\n    };\n\n    // Save to file\n    let config_path = ctx.project_dir.join(\"helix.toml\");\n    helix_config\n        .save_to_file(&config_path)\n        .map_err(|e| CliError::new(\"Failed to create helix.toml\").with_caused_by(e.to_string()))?;\n\n    print_success(\"Created helix.toml configuration\");\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_provide_post_migration_guidance_465": {
+      "name": "provide_post_migration_guidance",
+      "type": "function",
+      "start_line": 465,
+      "end_line": 510,
+      "content_hash": "e78fb8ee2654e68f0f7d1aa277ddd0534c036572",
+      "content": "fn provide_post_migration_guidance(ctx: &MigrationContext) -> Result<()> {\n    // Check if user has Helix Cloud credentials\n    let has_cloud_credentials = check_cloud_credentials();\n\n    print_instructions(\n        \"Next steps:\",\n        &[\n            &format!(\n                \"Run 'helix check {}' to validate your configuration\",\n                ctx.instance_name\n            ),\n            &format!(\n                \"Run 'helix push {}' to start your instance\",\n                ctx.instance_name\n            ),\n        ],\n    );\n\n    if has_cloud_credentials {\n        print_status(\"CLOUD\", \"You're authenticated with Helix Cloud\");\n        print_info(\"The CLI v2 has enhanced cloud features with better instance management\");\n        print_instructions(\n            \"To set up cloud instances:\",\n            &[\n                \"Run 'helix add cloud --name production' to add a production instance\",\n                \"Run 'helix add cloud --name staging' to add a staging instance\",\n                \"Run 'helix build production' to build for your cloud instance\",\n                \"Run 'helix push production' to deploy to Helix Cloud\",\n            ],\n        );\n    } else {\n        print_status(\"CLOUD\", \"Ready for Helix Cloud?\");\n        print_info(\"Take your project to production with managed infrastructure\");\n        print_instructions(\n            \"To get started with Helix Cloud:\",\n            &[\n                \"Run 'helix auth login' to authenticate with Helix Cloud\",\n                \"Run 'helix add cloud --name production' to add a cloud instance\",\n                \"Run 'helix push production' to deploy to the cloud\",\n            ],\n        );\n    }\n\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_migrate_home_directory_511": {
+      "name": "migrate_home_directory",
+      "type": "function",
+      "start_line": 511,
+      "end_line": 609,
+      "content_hash": "3afe0f87299657de82f35e3b78493e9f31421673",
+      "content": "fn migrate_home_directory(_ctx: &MigrationContext) -> Result<()> {\n    print_status(\"HOME\", \"Migrating ~/.helix directory\");\n\n    let home_dir =\n        dirs::home_dir().ok_or_else(|| CliError::new(\"Could not find home directory\"))?;\n\n    let v1_helix_dir = home_dir.join(\".helix\");\n\n    if !v1_helix_dir.exists() {\n        print_info(\"No ~/.helix directory found, skipping home migration\");\n        return Ok(());\n    }\n\n    // Check if already migrated\n    let v2_marker = v1_helix_dir.join(\".v2\");\n    if v2_marker.exists() {\n        print_info(\"~/.helix directory already migrated to v2, skipping home migration\");\n        return Ok(());\n    }\n\n    // Create backup of the entire .helix directory\n    let backup_dir = home_dir.join(\".helix-v1-backup\");\n    if backup_dir.exists() {\n        fs::remove_dir_all(&backup_dir).map_err(|e| {\n            CliError::new(\"Failed to remove existing backup directory\")\n                .with_caused_by(e.to_string())\n        })?;\n    }\n\n    // Use the utility function to copy the directory without exclusions\n    crate::utils::copy_dir_recursively(&v1_helix_dir, &backup_dir).map_err(|e| {\n        CliError::new(\"Failed to backup ~/.helix directory\").with_caused_by(e.to_string())\n    })?;\n\n    print_success(\"Created backup: ~/.helix-v1-backup\");\n\n    // Clean up dockerdev containers/images if present\n    let dockerdev_dir = v1_helix_dir.join(\"dockerdev\");\n    if dockerdev_dir.exists() {\n        cleanup_dockerdev()?;\n    }\n\n    // Remove everything except credentials and repo\n    let credentials_path = v1_helix_dir.join(\"credentials\");\n    let repo_path = v1_helix_dir.join(\"repo\");\n\n    // Temporarily move credentials and repo out of the way\n    let temp_credentials = if credentials_path.exists() {\n        let temp_path = home_dir.join(\".helix-credentials-temp\");\n        fs::rename(&credentials_path, &temp_path).map_err(|e| {\n            CliError::new(\"Failed to backup credentials\").with_caused_by(e.to_string())\n        })?;\n        Some(temp_path)\n    } else {\n        None\n    };\n\n    let temp_repo = if repo_path.exists() {\n        let temp_path = home_dir.join(\".helix-repo-temp\");\n        fs::rename(&repo_path, &temp_path)\n            .map_err(|e| CliError::new(\"Failed to backup repo\").with_caused_by(e.to_string()))?;\n        Some(temp_path)\n    } else {\n        None\n    };\n\n    // Remove the entire .helix directory\n    fs::remove_dir_all(&v1_helix_dir).map_err(|e| {\n        CliError::new(\"Failed to remove ~/.helix directory\").with_caused_by(e.to_string())\n    })?;\n\n    // Recreate .helix directory\n    fs::create_dir_all(&v1_helix_dir).map_err(|e| {\n        CliError::new(\"Failed to recreate ~/.helix directory\").with_caused_by(e.to_string())\n    })?;\n\n    // Restore credentials and repo\n    if let Some(temp_creds) = temp_credentials {\n        fs::rename(&temp_creds, &credentials_path).map_err(|e| {\n            CliError::new(\"Failed to restore credentials\").with_caused_by(e.to_string())\n        })?;\n        print_info(\"Preserved ~/.helix/credentials\");\n    }\n\n    if let Some(temp_repo) = temp_repo {\n        fs::rename(&temp_repo, &repo_path)\n            .map_err(|e| CliError::new(\"Failed to restore repo\").with_caused_by(e.to_string()))?;\n        print_info(\"Preserved ~/.helix/repo\");\n    }\n\n    // Create .v2 marker file to indicate migration is complete\n    fs::write(&v2_marker, \"\").map_err(|e| {\n        CliError::new(\"Failed to create v2 marker file\").with_caused_by(e.to_string())\n    })?;\n\n    print_success(\"Cleaned up ~/.helix directory, preserving credentials and repo\");\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cleanup_dockerdev_610": {
+      "name": "cleanup_dockerdev",
+      "type": "function",
+      "start_line": 610,
+      "end_line": 670,
+      "content_hash": "31ddd5a3b26710bd733903bdc7de5cb5282954c6",
+      "content": "fn cleanup_dockerdev() -> Result<()> {\n    print_status(\"DOCKER\", \"Cleaning up Docker dev containers and images\");\n\n    // Stop and remove the container\n    let container_name = \"helix-dockerdev\";\n\n    // Try to stop the container (ignore errors if not running)\n    let _ = std::process::Command::new(\"docker\")\n        .args([\"stop\", container_name])\n        .output();\n\n    // Try to remove the container (ignore errors if doesn't exist)\n    let _ = std::process::Command::new(\"docker\")\n        .args([\"rm\", container_name])\n        .output();\n\n    // Try to remove any helix-related images\n    let output = std::process::Command::new(\"docker\")\n        .args([\n            \"images\",\n            \"--format\",\n            \"{{.Repository}}:{{.Tag}}\",\n            \"--filter\",\n            \"reference=helix*\",\n        ])\n        .output();\n\n    if let Ok(output) = output {\n        let images = String::from_utf8_lossy(&output.stdout);\n        for image in images.lines().filter(|line| !line.is_empty()) {\n            let _ = std::process::Command::new(\"docker\")\n                .args([\"rmi\", image])\n                .output();\n        }\n    }\n\n    // Try to remove helix volumes\n    let output = std::process::Command::new(\"docker\")\n        .args([\n            \"volume\",\n            \"ls\",\n            \"--format\",\n            \"{{.Name}}\",\n            \"--filter\",\n            \"name=helix\",\n        ])\n        .output();\n\n    if let Ok(output) = output {\n        let volumes = String::from_utf8_lossy(&output.stdout);\n        for volume in volumes.lines().filter(|line| !line.is_empty()) {\n            let _ = std::process::Command::new(\"docker\")\n                .args([\"volume\", \"rm\", volume])\n                .output();\n        }\n    }\n\n    print_info(\"Cleaned up Docker dev environment\");\n    Ok(())\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_check_cloud_credentials_671": {
+      "name": "check_cloud_credentials",
+      "type": "function",
+      "start_line": 671,
+      "end_line": 679,
+      "content_hash": "de99084d3883292c127a6b28130da7ad98c5edb2",
+      "content": "fn check_cloud_credentials() -> bool {\n    let home = match dirs::home_dir() {\n        Some(dir) => dir,\n        None => return false,\n    };\n\n    let credentials_path = home.join(\".helix\").join(\"credentials\");\n    credentials_path.exists()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

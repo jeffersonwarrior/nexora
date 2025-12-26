@@ -1,0 +1,106 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/worker/TimelineService.ts",
+  "file_hash": "921f69cc57a20cdfde4162732ba228360310c7e7",
+  "updated_at": "2025-12-26T17:34:24.041668",
+  "symbols": {
+    "class_TimelineService_24": {
+      "name": "TimelineService",
+      "type": "class",
+      "start_line": 24,
+      "end_line": 262,
+      "content_hash": "af1b8e2f92c6535be05319fd076a89f50d69a1c5",
+      "content": "export class TimelineService {\n  /**\n   * Build timeline items from observations, sessions, and prompts\n   */\n  buildTimeline(data: TimelineData): TimelineItem[] {\n    const items: TimelineItem[] = [\n      ...data.observations.map(obs => ({ type: 'observation' as const, data: obs, epoch: obs.created_at_epoch })),\n      ...data.sessions.map(sess => ({ type: 'session' as const, data: sess, epoch: sess.created_at_epoch })),\n      ...data.prompts.map(prompt => ({ type: 'prompt' as const, data: prompt, epoch: prompt.created_at_epoch }))\n    ];\n    items.sort((a, b) => a.epoch - b.epoch);\n    return items;\n  }\n\n  /**\n   * Filter timeline items to respect depth_before/depth_after window around anchor\n   */\n  filterByDepth(\n    items: TimelineItem[],\n    anchorId: number | string,\n    anchorEpoch: number,\n    depth_before: number,\n    depth_after: number\n  ): TimelineItem[] {\n    if (items.length === 0) return items;\n\n    let anchorIndex = -1;\n    if (typeof anchorId === 'number') {\n      anchorIndex = items.findIndex(item => item.type === 'observation' && (item.data as ObservationSearchResult).id === anchorId);\n    } else if (typeof anchorId === 'string' && anchorId.startsWith('S')) {\n      const sessionNum = parseInt(anchorId.slice(1), 10);\n      anchorIndex = items.findIndex(item => item.type === 'session' && (item.data as SessionSummarySearchResult).id === sessionNum);\n    } else {\n      // Timestamp anchor - find closest item\n      anchorIndex = items.findIndex(item => item.epoch >= anchorEpoch);\n      if (anchorIndex === -1) anchorIndex = items.length - 1;\n    }\n\n    if (anchorIndex === -1) return items;\n\n    const startIndex = Math.max(0, anchorIndex - depth_before);\n    const endIndex = Math.min(items.length, anchorIndex + depth_after + 1);\n    return items.slice(startIndex, endIndex);\n  }\n\n  /**\n   * Format timeline items as markdown with grouped days and tables\n   */\n  formatTimeline(\n    items: TimelineItem[],\n    anchorId: number | string | null,\n    query?: string,\n    depth_before?: number,\n    depth_after?: number\n  ): string {\n    if (items.length === 0) {\n      return query\n        ? `Found observation matching \"${query}\", but no timeline context available.`\n        : 'No timeline items found';\n    }\n\n    const lines: string[] = [];\n\n    // Header\n    if (query && anchorId) {\n      const anchorObs = items.find(item => item.type === 'observation' && (item.data as ObservationSearchResult).id === anchorId);\n      const anchorTitle = anchorObs ? ((anchorObs.data as ObservationSearchResult).title || 'Untitled') : 'Unknown';\n      lines.push(`# Timeline for query: \"${query}\"`);\n      lines.push(`**Anchor:** Observation #${anchorId} - ${anchorTitle}`);\n    } else if (anchorId) {\n      lines.push(`# Timeline around anchor: ${anchorId}`);\n    } else {\n      lines.push(`# Timeline`);\n    }\n\n    if (depth_before !== undefined && depth_after !== undefined) {\n      lines.push(`**Window:** ${depth_before} records before \u2192 ${depth_after} records after | **Items:** ${items.length}`);\n    } else {\n      lines.push(`**Items:** ${items.length}`);\n    }\n    lines.push('');\n\n    // Legend\n    lines.push(`**Legend:** \ud83c\udfaf session-request | \ud83d\udd34 bugfix | \ud83d\udfe3 feature | \ud83d\udd04 refactor | \u2705 change | \ud83d\udd35 discovery | \ud83e\udde0 decision`);\n    lines.push('');\n\n    // Group by day\n    const dayMap = new Map<string, TimelineItem[]>();\n    for (const item of items) {\n      const day = this.formatDate(item.epoch);\n      if (!dayMap.has(day)) {\n        dayMap.set(day, []);\n      }\n      dayMap.get(day)!.push(item);\n    }\n\n    // Sort days chronologically\n    const sortedDays = Array.from(dayMap.entries()).sort((a, b) => {\n      const aDate = new Date(a[0]).getTime();\n      const bDate = new Date(b[0]).getTime();\n      return aDate - bDate;\n    });\n\n    // Render each day\n    for (const [day, dayItems] of sortedDays) {\n      lines.push(`### ${day}`);\n      lines.push('');\n\n      let currentFile: string | null = null;\n      let lastTime = '';\n      let tableOpen = false;\n\n      for (const item of dayItems) {\n        const isAnchor = (\n          (typeof anchorId === 'number' && item.type === 'observation' && (item.data as ObservationSearchResult).id === anchorId) ||\n          (typeof anchorId === 'string' && anchorId.startsWith('S') && item.type === 'session' && `S${(item.data as SessionSummarySearchResult).id}` === anchorId)\n        );\n\n        if (item.type === 'session') {\n          if (tableOpen) {\n            lines.push('');\n            tableOpen = false;\n            currentFile = null;\n            lastTime = '';\n          }\n\n          const sess = item.data as SessionSummarySearchResult;\n          const title = sess.request || 'Session summary';\n          const marker = isAnchor ? ' \u2190 **ANCHOR**' : '';\n\n          lines.push(`**\ud83c\udfaf #S${sess.id}** ${title} (${this.formatDateTime(item.epoch)})${marker}`);\n          lines.push('');\n        } else if (item.type === 'prompt') {\n          if (tableOpen) {\n            lines.push('');\n            tableOpen = false;\n            currentFile = null;\n            lastTime = '';\n          }\n\n          const prompt = item.data as UserPromptSearchResult;\n          const truncated = prompt.prompt_text.length > 100 ? prompt.prompt_text.substring(0, 100) + '...' : prompt.prompt_text;\n\n          lines.push(`**\ud83d\udcac User Prompt #${prompt.prompt_number}** (${this.formatDateTime(item.epoch)})`);\n          lines.push(`> ${truncated}`);\n          lines.push('');\n        } else if (item.type === 'observation') {\n          const obs = item.data as ObservationSearchResult;\n          const file = 'General';\n\n          if (file !== currentFile) {\n            if (tableOpen) {\n              lines.push('');\n            }\n\n            lines.push(`**${file}**`);\n            lines.push(`| ID | Time | T | Title | Tokens |`);\n            lines.push(`|----|------|---|-------|--------|`);\n\n            currentFile = file;\n            tableOpen = true;\n            lastTime = '';\n          }\n\n          const icon = this.getTypeIcon(obs.type);\n          const time = this.formatTime(item.epoch);\n          const title = obs.title || 'Untitled';\n          const tokens = this.estimateTokens(obs.narrative);\n\n          const showTime = time !== lastTime;\n          const timeDisplay = showTime ? time : '\u2033';\n          lastTime = time;\n\n          const anchorMarker = isAnchor ? ' \u2190 **ANCHOR**' : '';\n          lines.push(`| #${obs.id} | ${timeDisplay} | ${icon} | ${title}${anchorMarker} | ~${tokens} |`);\n        }\n      }\n\n      if (tableOpen) {\n        lines.push('');\n      }\n    }\n\n    return lines.join('\\n');\n  }\n\n  /**\n   * Get icon for observation type\n   */\n  private getTypeIcon(type: string): string {\n    return ModeManager.getInstance().getTypeIcon(type);\n  }\n\n  /**\n   * Format date for grouping (e.g., \"Dec 7, 2025\")\n   */\n  private formatDate(epochMs: number): string {\n    const date = new Date(epochMs);\n    return date.toLocaleString('en-US', {\n      month: 'short',\n      day: 'numeric',\n      year: 'numeric'\n    });\n  }\n\n  /**\n   * Format time (e.g., \"6:30 PM\")\n   */\n  private formatTime(epochMs: number): string {\n    const date = new Date(epochMs);\n    return date.toLocaleString('en-US', {\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    });\n  }\n\n  /**\n   * Format date and time (e.g., \"Dec 7, 6:30 PM\")\n   */\n  private formatDateTime(epochMs: number): string {\n    const date = new Date(epochMs);\n    return date.toLocaleString('en-US', {\n      month: 'short',\n      day: 'numeric',\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    });\n  }\n\n  /**\n   * Estimate tokens from text length (~4 chars per token)\n   */\n  private estimateTokens(text: string | null): number {\n    if (!text) return 0;\n    return Math.ceil(text.length / 4);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_buildTimeline_28": {
+      "name": "buildTimeline",
+      "type": "method",
+      "start_line": 28,
+      "end_line": 36,
+      "content_hash": "e30a358766f9fe390843fb37eae704b48f5d0c0e",
+      "content": "  buildTimeline(data: TimelineData): TimelineItem[] {\n    const items: TimelineItem[] = [\n      ...data.observations.map(obs => ({ type: 'observation' as const, data: obs, epoch: obs.created_at_epoch })),\n      ...data.sessions.map(sess => ({ type: 'session' as const, data: sess, epoch: sess.created_at_epoch })),\n      ...data.prompts.map(prompt => ({ type: 'prompt' as const, data: prompt, epoch: prompt.created_at_epoch }))\n    ];\n    items.sort((a, b) => a.epoch - b.epoch);\n    return items;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_filterByDepth_41": {
+      "name": "filterByDepth",
+      "type": "method",
+      "start_line": 41,
+      "end_line": 67,
+      "content_hash": "9d06d699cf919d419918170520ad98e76bd45e91",
+      "content": "  filterByDepth(\n    items: TimelineItem[],\n    anchorId: number | string,\n    anchorEpoch: number,\n    depth_before: number,\n    depth_after: number\n  ): TimelineItem[] {\n    if (items.length === 0) return items;\n\n    let anchorIndex = -1;\n    if (typeof anchorId === 'number') {\n      anchorIndex = items.findIndex(item => item.type === 'observation' && (item.data as ObservationSearchResult).id === anchorId);\n    } else if (typeof anchorId === 'string' && anchorId.startsWith('S')) {\n      const sessionNum = parseInt(anchorId.slice(1), 10);\n      anchorIndex = items.findIndex(item => item.type === 'session' && (item.data as SessionSummarySearchResult).id === sessionNum);\n    } else {\n      // Timestamp anchor - find closest item\n      anchorIndex = items.findIndex(item => item.epoch >= anchorEpoch);\n      if (anchorIndex === -1) anchorIndex = items.length - 1;\n    }\n\n    if (anchorIndex === -1) return items;\n\n    const startIndex = Math.max(0, anchorIndex - depth_before);\n    const endIndex = Math.min(items.length, anchorIndex + depth_after + 1);\n    return items.slice(startIndex, endIndex);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatTimeline_72": {
+      "name": "formatTimeline",
+      "type": "method",
+      "start_line": 72,
+      "end_line": 208,
+      "content_hash": "82cca933f3a40ccd3eaf5814ad7b6a7ec9eb1024",
+      "content": "  formatTimeline(\n    items: TimelineItem[],\n    anchorId: number | string | null,\n    query?: string,\n    depth_before?: number,\n    depth_after?: number\n  ): string {\n    if (items.length === 0) {\n      return query\n        ? `Found observation matching \"${query}\", but no timeline context available.`\n        : 'No timeline items found';\n    }\n\n    const lines: string[] = [];\n\n    // Header\n    if (query && anchorId) {\n      const anchorObs = items.find(item => item.type === 'observation' && (item.data as ObservationSearchResult).id === anchorId);\n      const anchorTitle = anchorObs ? ((anchorObs.data as ObservationSearchResult).title || 'Untitled') : 'Unknown';\n      lines.push(`# Timeline for query: \"${query}\"`);\n      lines.push(`**Anchor:** Observation #${anchorId} - ${anchorTitle}`);\n    } else if (anchorId) {\n      lines.push(`# Timeline around anchor: ${anchorId}`);\n    } else {\n      lines.push(`# Timeline`);\n    }\n\n    if (depth_before !== undefined && depth_after !== undefined) {\n      lines.push(`**Window:** ${depth_before} records before \u2192 ${depth_after} records after | **Items:** ${items.length}`);\n    } else {\n      lines.push(`**Items:** ${items.length}`);\n    }\n    lines.push('');\n\n    // Legend\n    lines.push(`**Legend:** \ud83c\udfaf session-request | \ud83d\udd34 bugfix | \ud83d\udfe3 feature | \ud83d\udd04 refactor | \u2705 change | \ud83d\udd35 discovery | \ud83e\udde0 decision`);\n    lines.push('');\n\n    // Group by day\n    const dayMap = new Map<string, TimelineItem[]>();\n    for (const item of items) {\n      const day = this.formatDate(item.epoch);\n      if (!dayMap.has(day)) {\n        dayMap.set(day, []);\n      }\n      dayMap.get(day)!.push(item);\n    }\n\n    // Sort days chronologically\n    const sortedDays = Array.from(dayMap.entries()).sort((a, b) => {\n      const aDate = new Date(a[0]).getTime();\n      const bDate = new Date(b[0]).getTime();\n      return aDate - bDate;\n    });\n\n    // Render each day\n    for (const [day, dayItems] of sortedDays) {\n      lines.push(`### ${day}`);\n      lines.push('');\n\n      let currentFile: string | null = null;\n      let lastTime = '';\n      let tableOpen = false;\n\n      for (const item of dayItems) {\n        const isAnchor = (\n          (typeof anchorId === 'number' && item.type === 'observation' && (item.data as ObservationSearchResult).id === anchorId) ||\n          (typeof anchorId === 'string' && anchorId.startsWith('S') && item.type === 'session' && `S${(item.data as SessionSummarySearchResult).id}` === anchorId)\n        );\n\n        if (item.type === 'session') {\n          if (tableOpen) {\n            lines.push('');\n            tableOpen = false;\n            currentFile = null;\n            lastTime = '';\n          }\n\n          const sess = item.data as SessionSummarySearchResult;\n          const title = sess.request || 'Session summary';\n          const marker = isAnchor ? ' \u2190 **ANCHOR**' : '';\n\n          lines.push(`**\ud83c\udfaf #S${sess.id}** ${title} (${this.formatDateTime(item.epoch)})${marker}`);\n          lines.push('');\n        } else if (item.type === 'prompt') {\n          if (tableOpen) {\n            lines.push('');\n            tableOpen = false;\n            currentFile = null;\n            lastTime = '';\n          }\n\n          const prompt = item.data as UserPromptSearchResult;\n          const truncated = prompt.prompt_text.length > 100 ? prompt.prompt_text.substring(0, 100) + '...' : prompt.prompt_text;\n\n          lines.push(`**\ud83d\udcac User Prompt #${prompt.prompt_number}** (${this.formatDateTime(item.epoch)})`);\n          lines.push(`> ${truncated}`);\n          lines.push('');\n        } else if (item.type === 'observation') {\n          const obs = item.data as ObservationSearchResult;\n          const file = 'General';\n\n          if (file !== currentFile) {\n            if (tableOpen) {\n              lines.push('');\n            }\n\n            lines.push(`**${file}**`);\n            lines.push(`| ID | Time | T | Title | Tokens |`);\n            lines.push(`|----|------|---|-------|--------|`);\n\n            currentFile = file;\n            tableOpen = true;\n            lastTime = '';\n          }\n\n          const icon = this.getTypeIcon(obs.type);\n          const time = this.formatTime(item.epoch);\n          const title = obs.title || 'Untitled';\n          const tokens = this.estimateTokens(obs.narrative);\n\n          const showTime = time !== lastTime;\n          const timeDisplay = showTime ? time : '\u2033';\n          lastTime = time;\n\n          const anchorMarker = isAnchor ? ' \u2190 **ANCHOR**' : '';\n          lines.push(`| #${obs.id} | ${timeDisplay} | ${icon} | ${title}${anchorMarker} | ~${tokens} |`);\n        }\n      }\n\n      if (tableOpen) {\n        lines.push('');\n      }\n    }\n\n    return lines.join('\\n');\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getTypeIcon_213": {
+      "name": "getTypeIcon",
+      "type": "method",
+      "start_line": 213,
+      "end_line": 215,
+      "content_hash": "620f59d698248550dca2fe0013b62f0e664c9500",
+      "content": "  private getTypeIcon(type: string): string {\n    return ModeManager.getInstance().getTypeIcon(type);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatDate_220": {
+      "name": "formatDate",
+      "type": "method",
+      "start_line": 220,
+      "end_line": 227,
+      "content_hash": "a5a09ee176079c38cf0ae13ec1e3b996c7ab233b",
+      "content": "  private formatDate(epochMs: number): string {\n    const date = new Date(epochMs);\n    return date.toLocaleString('en-US', {\n      month: 'short',\n      day: 'numeric',\n      year: 'numeric'\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatTime_232": {
+      "name": "formatTime",
+      "type": "method",
+      "start_line": 232,
+      "end_line": 239,
+      "content_hash": "e94d0af7135f120e588af1def845697503257194",
+      "content": "  private formatTime(epochMs: number): string {\n    const date = new Date(epochMs);\n    return date.toLocaleString('en-US', {\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_formatDateTime_244": {
+      "name": "formatDateTime",
+      "type": "method",
+      "start_line": 244,
+      "end_line": 253,
+      "content_hash": "718bce1b8f1f96f2762c5875a0fbef93a1bd5a65",
+      "content": "  private formatDateTime(epochMs: number): string {\n    const date = new Date(epochMs);\n    return date.toLocaleString('en-US', {\n      month: 'short',\n      day: 'numeric',\n      hour: 'numeric',\n      minute: '2-digit',\n      hour12: true\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_estimateTokens_258": {
+      "name": "estimateTokens",
+      "type": "method",
+      "start_line": 258,
+      "end_line": 261,
+      "content_hash": "42626295a91dca9546c26e924bf5681e15ac1ffe",
+      "content": "  private estimateTokens(text: string | null): number {\n    if (!text) return 0;\n    return Math.ceil(text.length / 4);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

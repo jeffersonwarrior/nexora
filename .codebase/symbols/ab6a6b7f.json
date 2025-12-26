@@ -1,0 +1,73 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/services/worker/SSEBroadcaster.ts",
+  "file_hash": "1673010705588cb289a2bf743454dfc0815559b1",
+  "updated_at": "2025-12-26T17:34:22.670111",
+  "symbols": {
+    "class_SSEBroadcaster_15": {
+      "name": "SSEBroadcaster",
+      "type": "class",
+      "start_line": 15,
+      "end_line": 76,
+      "content_hash": "29145837b95fc122ee24863e50017be5b4988fcd",
+      "content": "export class SSEBroadcaster {\n  private sseClients: Set<SSEClient> = new Set();\n\n  /**\n   * Add a new SSE client connection\n   */\n  addClient(res: Response): void {\n    this.sseClients.add(res);\n    logger.debug('WORKER', 'Client connected', { total: this.sseClients.size });\n\n    // Setup cleanup on disconnect\n    res.on('close', () => {\n      this.removeClient(res);\n    });\n\n    // Send initial event\n    this.sendToClient(res, { type: 'connected', timestamp: Date.now() });\n  }\n\n  /**\n   * Remove a client connection\n   */\n  removeClient(res: Response): void {\n    this.sseClients.delete(res);\n    logger.debug('WORKER', 'Client disconnected', { total: this.sseClients.size });\n  }\n\n  /**\n   * Broadcast an event to all connected clients (single-pass)\n   */\n  broadcast(event: SSEEvent): void {\n    if (this.sseClients.size === 0) {\n      logger.debug('WORKER', 'SSE broadcast skipped (no clients)', { eventType: event.type });\n      return; // Short-circuit if no clients\n    }\n\n    const eventWithTimestamp = { ...event, timestamp: Date.now() };\n    const data = `data: ${JSON.stringify(eventWithTimestamp)}\\n\\n`;\n\n    logger.debug('WORKER', 'SSE broadcast sent', { eventType: event.type, clients: this.sseClients.size });\n\n    // Single-pass write\n    for (const client of this.sseClients) {\n      client.write(data);\n    }\n  }\n\n  /**\n   * Get number of connected clients\n   */\n  getClientCount(): number {\n    return this.sseClients.size;\n  }\n\n  /**\n   * Send event to a specific client\n   */\n  private sendToClient(res: Response, event: SSEEvent): void {\n    const data = `data: ${JSON.stringify(event)}\\n\\n`;\n    res.write(data);\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_addClient_21": {
+      "name": "addClient",
+      "type": "method",
+      "start_line": 21,
+      "end_line": 32,
+      "content_hash": "2b87bf2f37d93308081a9a58cacbf3c7716196e1",
+      "content": "  addClient(res: Response): void {\n    this.sseClients.add(res);\n    logger.debug('WORKER', 'Client connected', { total: this.sseClients.size });\n\n    // Setup cleanup on disconnect\n    res.on('close', () => {\n      this.removeClient(res);\n    });\n\n    // Send initial event\n    this.sendToClient(res, { type: 'connected', timestamp: Date.now() });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_removeClient_37": {
+      "name": "removeClient",
+      "type": "method",
+      "start_line": 37,
+      "end_line": 40,
+      "content_hash": "952643966c9580df2182fe5053154030392cc8a0",
+      "content": "  removeClient(res: Response): void {\n    this.sseClients.delete(res);\n    logger.debug('WORKER', 'Client disconnected', { total: this.sseClients.size });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_broadcast_45": {
+      "name": "broadcast",
+      "type": "method",
+      "start_line": 45,
+      "end_line": 60,
+      "content_hash": "46df5a474439f9f8945a8e39939f0f5ff22c4d1c",
+      "content": "  broadcast(event: SSEEvent): void {\n    if (this.sseClients.size === 0) {\n      logger.debug('WORKER', 'SSE broadcast skipped (no clients)', { eventType: event.type });\n      return; // Short-circuit if no clients\n    }\n\n    const eventWithTimestamp = { ...event, timestamp: Date.now() };\n    const data = `data: ${JSON.stringify(eventWithTimestamp)}\\n\\n`;\n\n    logger.debug('WORKER', 'SSE broadcast sent', { eventType: event.type, clients: this.sseClients.size });\n\n    // Single-pass write\n    for (const client of this.sseClients) {\n      client.write(data);\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_getClientCount_65": {
+      "name": "getClientCount",
+      "type": "method",
+      "start_line": 65,
+      "end_line": 67,
+      "content_hash": "84ee41377ee58b6d76ae6d67c6b803a9ec07069d",
+      "content": "  getClientCount(): number {\n    return this.sseClients.size;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_sendToClient_72": {
+      "name": "sendToClient",
+      "type": "method",
+      "start_line": 72,
+      "end_line": 75,
+      "content_hash": "61cda2d378e4b0a1d7ddc2982d9dbd1d7108531d",
+      "content": "  private sendToClient(res: Response, event: SSEEvent): void {\n    const data = `data: ${JSON.stringify(event)}\\n\\n`;\n    res.write(data);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

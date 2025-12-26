@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/scripts/autofix.sh",
+  "file_hash": "2ff8e011c6af278d24c6044cd70185fe3eeb2489",
+  "updated_at": "2025-12-26T17:34:22.371773",
+  "symbols": {
+    "function_log_action_16": {
+      "name": "log_action",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 16,
+      "content_hash": "3af24edd071f51e541e441d6276777de36a6d857",
+      "content": "log_action() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fix_go_dependencies_21": {
+      "name": "fix_go_dependencies",
+      "type": "function",
+      "start_line": 21,
+      "end_line": 21,
+      "content_hash": "7ef6cd1c6adcaf2e071e1d20f5d915b03b0971c0",
+      "content": "fix_go_dependencies() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fix_formatting_38": {
+      "name": "fix_formatting",
+      "type": "function",
+      "start_line": 38,
+      "end_line": 38,
+      "content_hash": "3ad2c288f9fa35e78b8747ddb3bc20fc203a41fb",
+      "content": "fix_formatting() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fix_linting_59": {
+      "name": "fix_linting",
+      "type": "function",
+      "start_line": 59,
+      "end_line": 59,
+      "content_hash": "4d262cca60fed71ae21f8366d39470ebb17e95d1",
+      "content": "fix_linting() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fix_build_73": {
+      "name": "fix_build",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 73,
+      "content_hash": "6dc15ed793bc51613c93a274ccaddc9feac457a1",
+      "content": "fix_build() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fix_tests_104": {
+      "name": "fix_tests",
+      "type": "function",
+      "start_line": 104,
+      "end_line": 104,
+      "content_hash": "b5cf990fa1a1d49a23b142a86d800cbe91aeba56",
+      "content": "fix_tests() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_fix_go_sum_127": {
+      "name": "fix_go_sum",
+      "type": "function",
+      "start_line": 127,
+      "end_line": 127,
+      "content_hash": "a9dab96e23cd8dbac14f7fa8dbfa2d3b263d649e",
+      "content": "fix_go_sum() {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

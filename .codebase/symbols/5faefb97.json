@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/utils/prompt-templates.ts",
+  "file_hash": "3c7957ef12ed0254e2817145d5049d5bf941f8cb",
+  "updated_at": "2025-12-26T17:34:22.038512",
+  "symbols": {
+    "function_generateSuccessCriteria_36": {
+      "name": "generateSuccessCriteria",
+      "type": "function",
+      "start_line": 36,
+      "end_line": 104,
+      "content_hash": "33d7df5151eeb32a45a1e5f6251e5b3975dd2abc",
+      "content": "export function generateSuccessCriteria(\n  feature: Feature\n): PromptCriterion[] {\n  const criteria: PromptCriterion[] = [];\n\n  if (!feature.validation || !feature.validation.enabled) {\n    return criteria;\n  }\n\n  const config = feature.validation;\n\n  // Coverage criterion\n  if (config.coverageTarget !== undefined && config.coverageTarget > 0) {\n    const currentCoverage = feature.validationResult?.checks.find(\n      (c) => c.name === \"coverage\"\n    )?.actual;\n\n    criteria.push({\n      name: \"Test Coverage\",\n      description: `Achieve ${config.coverageTarget}% test coverage for modified code`,\n      metric: \"coverage\",\n      operator: \">=\",\n      target: config.coverageTarget,\n      current: currentCoverage,\n      passed: currentCoverage !== undefined\n        ? currentCoverage >= config.coverageTarget\n        : false,\n    });\n  }\n\n  // Test pass criterion\n  if (config.testPassRequired) {\n    const testsPassed = feature.validationResult?.checks.find(\n      (c) => c.name === \"tests\"\n    )?.passed;\n\n    criteria.push({\n      name: \"Tests Pass\",\n      description: \"All tests must pass without errors\",\n      metric: \"tests\",\n      operator: \"==\",\n      target: \"PASS\",\n      current: testsPassed ? \"PASS\" : \"FAIL\",\n      passed: testsPassed ?? false,\n    });\n  }\n\n  // Package verification criterion\n  if (\n    config.expectedPackages &&\n    config.expectedPackages.length > 0\n  ) {\n    const gitCheck = feature.validationResult?.checks.find(\n      (c) => c.name === \"git-packages\"\n    );\n\n    criteria.push({\n      name: \"Modified Packages\",\n      description: `Changes must be in expected packages: ${config.expectedPackages.join(\", \")}`,\n      metric: \"files\",\n      operator: \"in\",\n      target: config.expectedPackages,\n      current: feature.gitVerification?.filesChanged,\n      passed: gitCheck?.passed ?? false,\n    });\n  }\n\n  return criteria;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_generateValidationCommand_109": {
+      "name": "generateValidationCommand",
+      "type": "function",
+      "start_line": 109,
+      "end_line": 144,
+      "content_hash": "0782439cec5bc2fc158dae519115cdfe71198bfb",
+      "content": "export function generateValidationCommand(\n  feature: Feature\n): string {\n  if (!feature.validation) {\n    return \"# No validation configured\";\n  }\n\n  const config = feature.validation;\n\n  if (config.verifyCommand) {\n    return config.verifyCommand;\n  }\n\n  // Generate default command\n  const parts: string[] = [];\n\n  if (config.coverageTarget !== undefined && config.coverageTarget > 0) {\n    if (config.expectedPackages && config.expectedPackages.length > 0) {\n      parts.push(\n        `go test -cover ${config.expectedPackages.join(\" \")}`\n      );\n    } else {\n      parts.push(\"go test -cover ./...\");\n    }\n  }\n\n  if (config.testPassRequired && parts.length === 0) {\n    if (config.expectedPackages && config.expectedPackages.length > 0) {\n      parts.push(`go test ${config.expectedPackages.join(\" \")}`);\n    } else {\n      parts.push(\"go test ./...\");\n    }\n  }\n\n  return parts.join(\" && \") || \"# No validation command needed\";\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_buildStructuredPrompt_149": {
+      "name": "buildStructuredPrompt",
+      "type": "function",
+      "start_line": 149,
+      "end_line": 264,
+      "content_hash": "1c51f91967f56125f0491bb699653fcfb8979230",
+      "content": "export function buildStructuredPrompt(\n  feature: Feature,\n  customContext?: string\n): string {\n  const criteria = generateSuccessCriteria(feature);\n  const validationCmd = generateValidationCommand(feature);\n\n  const parts: string[] = [];\n\n  // Header\n  parts.push(\"# Your Task\");\n  parts.push(\"\");\n  parts.push(feature.description);\n  parts.push(\"\");\n\n  // Custom context\n  if (customContext) {\n    parts.push(\"## Additional Context\");\n    parts.push(\"\");\n    parts.push(customContext);\n    parts.push(\"\");\n  }\n\n  // Success criteria\n  if (criteria.length > 0) {\n    parts.push(\"## Success Criteria (MUST achieve ALL)\");\n    parts.push(\"\");\n\n    for (const criterion of criteria) {\n      const checkbox = criterion.passed ? \"[x]\" : \"[ ]\";\n      parts.push(`${checkbox} **${criterion.name}**: ${criterion.description}`);\n\n      // Show requirement\n      const targetStr = Array.isArray(criterion.target)\n        ? criterion.target.join(\", \")\n        : criterion.target;\n      parts.push(`   - Required: ${criterion.metric} ${criterion.operator} ${targetStr}`);\n\n      // Show current status\n      if (criterion.current !== undefined) {\n        const currentStr = Array.isArray(criterion.current)\n          ? criterion.current.slice(0, 3).join(\", \") +\n            (criterion.current.length > 3 ? \"...\" : \"\")\n          : criterion.current;\n        const status = criterion.passed ? \"\u2705 MET\" : \"\u26a0\ufe0f NOT MET\";\n        parts.push(`   - Current: ${currentStr} ${status}`);\n      }\n\n      parts.push(\"\");\n    }\n  }\n\n  // Validation command\n  if (validationCmd !== \"# No validation command needed\") {\n    parts.push(\"## Validation Command\");\n    parts.push(\"\");\n    parts.push(\"After implementing changes, run this command to verify:\");\n    parts.push(\"\");\n    parts.push(\"```bash\");\n    parts.push(validationCmd);\n    parts.push(\"```\");\n    parts.push(\"\");\n    parts.push(\n      \"\u26a0\ufe0f The orchestrator will run this automatically when you complete. If validation fails, you'll be asked to retry with guidance.\"\n    );\n    parts.push(\"\");\n  }\n\n  // Retry guidance\n  if (feature.attempts > 0) {\n    parts.push(\"## Retry Guidance\");\n    parts.push(\"\");\n    parts.push(\n      `This is attempt ${feature.attempts + 1}/${feature.maxRetries || 3}.`\n    );\n\n    if (feature.lastError) {\n      parts.push(\"\");\n      parts.push(\"**Previous failure reason:**\");\n      parts.push(\"\");\n      parts.push(\"```\");\n      parts.push(feature.lastError);\n      parts.push(\"```\");\n      parts.push(\"\");\n      parts.push(\"Address this issue in your implementation.\");\n    }\n\n    parts.push(\"\");\n  }\n\n  // Implementation guidance\n  parts.push(\"## Implementation Guidelines\");\n  parts.push(\"\");\n  parts.push(\"1. Read existing code before modifying\");\n  parts.push(\"2. Make targeted changes to meet success criteria\");\n  parts.push(\"3. Run validation command to verify\");\n  parts.push(\"4. Only mark complete when all criteria are met\");\n  parts.push(\"\");\n\n  // Expected packages context\n  if (\n    feature.validation?.expectedPackages &&\n    feature.validation.expectedPackages.length > 0\n  ) {\n    parts.push(\"## Target Packages\");\n    parts.push(\"\");\n    parts.push(\"Focus your changes on these packages:\");\n    parts.push(\"\");\n    for (const pkg of feature.validation.expectedPackages) {\n      parts.push(`- ${pkg}`);\n    }\n    parts.push(\"\");\n  }\n\n  return parts.join(\"\\n\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_buildRetryPrompt_269": {
+      "name": "buildRetryPrompt",
+      "type": "function",
+      "start_line": 269,
+      "end_line": 322,
+      "content_hash": "809cbf67d6dc19171ceffc612f62291b13b0e419",
+      "content": "export function buildRetryPrompt(\n  feature: Feature,\n  validationFailures: string[]\n): string {\n  const parts: string[] = [];\n\n  parts.push(\"# Retry Required - Validation Failed\");\n  parts.push(\"\");\n  parts.push(`Attempt ${feature.attempts}/${feature.maxRetries || 3} did not meet success criteria.`);\n  parts.push(\"\");\n\n  parts.push(\"## Validation Failures\");\n  parts.push(\"\");\n  for (const failure of validationFailures) {\n    parts.push(`\u274c ${failure}`);\n  }\n  parts.push(\"\");\n\n  parts.push(\"## What to Fix\");\n  parts.push(\"\");\n\n  const criteria = generateSuccessCriteria(feature);\n  const failedCriteria = criteria.filter((c) => !c.passed);\n\n  for (const criterion of failedCriteria) {\n    parts.push(`**${criterion.name}**`);\n\n    const targetStr = Array.isArray(criterion.target)\n      ? criterion.target.join(\", \")\n      : criterion.target;\n    const currentStr = criterion.current\n      ? Array.isArray(criterion.current)\n        ? criterion.current.slice(0, 3).join(\", \")\n        : criterion.current\n      : \"N/A\";\n\n    parts.push(`- Target: ${criterion.metric} ${criterion.operator} ${targetStr}`);\n    parts.push(`- Current: ${currentStr}`);\n    parts.push(`- Gap: ${criterion.description}`);\n    parts.push(\"\");\n  }\n\n  const validationCmd = generateValidationCommand(feature);\n  if (validationCmd !== \"# No validation command needed\") {\n    parts.push(\"## Verify Your Fix\");\n    parts.push(\"\");\n    parts.push(\"```bash\");\n    parts.push(validationCmd);\n    parts.push(\"```\");\n    parts.push(\"\");\n  }\n\n  return parts.join(\"\\n\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "file_path": "/work/context-engine/scripts/mcp_router/memory.py",
+  "file_hash": "00a3523e34d5079a443cd7067a8a790d448c8472",
+  "updated_at": "2025-12-26T17:34:21.272994",
+  "symbols": {
+    "function_parse_memory_store_payload_20": {
+      "name": "parse_memory_store_payload",
+      "type": "function",
+      "start_line": 20,
+      "end_line": 69,
+      "content_hash": "dd15452d27b2514b6e4abd076ab52047e9fd8522",
+      "content": "def parse_memory_store_payload(q: str) -> Tuple[str, Dict[str, Any]]:\n    \"\"\"Parse memory store command, extracting content and metadata.\"\"\"\n    raw = str(q or \"\").strip()\n    if not raw:\n        return \"\", {}\n    cleaned = _MEMORY_TRIGGER_RE.sub(\"\", raw, count=1).lstrip()\n    meta: Dict[str, Any] = {}\n\n    def _assign_meta(key: str, value: str) -> None:\n        k = key.lower()\n        v = value.strip().strip(\" \\t\\r\\n,;.\")\n        if not v:\n            return\n        if k in {\"tag\", \"tags\"}:\n            tags = [t.strip() for t in re.split(r\"[,\\s/]+\", v) if t.strip()]\n            if tags:\n                meta[\"tags\"] = tags\n        else:\n            meta[k] = v\n\n    if cleaned.startswith(\"[\"):\n        m = re.match(r\"\\[([^\\]]+)\\]\\s*(.*)\", cleaned, flags=re.S)\n        if m:\n            meta_block = m.group(1)\n            cleaned = m.group(2)\n            for key, val in re.findall(r\"(\\w+)\\s*=\\s*([^\\s,;]+(?:,[^\\s,;]+)*)\", meta_block):\n                if key.strip().lower() in _MEMORY_META_KEYS:\n                    _assign_meta(key, val)\n\n    while True:\n        m = re.match(\n            r\"^(?P<key>(?:priority|tag|tags|topic|category|owner))\\s*=\\s*(?P<val>[^\\s;:]+)\\s*[,;:]?\\s*(?P<rest>.*)$\",\n            cleaned,\n            flags=re.IGNORECASE | re.S,\n        )\n        if not m:\n            break\n        _assign_meta(m.group(\"key\"), m.group(\"val\"))\n        cleaned = m.group(\"rest\")\n\n    cleaned = cleaned.lstrip(\":- \").lstrip()\n\n    split = _MEMORY_INTENT_SPLIT_RE.search(cleaned)\n    if split:\n        cleaned = cleaned[: split.start()].rstrip(\" ,;.\")\n\n    cleaned = cleaned.strip().strip('\"').strip()\n    if not cleaned:\n        cleaned = raw\n    return cleaned, meta",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function__assign_meta_28": {
+      "name": "_assign_meta",
+      "type": "function",
+      "start_line": 28,
+      "end_line": 38,
+      "content_hash": "56d19a4b3e244899579ef695d79a2ab09d280c76",
+      "content": "    def _assign_meta(key: str, value: str) -> None:\n        k = key.lower()\n        v = value.strip().strip(\" \\t\\r\\n,;.\")\n        if not v:\n            return\n        if k in {\"tag\", \"tags\"}:\n            tags = [t.strip() for t in re.split(r\"[,\\s/]+\", v) if t.strip()]\n            if tags:\n                meta[\"tags\"] = tags\n        else:\n            meta[k] = v",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

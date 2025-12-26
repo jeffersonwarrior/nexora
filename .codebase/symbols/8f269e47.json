@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/external-deps/helix-db/hql-tests/tests/is_in/queries.rs",
+  "file_hash": "7cfff5e2c2a7c621719b7e9b24f63bf9a59889c4",
+  "updated_at": "2025-12-26T17:34:23.566498",
+  "symbols": {
+    "function_config_90": {
+      "name": "config",
+      "type": "function",
+      "start_line": 90,
+      "end_line": 143,
+      "content_hash": "8c6b2433009bf0ba6e049d897015022e851f8c54",
+      "content": "pub fn config() -> Option<Config> {\nreturn Some(Config {\nvector_config: Some(VectorConfig {\nm: Some(16),\nef_construction: Some(128),\nef_search: Some(768),\n}),\ngraph_config: Some(GraphConfig {\nsecondary_indices: Some(vec![]),\n}),\ndb_max_size_gb: Some(10),\nmcp: Some(true),\nbm25: Some(true),\nschema: Some(r#\"{\n  \"schema\": {\n    \"nodes\": [\n      {\n        \"name\": \"MyNode\",\n        \"properties\": {\n          \"label\": \"String\",\n          \"id\": \"ID\",\n          \"field\": \"String\"\n        }\n      }\n    ],\n    \"vectors\": [],\n    \"edges\": []\n  },\n  \"queries\": [\n    {\n      \"name\": \"GetNodesByID\",\n      \"parameters\": {\n        \"node_ids\": \"Array(ID)\"\n      },\n      \"returns\": [\n        \"node\"\n      ]\n    },\n    {\n      \"name\": \"GetNodes\",\n      \"parameters\": {\n        \"fields\": \"Array(String)\"\n      },\n      \"returns\": [\n        \"node\"\n      ]\n    }\n  ]\n}\"#.to_string()),\nembedding_model: Some(\"text-embedding-ada-002\".to_string()),\ngraphvis_node_label: None,\n})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_MyNode_144": {
+      "name": "MyNode",
+      "type": "struct",
+      "start_line": 144,
+      "end_line": 150,
+      "content_hash": "4fb20c4e40ebcd2f7bab65ab1d35bbed08f468e6",
+      "content": "pub struct MyNode {\n    pub field: String,\n}\n\n\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetNodesByIDInput_151": {
+      "name": "GetNodesByIDInput",
+      "type": "struct",
+      "start_line": 151,
+      "end_line": 155,
+      "content_hash": "21ad2a3aaeb316d20d88f74fea2b95bb31d1e760",
+      "content": "pub struct GetNodesByIDInput {\n\npub node_ids: Vec<ID>\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetNodesByIDNodeReturnType_156": {
+      "name": "GetNodesByIDNodeReturnType",
+      "type": "struct",
+      "start_line": 156,
+      "end_line": 162,
+      "content_hash": "c29314d26e3f429bd182b9ea82865d5d73489aa5",
+      "content": "pub struct GetNodesByIDNodeReturnType<'a> {\n    pub id: &'a str,\n    pub label: &'a str,\n    pub field: Option<&'a Value>,\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetNodesByID_163": {
+      "name": "GetNodesByID",
+      "type": "function",
+      "start_line": 163,
+      "end_line": 189,
+      "content_hash": "d3dc172999acef965e0922440e86f55f827fb6f3",
+      "content": "pub fn GetNodesByID (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<GetNodesByIDInput>(&input.request.body)?;\nlet arena = Bump::new();\nlet txn = db.graph_env.read_txn().map_err(|e| GraphError::New(format!(\"Failed to start read transaction: {:?}\", e)))?;\n    let node = G::new(&db, &txn, &arena)\n.n_from_type(\"MyNode\")\n\n.filter_ref(|val, txn|{\n                if let Ok(val) = val {\n                    Ok(Value::Id(ID::from(val.id)).is_in(&data.node_ids))\n                } else {\n                    Ok(false)\n                }\n            }).collect::<Result<Vec<_>, _>>()?;\nlet response = json!({\n    \"node\": node.iter().map(|node| GetNodesByIDNodeReturnType {\n        id: uuid_str(node.id(), &arena),\n        label: node.label(),\n        field: node.get_property(\"field\"),\n    }).collect::<Vec<_>>()\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetNodesInput_190": {
+      "name": "GetNodesInput",
+      "type": "struct",
+      "start_line": 190,
+      "end_line": 194,
+      "content_hash": "47d645d1a48474aa73df74934f88dbcde2e7b7dc",
+      "content": "pub struct GetNodesInput {\n\npub fields: Vec<String>\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetNodesNodeReturnType_195": {
+      "name": "GetNodesNodeReturnType",
+      "type": "struct",
+      "start_line": 195,
+      "end_line": 201,
+      "content_hash": "e146fe032b4453f64eb1e344036564ae301415ae",
+      "content": "pub struct GetNodesNodeReturnType<'a> {\n    pub id: &'a str,\n    pub label: &'a str,\n    pub field: Option<&'a Value>,\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetNodes_202": {
+      "name": "GetNodes",
+      "type": "function",
+      "start_line": 202,
+      "end_line": 230,
+      "content_hash": "d63ee89169936c83e8854ad22448081018d36e98",
+      "content": "pub fn GetNodes (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<GetNodesInput>(&input.request.body)?;\nlet arena = Bump::new();\nlet txn = db.graph_env.read_txn().map_err(|e| GraphError::New(format!(\"Failed to start read transaction: {:?}\", e)))?;\n    let node = G::new(&db, &txn, &arena)\n.n_from_type(\"MyNode\")\n\n.filter_ref(|val, txn|{\n                if let Ok(val) = val {\n                    Ok(val\n                    .get_property(\"field\")\n                    .map_or(false, |v| v.is_in(&data.fields)))\n                } else {\n                    Ok(false)\n                }\n            }).collect::<Result<Vec<_>, _>>()?;\nlet response = json!({\n    \"node\": node.iter().map(|node| GetNodesNodeReturnType {\n        id: uuid_str(node.id(), &arena),\n        label: node.label(),\n        field: node.get_property(\"field\"),\n    }).collect::<Vec<_>>()\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

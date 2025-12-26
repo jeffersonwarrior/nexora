@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/mcp/zai/manager.go",
+  "file_hash": "b896adce09b4f7ddcfb9931792b2f7297fe60f20",
+  "updated_at": "2025-12-26T17:34:20.470618",
+  "symbols": {
+    "struct_Manager_14": {
+      "name": "Manager",
+      "type": "struct",
+      "start_line": 14,
+      "end_line": 21,
+      "content_hash": "d4113431e4e48a247ed286239bc6cc97c1916413",
+      "content": "type Manager struct {\n\tclient *Client\n\tconfig config.Config\n\tlogger *slog.Logger\n\tmutex  sync.RWMutex\n}\n\n// NewManager creates a new Z.ai MCP manager",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewManager_22": {
+      "name": "NewManager",
+      "type": "function",
+      "start_line": 22,
+      "end_line": 29,
+      "content_hash": "ba8528caae5056facf08978ca37056fdeec40a92",
+      "content": "func NewManager(cfg config.Config) *Manager {\n\treturn &Manager{\n\t\tconfig: cfg,\n\t\tlogger: slog.Default().With(\"mcp\", \"zai-manager\"),\n\t}\n}\n\n// Start initializes the Z.ai MCP client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Start_30": {
+      "name": "Start",
+      "type": "method",
+      "start_line": 30,
+      "end_line": 56,
+      "content_hash": "e444cfcf28f4c8a80c18b936bed454960fcc902d",
+      "content": "func (m *Manager) Start(ctx context.Context) error {\n\tm.mutex.Lock()\n\tdefer m.mutex.Unlock()\n\n\tm.logger.Info(\"starting Z.ai MCP manager\")\n\n\t// Check for Z.ai API key\n\tif apiKey := os.Getenv(\"ZAI_API_KEY\"); apiKey == \"\" {\n\t\tm.logger.Info(\"ZAI_API_KEY not set, Z.ai vision tools will be unavailable\")\n\t\treturn fmt.Errorf(\"ZAI_API_KEY environment variable is required for Z.ai vision tools\")\n\t}\n\n\tclient, err := NewClient(m.config)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to create Z.ai MCP client: %w\", err)\n\t}\n\n\tif err := client.Connect(ctx); err != nil {\n\t\treturn fmt.Errorf(\"failed to connect Z.ai MCP client: %w\", err)\n\t}\n\n\tm.client = client\n\tm.logger.Info(\"Z.ai MCP manager started successfully\")\n\treturn nil\n}\n\n// GetClient returns the Z.ai MCP client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetClient_57": {
+      "name": "GetClient",
+      "type": "method",
+      "start_line": 57,
+      "end_line": 68,
+      "content_hash": "de5aa5f242fab196600212861cf07580abbadeae",
+      "content": "func (m *Manager) GetClient() (*Client, error) {\n\tm.mutex.RLock()\n\tdefer m.mutex.RUnlock()\n\n\tif m.client == nil {\n\t\treturn nil, fmt.Errorf(\"Z.ai MCP client not initialized. Call Start() first\")\n\t}\n\n\treturn m.client, nil\n}\n\n// IsStarted returns true if the Z.ai MCP manager is started",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsStarted_69": {
+      "name": "IsStarted",
+      "type": "method",
+      "start_line": 69,
+      "end_line": 75,
+      "content_hash": "c6fde5ebe3ba533d02e781ed79485cb03209f1a5",
+      "content": "func (m *Manager) IsStarted() bool {\n\tm.mutex.RLock()\n\tdefer m.mutex.RUnlock()\n\treturn m.client != nil\n}\n\n// Stop closes the Z.ai MCP client",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Stop_76": {
+      "name": "Stop",
+      "type": "method",
+      "start_line": 76,
+      "end_line": 92,
+      "content_hash": "10349ec1b5f3669c9f066baec54b261a2ed63a3a",
+      "content": "func (m *Manager) Stop() error {\n\tm.mutex.Lock()\n\tdefer m.mutex.Unlock()\n\n\tif m.client != nil {\n\t\tm.logger.Info(\"stopping Z.ai MCP manager\")\n\t\tif err := m.client.Close(); err != nil {\n\t\t\tm.logger.Error(\"error closing Z.ai MCP client\", \"error\", err)\n\t\t}\n\t\tm.client = nil\n\t\tm.logger.Info(\"Z.ai MCP manager stopped\")\n\t}\n\n\treturn nil\n}\n\n// GetStatus returns the current status of the Z.ai MCP manager",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetStatus_93": {
+      "name": "GetStatus",
+      "type": "method",
+      "start_line": 93,
+      "end_line": 107,
+      "content_hash": "00b9570d531ab7613ae1eb7808cdc1841eaea22d",
+      "content": "func (m *Manager) GetStatus() Status {\n\tm.mutex.RLock()\n\tdefer m.mutex.RUnlock()\n\n\tif m.client == nil {\n\t\tif os.Getenv(\"ZAI_API_KEY\") == \"\" {\n\t\t\treturn Status{State: StateNotConfigured, Message: \"ZAI_API_KEY not set\"}\n\t\t}\n\t\treturn Status{State: StateStopped, Message: \"Manager stopped\"}\n\t}\n\n\treturn Status{State: StateRunning, Message: \"Z.ai vision tools available\"}\n}\n\n// Status represents the status of the Z.ai MCP manager",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Status_108": {
+      "name": "Status",
+      "type": "struct",
+      "start_line": 108,
+      "end_line": 121,
+      "content_hash": "6d6e26d159a3e86e75f3c8ae5fca98337dff14e6",
+      "content": "type Status struct {\n\tState   State\n\tMessage string\n}\n\n// State represents the state of the Z.ai MCP manager\ntype State int\n\nconst (\n\tStateNotConfigured State = iota\n\tStateStopped\n\tStateRunning\n)\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_String_122": {
+      "name": "String",
+      "type": "method",
+      "start_line": 122,
+      "end_line": 135,
+      "content_hash": "546d2383345fcc78a02da23c0ca1bf6ffa5dff34",
+      "content": "func (s State) String() string {\n\tswitch s {\n\tcase StateNotConfigured:\n\t\treturn \"not_configured\"\n\tcase StateStopped:\n\t\treturn \"stopped\"\n\tcase StateRunning:\n\t\treturn \"running\"\n\tdefault:\n\t\treturn \"unknown\"\n\t}\n}\n\n// ValidateConfig checks if the Z.ai configuration is valid",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ValidateConfig_136": {
+      "name": "ValidateConfig",
+      "type": "function",
+      "start_line": 136,
+      "end_line": 149,
+      "content_hash": "ce643286f2a29d84d9be1fb60aea357f890386c4",
+      "content": "func ValidateConfig() error {\n\tapiKey := os.Getenv(\"ZAI_API_KEY\")\n\tif apiKey == \"\" {\n\t\treturn fmt.Errorf(\"ZAI_API_KEY environment variable is required\")\n\t}\n\n\tif len(apiKey) < 10 {\n\t\treturn fmt.Errorf(\"ZAI_API_KEY appears to be too short (minimum 10 characters)\")\n\t}\n\n\treturn nil\n}\n\n// GetAvailableTools returns the list of available vision tools if the manager is running",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetAvailableTools_150": {
+      "name": "GetAvailableTools",
+      "type": "method",
+      "start_line": 150,
+      "end_line": 167,
+      "content_hash": "b8271e5d13a1729c3f47a8ee175621bb37ac04e6",
+      "content": "func (m *Manager) GetAvailableTools() ([]string, error) {\n\tif !m.IsStarted() {\n\t\treturn nil, fmt.Errorf(\"Z.ai MCP manager not started\")\n\t}\n\n\tclient, err := m.GetClient()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\ttools := client.GetTools()\n\ttoolNames := make([]string, len(tools))\n\tfor i, tool := range tools {\n\t\ttoolNames[i] = tool.Name\n\t}\n\n\treturn toolNames, nil\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

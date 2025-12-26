@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/hooks/useGitHubStars.ts",
+  "file_hash": "97db93aa5e48910c43860dd0e88e1372fba07880",
+  "updated_at": "2025-12-26T17:34:20.231819",
+  "symbols": {
+    "function_useGitHubStars_15": {
+      "name": "useGitHubStars",
+      "type": "function",
+      "start_line": 15,
+      "end_line": 46,
+      "content_hash": "ad37ec132aa6666c686fea5a2fa461e9c19dc900",
+      "content": "export function useGitHubStars(username: string, repo: string): UseGitHubStarsReturn {\n  const [stars, setStars] = useState<number | null>(null);\n  const [isLoading, setIsLoading] = useState(true);\n  const [error, setError] = useState<Error | null>(null);\n\n  const fetchStars = useCallback(async () => {\n    try {\n      setIsLoading(true);\n      setError(null);\n\n      const response = await fetch(`https://api.github.com/repos/${username}/${repo}`);\n\n      if (!response.ok) {\n        throw new Error(`GitHub API error: ${response.status}`);\n      }\n\n      const data: GitHubStarsData = await response.json();\n      setStars(data.stargazers_count);\n    } catch (error) {\n      console.error('Failed to fetch GitHub stars:', error);\n      setError(error instanceof Error ? error : new Error('Unknown error'));\n    } finally {\n      setIsLoading(false);\n    }\n  }, [username, repo]);\n\n  useEffect(() => {\n    fetchStars();\n  }, [fetchStars]);\n\n  return { stars, isLoading, error };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

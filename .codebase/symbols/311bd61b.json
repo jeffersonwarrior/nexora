@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/session/session.go",
+  "file_hash": "5e4090743da82cc3a277e67b1a7dfdbd9b6b06a4",
+  "updated_at": "2025-12-26T17:34:23.610600",
+  "symbols": {
+    "struct_Session_14": {
+      "name": "Session",
+      "type": "struct",
+      "start_line": 14,
+      "end_line": 26,
+      "content_hash": "d96b2e87f877e7661de2d53202a97508e45409ad",
+      "content": "type Session struct {\n\tID               string\n\tParentSessionID  string\n\tTitle            string\n\tMessageCount     int64\n\tPromptTokens     int64\n\tCompletionTokens int64\n\tSummaryMessageID string\n\tCost             float64\n\tCreatedAt        int64\n\tUpdatedAt        int64\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "interface_Service_27": {
+      "name": "Service",
+      "type": "interface",
+      "start_line": 27,
+      "end_line": 42,
+      "content_hash": "aa905524c82d9ac58c50a3418b21ad6b931cf6a2",
+      "content": "type Service interface {\n\tpubsub.Suscriber[Session]\n\tCreate(ctx context.Context, title string) (Session, error)\n\tCreateTitleSession(ctx context.Context, parentSessionID string) (Session, error)\n\tCreateTaskSession(ctx context.Context, toolCallID, parentSessionID, title string) (Session, error)\n\tGet(ctx context.Context, id string) (Session, error)\n\tList(ctx context.Context) ([]Session, error)\n\tSave(ctx context.Context, session Session) (Session, error)\n\tDelete(ctx context.Context, id string) error\n\n\t// Agent tool session management\n\tCreateAgentToolSessionID(messageID, toolCallID string) string\n\tParseAgentToolSessionID(sessionID string) (messageID string, toolCallID string, ok bool)\n\tIsAgentToolSession(sessionID string) bool\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_service_43": {
+      "name": "service",
+      "type": "struct",
+      "start_line": 43,
+      "end_line": 47,
+      "content_hash": "023b79710600b4e7209998365c700c08e4aa0bf8",
+      "content": "type service struct {\n\t*pubsub.Broker[Session]\n\tq db.Querier\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Create_48": {
+      "name": "Create",
+      "type": "method",
+      "start_line": 48,
+      "end_line": 66,
+      "content_hash": "89ce4da12f20239814b1659541969de17ba32c45",
+      "content": "func (s *service) Create(ctx context.Context, title string) (Session, error) {\n\tid := uuid.New().String()\n\ttitle = strings.TrimSpace(title)\n\tif title == \"\" {\n\t\ttitle = \"New Session\"\n\t}\n\tdbSession, err := s.q.CreateSession(ctx, db.CreateSessionParams{\n\t\tID:              id,\n\t\tParentSessionID: sql.NullString{},\n\t\tTitle:           title,\n\t})\n\tif err != nil {\n\t\treturn Session{}, err\n\t}\n\tsession := s.fromDBItem(dbSession)\n\ts.Publish(pubsub.CreatedEvent, session)\n\treturn session, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateTaskSession_67": {
+      "name": "CreateTaskSession",
+      "type": "method",
+      "start_line": 67,
+      "end_line": 85,
+      "content_hash": "65b250ac4aca31a01b810dff707e277799f3f9cc",
+      "content": "func (s *service) CreateTaskSession(ctx context.Context, toolCallID, parentSessionID, title string) (Session, error) {\n\tif strings.TrimSpace(title) == \"\" {\n\t\ttitle = \"New Agent Session\"\n\t} else {\n\t\ttitle = strings.TrimSpace(title)\n\t}\n\tdbSession, err := s.q.CreateSession(ctx, db.CreateSessionParams{\n\t\tID:              toolCallID,\n\t\tParentSessionID: sql.NullString{String: parentSessionID, Valid: true},\n\t\tTitle:           title,\n\t})\n\tif err != nil {\n\t\treturn Session{}, err\n\t}\n\tsession := s.fromDBItem(dbSession)\n\ts.Publish(pubsub.CreatedEvent, session)\n\treturn session, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateTitleSession_86": {
+      "name": "CreateTitleSession",
+      "type": "method",
+      "start_line": 86,
+      "end_line": 99,
+      "content_hash": "9317ee8fbebb7671f592cfdea70f4d5e0ed20259",
+      "content": "func (s *service) CreateTitleSession(ctx context.Context, parentSessionID string) (Session, error) {\n\tdbSession, err := s.q.CreateSession(ctx, db.CreateSessionParams{\n\t\tID:              \"title-\" + parentSessionID,\n\t\tParentSessionID: sql.NullString{String: parentSessionID, Valid: true},\n\t\tTitle:           \"Generate a title\",\n\t})\n\tif err != nil {\n\t\treturn Session{}, err\n\t}\n\tsession := s.fromDBItem(dbSession)\n\ts.Publish(pubsub.CreatedEvent, session)\n\treturn session, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Delete_100": {
+      "name": "Delete",
+      "type": "method",
+      "start_line": 100,
+      "end_line": 112,
+      "content_hash": "6fc680d986cfe823bbd0804cf2282b96be705c98",
+      "content": "func (s *service) Delete(ctx context.Context, id string) error {\n\tsession, err := s.Get(ctx, id)\n\tif err != nil {\n\t\treturn err\n\t}\n\terr = s.q.DeleteSession(ctx, session.ID)\n\tif err != nil {\n\t\treturn err\n\t}\n\ts.Publish(pubsub.DeletedEvent, session)\n\treturn nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Get_113": {
+      "name": "Get",
+      "type": "method",
+      "start_line": 113,
+      "end_line": 120,
+      "content_hash": "c65824c91a73ee06642b1bd709dea8916f256bb9",
+      "content": "func (s *service) Get(ctx context.Context, id string) (Session, error) {\n\tdbSession, err := s.q.GetSessionByID(ctx, id)\n\tif err != nil {\n\t\treturn Session{}, err\n\t}\n\treturn s.fromDBItem(dbSession), nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Save_121": {
+      "name": "Save",
+      "type": "method",
+      "start_line": 121,
+      "end_line": 140,
+      "content_hash": "0eebf99ac3f0fe3d0c38d8106155b2e86a5ea646",
+      "content": "func (s *service) Save(ctx context.Context, session Session) (Session, error) {\n\tdbSession, err := s.q.UpdateSession(ctx, db.UpdateSessionParams{\n\t\tID:               session.ID,\n\t\tTitle:            session.Title,\n\t\tPromptTokens:     session.PromptTokens,\n\t\tCompletionTokens: session.CompletionTokens,\n\t\tSummaryMessageID: sql.NullString{\n\t\t\tString: session.SummaryMessageID,\n\t\t\tValid:  session.SummaryMessageID != \"\",\n\t\t},\n\t\tCost: session.Cost,\n\t})\n\tif err != nil {\n\t\treturn Session{}, err\n\t}\n\tsession = s.fromDBItem(dbSession)\n\ts.Publish(pubsub.UpdatedEvent, session)\n\treturn session, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_List_141": {
+      "name": "List",
+      "type": "method",
+      "start_line": 141,
+      "end_line": 152,
+      "content_hash": "b2b782d867b1719d24fc9624301ccdc77f42f35c",
+      "content": "func (s *service) List(ctx context.Context) ([]Session, error) {\n\tdbSessions, err := s.q.ListSessions(ctx)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tsessions := make([]Session, len(dbSessions))\n\tfor i, dbSession := range dbSessions {\n\t\tsessions[i] = s.fromDBItem(dbSession)\n\t}\n\treturn sessions, nil\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_fromDBItem_153": {
+      "name": "fromDBItem",
+      "type": "method",
+      "start_line": 153,
+      "end_line": 167,
+      "content_hash": "55d6689b2dd00b3506ed7a1e8d350346d8ef6309",
+      "content": "func (s service) fromDBItem(item db.Session) Session {\n\treturn Session{\n\t\tID:               item.ID,\n\t\tParentSessionID:  item.ParentSessionID.String,\n\t\tTitle:            item.Title,\n\t\tMessageCount:     item.MessageCount,\n\t\tPromptTokens:     item.PromptTokens,\n\t\tCompletionTokens: item.CompletionTokens,\n\t\tSummaryMessageID: item.SummaryMessageID.String,\n\t\tCost:             item.Cost,\n\t\tCreatedAt:        item.CreatedAt,\n\t\tUpdatedAt:        item.UpdatedAt,\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewService_168": {
+      "name": "NewService",
+      "type": "function",
+      "start_line": 168,
+      "end_line": 176,
+      "content_hash": "c8895a23f9cd086d3db7569b0fabb07a7b27b0fc",
+      "content": "func NewService(q db.Querier) Service {\n\tbroker := pubsub.NewBroker[Session]()\n\treturn &service{\n\t\tbroker,\n\t\tq,\n\t}\n}\n\n// CreateAgentToolSessionID creates a session ID for agent tool sessions using the format \"messageID$$toolCallID\"",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CreateAgentToolSessionID_177": {
+      "name": "CreateAgentToolSessionID",
+      "type": "method",
+      "start_line": 177,
+      "end_line": 181,
+      "content_hash": "ba767aef3fbbb79f77563b5c685f690abedce384",
+      "content": "func (s *service) CreateAgentToolSessionID(messageID, toolCallID string) string {\n\treturn fmt.Sprintf(\"%s$$%s\", messageID, toolCallID)\n}\n\n// ParseAgentToolSessionID parses an agent tool session ID into its components",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ParseAgentToolSessionID_182": {
+      "name": "ParseAgentToolSessionID",
+      "type": "method",
+      "start_line": 182,
+      "end_line": 190,
+      "content_hash": "064f8cf99930f79befedfd3a676fb26d77abf63b",
+      "content": "func (s *service) ParseAgentToolSessionID(sessionID string) (messageID string, toolCallID string, ok bool) {\n\tparts := strings.Split(sessionID, \"$$\")\n\tif len(parts) != 2 {\n\t\treturn \"\", \"\", false\n\t}\n\treturn parts[0], parts[1], true\n}\n\n// IsAgentToolSession checks if a session ID follows the agent tool session format",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsAgentToolSession_191": {
+      "name": "IsAgentToolSession",
+      "type": "method",
+      "start_line": 191,
+      "end_line": 194,
+      "content_hash": "c5e45eb02ce6b115cce0c0896a14c2c55bbbcbe5",
+      "content": "func (s *service) IsAgentToolSession(sessionID string) bool {\n\t_, _, ok := s.ParseAgentToolSessionID(sessionID)\n\treturn ok\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

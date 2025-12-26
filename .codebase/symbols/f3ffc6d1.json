@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/ui/viewer/components/ObservationCard.tsx",
+  "file_hash": "88bb7a076d63ca33a0ae9ebc9d8898c845472813",
+  "updated_at": "2025-12-26T17:34:21.869855",
+  "symbols": {
+    "function_stripProjectRoot_10": {
+      "name": "stripProjectRoot",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 31,
+      "content_hash": "5d4adb54dca71cf821350a649b44fbd2e5889875",
+      "content": "function stripProjectRoot(filePath: string): string {\n  // Try to extract relative path by finding common project markers\n  const markers = ['/Scripts/', '/src/', '/plugin/', '/docs/'];\n\n  for (const marker of markers) {\n    const index = filePath.indexOf(marker);\n    if (index !== -1) {\n      // Keep the marker and everything after it\n      return filePath.substring(index + 1);\n    }\n  }\n\n  // Fallback: if path contains project name, strip everything before it\n  const projectIndex = filePath.indexOf('claude-mem/');\n  if (projectIndex !== -1) {\n    return filePath.substring(projectIndex + 'claude-mem/'.length);\n  }\n\n  // If no markers found, return basename or original path\n  const parts = filePath.split('/');\n  return parts.length > 3 ? parts.slice(-3).join('/') : filePath;\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

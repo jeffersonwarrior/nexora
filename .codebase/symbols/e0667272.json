@@ -1,0 +1,249 @@
+{
+  "file_path": "/work/internal/agent/state/progress.go",
+  "file_hash": "e182d7b8ee2fc5e450d384694f8f4ccfa4eeb247",
+  "updated_at": "2025-12-26T17:34:23.428958",
+  "symbols": {
+    "struct_ProgressTracker_11": {
+      "name": "ProgressTracker",
+      "type": "struct",
+      "start_line": 11,
+      "end_line": 34,
+      "content_hash": "81e133ac047fd4399e9c47f206e3f36b644f8f8d",
+      "content": "type ProgressTracker struct {\n\tmu sync.RWMutex\n\n\t// Semantic progress markers\n\tfilesModified    map[string]string // file path -> content hash\n\tcommandsExecuted map[string]int    // command -> execution count\n\ttestsRun         []TestResult\n\tmilestones       []Milestone\n\n\t// Loop detection\n\trecentActions    []ActionFingerprint\n\tmaxRecentActions int // Keep last 10-20 actions\n\n\t// Error tracking\n\trecentErrors      []ErrorFingerprint\n\tmaxRecentErrors   int\n\tconsecutiveErrors int\n\n\t// Message deduplication\n\trecentMessageHashes []string\n\tmaxMessageHistory   int\n}\n\n// ActionFingerprint uniquely identifies an action for loop detection.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ActionFingerprint_35": {
+      "name": "ActionFingerprint",
+      "type": "struct",
+      "start_line": 35,
+      "end_line": 44,
+      "content_hash": "962bc18bf7532e527681518659282a12a545c49e",
+      "content": "type ActionFingerprint struct {\n\tTimestamp  time.Time\n\tToolName   string\n\tTargetFile string // For file operations\n\tCommand    string // For bash operations\n\tErrorHash  string // Hash of error message if failed\n\tSuccess    bool\n}\n\n// ErrorFingerprint tracks errors for pattern detection.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ErrorFingerprint_45": {
+      "name": "ErrorFingerprint",
+      "type": "struct",
+      "start_line": 45,
+      "end_line": 53,
+      "content_hash": "d22cc564cb1c05533588b218c03c30f5dbba4343",
+      "content": "type ErrorFingerprint struct {\n\tTimestamp time.Time\n\tToolName  string\n\tTarget    string // File or command\n\tErrorMsg  string\n\tErrorHash string\n}\n\n// TestResult tracks test execution outcomes.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_TestResult_54": {
+      "name": "TestResult",
+      "type": "struct",
+      "start_line": 54,
+      "end_line": 61,
+      "content_hash": "06ac5e94bcb4a6b5c17763bf1af84ac0b1038f28",
+      "content": "type TestResult struct {\n\tTimestamp time.Time\n\tCommand   string\n\tPassed    bool\n\tOutput    string\n}\n\n// Milestone represents a significant progress point.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Milestone_62": {
+      "name": "Milestone",
+      "type": "struct",
+      "start_line": 62,
+      "end_line": 69,
+      "content_hash": "a1cf363632c833fac52b6fa334582a92fb5a88d7",
+      "content": "type Milestone struct {\n\tTimestamp   time.Time\n\tDescription string\n\tPhase       int\n\tMetadata    map[string]interface{}\n}\n\n// NewProgressTracker creates a new progress tracker.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewProgressTracker_70": {
+      "name": "NewProgressTracker",
+      "type": "function",
+      "start_line": 70,
+      "end_line": 85,
+      "content_hash": "29fece02a829b1898da4b7e9b15c9e412892c54e",
+      "content": "func NewProgressTracker() *ProgressTracker {\n\treturn &ProgressTracker{\n\t\tfilesModified:       make(map[string]string),\n\t\tcommandsExecuted:    make(map[string]int),\n\t\ttestsRun:            make([]TestResult, 0),\n\t\tmilestones:          make([]Milestone, 0),\n\t\trecentActions:       make([]ActionFingerprint, 0),\n\t\tmaxRecentActions:    20,\n\t\trecentErrors:        make([]ErrorFingerprint, 0),\n\t\tmaxRecentErrors:     10,\n\t\trecentMessageHashes: make([]string, 0),\n\t\tmaxMessageHistory:   5,\n\t}\n}\n\n// RecordFileModification records a file change.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordFileModification_86": {
+      "name": "RecordFileModification",
+      "type": "method",
+      "start_line": 86,
+      "end_line": 93,
+      "content_hash": "60d7d624704e0170e01f5196198ea19e4b4f35af",
+      "content": "func (pt *ProgressTracker) RecordFileModification(filePath, contentHash string) {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\tpt.filesModified[filePath] = contentHash\n}\n\n// RecordCommand records a command execution.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordCommand_94": {
+      "name": "RecordCommand",
+      "type": "method",
+      "start_line": 94,
+      "end_line": 101,
+      "content_hash": "25890a376cb0e72ea582950666cb23448652163b",
+      "content": "func (pt *ProgressTracker) RecordCommand(command string, success bool) {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\tpt.commandsExecuted[command]++\n}\n\n// RecordTest records a test execution.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordTest_102": {
+      "name": "RecordTest",
+      "type": "method",
+      "start_line": 102,
+      "end_line": 114,
+      "content_hash": "39592f3ccf8bdd383286d32a6985234482b98f9e",
+      "content": "func (pt *ProgressTracker) RecordTest(command string, passed bool, output string) {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\tpt.testsRun = append(pt.testsRun, TestResult{\n\t\tTimestamp: time.Now(),\n\t\tCommand:   command,\n\t\tPassed:    passed,\n\t\tOutput:    output,\n\t})\n}\n\n// RecordMilestone records a progress milestone.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordMilestone_115": {
+      "name": "RecordMilestone",
+      "type": "method",
+      "start_line": 115,
+      "end_line": 127,
+      "content_hash": "a8ef67b91828e242ca59f692ef9f12bd879d07a5",
+      "content": "func (pt *ProgressTracker) RecordMilestone(description string, phase int, metadata map[string]interface{}) {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\tpt.milestones = append(pt.milestones, Milestone{\n\t\tTimestamp:   time.Now(),\n\t\tDescription: description,\n\t\tPhase:       phase,\n\t\tMetadata:    metadata,\n\t})\n}\n\n// RecordAction records an action for loop detection.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordAction_128": {
+      "name": "RecordAction",
+      "type": "method",
+      "start_line": 128,
+      "end_line": 169,
+      "content_hash": "a039b26d8b2740e36859774f854758d4dfccc7d9",
+      "content": "func (pt *ProgressTracker) RecordAction(toolName, targetFile, command, errorMsg string, success bool) {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\terrorHash := \"\"\n\tif errorMsg != \"\" {\n\t\terrorHash = hashString(errorMsg)\n\t}\n\n\taction := ActionFingerprint{\n\t\tTimestamp:  time.Now(),\n\t\tToolName:   toolName,\n\t\tTargetFile: targetFile,\n\t\tCommand:    command,\n\t\tErrorHash:  errorHash,\n\t\tSuccess:    success,\n\t}\n\n\tpt.recentActions = append(pt.recentActions, action)\n\tif len(pt.recentActions) > pt.maxRecentActions {\n\t\tpt.recentActions = pt.recentActions[1:]\n\t}\n\n\t// Track errors separately\n\tif !success && errorMsg != \"\" {\n\t\tpt.consecutiveErrors++\n\t\tpt.recentErrors = append(pt.recentErrors, ErrorFingerprint{\n\t\t\tTimestamp: time.Now(),\n\t\t\tToolName:  toolName,\n\t\t\tTarget:    getTarget(targetFile, command),\n\t\t\tErrorMsg:  errorMsg,\n\t\t\tErrorHash: errorHash,\n\t\t})\n\t\tif len(pt.recentErrors) > pt.maxRecentErrors {\n\t\t\tpt.recentErrors = pt.recentErrors[1:]\n\t\t}\n\t} else if success {\n\t\tpt.consecutiveErrors = 0 // Reset on success\n\t}\n}\n\n// RecordMessage records a message hash for deduplication.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordMessage_170": {
+      "name": "RecordMessage",
+      "type": "method",
+      "start_line": 170,
+      "end_line": 191,
+      "content_hash": "48c4d30529f434c2c88ce48192cbdf0c342f502a",
+      "content": "func (pt *ProgressTracker) RecordMessage(message string) bool {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\thash := hashString(message)\n\n\t// Check if duplicate\n\tfor _, h := range pt.recentMessageHashes {\n\t\tif h == hash {\n\t\t\treturn true // Duplicate detected\n\t\t}\n\t}\n\n\tpt.recentMessageHashes = append(pt.recentMessageHashes, hash)\n\tif len(pt.recentMessageHashes) > pt.maxMessageHistory {\n\t\tpt.recentMessageHashes = pt.recentMessageHashes[1:]\n\t}\n\n\treturn false // Not a duplicate\n}\n\n// IsStuck determines if the agent is stuck in a loop.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsStuck_192": {
+      "name": "IsStuck",
+      "type": "method",
+      "start_line": 192,
+      "end_line": 220,
+      "content_hash": "fe70ea0b130785993ab22eca26e23280df76fee6",
+      "content": "func (pt *ProgressTracker) IsStuck() (bool, string) {\n\tpt.mu.RLock()\n\tdefer pt.mu.RUnlock()\n\n\t// Check 1: Consecutive identical errors (same file, same error, 5+ times)\n\t// Increased threshold to reduce false positives\n\tif pt.consecutiveErrors >= 5 {\n\t\tif stuck, reason := pt.hasSameFileError(); stuck {\n\t\t\treturn true, reason\n\t\t}\n\t}\n\n\t// Check 2: Oscillating actions (edit A->B, edit B->A repeatedly)\n\tif stuck, reason := pt.hasOscillatingActions(); stuck {\n\t\treturn true, reason\n\t}\n\n\t// Check 3: No progress (same actions, no file changes)\n\t// Only check if we have enough actions and no recent success\n\tif len(pt.recentActions) >= 15 { // Increased from 10\n\t\tif stuck, reason := pt.hasNoProgress(); stuck {\n\t\t\treturn true, reason\n\t\t}\n\t}\n\n\treturn false, \"\"\n}\n\n// hasSameFileError checks if the same file has the same error 3+ times.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_hasSameFileError_221": {
+      "name": "hasSameFileError",
+      "type": "method",
+      "start_line": 221,
+      "end_line": 246,
+      "content_hash": "a1dcbe049abb524e16e1a26b361d6f7cd70ceed1",
+      "content": "func (pt *ProgressTracker) hasSameFileError() (bool, string) {\n\tif len(pt.recentErrors) < 3 {\n\t\treturn false, \"\"\n\t}\n\n\t// Get last 3 errors\n\trecent := pt.recentErrors[max(0, len(pt.recentErrors)-3):]\n\n\t// Check if same target and error\n\tif len(recent) >= 3 {\n\t\tfirst := recent[0]\n\t\tmatchCount := 1\n\t\tfor i := 1; i < len(recent); i++ {\n\t\t\tif recent[i].Target == first.Target && recent[i].ErrorHash == first.ErrorHash {\n\t\t\t\tmatchCount++\n\t\t\t}\n\t\t}\n\t\tif matchCount >= 3 {\n\t\t\treturn true, fmt.Sprintf(\"Same error on '%s' repeated 3 times\", first.Target)\n\t\t}\n\t}\n\n\treturn false, \"\"\n}\n\n// hasOscillatingActions detects alternating actions (A->B->A->B pattern).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_hasOscillatingActions_247": {
+      "name": "hasOscillatingActions",
+      "type": "method",
+      "start_line": 247,
+      "end_line": 269,
+      "content_hash": "c5d9d83071d6efefc147c5c1826b802e12427927",
+      "content": "func (pt *ProgressTracker) hasOscillatingActions() (bool, string) {\n\tif len(pt.recentActions) < 4 {\n\t\treturn false, \"\"\n\t}\n\n\t// Get last 4 actions\n\trecent := pt.recentActions[max(0, len(pt.recentActions)-4):]\n\n\t// Check for A-B-A-B pattern (same target, alternating operations)\n\tif len(recent) == 4 {\n\t\tif recent[0].TargetFile == recent[2].TargetFile &&\n\t\t\trecent[1].TargetFile == recent[3].TargetFile &&\n\t\t\trecent[0].TargetFile != \"\" &&\n\t\t\trecent[1].TargetFile != \"\" &&\n\t\t\trecent[0].TargetFile != recent[1].TargetFile {\n\t\t\treturn true, fmt.Sprintf(\"Oscillating between '%s' and '%s'\", recent[0].TargetFile, recent[1].TargetFile)\n\t\t}\n\t}\n\n\treturn false, \"\"\n}\n\n// hasNoProgress checks if there's been no meaningful progress.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_hasNoProgress_270": {
+      "name": "hasNoProgress",
+      "type": "method",
+      "start_line": 270,
+      "end_line": 323,
+      "content_hash": "f315f4bfe6b40c0f215af0252686f14d006a5da7",
+      "content": "func (pt *ProgressTracker) hasNoProgress() (bool, string) {\n\t// Only check if we have enough actions\n\tif len(pt.recentActions) < 15 {\n\t\treturn false, \"\"\n\t}\n\n\t// Get last 15 actions to match the error message\n\trecent := pt.recentActions[max(0, len(pt.recentActions)-15):]\n\n\t// Count successful operations and analyze progress patterns\n\tuniqueTargets := make(map[string]bool)\n\tsuccessCount := 0\n\tmeaningfulSuccessCount := 0 // Only counts edits, writes, etc. (not just views)\n\tsuccessfulOps := make([]ActionFingerprint, 0)\n\n\tfor _, action := range recent {\n\t\tif action.Success {\n\t\t\ttarget := getTarget(action.TargetFile, action.Command)\n\t\t\tif target != \"\" {\n\t\t\t\tuniqueTargets[target] = true\n\t\t\t}\n\t\t\tsuccessCount++\n\n\t\t\t// Count only meaningful operations as progress (not just viewing)\n\t\t\tif action.ToolName != \"view\" && action.ToolName != \"ls\" && action.ToolName != \"grep\" {\n\t\t\t\tmeaningfulSuccessCount++\n\t\t\t}\n\n\t\t\tsuccessfulOps = append(successfulOps, action)\n\t\t}\n\t}\n\n\t// More sophisticated progress detection:\n\t// Only declare stuck if we have very few meaningful successes AND very little variety\n\t// AND no meaningful file modifications in recent actions\n\n\t// Check if we've made any actual file modifications (strong progress indicator)\n\thasFileMods := len(pt.filesModified) > 0\n\n\t// Check for variety in successful operations (different tools, targets, etc.)\n\tuniqueTools := make(map[string]bool)\n\tfor _, op := range successfulOps {\n\t\tuniqueTools[op.ToolName] = true\n\t}\n\n\t// More lenient conditions: need both low meaningful success rate AND low variety\n\tif meaningfulSuccessCount < 2 && len(uniqueTargets) < 3 && len(uniqueTools) < 2 && !hasFileMods {\n\t\treturn true, fmt.Sprintf(\"No meaningful progress in last 15 actions (%d meaningful successes, %d unique targets)\", meaningfulSuccessCount, len(uniqueTargets))\n\t}\n\n\treturn false, \"\"\n}\n\n// Reset clears all progress tracking (called when phase transitions).",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_Reset_324": {
+      "name": "Reset",
+      "type": "method",
+      "start_line": 324,
+      "end_line": 336,
+      "content_hash": "b4a3c6db08e4833d17a1ab834be23cc3d367495d",
+      "content": "func (pt *ProgressTracker) Reset() {\n\tpt.mu.Lock()\n\tdefer pt.mu.Unlock()\n\n\t// Keep milestones and file modifications (historical progress)\n\t// But reset error tracking and action history\n\tpt.recentActions = make([]ActionFingerprint, 0)\n\tpt.recentErrors = make([]ErrorFingerprint, 0)\n\tpt.consecutiveErrors = 0\n\tpt.recentMessageHashes = make([]string, 0)\n}\n\n// GetStats returns current progress statistics.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetStats_337": {
+      "name": "GetStats",
+      "type": "method",
+      "start_line": 337,
+      "end_line": 362,
+      "content_hash": "4e91af69208bd384493bb9f152a59914cde1ddfd",
+      "content": "func (pt *ProgressTracker) GetStats() ProgressStats {\n\tpt.mu.RLock()\n\tdefer pt.mu.RUnlock()\n\n\tsuccessCount := 0\n\tfailureCount := 0\n\tfor _, action := range pt.recentActions {\n\t\tif action.Success {\n\t\t\tsuccessCount++\n\t\t} else {\n\t\t\tfailureCount++\n\t\t}\n\t}\n\n\treturn ProgressStats{\n\t\tFilesModified:     len(pt.filesModified),\n\t\tCommandsExecuted:  len(pt.commandsExecuted),\n\t\tTestsRun:          len(pt.testsRun),\n\t\tMilestonesReached: len(pt.milestones),\n\t\tRecentSuccesses:   successCount,\n\t\tRecentFailures:    failureCount,\n\t\tConsecutiveErrors: pt.consecutiveErrors,\n\t}\n}\n\n// ProgressStats summarizes current progress.",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ProgressStats_363": {
+      "name": "ProgressStats",
+      "type": "struct",
+      "start_line": 363,
+      "end_line": 374,
+      "content_hash": "a9f1af3a3d2cb94b44831e97864d8396a14f5319",
+      "content": "type ProgressStats struct {\n\tFilesModified     int\n\tCommandsExecuted  int\n\tTestsRun          int\n\tMilestonesReached int\n\tRecentSuccesses   int\n\tRecentFailures    int\n\tConsecutiveErrors int\n}\n\n// Helper functions\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_hashString_375": {
+      "name": "hashString",
+      "type": "function",
+      "start_line": 375,
+      "end_line": 380,
+      "content_hash": "5a6b469c0c388f56235e03870580cbc49ee17cfe",
+      "content": "func hashString(s string) string {\n\th := sha256.New()\n\th.Write([]byte(s))\n\treturn fmt.Sprintf(\"%x\", h.Sum(nil))[:16]\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getTarget_381": {
+      "name": "getTarget",
+      "type": "function",
+      "start_line": 381,
+      "end_line": 394,
+      "content_hash": "97d2ba79147d8a094db57de42875df6d420bfe46",
+      "content": "func getTarget(file, command string) string {\n\tif file != \"\" {\n\t\treturn file\n\t}\n\tif command != \"\" {\n\t\t// Take first 50 chars of command as target\n\t\tif len(command) > 50 {\n\t\t\treturn command[:50]\n\t\t}\n\t\treturn command\n\t}\n\treturn \"\"\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_max_395": {
+      "name": "max",
+      "type": "function",
+      "start_line": 395,
+      "end_line": 400,
+      "content_hash": "07440f3bad4fd1e3544a5fbd5f8cd126751c11b5",
+      "content": "func max(a, b int) int {\n\tif a > b {\n\t\treturn a\n\t}\n\treturn b\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

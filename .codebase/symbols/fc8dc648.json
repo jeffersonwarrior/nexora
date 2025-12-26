@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/workers/confidence.test.ts",
+  "file_hash": "8463780cedbe800051627615d71bda74ed372d9e",
+  "updated_at": "2025-12-26T17:34:19.659040",
+  "symbols": {
+    "function_createSignals_228": {
+      "name": "createSignals",
+      "type": "function",
+      "start_line": 228,
+      "end_line": 246,
+      "content_hash": "1f1c3ccafc231f3d2b7ff6ced452e05c91809535",
+      "content": "    const createSignals = (overrides: Partial<ConfidenceSignals> = {}): ConfidenceSignals => ({\n      toolActivity: {\n        score: 70,\n        patterns: { healthyCycles: 0, stuckLoops: 0, idlePeriods: 0, errorRecoveries: 0 },\n        lastActivityAge: 30,\n      },\n      selfReported: null,\n      outputAnalysis: {\n        score: 70,\n        indicators: {\n          errorCount: 0,\n          retryCount: 0,\n          successIndicators: 0,\n          frustrationIndicators: 0,\n          completionIndicators: 0,\n        },\n      },\n      ...overrides,\n    });",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

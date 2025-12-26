@@ -1,0 +1,40 @@
+{
+  "file_path": "/work/internal/agent/task_coordinator_test.go",
+  "file_hash": "0f4e1b5fe7108fe522027901200bc484cd2c40d5",
+  "updated_at": "2025-12-26T17:34:20.473705",
+  "symbols": {
+    "function_TestTaskExecutionCoordinator_13": {
+      "name": "TestTaskExecutionCoordinator",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 81,
+      "content_hash": "1148b7bcec7a90a4cec3de978bc1c1356e462aef",
+      "content": "func TestTaskExecutionCoordinator(t *testing.T) {\n\t// Create a temporary directory for testing\n\ttempDir := t.TempDir()\n\n\t// Create some test files\n\ttestFile := filepath.Join(tempDir, \"test.go\")\n\terr := os.WriteFile(testFile, []byte(\"package main\\n\\nfunc main() {\\n\\tprintln(\\\"Hello, World!\\\")\\n}\"), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create test file: %v\", err)\n\t}\n\n\t// Create coordinator\n\tcoordinator := NewTaskExecutionCoordinator()\n\n\t// Test tempdir tools\n\ttempDirTool := tools.NewTempDir()\n\tcreatedDir, err := tempDirTool.CreateTempDir(\"test\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create temp dir: %v\", err)\n\t}\n\n\t// Verify directory exists\n\tif _, err := os.Stat(createdDir); os.IsNotExist(err) {\n\t\tt.Fatalf(\"Temp directory was not created\")\n\t}\n\n\t// Test cleanup\n\terr = tempDirTool.CleanUp(createdDir)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to cleanup temp dir: %v\", err)\n\t}\n\n\t// Verify directory is cleaned up\n\tif _, err := os.Stat(createdDir); !os.IsNotExist(err) {\n\t\tt.Fatalf(\"Temp directory was not cleaned up\")\n\t}\n\n\t// Test task execution\n\tctx := context.Background()\n\tinstructions := \"Read and analyze the test.go file\"\n\n\tresult, err := coordinator.ExecuteTask(ctx, tempDir, instructions)\n\tif err != nil {\n\t\tt.Fatalf(\"Task execution failed: %v\", err)\n\t}\n\n\tif result == nil {\n\t\tt.Fatalf(\"Expected result but got nil\")\n\t}\n\n\t// Verify task context\n\tif result.Directory != tempDir {\n\t\tt.Errorf(\"Expected directory %s, got %s\", tempDir, result.Directory)\n\t}\n\n\tif result.Instructions != instructions {\n\t\tt.Errorf(\"Expected instructions %s, got %s\", instructions, result.Instructions)\n\t}\n\n\tif result.Progress != \"\u2705 Task completed successfully\" {\n\t\tt.Errorf(\"Expected completed status, got %s\", result.Progress)\n\t}\n\n\t// Verify execution time\n\tif time.Since(result.StartTime) < 0 {\n\t\tt.Errorf(\"Invalid start time\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTaskCoordinator_FileExtraction_82": {
+      "name": "TestTaskCoordinator_FileExtraction",
+      "type": "function",
+      "start_line": 82,
+      "end_line": 93,
+      "content_hash": "bd630f17c151747279d0991e9168f0d177700163",
+      "content": "func TestTaskCoordinator_FileExtraction(t *testing.T) {\n\tcoordinator := NewTaskExecutionCoordinator()\n\n\tinstructions := \"Please read the test.go file and analyze main.go\"\n\tfiles := coordinator.extractFilesFromInstructions(instructions)\n\n\t// Should find some files (if they exist)\n\tif len(files) > 10 {\n\t\tt.Errorf(\"Too many files extracted: %d\", len(files))\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestTempDir_CreateFile_94": {
+      "name": "TestTempDir_CreateFile",
+      "type": "function",
+      "start_line": 94,
+      "end_line": 117,
+      "content_hash": "911da238f4c26ac2979c86f6e081aa2050ab4518",
+      "content": "func TestTempDir_CreateFile(t *testing.T) {\n\ttempDirTool := tools.NewTempDir()\n\n\tfilePath, err := tempDirTool.CreateTempFile(\"test\", \"Hello, World!\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create temp file: %v\", err)\n\t}\n\n\t// Verify file exists\n\tcontent, err := os.ReadFile(filePath)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read temp file: %v\", err)\n\t}\n\n\tif string(content) != \"Hello, World!\" {\n\t\tt.Errorf(\"Expected 'Hello, World!', got '%s'\", string(content))\n\t}\n\n\t// Cleanup\n\terr = tempDirTool.CleanUp(filepath.Dir(filePath))\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to cleanup: %v\", err)\n\t}\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

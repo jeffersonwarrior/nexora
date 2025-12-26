@@ -1,0 +1,128 @@
+{
+  "file_path": "/work/internal/agent/tools/safe_test.go",
+  "file_hash": "9486a1278268a7aba064cf578a7a7b2b6925ef8e",
+  "updated_at": "2025-12-26T17:34:22.350569",
+  "symbols": {
+    "function_TestSafeCommands_Contains_10": {
+      "name": "TestSafeCommands_Contains",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 56,
+      "content_hash": "537c930897371b276ee40fc3df953eb946a3deb1",
+      "content": "func TestSafeCommands_Contains(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\tcommand string\n\t\twant    bool\n\t}{\n\t\t// Bash builtins\n\t\t{name: \"pwd\", command: \"pwd\", want: true},\n\t\t{name: \"ls\", command: \"ls\", want: true},\n\t\t{name: \"echo\", command: \"echo\", want: true},\n\t\t{name: \"date\", command: \"date\", want: true},\n\t\t{name: \"whoami\", command: \"whoami\", want: true},\n\n\t\t// Git commands\n\t\t{name: \"git status\", command: \"git status\", want: true},\n\t\t{name: \"git log\", command: \"git log\", want: true},\n\t\t{name: \"git diff\", command: \"git diff\", want: true},\n\t\t{name: \"git branch\", command: \"git branch\", want: true},\n\n\t\t// Process commands\n\t\t{name: \"ps\", command: \"ps\", want: true},\n\t\t{name: \"top\", command: \"top\", want: true},\n\t\t{name: \"kill\", command: \"kill\", want: true},\n\n\t\t// Unsafe commands (not in list)\n\t\t{name: \"rm\", command: \"rm\", want: false},\n\t\t{name: \"mv\", command: \"mv\", want: false},\n\t\t{name: \"cp\", command: \"cp\", want: false},\n\t\t{name: \"chmod\", command: \"chmod\", want: false},\n\t\t{name: \"chown\", command: \"chown\", want: false},\n\t\t{name: \"sudo\", command: \"sudo\", want: false},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tfound := false\n\t\t\tfor _, safe := range safeCommands {\n\t\t\t\tif safe == tt.command {\n\t\t\t\t\tfound = true\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tassert.Equal(t, tt.want, found)\n\t\t})\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_GitReadOnly_57": {
+      "name": "TestSafeCommands_GitReadOnly",
+      "type": "function",
+      "start_line": 57,
+      "end_line": 112,
+      "content_hash": "9db9d143f5e03da70bae74a3dcf6e3fddf203dce",
+      "content": "func TestSafeCommands_GitReadOnly(t *testing.T) {\n\t// Verify all git commands in safe list are read-only\n\tgitReadOnly := []string{\n\t\t\"git blame\",\n\t\t\"git branch\",\n\t\t\"git config --get\",\n\t\t\"git config --list\",\n\t\t\"git describe\",\n\t\t\"git diff\",\n\t\t\"git grep\",\n\t\t\"git log\",\n\t\t\"git ls-files\",\n\t\t\"git ls-remote\",\n\t\t\"git remote\",\n\t\t\"git rev-parse\",\n\t\t\"git shortlog\",\n\t\t\"git show\",\n\t\t\"git status\",\n\t\t\"git tag\",\n\t}\n\n\tfor _, cmd := range gitReadOnly {\n\t\tfound := false\n\t\tfor _, safe := range safeCommands {\n\t\t\tif safe == cmd {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.True(t, found, \"git command should be in safe list: %s\", cmd)\n\t}\n\n\t// Verify dangerous git commands are NOT in safe list\n\tgitDangerous := []string{\n\t\t\"git add\",\n\t\t\"git commit\",\n\t\t\"git push\",\n\t\t\"git pull\",\n\t\t\"git reset\",\n\t\t\"git checkout\",\n\t\t\"git rebase\",\n\t\t\"git merge\",\n\t}\n\n\tfor _, cmd := range gitDangerous {\n\t\tfound := false\n\t\tfor _, safe := range safeCommands {\n\t\t\tif safe == cmd {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.False(t, found, \"dangerous git command should NOT be in safe list: %s\", cmd)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_NoWriteCommands_113": {
+      "name": "TestSafeCommands_NoWriteCommands",
+      "type": "function",
+      "start_line": 113,
+      "end_line": 135,
+      "content_hash": "f1c9a82db1ffc169cc565bffc477f563c8dcd6c8",
+      "content": "func TestSafeCommands_NoWriteCommands(t *testing.T) {\n\t// Verify no write/destructive commands in safe list\n\twriteCommands := []string{\n\t\t\"rm\", \"rmdir\", \"unlink\",\n\t\t\"mv\", \"cp\",\n\t\t\"chmod\", \"chown\",\n\t\t\"mkdir\", \"touch\",\n\t\t\"vi\", \"vim\", \"nano\", \"emacs\",\n\t\t\"dd\", \"shred\",\n\t}\n\n\tfor _, cmd := range writeCommands {\n\t\tfound := false\n\t\tfor _, safe := range safeCommands {\n\t\t\tif safe == cmd {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.False(t, found, \"write command should NOT be in safe list: %s\", cmd)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_WindowsSpecific_136": {
+      "name": "TestSafeCommands_WindowsSpecific",
+      "type": "function",
+      "start_line": 136,
+      "end_line": 161,
+      "content_hash": "5982a5fa86d5e622e5fc7c4001a69fae2ec85416",
+      "content": "func TestSafeCommands_WindowsSpecific(t *testing.T) {\n\tif runtime.GOOS != \"windows\" {\n\t\tt.Skip(\"Skipping Windows-specific test on non-Windows platform\")\n\t}\n\n\twindowsCommands := []string{\n\t\t\"ipconfig\",\n\t\t\"nslookup\",\n\t\t\"ping\",\n\t\t\"systeminfo\",\n\t\t\"tasklist\",\n\t\t\"where\",\n\t}\n\n\tfor _, cmd := range windowsCommands {\n\t\tfound := false\n\t\tfor _, safe := range safeCommands {\n\t\t\tif safe == cmd {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.True(t, found, \"Windows command should be in safe list: %s\", cmd)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_UnixOnly_162": {
+      "name": "TestSafeCommands_UnixOnly",
+      "type": "function",
+      "start_line": 162,
+      "end_line": 171,
+      "content_hash": "00ed0819d6aa9412b884ff2d7db48871bcf38d26",
+      "content": "func TestSafeCommands_UnixOnly(t *testing.T) {\n\tif runtime.GOOS == \"windows\" {\n\t\tt.Skip(\"Skipping Unix-specific test on Windows platform\")\n\t}\n\n\t// Verify Windows commands are NOT in safe list on Unix\n\t// On non-Windows, Windows-specific commands should not be in the list\n\t// This is platform-dependent, so we just verify the test runs\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_NotEmpty_172": {
+      "name": "TestSafeCommands_NotEmpty",
+      "type": "function",
+      "start_line": 172,
+      "end_line": 176,
+      "content_hash": "e629b5073bd50db5007c50798980f8f97340a602",
+      "content": "func TestSafeCommands_NotEmpty(t *testing.T) {\n\tassert.NotEmpty(t, safeCommands, \"safe commands list should not be empty\")\n\tassert.Greater(t, len(safeCommands), 20, \"should have at least 20 safe commands\")\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_NoDuplicates_177": {
+      "name": "TestSafeCommands_NoDuplicates",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 184,
+      "content_hash": "f67a633cc8fd19b2e545e3e28ddbf57944c51148",
+      "content": "func TestSafeCommands_NoDuplicates(t *testing.T) {\n\tseen := make(map[string]bool)\n\tfor _, cmd := range safeCommands {\n\t\tassert.False(t, seen[cmd], \"duplicate command in safe list: %s\", cmd)\n\t\tseen[cmd] = true\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_AllTrimmed_185": {
+      "name": "TestSafeCommands_AllTrimmed",
+      "type": "function",
+      "start_line": 185,
+      "end_line": 191,
+      "content_hash": "70cab9d3f7984597c051e2bae81e5bf9c8ef0536",
+      "content": "func TestSafeCommands_AllTrimmed(t *testing.T) {\n\tfor _, cmd := range safeCommands {\n\t\tassert.Equal(t, cmd, cmd, \"command should be trimmed: '%s'\", cmd)\n\t\tassert.NotEmpty(t, cmd, \"command should not be empty\")\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_SystemInfo_192": {
+      "name": "TestSafeCommands_SystemInfo",
+      "type": "function",
+      "start_line": 192,
+      "end_line": 217,
+      "content_hash": "1431d69596dc0501559128b3458beb0a67476272",
+      "content": "func TestSafeCommands_SystemInfo(t *testing.T) {\n\t// Verify system information commands are safe\n\tsysInfoCommands := []string{\n\t\t\"uname\",\n\t\t\"hostname\",\n\t\t\"whoami\",\n\t\t\"id\",\n\t\t\"groups\",\n\t\t\"uptime\",\n\t\t\"df\",\n\t\t\"du\",\n\t\t\"free\",\n\t}\n\n\tfor _, cmd := range sysInfoCommands {\n\t\tfound := false\n\t\tfor _, safe := range safeCommands {\n\t\t\tif safe == cmd {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.True(t, found, \"system info command should be safe: %s\", cmd)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_ProcessManagement_218": {
+      "name": "TestSafeCommands_ProcessManagement",
+      "type": "function",
+      "start_line": 218,
+      "end_line": 240,
+      "content_hash": "4e6daf2dd305da2fff28a699b969f84c91a533c5",
+      "content": "func TestSafeCommands_ProcessManagement(t *testing.T) {\n\t// Process viewing is safe, killing requires permission but is included\n\tprocessCommands := []string{\n\t\t\"ps\",\n\t\t\"top\",\n\t\t\"kill\",\n\t\t\"killall\",\n\t\t\"nice\",\n\t\t\"nohup\",\n\t}\n\n\tfor _, cmd := range processCommands {\n\t\tfound := false\n\t\tfor _, safe := range safeCommands {\n\t\t\tif safe == cmd {\n\t\t\t\tfound = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t\tassert.True(t, found, \"process command should be in safe list: %s\", cmd)\n\t}\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_TestSafeCommands_GitConfig_241": {
+      "name": "TestSafeCommands_GitConfig",
+      "type": "function",
+      "start_line": 241,
+      "end_line": 255,
+      "content_hash": "6108ebbadb9310d17851efa4669d0159ba5f1816",
+      "content": "func TestSafeCommands_GitConfig(t *testing.T) {\n\t// Only read-only git config commands should be safe\n\tassert.Contains(t, safeCommands, \"git config --get\")\n\tassert.Contains(t, safeCommands, \"git config --list\")\n\n\t// Verify write config is NOT in safe list\n\tfound := false\n\tfor _, safe := range safeCommands {\n\t\tif safe == \"git config --set\" || safe == \"git config\" {\n\t\t\tfound = true\n\t\t\tbreak\n\t\t}\n\t}\n\tassert.False(t, found, \"git config write should NOT be in safe list\")\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

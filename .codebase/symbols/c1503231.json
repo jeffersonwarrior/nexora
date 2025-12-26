@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/claude-mem/src/shared/transcript-parser.ts",
+  "file_hash": "b244a6d7a9d1fd9bc8ae4fcf4620b4bbefa54c63",
+  "updated_at": "2025-12-26T17:34:23.900414",
+  "symbols": {
+    "function_extractLastMessage_10": {
+      "name": "extractLastMessage",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 65,
+      "content_hash": "2d80d10a27fc2a8478b6626a331c6d5a178efe16",
+      "content": "export function extractLastMessage(\n  transcriptPath: string,\n  role: 'user' | 'assistant',\n  stripSystemReminders: boolean = false\n): string {\n  if (!transcriptPath || !existsSync(transcriptPath)) {\n    throw new Error(`Transcript path missing or file does not exist: ${transcriptPath}`);\n  }\n\n  const content = readFileSync(transcriptPath, 'utf-8').trim();\n  if (!content) {\n    throw new Error(`Transcript file exists but is empty: ${transcriptPath}`);\n  }\n\n  const lines = content.split('\\n');\n  let foundMatchingRole = false;\n\n  for (let i = lines.length - 1; i >= 0; i--) {\n    const line = JSON.parse(lines[i]);\n    if (line.type === role) {\n      foundMatchingRole = true;\n\n      if (line.message?.content) {\n        let text = '';\n        const msgContent = line.message.content;\n\n        if (typeof msgContent === 'string') {\n          text = msgContent;\n        } else if (Array.isArray(msgContent)) {\n          text = msgContent\n            .filter((c: any) => c.type === 'text')\n            .map((c: any) => c.text)\n            .join('\\n');\n        } else {\n          // Unknown content format - throw error\n          throw new Error(`Unknown message content format in transcript. Type: ${typeof msgContent}`);\n        }\n\n        if (stripSystemReminders) {\n          text = text.replace(/<system-reminder>[\\s\\S]*?<\\/system-reminder>/g, '');\n          text = text.replace(/\\n{3,}/g, '\\n\\n').trim();\n        }\n\n        // Return text even if empty - caller decides if that's an error\n        return text;\n      }\n    }\n  }\n\n  // If we searched the whole transcript and didn't find any message of this role\n  if (!foundMatchingRole) {\n    throw new Error(`No message found for role '${role}' in transcript: ${transcriptPath}`);\n  }\n\n  return '';\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

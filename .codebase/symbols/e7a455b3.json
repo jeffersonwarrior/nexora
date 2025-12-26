@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/claude-swarm/src/workers/confidence.ts",
+  "file_hash": "cca786f22bf260272f2b2f5884ad6181ccbf32d0",
+  "updated_at": "2025-12-26T17:34:23.312152",
+  "symbols": {
+    "function_analyzeToolActivity_122": {
+      "name": "analyzeToolActivity",
+      "type": "function",
+      "start_line": 122,
+      "end_line": 194,
+      "content_hash": "b6358c463e4690ecbd14955687f02c1b57df9687",
+      "content": "export function analyzeToolActivity(\n  logContent: string,\n  logMtimeMs: number\n): ToolActivityScore {\n  const lines = logContent.split(\"\\n\").slice(-100); // Last 100 lines\n  const recentContent = lines.join(\"\\n\");\n\n  let healthyCycles = 0;\n  let stuckLoops = 0;\n  let errorRecoveries = 0;\n\n  // Count healthy cycles\n  for (const pattern of HEALTHY_PATTERNS) {\n    const matches = recentContent.match(pattern);\n    if (matches) {\n      healthyCycles++;\n    }\n  }\n\n  // Count stuck loops\n  for (const pattern of CONCERNING_PATTERNS.stuckLoop) {\n    const matches = recentContent.match(pattern);\n    if (matches) {\n      stuckLoops++;\n    }\n  }\n\n  // Detect error recoveries (error followed by success)\n  const errorMatches = CONCERNING_PATTERNS.errors.some((p) =>\n    p.test(recentContent)\n  );\n  const successMatches = POSITIVE_PATTERNS.success.some((p) =>\n    p.test(recentContent)\n  );\n  if (errorMatches && successMatches) {\n    errorRecoveries++;\n  }\n\n  // Calculate idle time\n  const now = Date.now();\n  const lastActivityAge = Math.floor((now - logMtimeMs) / 1000);\n\n  // Count idle periods (based on line timestamps if available)\n  let idlePeriods = 0;\n  if (lastActivityAge > 180) {\n    // More than 3 minutes\n    idlePeriods = 1;\n  }\n\n  // Calculate score starting from base of 70\n  let score = 70;\n  score += healthyCycles * 5; // +5 per healthy cycle\n  score -= stuckLoops * 10; // -10 per stuck loop\n  score += errorRecoveries * 3; // +3 for recovering from errors\n\n  // Penalize for idle time\n  if (lastActivityAge > 60) {\n    score -= Math.min(20, Math.floor(lastActivityAge / 60) * 5);\n  }\n\n  score = Math.max(0, Math.min(100, score));\n\n  return {\n    score,\n    patterns: {\n      healthyCycles,\n      stuckLoops,\n      idlePeriods,\n      errorRecoveries,\n    },\n    lastActivityAge,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_analyzeOutput_199": {
+      "name": "analyzeOutput",
+      "type": "function",
+      "start_line": 199,
+      "end_line": 266,
+      "content_hash": "2fed0ed4dfe727911db2f656b8dd507ba1b61262",
+      "content": "export function analyzeOutput(logContent: string): OutputAnalysisScore {\n  const lines = logContent.split(\"\\n\").slice(-100);\n  const recentContent = lines.join(\"\\n\");\n\n  let errorCount = 0;\n  let retryCount = 0;\n  let successIndicators = 0;\n  let frustrationIndicators = 0;\n  let completionIndicators = 0;\n\n  // Count errors\n  for (const pattern of CONCERNING_PATTERNS.errors) {\n    const matches = recentContent.match(new RegExp(pattern, \"gi\"));\n    if (matches) {\n      errorCount += matches.length;\n    }\n  }\n\n  // Count retries\n  for (const pattern of CONCERNING_PATTERNS.retries) {\n    const matches = recentContent.match(new RegExp(pattern, \"gi\"));\n    if (matches) {\n      retryCount += matches.length;\n    }\n  }\n\n  // Count frustration indicators\n  for (const pattern of CONCERNING_PATTERNS.frustration) {\n    if (pattern.test(recentContent)) {\n      frustrationIndicators++;\n    }\n  }\n\n  // Count success indicators\n  for (const pattern of POSITIVE_PATTERNS.success) {\n    if (pattern.test(recentContent)) {\n      successIndicators++;\n    }\n  }\n\n  // Count completion indicators\n  for (const pattern of POSITIVE_PATTERNS.completion) {\n    if (pattern.test(recentContent)) {\n      completionIndicators++;\n    }\n  }\n\n  // Calculate score starting from base of 70\n  let score = 70;\n  score += successIndicators * 5;\n  score += completionIndicators * 20;\n  score -= Math.min(30, errorCount * 5);\n  score -= retryCount * 3;\n  score -= frustrationIndicators * 15;\n\n  score = Math.max(0, Math.min(100, score));\n\n  return {\n    score,\n    indicators: {\n      errorCount: Math.min(10, errorCount), // Cap for display\n      retryCount: Math.min(10, retryCount),\n      successIndicators,\n      frustrationIndicators,\n      completionIndicators,\n    },\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_readSelfReportedConfidence_271": {
+      "name": "readSelfReportedConfidence",
+      "type": "function",
+      "start_line": 271,
+      "end_line": 293,
+      "content_hash": "c612b7cda02f67fbfcb93c5306b61917397e07c9",
+      "content": "export function readSelfReportedConfidence(\n  workerDir: string,\n  featureId: string\n): number | null {\n  const confidenceFile = path.join(workerDir, `${featureId}.confidence`);\n\n  try {\n    if (!fs.existsSync(confidenceFile)) {\n      return null;\n    }\n\n    const content = fs.readFileSync(confidenceFile, \"utf-8\").trim();\n    const value = parseInt(content, 10);\n\n    if (isNaN(value) || value < 0 || value > 100) {\n      return null;\n    }\n\n    return value;\n  } catch {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_calculateAggregatedConfidence_298": {
+      "name": "calculateAggregatedConfidence",
+      "type": "function",
+      "start_line": 298,
+      "end_line": 409,
+      "content_hash": "efe8ea4b38c1b334a1f4f811a3cb780adc5cc9fa",
+      "content": "export function calculateAggregatedConfidence(\n  signals: ConfidenceSignals,\n  previousScore?: number\n): AggregatedConfidence {\n  // Define weights\n  let toolWeight = 0.35;\n  let selfWeight = 0.35;\n  let outputWeight = 0.3;\n\n  // If no self-reported confidence, redistribute weights\n  if (signals.selfReported === null) {\n    toolWeight = 0.5;\n    selfWeight = 0;\n    outputWeight = 0.5;\n  }\n\n  // Calculate weighted score\n  let score =\n    signals.toolActivity.score * toolWeight +\n    (signals.selfReported ?? 0) * selfWeight +\n    signals.outputAnalysis.score * outputWeight;\n\n  // Apply trend adjustment\n  let trend: AggregatedConfidence[\"trend\"] = \"stable\";\n  if (previousScore !== undefined) {\n    const diff = score - previousScore;\n    if (diff > 5) {\n      trend = \"improving\";\n      score += 5; // Small boost for improving trend\n    } else if (diff < -5) {\n      trend = \"declining\";\n      score -= 5; // Small penalty for declining trend\n    }\n  }\n\n  score = Math.max(0, Math.min(100, Math.round(score)));\n\n  // Determine level\n  let level: AggregatedConfidence[\"level\"];\n  if (score >= 80) {\n    level = \"high\";\n  } else if (score >= 50) {\n    level = \"medium\";\n  } else if (score >= 25) {\n    level = \"low\";\n  } else {\n    level = \"critical\";\n  }\n\n  // Generate alerts\n  const alerts: ConfidenceAlert[] = [];\n  const now = new Date().toISOString();\n\n  // Alert for idle\n  if (signals.toolActivity.lastActivityAge > 180) {\n    alerts.push({\n      type: \"idle\",\n      message: `Worker idle for ${Math.floor(signals.toolActivity.lastActivityAge / 60)} minutes`,\n      severity: signals.toolActivity.lastActivityAge > 300 ? \"critical\" : \"warning\",\n      timestamp: now,\n    });\n  }\n\n  // Alert for stuck loops\n  if (signals.toolActivity.patterns.stuckLoops > 0) {\n    alerts.push({\n      type: \"stuck_loop\",\n      message: `Detected ${signals.toolActivity.patterns.stuckLoops} stuck loop pattern(s)`,\n      severity: signals.toolActivity.patterns.stuckLoops > 2 ? \"critical\" : \"warning\",\n      timestamp: now,\n    });\n  }\n\n  // Alert for high errors\n  if (signals.outputAnalysis.indicators.errorCount > 3) {\n    alerts.push({\n      type: \"high_errors\",\n      message: `High error count: ${signals.outputAnalysis.indicators.errorCount} errors detected`,\n      severity:\n        signals.outputAnalysis.indicators.errorCount > 5 ? \"critical\" : \"warning\",\n      timestamp: now,\n    });\n  }\n\n  // Alert for low self-reported confidence\n  if (signals.selfReported !== null && signals.selfReported < 30) {\n    alerts.push({\n      type: \"self_reported_low\",\n      message: `Worker self-reported low confidence: ${signals.selfReported}%`,\n      severity: signals.selfReported < 15 ? \"critical\" : \"warning\",\n      timestamp: now,\n    });\n  }\n\n  // Alert for declining trend\n  if (trend === \"declining\" && previousScore !== undefined) {\n    alerts.push({\n      type: \"declining_trend\",\n      message: `Confidence declining: ${previousScore} \u2192 ${score}`,\n      severity: score < 40 ? \"critical\" : \"warning\",\n      timestamp: now,\n    });\n  }\n\n  return {\n    score,\n    level,\n    signals,\n    trend,\n    alerts,\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getWorkerConfidence_414": {
+      "name": "getWorkerConfidence",
+      "type": "function",
+      "start_line": 414,
+      "end_line": 445,
+      "content_hash": "d254c55599d0bbfc286d94aee684b94705de6fbe",
+      "content": "export function getWorkerConfidence(\n  workerDir: string,\n  featureId: string,\n  previousScore?: number\n): AggregatedConfidence | null {\n  const logFile = path.join(workerDir, `${featureId}.log`);\n\n  // Check if log file exists\n  if (!fs.existsSync(logFile)) {\n    return null;\n  }\n\n  try {\n    const logContent = fs.readFileSync(logFile, \"utf-8\");\n    const logStat = fs.statSync(logFile);\n\n    // Gather all signals\n    const toolActivity = analyzeToolActivity(logContent, logStat.mtimeMs);\n    const selfReported = readSelfReportedConfidence(workerDir, featureId);\n    const outputAnalysis = analyzeOutput(logContent);\n\n    const signals: ConfidenceSignals = {\n      toolActivity,\n      selfReported,\n      outputAnalysis,\n    };\n\n    return calculateAggregatedConfidence(signals, previousScore);\n  } catch {\n    return null;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatConfidenceResult_450": {
+      "name": "formatConfidenceResult",
+      "type": "function",
+      "start_line": 450,
+      "end_line": 503,
+      "content_hash": "827528bac79d1f9f874ebf1e429ac1b0975a710a",
+      "content": "export function formatConfidenceResult(confidence: AggregatedConfidence): string {\n  const lines: string[] = [];\n\n  // Level emoji\n  const levelEmoji = {\n    high: \"\ud83d\udfe2\",\n    medium: \"\ud83d\udfe1\",\n    low: \"\ud83d\udfe0\",\n    critical: \"\ud83d\udd34\",\n  };\n\n  lines.push(\n    `${levelEmoji[confidence.level]} Confidence: ${confidence.score}/100 (${confidence.level})`\n  );\n  lines.push(`Trend: ${confidence.trend}`);\n  lines.push(\"\");\n\n  lines.push(\"Signals:\");\n  lines.push(`  Tool Activity: ${confidence.signals.toolActivity.score}/100`);\n  lines.push(\n    `    Healthy cycles: ${confidence.signals.toolActivity.patterns.healthyCycles}`\n  );\n  lines.push(\n    `    Stuck loops: ${confidence.signals.toolActivity.patterns.stuckLoops}`\n  );\n  lines.push(\n    `    Last activity: ${formatDuration(confidence.signals.toolActivity.lastActivityAge)} ago`\n  );\n\n  if (confidence.signals.selfReported !== null) {\n    lines.push(`  Self-Reported: ${confidence.signals.selfReported}/100`);\n  } else {\n    lines.push(`  Self-Reported: not available`);\n  }\n\n  lines.push(`  Output Analysis: ${confidence.signals.outputAnalysis.score}/100`);\n  lines.push(\n    `    Errors: ${confidence.signals.outputAnalysis.indicators.errorCount}`\n  );\n  lines.push(\n    `    Success indicators: ${confidence.signals.outputAnalysis.indicators.successIndicators}`\n  );\n\n  if (confidence.alerts.length > 0) {\n    lines.push(\"\");\n    lines.push(\"Alerts:\");\n    for (const alert of confidence.alerts) {\n      const icon = alert.severity === \"critical\" ? \"\ud83d\udea8\" : \"\u26a0\ufe0f\";\n      lines.push(`  ${icon} ${alert.message}`);\n    }\n  }\n\n  return lines.join(\"\\n\");\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_formatDuration_508": {
+      "name": "formatDuration",
+      "type": "function",
+      "start_line": 508,
+      "end_line": 516,
+      "content_hash": "f9b4389c9cdc876be5294bbb539581aab8692f22",
+      "content": "function formatDuration(seconds: number): string {\n  if (seconds < 60) {\n    return `${seconds}s`;\n  } else if (seconds < 3600) {\n    return `${Math.floor(seconds / 60)}m`;\n  } else {\n    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

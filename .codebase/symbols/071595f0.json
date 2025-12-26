@@ -1,0 +1,95 @@
+{
+  "file_path": "/work/.local/tools/modelscan/storage/sqlite.go",
+  "file_hash": "8a71e107679644be14db063e068f9add4964b276",
+  "updated_at": "2025-12-26T17:34:20.407519",
+  "symbols": {
+    "function_InitDB_16": {
+      "name": "InitDB",
+      "type": "function",
+      "start_line": 16,
+      "end_line": 30,
+      "content_hash": "ec3380263b96d051b83683c6e1ca43657ea731d6",
+      "content": "func InitDB(dbPath string) error {\n\tvar err error\n\tdb, err = sql.Open(\"sqlite3\", dbPath)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to open database: %w\", err)\n\t}\n\n\tif err = createTables(); err != nil {\n\t\treturn fmt.Errorf(\"failed to create tables: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// createTables creates the necessary database tables",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createTables_31": {
+      "name": "createTables",
+      "type": "function",
+      "start_line": 31,
+      "end_line": 91,
+      "content_hash": "1aef4ad17b1acf26b22b6778b8b9824da4d1c45c",
+      "content": "func createTables() error {\n\tqueries := []string{\n\t\t`CREATE TABLE IF NOT EXISTS providers (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tname TEXT UNIQUE NOT NULL,\n\t\t\tcapabilities TEXT,\n\t\t\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP\n\t\t)`,\n\t\t`CREATE TABLE IF NOT EXISTS models (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\tmodel_id TEXT NOT NULL,\n\t\t\tname TEXT NOT NULL,\n\t\t\tdescription TEXT,\n\t\t\tcost_per_1m_in REAL,\n\t\t\tcost_per_1m_out REAL,\n\t\t\tcontext_window INTEGER,\n\t\t\tmax_tokens INTEGER,\n\t\t\tsupports_images BOOLEAN,\n\t\t\tsupports_tools BOOLEAN,\n\t\t\tcan_reason BOOLEAN,\n\t\t\tcan_stream BOOLEAN,\n\t\t\tcategories TEXT,\n\t\t\tcapabilities TEXT,\n\t\t\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n\t\t\tUNIQUE(provider_name, model_id),\n\t\t\tFOREIGN KEY(provider_name) REFERENCES providers(name)\n\t\t)`,\n\t\t`CREATE TABLE IF NOT EXISTS endpoints (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\tpath TEXT NOT NULL,\n\t\t\tmethod TEXT NOT NULL,\n\t\t\tdescription TEXT,\n\t\t\tstatus TEXT,\n\t\t\tlatency_ms INTEGER,\n\t\t\terror_message TEXT,\n\t\t\tcreated_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n\t\t\tUNIQUE(provider_name, path, method),\n\t\t\tFOREIGN KEY(provider_name) REFERENCES providers(name)\n\t\t)`,\n\t\t`CREATE TABLE IF NOT EXISTS validation_runs (\n\t\t\tid INTEGER PRIMARY KEY AUTOINCREMENT,\n\t\t\tprovider_name TEXT NOT NULL,\n\t\t\trun_at DATETIME DEFAULT CURRENT_TIMESTAMP,\n\t\t\tsuccess_count INTEGER,\n\t\t\tfailure_count INTEGER,\n\t\t\ttotal_latency_ms INTEGER\n\t\t)`,\n\t}\n\n\tfor _, query := range queries {\n\t\tif _, err := db.Exec(query); err != nil {\n\t\t\treturn fmt.Errorf(\"failed to execute query %s: %w\", query, err)\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// StoreProviderInfo saves provider information to the database",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_StoreProviderInfo_92": {
+      "name": "StoreProviderInfo",
+      "type": "function",
+      "start_line": 92,
+      "end_line": 134,
+      "content_hash": "17aca680c8e8527024a06f7a1d63e9050d3d4826",
+      "content": "func StoreProviderInfo(name string, models []providers.Model, capabilities providers.ProviderCapabilities) error {\n\tif db == nil {\n\t\treturn fmt.Errorf(\"database not initialized\")\n\t}\n\n\t// Store provider and capabilities\n\tcapsJSON, _ := json.Marshal(capabilities)\n\t_, err := db.Exec(`\n\t\tINSERT OR REPLACE INTO providers (name, capabilities) \n\t\tVALUES (?, ?)\n\t`, name, string(capsJSON))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to insert provider: %w\", err)\n\t}\n\n\t// Store models\n\tfor _, model := range models {\n\t\tcategoriesJSON, _ := json.Marshal(model.Categories)\n\t\tmodelCapsJSON, _ := json.Marshal(model.Capabilities)\n\n\t\t_, err := db.Exec(`\n\t\t\tINSERT OR REPLACE INTO models \n\t\t\t(provider_name, model_id, name, description, cost_per_1m_in, cost_per_1m_out,\n\t\t\t context_window, max_tokens, supports_images, supports_tools, can_reason, can_stream,\n\t\t\t categories, capabilities)\n\t\t\tVALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n\t\t`,\n\t\t\tname, model.ID, model.Name, model.Description,\n\t\t\tmodel.CostPer1MIn, model.CostPer1MOut,\n\t\t\tmodel.ContextWindow, model.MaxTokens,\n\t\t\tmodel.SupportsImages, model.SupportsTools,\n\t\t\tmodel.CanReason, model.CanStream,\n\t\t\tstring(categoriesJSON), string(modelCapsJSON),\n\t\t)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to insert model %s: %w\", model.ID, err)\n\t\t}\n\t}\n\n\treturn nil\n}\n\n// StoreEndpointResults saves endpoint validation results",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_StoreEndpointResults_135": {
+      "name": "StoreEndpointResults",
+      "type": "function",
+      "start_line": 135,
+      "end_line": 183,
+      "content_hash": "ea92d302c6afb943ebdfdb2384a75cbba1950925",
+      "content": "func StoreEndpointResults(name string, endpoints []providers.Endpoint) error {\n\tif db == nil {\n\t\treturn fmt.Errorf(\"database not initialized\")\n\t}\n\n\tvar successCount, failureCount, totalLatency int\n\n\tfor _, endpoint := range endpoints {\n\t\tlatencyMs := 0\n\t\tif endpoint.Latency > 0 {\n\t\t\tlatencyMs = int(endpoint.Latency.Milliseconds())\n\t\t}\n\n\t\t_, err := db.Exec(`\n\t\t\tINSERT OR REPLACE INTO endpoints \n\t\t\t(provider_name, path, method, description, status, latency_ms, error_message)\n\t\t\tVALUES (?, ?, ?, ?, ?, ?, ?)\n\t\t`,\n\t\t\tname, endpoint.Path, endpoint.Method,\n\t\t\tendpoint.Description, string(endpoint.Status),\n\t\t\tlatencyMs, endpoint.Error,\n\t\t)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to insert endpoint %s: %w\", endpoint.Path, err)\n\t\t}\n\n\t\ttotalLatency += latencyMs\n\t\tif endpoint.Status == providers.StatusWorking {\n\t\t\tsuccessCount++\n\t\t} else if endpoint.Status == providers.StatusFailed {\n\t\t\tfailureCount++\n\t\t}\n\t}\n\n\t// Record validation run\n\t_, err := db.Exec(`\n\t\tINSERT INTO validation_runs \n\t\t(provider_name, success_count, failure_count, total_latency_ms)\n\t\tVALUES (?, ?, ?, ?)\n\t`,\n\t\tname, successCount, failureCount, totalLatency)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to record validation run: %w\", err)\n\t}\n\n\treturn nil\n}\n\n// GetProviderModels retrieves all models for a provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetProviderModels_184": {
+      "name": "GetProviderModels",
+      "type": "function",
+      "start_line": 184,
+      "end_line": 228,
+      "content_hash": "7033af931a39374cf1a96d2391cf441cb2d643d2",
+      "content": "func GetProviderModels(providerName string) ([]providers.Model, error) {\n\tif db == nil {\n\t\treturn nil, fmt.Errorf(\"database not initialized\")\n\t}\n\n\trows, err := db.Query(`\n\t\tSELECT model_id, name, description, cost_per_1m_in, cost_per_1m_out,\n\t\t\t   context_window, max_tokens, supports_images, supports_tools, can_reason, can_stream,\n\t\t\t   categories, capabilities\n\t\tFROM models \n\t\tWHERE provider_name = ?\n\t\tORDER BY name\n\t`, providerName)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to query models: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar models []providers.Model\n\tfor rows.Next() {\n\t\tvar model providers.Model\n\t\tvar categoriesJSON, capsJSON string\n\n\t\terr := rows.Scan(\n\t\t\t&model.ID, &model.Name, &model.Description,\n\t\t\t&model.CostPer1MIn, &model.CostPer1MOut,\n\t\t\t&model.ContextWindow, &model.MaxTokens,\n\t\t\t&model.SupportsImages, &model.SupportsTools,\n\t\t\t&model.CanReason, &model.CanStream,\n\t\t\t&categoriesJSON, &capsJSON,\n\t\t)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan model row: %w\", err)\n\t\t}\n\n\t\tjson.Unmarshal([]byte(categoriesJSON), &model.Categories)\n\t\tjson.Unmarshal([]byte(capsJSON), &model.Capabilities)\n\n\t\tmodels = append(models, model)\n\t}\n\n\treturn models, nil\n}\n\n// GetProviderEndpoints retrieves validation results for a provider",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetProviderEndpoints_229": {
+      "name": "GetProviderEndpoints",
+      "type": "function",
+      "start_line": 229,
+      "end_line": 270,
+      "content_hash": "b4252bf0a52dfe9e1431b78733e9b9db3d301115",
+      "content": "func GetProviderEndpoints(providerName string) ([]providers.Endpoint, error) {\n\tif db == nil {\n\t\treturn nil, fmt.Errorf(\"database not initialized\")\n\t}\n\n\trows, err := db.Query(`\n\t\tSELECT path, method, description, status, latency_ms, error_message\n\t\tFROM endpoints \n\t\tWHERE provider_name = ?\n\t\tORDER BY path, method\n\t`, providerName)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to query endpoints: %w\", err)\n\t}\n\tdefer rows.Close()\n\n\tvar endpoints []providers.Endpoint\n\tfor rows.Next() {\n\t\tvar endpoint providers.Endpoint\n\t\tvar latencyMs int\n\t\tvar statusStr string\n\n\t\terr := rows.Scan(\n\t\t\t&endpoint.Path, &endpoint.Method, &endpoint.Description,\n\t\t\t&statusStr, &latencyMs, &endpoint.Error,\n\t\t)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to scan endpoint row: %w\", err)\n\t\t}\n\n\t\tendpoint.Status = providers.EndpointStatus(statusStr)\n\t\tif latencyMs > 0 {\n\t\t\tendpoint.Latency = time.Duration(latencyMs) * time.Millisecond\n\t\t}\n\n\t\tendpoints = append(endpoints, endpoint)\n\t}\n\n\treturn endpoints, nil\n}\n\n// CloseDB closes the database connection",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CloseDB_271": {
+      "name": "CloseDB",
+      "type": "function",
+      "start_line": 271,
+      "end_line": 280,
+      "content_hash": "65ceb4d309422af5a128cf61e68d58e94c2060d6",
+      "content": "func CloseDB() error {\n\tif db != nil {\n\t\terr := db.Close()\n\t\tdb = nil\n\t\treturn err\n\t}\n\treturn nil\n}\n\n// ExportToSQLite creates the SQLite database and exports all stored data",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ExportToSQLite_281": {
+      "name": "ExportToSQLite",
+      "type": "function",
+      "start_line": 281,
+      "end_line": 288,
+      "content_hash": "1c2985b5a6431086d795a2dbaa41391fc80eb7de",
+      "content": "func ExportToSQLite(dbPath string) error {\n\tif err := InitDB(dbPath); err != nil {\n\t\treturn fmt.Errorf(\"failed to initialize database: %w\", err)\n\t}\n\tdefer db.Close()\n\n\treturn db.Ping()\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

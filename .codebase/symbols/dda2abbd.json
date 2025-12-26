@@ -1,0 +1,205 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/vscode-extension/context-engine-uploader/onboarding.js",
+  "file_hash": "b41dd5f95de86cd74bca630020c41767f5959892",
+  "updated_at": "2025-12-26T17:34:21.172958",
+  "symbols": {
+    "function_exists_10": {
+      "name": "exists",
+      "type": "function",
+      "start_line": 10,
+      "end_line": 16,
+      "content_hash": "8fcc72520c7c077a84f04bdcca553b0cf353f649",
+      "content": "function exists(p) {\n  try {\n    return !!(p && fs.existsSync(p));\n  } catch (_) {\n    return false;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_defaultCloneParentPath_18": {
+      "name": "defaultCloneParentPath",
+      "type": "function",
+      "start_line": 18,
+      "end_line": 35,
+      "content_hash": "f8c0f514d47bf376d843925087908199bec4de59",
+      "content": "function defaultCloneParentPath() {\n  try {\n    const home = os.homedir();\n    if (!home) {\n      return undefined;\n    }\n    const docs = path.join(home, 'Documents');\n    if (exists(docs)) {\n      return docs;\n    }\n    if (exists(home)) {\n      return home;\n    }\n    return undefined;\n  } catch (_) {\n    return undefined;\n  }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_createOnboardingManager_37": {
+      "name": "createOnboardingManager",
+      "type": "function",
+      "start_line": 37,
+      "end_line": 287,
+      "content_hash": "c9c3ecf6ecd7906959fcbb06cac15e9114d8f680",
+      "content": "function createOnboardingManager(deps) {\n  const vscode = deps.vscode;\n  const context = deps.context;\n  const log = deps.log;\n  const appendOutput = deps.appendOutput;\n  const showOutput = deps.showOutput;\n\n  function append(line) {\n    if (typeof appendOutput === 'function') {\n      appendOutput(`${line}${line.endsWith('\\n') ? '' : '\\n'}`);\n    }\n  }\n\n  async function pickParentFolder() {\n    const defaultPath = defaultCloneParentPath();\n    const defaultUri = defaultPath ? vscode.Uri.file(defaultPath) : undefined;\n    const selection = await vscode.window.showOpenDialog({\n      title: 'Select folder for Context Engine stack',\n      canSelectFiles: false,\n      canSelectFolders: true,\n      canSelectMany: false,\n      openLabel: 'Use Folder',\n      defaultUri,\n    });\n    if (!selection || !selection.length) {\n      return undefined;\n    }\n    return selection[0].fsPath;\n  }\n\n  async function confirmClone(targetPath) {\n    const result = await vscode.window.showInformationMessage(\n      `Clone Context Engine repo into:\\n${targetPath}\\n\\nand run \\'docker compose up -d\\'?`,\n      { modal: true },\n      'Clone & Start',\n      'Cancel'\n    );\n    return result === 'Clone & Start';\n  }\n\n  async function confirmStart(targetPath) {\n    const result = await vscode.window.showInformationMessage(\n      `Run \\'docker compose up -d\\' in:\\n${targetPath}?`,\n      { modal: true },\n      'Start Stack',\n      'Cancel'\n    );\n    return result === 'Start Stack';\n  }\n\n  function getSavedStackPath() {\n    try {\n      if (context && context.globalState && typeof context.globalState.get === 'function') {\n        const raw = context.globalState.get(LAST_STACK_PATH_KEY);\n        return typeof raw === 'string' ? raw : undefined;\n      }\n    } catch (_) {\n    }\n    return undefined;\n  }\n\n  function saveStackPath(stackPath) {\n    try {\n      if (context && context.globalState && typeof context.globalState.update === 'function') {\n        context.globalState.update(LAST_STACK_PATH_KEY, stackPath || undefined).catch(() => {});\n      }\n    } catch (_) {\n    }\n  }\n\n  function ensureDir(dirPath) {\n    try {\n      fs.mkdirSync(dirPath, { recursive: true });\n    } catch (error) {\n      throw new Error(`Failed to create directory ${dirPath}: ${error instanceof Error ? error.message : String(error)}`);\n    }\n  }\n\n  function runCommand(command, args, options) {\n    return new Promise((resolve, reject) => {\n      const child = spawn(command, args, { ...options, env: { ...process.env, ...(options && options.env ? options.env : {}) } });\n      if (child.stdout) {\n        child.stdout.on('data', data => {\n          append(`[${command}] ${data.toString()}`);\n        });\n      }\n      if (child.stderr) {\n        child.stderr.on('data', data => {\n          append(`[${command}] ${data.toString()}`);\n        });\n      }\n      child.on('error', error => {\n        reject(error);\n      });\n      child.on('close', code => {\n        if (code === 0) {\n          resolve();\n        } else {\n          reject(new Error(`${command} exited with code ${code}`));\n        }\n      });\n    });\n  }\n\n  async function runGitClone(parentPath, targetPath) {\n    ensureDir(parentPath);\n    if (exists(targetPath)) {\n      append(`[onboarding] Target folder already exists at ${targetPath}; skipping clone.`);\n      return;\n    }\n    append(`[onboarding] Cloning ${STACK_REPO_URL} into ${targetPath}`);\n    await runCommand('git', ['clone', STACK_REPO_URL, targetPath], { cwd: parentPath });\n  }\n\n  function resolveDockerComposeInvocation() {\n    try {\n      const probe = spawnSync('docker', ['compose', 'version']);\n      if (!probe.error && probe.status === 0) {\n        return { command: 'docker', args: ['compose', 'up', '-d'] };\n      }\n    } catch (_) {\n      // ignore\n    }\n    try {\n      const legacy = spawnSync('docker-compose', ['--version']);\n      if (!legacy.error && legacy.status === 0) {\n        return { command: 'docker-compose', args: ['up', '-d'] };\n      }\n    } catch (_) {\n      // ignore\n    }\n    throw new Error('Docker Compose is not available (expected \"docker compose\" or \"docker-compose\").');\n  }\n\n  async function runDockerCompose(targetPath) {\n    const invocation = resolveDockerComposeInvocation();\n    append(`[onboarding] Running ${invocation.command} ${invocation.args.join(' ')} in ${targetPath}`);\n    await runCommand(invocation.command, invocation.args, { cwd: targetPath });\n  }\n\n  function looksLikeStackRoot(targetPath) {\n    try {\n      if (!targetPath || !exists(targetPath)) {\n        return false;\n      }\n      const composeFile = path.join(targetPath, 'docker-compose.yml');\n      return exists(composeFile);\n    } catch (_) {\n      return false;\n    }\n  }\n\n  async function startStackAtPath(targetPath) {\n    if (!targetPath || !exists(targetPath)) {\n      vscode.window.showErrorMessage('Context Engine onboarding: saved stack folder does not exist.');\n      return;\n    }\n    if (!looksLikeStackRoot(targetPath)) {\n      vscode.window.showWarningMessage('Context Engine onboarding: selected folder does not look like a Context Engine stack (missing docker-compose.yml).');\n    }\n\n    const confirmed = await confirmStart(targetPath);\n    if (!confirmed) {\n      return;\n    }\n\n    if (typeof showOutput === 'function') {\n      showOutput();\n    }\n    await vscode.window.withProgress({\n      location: vscode.ProgressLocation.Notification,\n      title: 'Starting Context Engine stack',\n      cancellable: false,\n    }, async progress => {\n      progress.report({ message: 'Running docker compose\u2026' });\n      await runDockerCompose(targetPath);\n    });\n\n    vscode.window.showInformationMessage('Context Engine stack start requested.', 'Open Folder', 'Done').then(choice => {\n      if (choice === 'Open Folder') {\n        vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(targetPath), true);\n      }\n    });\n  }\n\n  async function startSavedStack() {\n    const saved = getSavedStackPath();\n    if (saved) {\n      return startStackAtPath(saved);\n    }\n\n    const picked = await vscode.window.showOpenDialog({\n      title: 'Select existing Context Engine stack folder',\n      canSelectFiles: false,\n      canSelectFolders: true,\n      canSelectMany: false,\n      openLabel: 'Use Folder',\n    });\n    if (!picked || !picked.length) {\n      return;\n    }\n    const targetPath = picked[0].fsPath;\n    saveStackPath(targetPath);\n    return startStackAtPath(targetPath);\n  }\n\n  async function cloneAndStartStack() {\n    try {\n      const parentPath = await pickParentFolder();\n      if (!parentPath) {\n        return;\n      }\n      const targetPath = path.join(parentPath, STACK_DIRNAME);\n      const confirmed = await confirmClone(targetPath);\n      if (!confirmed) {\n        return;\n      }\n      if (typeof showOutput === 'function') {\n        showOutput();\n      }\n      await vscode.window.withProgress({\n        location: vscode.ProgressLocation.Notification,\n        title: 'Setting up Context Engine stack',\n        cancellable: false,\n      }, async progress => {\n        progress.report({ message: 'Cloning repository\u2026' });\n        await runGitClone(parentPath, targetPath);\n        progress.report({ message: 'Starting docker compose\u2026' });\n        await runDockerCompose(targetPath);\n      });\n\n      saveStackPath(targetPath);\n      vscode.window.showInformationMessage('Context Engine stack cloned and docker compose started.', 'Open Folder', 'Done').then(choice => {\n        if (choice === 'Open Folder') {\n          vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(targetPath), true);\n        }\n      });\n    } catch (error) {\n      const message = error instanceof Error ? error.message : String(error);\n      log(`Clone & Compose onboarding failed: ${message}`);\n      vscode.window.showErrorMessage(`Context Engine onboarding failed: ${message}`);\n    }\n  }\n\n  return {\n    cloneAndStartStack,\n    startSavedStack,\n    getSavedStackPath,\n    dispose: () => {},\n  };\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_append_44": {
+      "name": "append",
+      "type": "function",
+      "start_line": 44,
+      "end_line": 48,
+      "content_hash": "32f4207d9be3e7cbf986d903b16035b319b8bddd",
+      "content": "  function append(line) {\n    if (typeof appendOutput === 'function') {\n      appendOutput(`${line}${line.endsWith('\\n') ? '' : '\\n'}`);\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_pickParentFolder_50": {
+      "name": "pickParentFolder",
+      "type": "function",
+      "start_line": 50,
+      "end_line": 65,
+      "content_hash": "86a7acd9f0791047b7f8a9461319dc5ca7180688",
+      "content": "  async function pickParentFolder() {\n    const defaultPath = defaultCloneParentPath();\n    const defaultUri = defaultPath ? vscode.Uri.file(defaultPath) : undefined;\n    const selection = await vscode.window.showOpenDialog({\n      title: 'Select folder for Context Engine stack',\n      canSelectFiles: false,\n      canSelectFolders: true,\n      canSelectMany: false,\n      openLabel: 'Use Folder',\n      defaultUri,\n    });\n    if (!selection || !selection.length) {\n      return undefined;\n    }\n    return selection[0].fsPath;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_confirmClone_67": {
+      "name": "confirmClone",
+      "type": "function",
+      "start_line": 67,
+      "end_line": 75,
+      "content_hash": "c7a9cffa24c3b02194660b940b7091cd44b2b4c9",
+      "content": "  async function confirmClone(targetPath) {\n    const result = await vscode.window.showInformationMessage(\n      `Clone Context Engine repo into:\\n${targetPath}\\n\\nand run \\'docker compose up -d\\'?`,\n      { modal: true },\n      'Clone & Start',\n      'Cancel'\n    );\n    return result === 'Clone & Start';\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_confirmStart_77": {
+      "name": "confirmStart",
+      "type": "function",
+      "start_line": 77,
+      "end_line": 85,
+      "content_hash": "6877ddb6c5ab2b08fda973772ecdc735f186b033",
+      "content": "  async function confirmStart(targetPath) {\n    const result = await vscode.window.showInformationMessage(\n      `Run \\'docker compose up -d\\' in:\\n${targetPath}?`,\n      { modal: true },\n      'Start Stack',\n      'Cancel'\n    );\n    return result === 'Start Stack';\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_getSavedStackPath_87": {
+      "name": "getSavedStackPath",
+      "type": "function",
+      "start_line": 87,
+      "end_line": 96,
+      "content_hash": "f9df27a7f28dc1039e1471b7267b937cf0a3d61a",
+      "content": "  function getSavedStackPath() {\n    try {\n      if (context && context.globalState && typeof context.globalState.get === 'function') {\n        const raw = context.globalState.get(LAST_STACK_PATH_KEY);\n        return typeof raw === 'string' ? raw : undefined;\n      }\n    } catch (_) {\n    }\n    return undefined;\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_saveStackPath_98": {
+      "name": "saveStackPath",
+      "type": "function",
+      "start_line": 98,
+      "end_line": 105,
+      "content_hash": "612f35076461d60607b08f73da7292dbcd061385",
+      "content": "  function saveStackPath(stackPath) {\n    try {\n      if (context && context.globalState && typeof context.globalState.update === 'function') {\n        context.globalState.update(LAST_STACK_PATH_KEY, stackPath || undefined).catch(() => {});\n      }\n    } catch (_) {\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_ensureDir_107": {
+      "name": "ensureDir",
+      "type": "function",
+      "start_line": 107,
+      "end_line": 113,
+      "content_hash": "f4aa57c7d54bcc0d971d580fc8b4fea3038090b6",
+      "content": "  function ensureDir(dirPath) {\n    try {\n      fs.mkdirSync(dirPath, { recursive: true });\n    } catch (error) {\n      throw new Error(`Failed to create directory ${dirPath}: ${error instanceof Error ? error.message : String(error)}`);\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runCommand_115": {
+      "name": "runCommand",
+      "type": "function",
+      "start_line": 115,
+      "end_line": 139,
+      "content_hash": "4a7a5846b518288ccf78e895f658e84eddb17af0",
+      "content": "  function runCommand(command, args, options) {\n    return new Promise((resolve, reject) => {\n      const child = spawn(command, args, { ...options, env: { ...process.env, ...(options && options.env ? options.env : {}) } });\n      if (child.stdout) {\n        child.stdout.on('data', data => {\n          append(`[${command}] ${data.toString()}`);\n        });\n      }\n      if (child.stderr) {\n        child.stderr.on('data', data => {\n          append(`[${command}] ${data.toString()}`);\n        });\n      }\n      child.on('error', error => {\n        reject(error);\n      });\n      child.on('close', code => {\n        if (code === 0) {\n          resolve();\n        } else {\n          reject(new Error(`${command} exited with code ${code}`));\n        }\n      });\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runGitClone_141": {
+      "name": "runGitClone",
+      "type": "function",
+      "start_line": 141,
+      "end_line": 149,
+      "content_hash": "3f97954dcef5f5fab8468796d3a0ff0ca409cb55",
+      "content": "  async function runGitClone(parentPath, targetPath) {\n    ensureDir(parentPath);\n    if (exists(targetPath)) {\n      append(`[onboarding] Target folder already exists at ${targetPath}; skipping clone.`);\n      return;\n    }\n    append(`[onboarding] Cloning ${STACK_REPO_URL} into ${targetPath}`);\n    await runCommand('git', ['clone', STACK_REPO_URL, targetPath], { cwd: parentPath });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_resolveDockerComposeInvocation_151": {
+      "name": "resolveDockerComposeInvocation",
+      "type": "function",
+      "start_line": 151,
+      "end_line": 169,
+      "content_hash": "6a46c0d3df321b0bfa2395c5f6874a155ee8a756",
+      "content": "  function resolveDockerComposeInvocation() {\n    try {\n      const probe = spawnSync('docker', ['compose', 'version']);\n      if (!probe.error && probe.status === 0) {\n        return { command: 'docker', args: ['compose', 'up', '-d'] };\n      }\n    } catch (_) {\n      // ignore\n    }\n    try {\n      const legacy = spawnSync('docker-compose', ['--version']);\n      if (!legacy.error && legacy.status === 0) {\n        return { command: 'docker-compose', args: ['up', '-d'] };\n      }\n    } catch (_) {\n      // ignore\n    }\n    throw new Error('Docker Compose is not available (expected \"docker compose\" or \"docker-compose\").');\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_runDockerCompose_171": {
+      "name": "runDockerCompose",
+      "type": "function",
+      "start_line": 171,
+      "end_line": 175,
+      "content_hash": "73252f3b3c66d19f3989898614d04f02ffecd221",
+      "content": "  async function runDockerCompose(targetPath) {\n    const invocation = resolveDockerComposeInvocation();\n    append(`[onboarding] Running ${invocation.command} ${invocation.args.join(' ')} in ${targetPath}`);\n    await runCommand(invocation.command, invocation.args, { cwd: targetPath });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_looksLikeStackRoot_177": {
+      "name": "looksLikeStackRoot",
+      "type": "function",
+      "start_line": 177,
+      "end_line": 187,
+      "content_hash": "3ad3facec545e90b460fbe6cdf8dcf3e176661a6",
+      "content": "  function looksLikeStackRoot(targetPath) {\n    try {\n      if (!targetPath || !exists(targetPath)) {\n        return false;\n      }\n      const composeFile = path.join(targetPath, 'docker-compose.yml');\n      return exists(composeFile);\n    } catch (_) {\n      return false;\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_startStackAtPath_189": {
+      "name": "startStackAtPath",
+      "type": "function",
+      "start_line": 189,
+      "end_line": 220,
+      "content_hash": "3ca4380f4425c108792e7fc6a01241c88fba3ed8",
+      "content": "  async function startStackAtPath(targetPath) {\n    if (!targetPath || !exists(targetPath)) {\n      vscode.window.showErrorMessage('Context Engine onboarding: saved stack folder does not exist.');\n      return;\n    }\n    if (!looksLikeStackRoot(targetPath)) {\n      vscode.window.showWarningMessage('Context Engine onboarding: selected folder does not look like a Context Engine stack (missing docker-compose.yml).');\n    }\n\n    const confirmed = await confirmStart(targetPath);\n    if (!confirmed) {\n      return;\n    }\n\n    if (typeof showOutput === 'function') {\n      showOutput();\n    }\n    await vscode.window.withProgress({\n      location: vscode.ProgressLocation.Notification,\n      title: 'Starting Context Engine stack',\n      cancellable: false,\n    }, async progress => {\n      progress.report({ message: 'Running docker compose\u2026' });\n      await runDockerCompose(targetPath);\n    });\n\n    vscode.window.showInformationMessage('Context Engine stack start requested.', 'Open Folder', 'Done').then(choice => {\n      if (choice === 'Open Folder') {\n        vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(targetPath), true);\n      }\n    });\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_startSavedStack_222": {
+      "name": "startSavedStack",
+      "type": "function",
+      "start_line": 222,
+      "end_line": 241,
+      "content_hash": "03b6d3b19751d32111508530ee7ec6d4f72786ff",
+      "content": "  async function startSavedStack() {\n    const saved = getSavedStackPath();\n    if (saved) {\n      return startStackAtPath(saved);\n    }\n\n    const picked = await vscode.window.showOpenDialog({\n      title: 'Select existing Context Engine stack folder',\n      canSelectFiles: false,\n      canSelectFolders: true,\n      canSelectMany: false,\n      openLabel: 'Use Folder',\n    });\n    if (!picked || !picked.length) {\n      return;\n    }\n    const targetPath = picked[0].fsPath;\n    saveStackPath(targetPath);\n    return startStackAtPath(targetPath);\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_cloneAndStartStack_243": {
+      "name": "cloneAndStartStack",
+      "type": "function",
+      "start_line": 243,
+      "end_line": 279,
+      "content_hash": "1e871bc685ee2e92e49f0d6adac9aaef2f8e5945",
+      "content": "  async function cloneAndStartStack() {\n    try {\n      const parentPath = await pickParentFolder();\n      if (!parentPath) {\n        return;\n      }\n      const targetPath = path.join(parentPath, STACK_DIRNAME);\n      const confirmed = await confirmClone(targetPath);\n      if (!confirmed) {\n        return;\n      }\n      if (typeof showOutput === 'function') {\n        showOutput();\n      }\n      await vscode.window.withProgress({\n        location: vscode.ProgressLocation.Notification,\n        title: 'Setting up Context Engine stack',\n        cancellable: false,\n      }, async progress => {\n        progress.report({ message: 'Cloning repository\u2026' });\n        await runGitClone(parentPath, targetPath);\n        progress.report({ message: 'Starting docker compose\u2026' });\n        await runDockerCompose(targetPath);\n      });\n\n      saveStackPath(targetPath);\n      vscode.window.showInformationMessage('Context Engine stack cloned and docker compose started.', 'Open Folder', 'Done').then(choice => {\n        if (choice === 'Open Folder') {\n          vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(targetPath), true);\n        }\n      });\n    } catch (error) {\n      const message = error instanceof Error ? error.message : String(error);\n      log(`Clone & Compose onboarding failed: ${message}`);\n      vscode.window.showErrorMessage(`Context Engine onboarding failed: ${message}`);\n    }\n  }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

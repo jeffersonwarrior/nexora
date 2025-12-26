@@ -1,0 +1,260 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/helix_engine/tests/traversal_tests/vector_traversal_tests.rs",
+  "file_hash": "2e7b02bcaff0ae4d790d582bc1b40cc0255ac303",
+  "updated_at": "2025-12-26T17:34:22.657855",
+  "symbols": {
+    "function_setup_test_db_32": {
+      "name": "setup_test_db",
+      "type": "function",
+      "start_line": 32,
+      "end_line": 44,
+      "content_hash": "08bb0f06064d2277b5cf43aecf3c82469d11003e",
+      "content": "fn setup_test_db() -> (TempDir, Arc<HelixGraphStorage>) {\n    let temp_dir = TempDir::new().unwrap();\n    let db_path = temp_dir.path().to_str().unwrap();\n    let storage = HelixGraphStorage::new(\n        db_path,\n        crate::helix_engine::traversal_core::config::Config::default(),\n        Default::default(),\n    )\n    .unwrap();\n    (temp_dir, Arc::new(storage))\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_insert_and_fetch_vector_45": {
+      "name": "test_insert_and_fetch_vector",
+      "type": "function",
+      "start_line": 45,
+      "end_line": 72,
+      "content_hash": "69aca7aefe7961d859291e616714e24e0db4e619",
+      "content": "fn test_insert_and_fetch_vector() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.1, 0.2, 0.3], \"embedding\", None)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let fetched = G::new(&storage, &txn, &arena)\n        .e_from_type(\"embedding\")\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    assert!(fetched.is_empty());\n\n    let results = G::new(&storage, &txn, &arena)\n        .search_v::<Filter, _>(&[0.1, 0.2, 0.3], 10, \"embedding\", None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    assert_eq!(results.len(), 1);\n    assert_eq!(results[0].id(), vector.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_vector_edges_from_and_to_node_73": {
+      "name": "test_vector_edges_from_and_to_node",
+      "type": "function",
+      "start_line": 73,
+      "end_line": 106,
+      "content_hash": "49893ae1146ee3f35652ed2743de2c43a7b0ebb6",
+      "content": "fn test_vector_edges_from_and_to_node() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node_id = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", None, None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap()[0]\n        .id();\n    let vector_id = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 0.0, 0.0], \"embedding\", None)\n        .collect_to_obj()\n        .unwrap()\n        .id();\n    G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\"has_vector\", None, node_id, vector_id, false)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let neighbors = G::new(&storage, &txn, &arena)\n        .n_from_id(&node_id)\n        .out_e(\"has_vector\")\n        .to_v(true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    assert_eq!(neighbors.len(), 1);\n    assert_eq!(neighbors[0].id(), vector_id);\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_brute_force_vector_search_orders_by_distance_107": {
+      "name": "test_brute_force_vector_search_orders_by_distance",
+      "type": "function",
+      "start_line": 107,
+      "end_line": 150,
+      "content_hash": "f4743aa5bab1d845f120a3d29158bc3eaea0cab6",
+      "content": "fn test_brute_force_vector_search_orders_by_distance() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", None, None)\n        .collect_to_obj()\n        .unwrap();\n\n    let vectors = vec![\n        vec![1.0, 2.0, 3.0],\n        vec![4.0, 5.0, 6.0],\n        vec![7.0, 8.0, 9.0],\n    ];\n    let mut vector_ids = Vec::new();\n    for vector in vectors {\n        let vec_id = G::new_mut(&storage, &arena, &mut txn)\n            .insert_v::<Filter>(&vector, \"vector\", None)\n            .collect_to_obj()\n            .unwrap()\n            .id();\n        G::new_mut(&storage, &arena, &mut txn)\n            .add_edge(\"embedding\", None, node.id(), vec_id, false)\n            .collect_to_obj()\n            .unwrap();\n        vector_ids.push(vec_id);\n    }\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let traversal = G::new(&storage, &txn, &arena)\n        .n_from_id(&node.id())\n        .out_e(\"embedding\")\n        .to_v(true)\n        .brute_force_search_v(&[1.0, 2.0, 3.0], 10)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    assert_eq!(traversal.len(), 3);\n    assert_eq!(traversal[0].id(), vector_ids[0]);\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_drop_vector_removes_edges_151": {
+      "name": "test_drop_vector_removes_edges",
+      "type": "function",
+      "start_line": 151,
+      "end_line": 205,
+      "content_hash": "eb8d030a94dad9f895d4afcb5297192e23c51d20",
+      "content": "fn test_drop_vector_removes_edges() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    let node_id = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"person\", None, None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap()[0]\n        .id();\n    let vector_id = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.5, 0.5, 0.5], \"vector\", None)\n        .collect_to_obj()\n        .unwrap()\n        .id();\n    G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\"has_vector\", None, node_id, vector_id, false)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let vectors = G::new(&storage, &txn, &arena)\n        .search_v::<Filter, _>(&[0.5, 0.5, 0.5], 10, \"vector\", None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    drop(txn);\n\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    Drop::drop_traversal(\n        vectors\n            .into_iter()\n            .map(Ok::<_, crate::helix_engine::types::GraphError>),\n        storage.as_ref(),\n        &mut txn,\n    )\n    .unwrap();\n    txn.commit().unwrap();\n\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let remaining = G::new(&storage, &txn, &arena)\n        .n_from_id(&node_id)\n        .out_vec(\"has_vector\", false)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    assert!(remaining.is_empty());\n}\n\n// ============================================================================\n// v_from_type Tests\n// ============================================================================\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_basic_with_vector_data_206": {
+      "name": "test_v_from_type_basic_with_vector_data",
+      "type": "function",
+      "start_line": 206,
+      "end_line": 239,
+      "content_hash": "a09b74752a3378d2115c15e1a28e67cecd157817",
+      "content": "fn test_v_from_type_basic_with_vector_data() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert a vector with label \"test_label\"\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"test_label\", None)\n        .collect_to_obj()\n        .unwrap();\n    let vector_id = vector.id();\n    txn.commit().unwrap();\n\n    // Retrieve vectors with the label, including vector data\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"test_label\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results.len(), 1);\n    assert_eq!(results[0].id(), vector_id);\n\n    // Verify it's a full HVector with data\n    if let crate::helix_engine::traversal_core::traversal_value::TraversalValue::Vector(v) = &results[0] {\n        assert_eq!(v.data.len(), 3);\n        assert_eq!(v.data[0], 1.0);\n    } else {\n        panic!(\"Expected TraversalValue::Vector\");\n    }\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_without_vector_data_240": {
+      "name": "test_v_from_type_without_vector_data",
+      "type": "function",
+      "start_line": 240,
+      "end_line": 274,
+      "content_hash": "676c1869a9dd0f6bdeede3b8623c9ce0132d971c",
+      "content": "fn test_v_from_type_without_vector_data() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert a vector with label \"no_data_label\"\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[4.0, 5.0, 6.0], \"no_data_label\", None)\n        .collect_to_obj()\n        .unwrap();\n    let vector_id = vector.id();\n    txn.commit().unwrap();\n\n    // Retrieve vectors without vector data\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"no_data_label\", false)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results.len(), 1);\n    assert_eq!(results[0].id(), vector_id);\n\n    // Verify it's a VectorWithoutData\n    match &results[0] {\n        crate::helix_engine::traversal_core::traversal_value::TraversalValue::VectorNodeWithoutVectorData(v) => {\n            assert_eq!(*v.id(), vector_id);\n            assert_eq!(v.label(), \"no_data_label\");\n        }\n        _ => panic!(\"Expected TraversalValue::VectorNodeWithoutVectorData\"),\n    }\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_multiple_same_label_275": {
+      "name": "test_v_from_type_multiple_same_label",
+      "type": "function",
+      "start_line": 275,
+      "end_line": 314,
+      "content_hash": "cb7b5e1f6dd00975ad41f28e19139f17a1552316",
+      "content": "fn test_v_from_type_multiple_same_label() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert multiple vectors with the same label\n    let v1 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"shared_label\", None)\n        .collect_to_obj()\n        .unwrap();\n    let v2 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[4.0, 5.0, 6.0], \"shared_label\", None)\n        .collect_to_obj()\n        .unwrap();\n    let v3 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[7.0, 8.0, 9.0], \"shared_label\", None)\n        .collect_to_obj()\n        .unwrap();\n\n    let vector_ids = vec![v1.id(), v2.id(), v3.id()];\n    txn.commit().unwrap();\n\n    // Retrieve all vectors with the shared label\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"shared_label\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results.len(), 3);\n\n    // Verify all vector IDs are present\n    let retrieved_ids: Vec<_> = results.iter().map(|v| v.id()).collect();\n    for id in &vector_ids {\n        assert!(retrieved_ids.contains(id));\n    }\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_multiple_different_labels_315": {
+      "name": "test_v_from_type_multiple_different_labels",
+      "type": "function",
+      "start_line": 315,
+      "end_line": 347,
+      "content_hash": "9c77961bfcc5034cfa87bb3802c5008c3f3bb88a",
+      "content": "fn test_v_from_type_multiple_different_labels() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert vectors with different labels\n    let v1 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"label_a\", None)\n        .collect_to_obj()\n        .unwrap();\n    let _v2 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[4.0, 5.0, 6.0], \"label_b\", None)\n        .collect_to_obj()\n        .unwrap();\n    let _v3 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[7.0, 8.0, 9.0], \"label_c\", None)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    // Retrieve vectors with only label_a\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"label_a\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results.len(), 1);\n    assert_eq!(results[0].id(), v1.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_nonexistent_label_348": {
+      "name": "test_v_from_type_nonexistent_label",
+      "type": "function",
+      "start_line": 348,
+      "end_line": 371,
+      "content_hash": "9db42bb680be5bcd9ffed3cf5bd070c944f7c058",
+      "content": "fn test_v_from_type_nonexistent_label() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert a vector with a different label\n    let _vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"existing_label\", None)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    // Try to retrieve vectors with a non-existent label\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"nonexistent_label\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert!(results.is_empty());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_empty_database_372": {
+      "name": "test_v_from_type_empty_database",
+      "type": "function",
+      "start_line": 372,
+      "end_line": 386,
+      "content_hash": "e99788f481da48504155e6054850d76b4093644d",
+      "content": "fn test_v_from_type_empty_database() {\n    let (_temp_dir, storage) = setup_test_db();\n\n    // Query empty database\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"any_label\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert!(results.is_empty());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_with_properties_387": {
+      "name": "test_v_from_type_with_properties",
+      "type": "function",
+      "start_line": 387,
+      "end_line": 444,
+      "content_hash": "f395a1ceaa3acab3c6081a4da220e2ab9436a199",
+      "content": "fn test_v_from_type_with_properties() {\n    use std::collections::HashMap;\n    use crate::protocol::value::Value;\n\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Create properties with various Value types\n    let mut properties = HashMap::new();\n    properties.insert(\"name\".to_string(), Value::String(\"test_vector\".to_string()));\n    properties.insert(\"count\".to_string(), Value::I64(42));\n    properties.insert(\"score\".to_string(), Value::F64(3.14));\n    properties.insert(\"active\".to_string(), Value::Boolean(true));\n    properties.insert(\"tags\".to_string(), Value::Array(vec![\n        Value::String(\"tag1\".to_string()),\n        Value::String(\"tag2\".to_string()),\n    ]));\n\n    // Convert to ImmutablePropertiesMap\n    let props_map = ImmutablePropertiesMap::new(\n        properties.len(),\n        properties.iter().map(|(k, v)| (arena.alloc_str(k) as &str, v.clone())),\n        &arena,\n    );\n\n    // Insert vector with properties\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"prop_label\", Some(props_map))\n        .collect_to_obj()\n        .unwrap();\n    let vector_id = vector.id();\n    txn.commit().unwrap();\n\n    // Retrieve without data to check properties\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"prop_label\", false)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results.len(), 1);\n    assert_eq!(results[0].id(), vector_id);\n\n    // Verify properties are preserved\n    if let crate::helix_engine::traversal_core::traversal_value::TraversalValue::VectorNodeWithoutVectorData(v) = &results[0] {\n        let props = v.properties.as_ref().unwrap();\n        assert_eq!(props.get(\"name\"), Some(&Value::String(\"test_vector\".to_string())));\n        assert_eq!(props.get(\"count\"), Some(&Value::I64(42)));\n        assert_eq!(props.get(\"score\"), Some(&Value::F64(3.14)));\n        assert_eq!(props.get(\"active\"), Some(&Value::Boolean(true)));\n    } else {\n        panic!(\"Expected VectorNodeWithoutVectorData\");\n    }\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_deleted_vectors_filtered_445": {
+      "name": "test_v_from_type_deleted_vectors_filtered",
+      "type": "function",
+      "start_line": 445,
+      "end_line": 495,
+      "content_hash": "69e160a149e1e35f2f53f3c6ef9947c8e9ed7ea8",
+      "content": "fn test_v_from_type_deleted_vectors_filtered() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert two vectors with the same label\n    let v1 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"delete_test\", None)\n        .collect_to_obj()\n        .unwrap();\n    let v2 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[4.0, 5.0, 6.0], \"delete_test\", None)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    // Delete the first vector by re-querying it\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let vectors_to_delete = G::new(&storage, &txn, &arena)\n        .v_from_type(\"delete_test\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap()\n        .into_iter()\n        .filter(|v| v.id() == v1.id())\n        .collect::<Vec<_>>();\n    drop(txn);\n\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    use crate::helix_engine::types::GraphError;\n    Drop::drop_traversal(\n        vectors_to_delete.into_iter().map(Ok::<_, GraphError>),\n        storage.as_ref(),\n        &mut txn,\n    )\n    .unwrap();\n    txn.commit().unwrap();\n\n    // Retrieve vectors - should only get the non-deleted one\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .v_from_type(\"delete_test\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results.len(), 1);\n    assert_eq!(results[0].id(), v2.id());\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_with_edges_and_nodes_496": {
+      "name": "test_v_from_type_with_edges_and_nodes",
+      "type": "function",
+      "start_line": 496,
+      "end_line": 552,
+      "content_hash": "b95eba7e36dbed50273b667871c2626c4013365c",
+      "content": "fn test_v_from_type_with_edges_and_nodes() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Create a node\n    let node = G::new_mut(&storage, &arena, &mut txn)\n        .add_n(\"document\", None, None)\n        .collect_to_obj()\n        .unwrap();\n\n    // Create vectors and connect them to the node\n    let v1 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 0.0, 0.0], \"embedding\", None)\n        .collect_to_obj()\n        .unwrap();\n    let v2 = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.0, 1.0, 0.0], \"embedding\", None)\n        .collect_to_obj()\n        .unwrap();\n\n    G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\"has_embedding\", None, node.id(), v1.id(), false)\n        .collect_to_obj()\n        .unwrap();\n    G::new_mut(&storage, &arena, &mut txn)\n        .add_edge(\"has_embedding\", None, node.id(), v2.id(), false)\n        .collect_to_obj()\n        .unwrap();\n    txn.commit().unwrap();\n\n    // Use v_from_type to retrieve all embeddings\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let all_embeddings = G::new(&storage, &txn, &arena)\n        .v_from_type(\"embedding\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(all_embeddings.len(), 2);\n\n    let embedding_ids: Vec<_> = all_embeddings.iter().map(|v| v.id()).collect();\n    assert!(embedding_ids.contains(&v1.id()));\n    assert!(embedding_ids.contains(&v2.id()));\n\n    // Verify we can also traverse from the node to vectors\n    let from_node = G::new(&storage, &txn, &arena)\n        .n_from_id(&node.id())\n        .out_e(\"has_embedding\")\n        .to_v(true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(from_node.len(), 2);\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_type_after_migration_553": {
+      "name": "test_v_from_type_after_migration",
+      "type": "function",
+      "start_line": 553,
+      "end_line": 558,
+      "content_hash": "952511f1f90fa3673944540631d6e8b43a987513",
+      "content": "fn test_v_from_type_after_migration() {\n    use std::collections::HashMap;\n    use crate::protocol::value::Value;\n    use crate::helix_engine::storage_core::storage_migration::migrate;\n\n    // Helper to create old-format vector properties (HashMap-based)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_old_properties_559": {
+      "name": "create_old_properties",
+      "type": "function",
+      "start_line": 559,
+      "end_line": 575,
+      "content_hash": "4178b4492aecf4404ec016396ee05ffd27e26b27",
+      "content": "    fn create_old_properties(\n        label: &str,\n        is_deleted: bool,\n        extra_props: HashMap<String, Value>,\n    ) -> Vec<u8> {\n        let mut props = HashMap::new();\n        props.insert(\"label\".to_string(), Value::String(label.to_string()));\n        props.insert(\"is_deleted\".to_string(), Value::Boolean(is_deleted));\n\n        for (k, v) in extra_props {\n            props.insert(k, v);\n        }\n\n        bincode::serialize(&props).unwrap()\n    }\n\n    // Helper to clear metadata (simulates PreMetadata state)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_clear_metadata_576": {
+      "name": "clear_metadata",
+      "type": "function",
+      "start_line": 576,
+      "end_line": 741,
+      "content_hash": "9adee7a8c5d9bdd91a14cce1634c54974fdd7a3e",
+      "content": "    fn clear_metadata(storage: &mut crate::helix_engine::storage_core::HelixGraphStorage) -> Result<(), crate::helix_engine::types::GraphError> {\n        let mut txn = storage.graph_env.write_txn()?;\n        storage.metadata_db.clear(&mut txn)?;\n        txn.commit()?;\n        Ok(())\n    }\n\n    let (_temp_dir, storage) = setup_test_db();\n    let mut storage_mut = match Arc::try_unwrap(storage) {\n        Ok(s) => s,\n        Err(_) => panic!(\"Failed to unwrap Arc - there are multiple references\"),\n    };\n\n    // Clear metadata to simulate PreMetadata state (before migration)\n    clear_metadata(&mut storage_mut).unwrap();\n\n    // Create old-format vectors with various properties\n    {\n        let mut txn = storage_mut.graph_env.write_txn().unwrap();\n\n        // Vector 1: Simple vector with test label\n        let mut props1 = HashMap::new();\n        props1.insert(\"name\".to_string(), Value::String(\"vector1\".to_string()));\n        props1.insert(\"count\".to_string(), Value::I64(100));\n        let old_bytes1 = create_old_properties(\"test_migration\", false, props1);\n        storage_mut\n            .vectors\n            .vector_properties_db\n            .put(&mut txn, &1u128, &old_bytes1)\n            .unwrap();\n\n        // Add actual vector data with proper key format\n        let vector_data1: Vec<f64> = vec![1.0, 2.0, 3.0];\n        let bytes1: Vec<u8> = vector_data1.iter().flat_map(|f| f.to_be_bytes()).collect();\n        let key1 = [b\"v:\".as_slice(), &1u128.to_be_bytes(), &0usize.to_be_bytes()].concat();\n        storage_mut\n            .vectors\n            .vectors_db\n            .put(&mut txn, &key1, &bytes1)\n            .unwrap();\n\n        // Vector 2: Another vector with same label\n        let mut props2 = HashMap::new();\n        props2.insert(\"name\".to_string(), Value::String(\"vector2\".to_string()));\n        props2.insert(\"score\".to_string(), Value::F64(0.95));\n        let old_bytes2 = create_old_properties(\"test_migration\", false, props2);\n        storage_mut\n            .vectors\n            .vector_properties_db\n            .put(&mut txn, &2u128, &old_bytes2)\n            .unwrap();\n\n        // Add actual vector data with proper key format\n        let vector_data2: Vec<f64> = vec![4.0, 5.0, 6.0];\n        let bytes2: Vec<u8> = vector_data2.iter().flat_map(|f| f.to_be_bytes()).collect();\n        let key2 = [b\"v:\".as_slice(), &2u128.to_be_bytes(), &0usize.to_be_bytes()].concat();\n        storage_mut\n            .vectors\n            .vectors_db\n            .put(&mut txn, &key2, &bytes2)\n            .unwrap();\n\n        // Vector 3: Different label\n        let mut props3 = HashMap::new();\n        props3.insert(\"name\".to_string(), Value::String(\"vector3\".to_string()));\n        let old_bytes3 = create_old_properties(\"other_label\", false, props3);\n        storage_mut\n            .vectors\n            .vector_properties_db\n            .put(&mut txn, &3u128, &old_bytes3)\n            .unwrap();\n\n        // Add actual vector data with proper key format\n        let vector_data3: Vec<f64> = vec![7.0, 8.0, 9.0];\n        let bytes3: Vec<u8> = vector_data3.iter().flat_map(|f| f.to_be_bytes()).collect();\n        let key3 = [b\"v:\".as_slice(), &3u128.to_be_bytes(), &0usize.to_be_bytes()].concat();\n        storage_mut\n            .vectors\n            .vectors_db\n            .put(&mut txn, &key3, &bytes3)\n            .unwrap();\n\n        txn.commit().unwrap();\n    }\n\n    // Run migration\n    let result = migrate(&mut storage_mut);\n    assert!(result.is_ok(), \"Migration should succeed\");\n\n    // Now query using v_from_type on the migrated data\n    let storage = Arc::new(storage_mut);\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n\n    // Query for \"test_migration\" label - should find 2 vectors\n    let results_with_data = G::new(&storage, &txn, &arena)\n        .v_from_type(\"test_migration\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results_with_data.len(), 2, \"Should find 2 vectors with test_migration label\");\n\n    // Verify we got the right vectors\n    let ids: Vec<u128> = results_with_data.iter().map(|v| v.id()).collect();\n    assert!(ids.contains(&1u128), \"Should contain vector 1\");\n    assert!(ids.contains(&2u128), \"Should contain vector 2\");\n\n    // Verify vector data is accessible\n    if let crate::helix_engine::traversal_core::traversal_value::TraversalValue::Vector(v) = &results_with_data[0] {\n        assert_eq!(v.data.len(), 3, \"Vector should have 3 dimensions\");\n    } else {\n        panic!(\"Expected TraversalValue::Vector\");\n    }\n\n    // Query without vector data to check properties\n    let arena2 = Bump::new();\n    let results_without_data = G::new(&storage, &txn, &arena2)\n        .v_from_type(\"test_migration\", false)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results_without_data.len(), 2, \"Should still find 2 vectors\");\n\n    // Verify properties are preserved after migration\n    for result in &results_without_data {\n        if let crate::helix_engine::traversal_core::traversal_value::TraversalValue::VectorNodeWithoutVectorData(v) = result {\n            assert_eq!(v.label(), \"test_migration\");\n\n            // Check that properties are accessible\n            let props = v.properties.as_ref().unwrap();\n            let name = props.get(\"name\");\n            assert!(name.is_some(), \"name property should exist\");\n\n            // Verify it's a string\n            match name.unwrap() {\n                Value::String(s) => assert!(s == \"vector1\" || s == \"vector2\"),\n                _ => panic!(\"Expected name to be a string\"),\n            }\n        }\n    }\n\n    // Query for \"other_label\" - should find 1 vector\n    let arena3 = Bump::new();\n    let other_results = G::new(&storage, &txn, &arena3)\n        .v_from_type(\"other_label\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(other_results.len(), 1, \"Should find 1 vector with other_label\");\n    assert_eq!(other_results[0].id(), 3u128);\n\n    // Query for non-existent label after migration\n    let arena4 = Bump::new();\n    let empty_results = G::new(&storage, &txn, &arena4)\n        .v_from_type(\"nonexistent\", true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert!(empty_results.is_empty(), \"Should find no vectors with nonexistent label\");\n}\n\n// ============================================================================\n// Error Tests for v_from_id\n// ============================================================================\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_id_with_nonexistent_id_with_data_742": {
+      "name": "test_v_from_id_with_nonexistent_id_with_data",
+      "type": "function",
+      "start_line": 742,
+      "end_line": 763,
+      "content_hash": "ac255ef0766f4dfa41d705190be80013a75809d7",
+      "content": "fn test_v_from_id_with_nonexistent_id_with_data() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n\n    // Generate a random ID that doesn't exist\n    let fake_id = uuid::Uuid::new_v4().as_u128();\n\n    // Attempt to query with include_vector_data = true\n    let result = G::new(&storage, &txn, &arena)\n        .v_from_id(&fake_id, true)\n        .collect_to_obj();\n\n    // Assert it returns VectorError (VectorNotFound)\n    assert!(\n        matches!(result, Err(GraphError::VectorError(_))),\n        \"Expected VectorError but got: {:?}\",\n        result\n    );\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_id_with_nonexistent_id_without_data_764": {
+      "name": "test_v_from_id_with_nonexistent_id_without_data",
+      "type": "function",
+      "start_line": 764,
+      "end_line": 785,
+      "content_hash": "29e3f28be94c77cfc7b72b16e169ddd9ae020832",
+      "content": "fn test_v_from_id_with_nonexistent_id_without_data() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n\n    // Generate a random ID that doesn't exist\n    let fake_id = uuid::Uuid::new_v4().as_u128();\n\n    // Attempt to query with include_vector_data = false\n    let result = G::new(&storage, &txn, &arena)\n        .v_from_id(&fake_id, false)\n        .collect_to_obj();\n\n    // Assert it returns VectorError (VectorNotFound)\n    assert!(\n        matches!(result, Err(GraphError::VectorError(_))),\n        \"Expected VectorError but got: {:?}\",\n        result\n    );\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_id_with_deleted_vector_786": {
+      "name": "test_v_from_id_with_deleted_vector",
+      "type": "function",
+      "start_line": 786,
+      "end_line": 833,
+      "content_hash": "daba7e8885b6505c1223064fa11016a3ad283564",
+      "content": "fn test_v_from_id_with_deleted_vector() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Create a vector\n    let vector = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 2.0, 3.0], \"test_vector\", None)\n        .collect_to_obj()\n        .unwrap();\n    let vector_id = vector.id();\n\n    txn.commit().unwrap();\n\n    // Delete the vector\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let vector_to_delete = G::new(&storage, &txn, &arena)\n        .v_from_id(&vector_id, true)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n    drop(txn);\n\n    let mut txn = storage.graph_env.write_txn().unwrap();\n    Drop::drop_traversal(\n        vector_to_delete.into_iter().map(Ok::<_, GraphError>),\n        storage.as_ref(),\n        &mut txn,\n    )\n    .unwrap();\n    txn.commit().unwrap();\n\n    // Try to query the deleted vector\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let result = G::new(&storage, &txn, &arena)\n        .v_from_id(&vector_id, true)\n        .collect_to_obj();\n\n    // Assert it returns VectorError (VectorDeleted or VectorNotFound)\n    assert!(\n        matches!(result, Err(GraphError::VectorError(_))),\n        \"Expected VectorError but got: {:?}\",\n        result\n    );\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_id_with_zero_id_834": {
+      "name": "test_v_from_id_with_zero_id",
+      "type": "function",
+      "start_line": 834,
+      "end_line": 852,
+      "content_hash": "5a8665649a05c3be5fe461f16a970920dc1247bc",
+      "content": "fn test_v_from_id_with_zero_id() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n\n    // Query with ID = 0\n    let result = G::new(&storage, &txn, &arena)\n        .v_from_id(&0, true)\n        .collect_to_obj();\n\n    // Assert it returns VectorError\n    assert!(\n        matches!(result, Err(GraphError::VectorError(_))),\n        \"Expected VectorError but got: {:?}\",\n        result\n    );\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_v_from_id_with_max_id_853": {
+      "name": "test_v_from_id_with_max_id",
+      "type": "function",
+      "start_line": 853,
+      "end_line": 871,
+      "content_hash": "2173281a16f06ba7bdb0b901c1f5a465f5b01938",
+      "content": "fn test_v_from_id_with_max_id() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n\n    // Query with ID = u128::MAX\n    let result = G::new(&storage, &txn, &arena)\n        .v_from_id(&u128::MAX, true)\n        .collect_to_obj();\n\n    // Assert it returns VectorError\n    assert!(\n        matches!(result, Err(GraphError::VectorError(_))),\n        \"Expected VectorError but got: {:?}\",\n        result\n    );\n}\n\n#[test]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_test_search_v_filters_by_type_872": {
+      "name": "test_search_v_filters_by_type",
+      "type": "function",
+      "start_line": 872,
+      "end_line": 946,
+      "content_hash": "0a42572c91d822d824ca2e096dbbf7c6e7cca48c",
+      "content": "fn test_search_v_filters_by_type() {\n    let (_temp_dir, storage) = setup_test_db();\n    let arena = Bump::new();\n    let mut txn = storage.graph_env.write_txn().unwrap();\n\n    // Insert vectors with type \"type_a\"\n    let v1_a = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[1.0, 0.0, 0.0], \"type_a\", None)\n        .collect_to_obj()\n        .unwrap();\n    let v2_a = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.9, 0.1, 0.0], \"type_a\", None)\n        .collect_to_obj()\n        .unwrap();\n\n    // Insert vectors with type \"type_b\"\n    let v1_b = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.0, 1.0, 0.0], \"type_b\", None)\n        .collect_to_obj()\n        .unwrap();\n    let v2_b = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.1, 0.9, 0.0], \"type_b\", None)\n        .collect_to_obj()\n        .unwrap();\n\n    // Insert vectors with type \"type_c\"\n    let v1_c = G::new_mut(&storage, &arena, &mut txn)\n        .insert_v::<Filter>(&[0.0, 0.0, 1.0], \"type_c\", None)\n        .collect_to_obj()\n        .unwrap();\n\n    txn.commit().unwrap();\n\n    // Search for vectors with type \"type_b\" using a query vector close to type_b vectors\n    let arena = Bump::new();\n    let txn = storage.graph_env.read_txn().unwrap();\n    let results = G::new(&storage, &txn, &arena)\n        .search_v::<Filter, _>(&[0.0, 1.0, 0.0], 10, \"type_b\", None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    // Should only return the 2 vectors with type \"type_b\"\n    assert_eq!(results.len(), 2, \"search_v should only return vectors of the specified type\");\n\n    let result_ids: Vec<u128> = results.iter().map(|v| v.id()).collect();\n    assert!(result_ids.contains(&v1_b.id()), \"Should contain v1_b\");\n    assert!(result_ids.contains(&v2_b.id()), \"Should contain v2_b\");\n\n    // Verify type_a and type_c vectors are NOT in the results\n    assert!(!result_ids.contains(&v1_a.id()), \"Should NOT contain v1_a (type_a)\");\n    assert!(!result_ids.contains(&v2_a.id()), \"Should NOT contain v2_a (type_a)\");\n    assert!(!result_ids.contains(&v1_c.id()), \"Should NOT contain v1_c (type_c)\");\n\n    // Also verify by searching for type_a - should only get type_a vectors\n    let arena = Bump::new();\n    let results_a = G::new(&storage, &txn, &arena)\n        .search_v::<Filter, _>(&[1.0, 0.0, 0.0], 10, \"type_a\", None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results_a.len(), 2, \"search_v for type_a should return 2 vectors\");\n    let result_a_ids: Vec<u128> = results_a.iter().map(|v| v.id()).collect();\n    assert!(result_a_ids.contains(&v1_a.id()));\n    assert!(result_a_ids.contains(&v2_a.id()));\n\n    // And search for type_c - should only get 1 vector\n    let arena = Bump::new();\n    let results_c = G::new(&storage, &txn, &arena)\n        .search_v::<Filter, _>(&[0.0, 0.0, 1.0], 10, \"type_c\", None)\n        .collect::<Result<Vec<_>, _>>()\n        .unwrap();\n\n    assert_eq!(results_c.len(), 1, \"search_v for type_c should return 1 vector\");\n    assert_eq!(results_c[0].id(), v1_c.id());\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

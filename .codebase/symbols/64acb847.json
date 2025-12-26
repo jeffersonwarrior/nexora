@@ -1,0 +1,51 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-db/src/utils/group_by.rs",
+  "file_hash": "03e3fb79ad0318a00a68ce30d137cfc3ca6b7496",
+  "updated_at": "2025-12-26T17:34:21.547635",
+  "symbols": {
+    "struct_GroupByItem_8": {
+      "name": "GroupByItem",
+      "type": "struct",
+      "start_line": 8,
+      "end_line": 13,
+      "content_hash": "d0bc75694e36ca433a390b42999f3676038cb36f",
+      "content": "pub struct GroupByItem {\n    pub values: HashMap<String, Value>,\n    pub count: i32,\n}\n\n#[derive(Clone, Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "enum_GroupBy_14": {
+      "name": "GroupBy",
+      "type": "enum",
+      "start_line": 14,
+      "end_line": 18,
+      "content_hash": "b4dd6918b2804406bcf603500008bda7980dccee",
+      "content": "pub enum GroupBy {\n    Group(HashMap<String, GroupByItem>),\n    Count(HashMap<String, GroupByItem>),\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "impl_GroupBy_19": {
+      "name": "GroupBy",
+      "type": "impl",
+      "start_line": 19,
+      "end_line": 19,
+      "content_hash": "cba1a0267b99c431777cee463f813b2a10d36eb5",
+      "content": "impl GroupBy {",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_into_count_20": {
+      "name": "into_count",
+      "type": "method",
+      "start_line": 20,
+      "end_line": 26,
+      "content_hash": "4165a5a14241cfcf8a63e57e2b0d915fbb8a07ad",
+      "content": "    pub fn into_count(self) -> Self {\n        match self {\n            Self::Group(g) => Self::Count(g),\n            _ => self,\n        }\n    }\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

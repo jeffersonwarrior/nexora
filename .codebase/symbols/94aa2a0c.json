@@ -1,0 +1,18 @@
+{
+  "file_path": "/work/external-deps/helix-db/helix-cli/src/commands/update.rs",
+  "file_hash": "4b2754dd113192ca4112c8b8b4a4f3a02c914001",
+  "updated_at": "2025-12-26T17:34:23.801339",
+  "symbols": {
+    "function_run_sync_13": {
+      "name": "run_sync",
+      "type": "function",
+      "start_line": 13,
+      "end_line": 66,
+      "content_hash": "55afe61f25001eecedecf480a1e3aba162511134",
+      "content": "fn run_sync(force: bool) -> Result<()> {\n    print_status(\"UPDATE\", \"Checking for updates...\");\n\n    let status = self_update::backends::github::Update::configure()\n        .repo_owner(\"HelixDB\")\n        .repo_name(\"helix-db\")\n        .bin_name(\"helix\")\n        .show_download_progress(true)\n        .show_output(false)\n        .current_version(cargo_crate_version!())\n        .build()?;\n\n    let current_version = cargo_crate_version!();\n\n    if !force {\n        let latest_release = status.get_latest_release()?;\n        if latest_release.version == current_version {\n            print_success(&format!(\"Already up to date! (v{current_version})\"));\n            print_status(\"UPDATE\", \"Use --force to reinstall\");\n            return Ok(());\n        }\n\n        print_status(\n            \"UPDATE\",\n            &format!(\n                \"Update available: v{current_version} -> v{}\",\n                latest_release.version\n            ),\n        );\n    } else {\n        print_status(\"UPDATE\", \"Force update requested\");\n    }\n\n    print_status(\"UPDATE\", \"Downloading and installing latest version...\");\n\n    match status.update() {\n        Ok(_) => {\n            print_success(\"Update completed successfully!\");\n            print_status(\n                \"UPDATE\",\n                \"Please restart your terminal or run the command again to use the new version\",\n            );\n        }\n        Err(e) => {\n            print_error_with_hint(\n                &format!(\"Update failed: {e}\"),\n                \"check your internet connection and try again\",\n            );\n            return Err(e.into());\n        }\n    }\n\n    Ok(())\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

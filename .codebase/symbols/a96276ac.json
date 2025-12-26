@@ -1,0 +1,84 @@
+{
+  "file_path": "/work/external-deps/Context-Engine/scripts/k8s_uploader.py",
+  "file_hash": "415541223170b28ed0a2b230903052b71bbf3b36",
+  "updated_at": "2025-12-26T17:34:20.727036",
+  "symbols": {
+    "function_run_command_26": {
+      "name": "run_command",
+      "type": "function",
+      "start_line": 26,
+      "end_line": 41,
+      "content_hash": "040c7046a8bbd520996994d4f74dc03902055ae8",
+      "content": "def run_command(cmd: List[str], check: bool = True, capture: bool = True) -> subprocess.CompletedProcess:\n    \"\"\"Run a shell command and return the result.\"\"\"\n    print(f\"Running: {' '.join(cmd)}\")\n    try:\n        result = subprocess.run(\n            cmd,\n            check=check,\n            capture_output=capture,\n            text=True\n        )\n        return result\n    except subprocess.CalledProcessError as e:\n        print(f\"Error running command: {e}\")\n        if capture and e.stderr:\n            print(f\"stderr: {e.stderr}\")\n        raise",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_get_indexer_pod_44": {
+      "name": "get_indexer_pod",
+      "type": "function",
+      "start_line": 44,
+      "end_line": 62,
+      "content_hash": "75efefaef5cd638c435d51390ca02d4689448d46",
+      "content": "def get_indexer_pod(namespace: str, pod_name: Optional[str] = None) -> str:\n    \"\"\"Get the name of an MCP indexer pod.\"\"\"\n    if pod_name:\n        return pod_name\n    \n    # Find a running mcp-indexer pod\n    result = run_command([\n        \"kubectl\", \"get\", \"pods\",\n        \"-n\", namespace,\n        \"-l\", \"component=mcp-indexer\",\n        \"-o\", \"jsonpath={.items[0].metadata.name}\"\n    ])\n    \n    pod = result.stdout.strip()\n    if not pod:\n        raise RuntimeError(f\"No mcp-indexer pod found in namespace {namespace}\")\n    \n    print(f\"Using pod: {pod}\")\n    return pod",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_create_tar_archive_65": {
+      "name": "create_tar_archive",
+      "type": "function",
+      "start_line": 65,
+      "end_line": 123,
+      "content_hash": "629beb24f66855ecd0205d3ede91e35f9354d462",
+      "content": "def create_tar_archive(source_path: Path, exclude_patterns: Optional[List[str]] = None) -> Path:\n    \"\"\"Create a tar.gz archive of the source directory.\"\"\"\n    if not source_path.exists():\n        raise FileNotFoundError(f\"Source path does not exist: {source_path}\")\n    \n    if not source_path.is_dir():\n        raise ValueError(f\"Source path must be a directory: {source_path}\")\n    \n    # Default exclusions\n    if exclude_patterns is None:\n        exclude_patterns = [\n            \".git\",\n            \".codebase\",\n            \"__pycache__\",\n            \"*.pyc\",\n            \".DS_Store\",\n            \"node_modules\",\n            \".venv\",\n            \"venv\",\n            \".env\",\n            \"*.log\"\n        ]\n    \n    # Create temporary tar file\n    temp_dir = Path(tempfile.mkdtemp())\n    tar_path = temp_dir / f\"{source_path.name}.tar.gz\"\n    \n    print(f\"Creating archive: {tar_path}\")\n    print(f\"Source: {source_path}\")\n    print(f\"Excluding: {', '.join(exclude_patterns)}\")\n    \n    def should_exclude(path: Path) -> bool:\n        \"\"\"Check if a path should be excluded.\"\"\"\n        for pattern in exclude_patterns:\n            if pattern.startswith(\"*.\"):\n                # File extension pattern\n                if path.suffix == pattern[1:]:\n                    return True\n            elif path.name == pattern:\n                return True\n            elif pattern in str(path):\n                return True\n        return False\n    \n    with tarfile.open(tar_path, \"w:gz\") as tar:\n        for item in source_path.rglob(\"*\"):\n            if should_exclude(item):\n                continue\n            \n            arcname = item.relative_to(source_path.parent)\n            try:\n                tar.add(item, arcname=arcname)\n            except Exception as e:\n                print(f\"Warning: Could not add {item}: {e}\")\n    \n    size_mb = tar_path.stat().st_size / (1024 * 1024)\n    print(f\"Archive created: {tar_path} ({size_mb:.2f} MB)\")\n    \n    return tar_path",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_should_exclude_96": {
+      "name": "should_exclude",
+      "type": "function",
+      "start_line": 96,
+      "end_line": 107,
+      "content_hash": "1496ddea028be9136d9dac6b72c79b64553215de",
+      "content": "    def should_exclude(path: Path) -> bool:\n        \"\"\"Check if a path should be excluded.\"\"\"\n        for pattern in exclude_patterns:\n            if pattern.startswith(\"*.\"):\n                # File extension pattern\n                if path.suffix == pattern[1:]:\n                    return True\n            elif path.name == pattern:\n                return True\n            elif pattern in str(path):\n                return True\n        return False",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_upload_to_pod_126": {
+      "name": "upload_to_pod",
+      "type": "function",
+      "start_line": 126,
+      "end_line": 160,
+      "content_hash": "fd27fe6e6cd922268aca00da5d5eb8b77a2f062c",
+      "content": "def upload_to_pod(tar_path: Path, namespace: str, pod_name: str, target_dir: str = \"/work\") -> str:\n    \"\"\"Upload tar archive to a pod and extract it.\"\"\"\n    repo_name = tar_path.stem.replace(\".tar\", \"\")\n    target_path = f\"{target_dir}/{repo_name}\"\n    \n    print(f\"Uploading to pod {pod_name}:{target_path}\")\n    \n    # Create target directory in pod\n    run_command([\n        \"kubectl\", \"exec\", \"-n\", namespace, pod_name, \"--\",\n        \"mkdir\", \"-p\", target_path\n    ])\n    \n    # Copy tar file to pod\n    temp_tar = f\"/tmp/{tar_path.name}\"\n    run_command([\n        \"kubectl\", \"cp\", str(tar_path),\n        f\"{namespace}/{pod_name}:{temp_tar}\"\n    ])\n    \n    # Extract in pod\n    print(f\"Extracting archive in pod...\")\n    run_command([\n        \"kubectl\", \"exec\", \"-n\", namespace, pod_name, \"--\",\n        \"tar\", \"-xzf\", temp_tar, \"-C\", target_dir\n    ])\n    \n    # Clean up temp tar in pod\n    run_command([\n        \"kubectl\", \"exec\", \"-n\", namespace, pod_name, \"--\",\n        \"rm\", temp_tar\n    ], check=False)\n    \n    print(f\"Upload complete: {target_path}\")\n    return target_path",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_trigger_indexing_163": {
+      "name": "trigger_indexing",
+      "type": "function",
+      "start_line": 163,
+      "end_line": 224,
+      "content_hash": "83ee5af26ac2ed57edad9542e9042d1178d039ad",
+      "content": "def trigger_indexing(\n    namespace: str,\n    pod_name: str,\n    repo_path: str,\n    collection: Optional[str] = None,\n    recreate: bool = False\n) -> Dict[str, Any]:\n    \"\"\"Trigger indexing via the MCP indexer server.\"\"\"\n    print(f\"Triggering indexing for {repo_path}\")\n\n    # Build Python command to call qdrant_index via MCP server\n    # Use qdrant_index with subdir parameter to index specific repo\n    python_cmd = f\"\"\"\nimport sys\nsys.path.insert(0, '/app')\nfrom scripts.mcp_indexer_server import qdrant_index\nimport asyncio\nimport json\n\n# Extract subdir from repo_path (e.g., /work/test-repo -> test-repo)\nrepo_path = '{repo_path}'\nif repo_path.startswith('/work/'):\n    subdir = repo_path[6:]  # Remove '/work/' prefix\nelse:\n    subdir = repo_path\n\n# Call indexing\nresult = asyncio.run(qdrant_index(\n    subdir=subdir,\n    recreate={str(recreate)},\n    collection={repr(collection) if collection else 'None'}\n))\nprint(json.dumps(result, indent=2))\n\"\"\"\n    \n    # Execute in pod\n    result = run_command([\n        \"kubectl\", \"exec\", \"-n\", namespace, pod_name, \"--\",\n        \"python\", \"-c\", python_cmd\n    ], check=False)\n\n    # Parse result\n    stdout = result.stdout\n    stderr = result.stderr\n    returncode = result.returncode\n\n    # Extract return code from output\n    for line in stdout.split(\"\\n\"):\n        if line.startswith(\"RETURNCODE:\"):\n            try:\n                returncode = int(line.split(\":\", 1)[1].strip())\n            except:\n                pass\n\n    return {\n        \"ok\": returncode == 0,\n        \"code\": returncode,\n        \"stdout\": stdout,\n        \"stderr\": stderr,\n        \"collection\": collection or \"codebase\",\n        \"repo_path\": repo_path\n    }",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_main_227": {
+      "name": "main",
+      "type": "function",
+      "start_line": 227,
+      "end_line": 307,
+      "content_hash": "dad01775c54e0e9432d055fa966ce0e7e7931fa4",
+      "content": "def main():\n    parser = argparse.ArgumentParser(\n        description=\"Upload repositories to Kubernetes Context Engine cluster\",\n        formatter_class=argparse.RawDescriptionHelpFormatter,\n        epilog=\"\"\"\nExamples:\n  # Upload and index a repository\n  python scripts/k8s_uploader.py /path/to/my-repo\n\n  # Upload to specific namespace and collection\n  python scripts/k8s_uploader.py /path/to/my-repo --namespace prod --collection my-project\n\n  # Upload and recreate collection (drops existing data)\n  python scripts/k8s_uploader.py /path/to/my-repo --recreate\n\n  # Upload only (skip indexing)\n  python scripts/k8s_uploader.py /path/to/my-repo --skip-index\n\n  # Upload to specific pod\n  python scripts/k8s_uploader.py /path/to/my-repo --pod mcp-indexer-abc123\n        \"\"\"\n    )\n    \n    parser.add_argument(\"source\", type=str, help=\"Path to repository to upload\")\n    parser.add_argument(\"--namespace\", \"-n\", default=\"context-engine\", help=\"Kubernetes namespace (default: context-engine)\")\n    parser.add_argument(\"--pod\", \"-p\", help=\"Specific pod name (default: auto-detect mcp-indexer pod)\")\n    parser.add_argument(\"--collection\", \"-c\", help=\"Qdrant collection name (default: codebase)\")\n    parser.add_argument(\"--target-dir\", default=\"/work\", help=\"Target directory in pod (default: /work)\")\n    parser.add_argument(\"--recreate\", action=\"store_true\", help=\"Recreate collection (drops existing data)\")\n    parser.add_argument(\"--skip-index\", action=\"store_true\", help=\"Skip indexing after upload\")\n    parser.add_argument(\"--exclude\", action=\"append\", help=\"Additional exclude patterns\")\n    parser.add_argument(\"--keep-archive\", action=\"store_true\", help=\"Keep temporary archive file\")\n    \n    args = parser.parse_args()\n    \n    source_path = Path(args.source).resolve()\n    \n    try:\n        # Get target pod\n        pod_name = get_indexer_pod(args.namespace, args.pod)\n        \n        # Create archive\n        tar_path = create_tar_archive(source_path, args.exclude)\n        \n        # Upload to pod\n        repo_path = upload_to_pod(tar_path, args.namespace, pod_name, args.target_dir)\n        \n        # Trigger indexing\n        if not args.skip_index:\n            result = trigger_indexing(\n                args.namespace,\n                pod_name,\n                repo_path,\n                args.collection,\n                args.recreate\n            )\n            \n            print(\"\\n\" + \"=\"*60)\n            print(\"INDEXING RESULT:\")\n            print(\"=\"*60)\n            print(json.dumps(result, indent=2))\n\n            if result.get(\"ok\") and result.get(\"code\") == 0:\n                print(\"\\n[SUCCESS] Upload and indexing completed successfully!\")\n            else:\n                print(\"\\n[WARNING] Indexing completed with warnings or errors\")\n                sys.exit(1)\n        else:\n            print(\"\\n[SUCCESS] Upload completed successfully (indexing skipped)\")\n        \n        # Clean up\n        if not args.keep_archive:\n            tar_path.unlink()\n            tar_path.parent.rmdir()\n            print(f\"Cleaned up temporary archive\")\n        else:\n            print(f\"Archive kept at: {tar_path}\")\n    \n    except Exception as e:\n        print(f\"\\n[ERROR] {e}\", file=sys.stderr)\n        sys.exit(1)",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

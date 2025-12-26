@@ -1,0 +1,172 @@
+{
+  "file_path": "/work/internal/agent/conversation_state.go",
+  "file_hash": "ff8f835d496024e1fe1a79226df68d2178a196a3",
+  "updated_at": "2025-12-26T17:34:22.413216",
+  "symbols": {
+    "method_String_22": {
+      "name": "String",
+      "type": "method",
+      "start_line": 22,
+      "end_line": 39,
+      "content_hash": "0a5ce6124a972a0921c6515a0bc0a79b9a17f4ed",
+      "content": "func (cs ConversationState) String() string {\n\tswitch cs {\n\tcase StateActive:\n\t\treturn \"active\"\n\tcase StateWaitingForUser:\n\t\treturn \"waiting_for_user\"\n\tcase StateAgentProcessing:\n\t\treturn \"agent_processing\"\n\tcase StateCompleted:\n\t\treturn \"completed\"\n\tcase StateClosed:\n\t\treturn \"closed\"\n\tdefault:\n\t\treturn \"unknown\"\n\t}\n}\n\n// CanTransition checks if a state transition is valid",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_CanTransition_40": {
+      "name": "CanTransition",
+      "type": "method",
+      "start_line": 40,
+      "end_line": 57,
+      "content_hash": "7842c4d1f71f48883527a5ff746dc8b779e080bb",
+      "content": "func (cs ConversationState) CanTransition(newState ConversationState) bool {\n\ttransitions := map[ConversationState][]ConversationState{\n\t\tStateActive:          {StateWaitingForUser, StateAgentProcessing, StateClosed},\n\t\tStateWaitingForUser:  {StateAgentProcessing, StateClosed},\n\t\tStateAgentProcessing: {StateWaitingForUser, StateCompleted},\n\t\tStateCompleted:       {StateClosed},\n\t\tStateClosed:          {},\n\t}\n\n\tfor _, valid := range transitions[cs] {\n\t\tif valid == newState {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\n// ThreadedConversation represents a properly managed conversation thread",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ThreadedConversation_58": {
+      "name": "ThreadedConversation",
+      "type": "struct",
+      "start_line": 58,
+      "end_line": 69,
+      "content_hash": "075606fce06e8a0e65ddd067a567240f30f26743",
+      "content": "type ThreadedConversation struct {\n\tSessionID       string\n\tState           ConversationState\n\tCreatedAt       time.Time\n\tLastActivity    time.Time\n\tMessageCount    int\n\tRequiresInput   bool\n\tCompletionScore float64 // 0.0 to 1.0\n\tToken           string  // For continuation requests\n}\n\n// ConversationManager manages conversation threads with proper state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_ConversationManager_70": {
+      "name": "ConversationManager",
+      "type": "struct",
+      "start_line": 70,
+      "end_line": 73,
+      "content_hash": "d2f200051522608dc864aed9aa52f299757c7d8d",
+      "content": "type ConversationManager struct {\n\tsessions map[string]*ThreadedConversation\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_NewConversationManager_74": {
+      "name": "NewConversationManager",
+      "type": "function",
+      "start_line": 74,
+      "end_line": 80,
+      "content_hash": "a6cbaac67eeb40de362babf8443788f70090b903",
+      "content": "func NewConversationManager() *ConversationManager {\n\treturn &ConversationManager{\n\t\tsessions: make(map[string]*ThreadedConversation),\n\t}\n}\n\n// GetOrCreateSession retrieves or creates a conversation session",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetOrCreateSession_81": {
+      "name": "GetOrCreateSession",
+      "type": "method",
+      "start_line": 81,
+      "end_line": 101,
+      "content_hash": "fd0d93458fba2fff0e5fbce83ad11e99db5fcb01",
+      "content": "func (cm *ConversationManager) GetOrCreateSession(sessionID string) *ThreadedConversation {\n\tif session, exists := cm.sessions[sessionID]; exists {\n\t\treturn session\n\t}\n\n\tsession := &ThreadedConversation{\n\t\tSessionID:       sessionID,\n\t\tState:           StateActive,\n\t\tCreatedAt:       time.Now(),\n\t\tLastActivity:    time.Now(),\n\t\tMessageCount:    0,\n\t\tRequiresInput:   true,\n\t\tCompletionScore: 0.0,\n\t\tToken:           generateToken(),\n\t}\n\n\tcm.sessions[sessionID] = session\n\treturn session\n}\n\n// TransitionState attempts to transition to a new state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_TransitionState_102": {
+      "name": "TransitionState",
+      "type": "method",
+      "start_line": 102,
+      "end_line": 125,
+      "content_hash": "86f88b074209d60ea8336aea1cdacc7a5b702f52",
+      "content": "func (cm *ConversationManager) TransitionState(sessionID string, newState ConversationState) bool {\n\tsession := cm.GetOrCreateSession(sessionID)\n\n\tif !session.State.CanTransition(newState) {\n\t\tslog.Warn(\"invalid state transition\",\n\t\t\t\"session_id\", sessionID,\n\t\t\t\"from\", session.State,\n\t\t\t\"to\", newState)\n\t\treturn false\n\t}\n\n\toldState := session.State\n\tsession.State = newState\n\tsession.LastActivity = time.Now()\n\n\tslog.Debug(\"conversation state transitioned\",\n\t\t\"session_id\", sessionID,\n\t\t\"from\", oldState,\n\t\t\"to\", newState)\n\n\treturn true\n}\n\n// RecordMessage records a message and updates conversation state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_RecordMessage_126": {
+      "name": "RecordMessage",
+      "type": "method",
+      "start_line": 126,
+      "end_line": 151,
+      "content_hash": "6ee848c3e174ec085e30a75fd23e670db7fe1822",
+      "content": "func (cm *ConversationManager) RecordMessage(sessionID string, msg message.Message) {\n\tsession := cm.GetOrCreateSession(sessionID)\n\tsession.MessageCount++\n\tsession.LastActivity = time.Now()\n\n\t// Analyze message for completion indicators\n\tif msg.Role == message.Assistant {\n\t\tsession.CompletionScore = analyzeCompletion(msg.Content().Text)\n\t\tsession.RequiresInput = session.CompletionScore < 0.8\n\n\t\tif session.CompletionScore > 0.8 && session.State == StateAgentProcessing {\n\t\t\tcm.TransitionState(sessionID, StateCompleted)\n\t\t\t// Schedule auto-close in 30 minutes\n\t\t\tgo cm.scheduleAutoClose(sessionID)\n\t\t} else if session.State == StateAgentProcessing {\n\t\t\tcm.TransitionState(sessionID, StateWaitingForUser)\n\t\t}\n\t} else if msg.Role == message.User {\n\t\tsession.RequiresInput = false\n\t\tif session.State == StateWaitingForUser {\n\t\t\tcm.TransitionState(sessionID, StateAgentProcessing)\n\t\t}\n\t}\n}\n\n// ShouldContinue determines if conversation should continue based on state",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_ShouldContinue_152": {
+      "name": "ShouldContinue",
+      "type": "method",
+      "start_line": 152,
+      "end_line": 159,
+      "content_hash": "50e942a4afe4160bccdb2c10ca622baaa17d87b5",
+      "content": "func (cm *ConversationManager) ShouldContinue(sessionID string) bool {\n\tsession := cm.GetOrCreateSession(sessionID)\n\n\t// Only continue if we're in processing state\n\treturn session.State == StateAgentProcessing\n}\n\n// IsConversationCompleted checks if conversation is marked as completed",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_IsConversationCompleted_160": {
+      "name": "IsConversationCompleted",
+      "type": "method",
+      "start_line": 160,
+      "end_line": 165,
+      "content_hash": "113e47ea1aaea689ca2ec1727d01773d24bee38e",
+      "content": "func (cm *ConversationManager) IsConversationCompleted(sessionID string) bool {\n\tsession := cm.GetOrCreateSession(sessionID)\n\treturn session.State == StateCompleted\n}\n\n// GetCompletionScore returns the completion confidence score",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_GetCompletionScore_166": {
+      "name": "GetCompletionScore",
+      "type": "method",
+      "start_line": 166,
+      "end_line": 171,
+      "content_hash": "5f1c2054586965e5256a3bd6132b6d2d7c743fe2",
+      "content": "func (cm *ConversationManager) GetCompletionScore(sessionID string) float64 {\n\tsession := cm.GetOrCreateSession(sessionID)\n\treturn session.CompletionScore\n}\n\n// scheduleAutoClose automatically closes completed conversations after inactivity",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "method_scheduleAutoClose_172": {
+      "name": "scheduleAutoClose",
+      "type": "method",
+      "start_line": 172,
+      "end_line": 182,
+      "content_hash": "ec4bf93d5b2414214a638be1e12b990340fcc1a3",
+      "content": "func (cm *ConversationManager) scheduleAutoClose(sessionID string) {\n\t<-time.After(30 * time.Minute)\n\n\tif session, exists := cm.sessions[sessionID]; exists &&\n\t\tsession.State == StateCompleted {\n\t\tcm.TransitionState(sessionID, StateClosed)\n\t\tslog.Info(\"conversation auto-closed\", \"session_id\", sessionID)\n\t}\n}\n\n// analyzeCompletion performs semantic analysis to determine completion confidence",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_analyzeCompletion_183": {
+      "name": "analyzeCompletion",
+      "type": "function",
+      "start_line": 183,
+      "end_line": 241,
+      "content_hash": "896cb471e9ffbb32fb72213950a6405b57a67e0e",
+      "content": "func analyzeCompletion(content string) float64 {\n\tcontent = strings.ToLower(content)\n\n\t// Strong completion indicators (0.9 confidence)\n\tcompletionPhrases := []string{\n\t\t\"is there anything else\",\n\t\t\"what else can i help you with\",\n\t\t\"let me know if you need anything else\",\n\t\t\"task completed\",\n\t\t\"finished helping\",\n\t\t\"all set\",\n\t\t\"done\",\n\t\t\"complete\",\n\t}\n\n\tfor _, phrase := range completionPhrases {\n\t\tif strings.Contains(content, phrase) {\n\t\t\treturn 0.9\n\t\t}\n\t}\n\n\t// Moderate completion indicators (0.7 confidence)\n\tmoderatePhrases := []string{\n\t\t\"should now\",\n\t\t\"has been\",\n\t\t\"you can now\",\n\t\t\"successfully\",\n\t\t\"as requested\",\n\t}\n\n\tmoderateScore := 0.0\n\tfor _, phrase := range moderatePhrases {\n\t\tif strings.Contains(content, phrase) {\n\t\t\tmoderateScore += 0.2\n\t\t}\n\t}\n\treturn minFloat(0.7, moderateScore)\n\t// Work continuators reduce completion score\n\tworkContinuers := []string{\n\t\t\"now let me\",\n\t\t\"next, i'll\",\n\t\t\"i'll now\",\n\t\t\"let me also\",\n\t\t\"let me create\",\n\t\t\"let me implement\",\n\t\t\"let me update\",\n\t\t\"next step\",\n\t}\n\n\tfor _, phrase := range workContinuers {\n\t\tif strings.Contains(content, phrase) {\n\t\t\treturn 0.1 // Very low completion score\n\t\t}\n\t}\n\n\t// Default moderate confidence\n\treturn 0.5\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_generateToken_242": {
+      "name": "generateToken",
+      "type": "function",
+      "start_line": 242,
+      "end_line": 246,
+      "content_hash": "641b77185026d5715852fbca69d4310da0268abc",
+      "content": "func generateToken() string {\n\treturn strings.ReplaceAll(time.Now().Format(\"20060102150405.000\"), \".\", \"\")\n}\n\n// minFloat returns the minimum of two float64 values",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_minFloat_247": {
+      "name": "minFloat",
+      "type": "function",
+      "start_line": 247,
+      "end_line": 252,
+      "content_hash": "99bc4fb627ee28f01963eb75ddd6e499100f3835",
+      "content": "func minFloat(a, b float64) float64 {\n\tif a < b {\n\t\treturn a\n\t}\n\treturn b\n}",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}

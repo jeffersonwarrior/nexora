@@ -1,0 +1,227 @@
+{
+  "file_path": "/work/external-deps/helix-db/hql-tests/tests/nested_remappings/queries.rs",
+  "file_hash": "4956ee47d77382ce3adfe6271adca4bb24b0697c",
+  "updated_at": "2025-12-26T17:34:21.775102",
+  "symbols": {
+    "function_config_90": {
+      "name": "config",
+      "type": "function",
+      "start_line": 90,
+      "end_line": 186,
+      "content_hash": "1e42a64ef2109d772a27c5bc981e78a1aabb9201",
+      "content": "pub fn config() -> Option<Config> {\nreturn Some(Config {\nvector_config: Some(VectorConfig {\nm: Some(16),\nef_construction: Some(128),\nef_search: Some(768),\n}),\ngraph_config: Some(GraphConfig {\nsecondary_indices: Some(vec![]),\n}),\ndb_max_size_gb: Some(10),\nmcp: Some(true),\nbm25: Some(true),\nschema: Some(r#\"{\n  \"schema\": {\n    \"nodes\": [\n      {\n        \"name\": \"Post\",\n        \"properties\": {\n          \"label\": \"String\",\n          \"title\": \"String\",\n          \"content\": \"String\",\n          \"id\": \"ID\"\n        }\n      },\n      {\n        \"name\": \"User\",\n        \"properties\": {\n          \"age\": \"U8\",\n          \"label\": \"String\",\n          \"id\": \"ID\",\n          \"name\": \"String\",\n          \"email\": \"String\"\n        }\n      }\n    ],\n    \"vectors\": [],\n    \"edges\": [\n      {\n        \"name\": \"HasPost\",\n        \"from\": \"User\",\n        \"to\": \"Post\",\n        \"properties\": {}\n      }\n    ]\n  },\n  \"queries\": [\n    {\n      \"name\": \"CreateUser\",\n      \"parameters\": {\n        \"name\": \"String\",\n        \"age\": \"U8\",\n        \"email\": \"String\"\n      },\n      \"returns\": [\n        \"user\"\n      ]\n    },\n    {\n      \"name\": \"CreatePost\",\n      \"parameters\": {\n        \"user_id\": \"ID\",\n        \"title\": \"String\",\n        \"content\": \"String\"\n      },\n      \"returns\": [\n        \"post\"\n      ]\n    },\n    {\n      \"name\": \"GetUserPostsWorking2\",\n      \"parameters\": {\n        \"user_id\": \"ID\"\n      },\n      \"returns\": []\n    },\n    {\n      \"name\": \"GetUserPosts\",\n      \"parameters\": {\n        \"user_id\": \"ID\"\n      },\n      \"returns\": []\n    },\n    {\n      \"name\": \"GetUserPostsWorking\",\n      \"parameters\": {\n        \"user_id\": \"ID\"\n      },\n      \"returns\": []\n    }\n  ]\n}\"#.to_string()),\nembedding_model: Some(\"text-embedding-ada-002\".to_string()),\ngraphvis_node_label: None,\n})\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_User_187": {
+      "name": "User",
+      "type": "struct",
+      "start_line": 187,
+      "end_line": 192,
+      "content_hash": "86cb94f0ce03d92d91b7bd208c734f46e5157ee0",
+      "content": "pub struct User {\n    pub name: String,\n    pub age: u8,\n    pub email: String,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_Post_193": {
+      "name": "Post",
+      "type": "struct",
+      "start_line": 193,
+      "end_line": 197,
+      "content_hash": "0627a12e64362611af5ce4dcda026e7a56133aa4",
+      "content": "pub struct Post {\n    pub title: String,\n    pub content: String,\n}\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_HasPost_198": {
+      "name": "HasPost",
+      "type": "struct",
+      "start_line": 198,
+      "end_line": 204,
+      "content_hash": "067825c9736e4bc16b32849c2410f49741b39a53",
+      "content": "pub struct HasPost {\n    pub from: User,\n    pub to: Post,\n}\n\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CreateUserInput_205": {
+      "name": "CreateUserInput",
+      "type": "struct",
+      "start_line": 205,
+      "end_line": 211,
+      "content_hash": "b4be413355ed0feb1ee6ff8bd971ded4b53f7d90",
+      "content": "pub struct CreateUserInput {\n\npub name: String,\npub age: u8,\npub email: String\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CreateUserUserReturnType_212": {
+      "name": "CreateUserUserReturnType",
+      "type": "struct",
+      "start_line": 212,
+      "end_line": 220,
+      "content_hash": "2ead8b9e350778edfebc663fdf647815373ef530",
+      "content": "pub struct CreateUserUserReturnType<'a> {\n    pub id: &'a str,\n    pub label: &'a str,\n    pub age: Option<&'a Value>,\n    pub email: Option<&'a Value>,\n    pub name: Option<&'a Value>,\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CreateUser_221": {
+      "name": "CreateUser",
+      "type": "function",
+      "start_line": 221,
+      "end_line": 241,
+      "content_hash": "de9be8c4fea2c2a6ce648a43a0cf3450604d87d3",
+      "content": "pub fn CreateUser (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<CreateUserInput>(&input.request.body)?;\nlet arena = Bump::new();\nlet mut txn = db.graph_env.write_txn().map_err(|e| GraphError::New(format!(\"Failed to start write transaction: {:?}\", e)))?;\n    let user = G::new_mut(&db, &arena, &mut txn)\n.add_n(\"User\", Some(ImmutablePropertiesMap::new(3, vec![(\"name\", Value::from(&data.name)), (\"age\", Value::from(&data.age)), (\"email\", Value::from(&data.email))].into_iter(), &arena)), None).collect_to_obj()?;\nlet response = json!({\n    \"user\": CreateUserUserReturnType {\n        id: uuid_str(user.id(), &arena),\n        label: user.label(),\n        age: user.get_property(\"age\"),\n        email: user.get_property(\"email\"),\n        name: user.get_property(\"name\"),\n    }\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CreatePostInput_242": {
+      "name": "CreatePostInput",
+      "type": "struct",
+      "start_line": 242,
+      "end_line": 248,
+      "content_hash": "1323694669f46707e25df4034de5aa5d73d27440",
+      "content": "pub struct CreatePostInput {\n\npub user_id: ID,\npub title: String,\npub content: String\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_CreatePostPostReturnType_249": {
+      "name": "CreatePostPostReturnType",
+      "type": "struct",
+      "start_line": 249,
+      "end_line": 256,
+      "content_hash": "98fee94595c58ac3ab4acc03b0760cc4ffa276c3",
+      "content": "pub struct CreatePostPostReturnType<'a> {\n    pub id: &'a str,\n    pub label: &'a str,\n    pub title: Option<&'a Value>,\n    pub content: Option<&'a Value>,\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_CreatePost_257": {
+      "name": "CreatePost",
+      "type": "function",
+      "start_line": 257,
+      "end_line": 280,
+      "content_hash": "a6d95b40f2eba77e8545866c20469862b59ae1e0",
+      "content": "pub fn CreatePost (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<CreatePostInput>(&input.request.body)?;\nlet arena = Bump::new();\nlet mut txn = db.graph_env.write_txn().map_err(|e| GraphError::New(format!(\"Failed to start write transaction: {:?}\", e)))?;\n    let user = G::new(&db, &txn, &arena)\n.n_from_id(&data.user_id).collect_to_obj()?;\n    let post = G::new_mut(&db, &arena, &mut txn)\n.add_n(\"Post\", Some(ImmutablePropertiesMap::new(2, vec![(\"content\", Value::from(&data.content)), (\"title\", Value::from(&data.title))].into_iter(), &arena)), None).collect_to_obj()?;\n    G::new_mut(&db, &arena, &mut txn)\n.add_edge(\"HasPost\", None, user.id(), post.id(), false).collect_to_obj()?;\nlet response = json!({\n    \"post\": CreatePostPostReturnType {\n        id: uuid_str(post.id(), &arena),\n        label: post.label(),\n        title: post.get_property(\"title\"),\n        content: post.get_property(\"content\"),\n    }\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsWorking2Input_281": {
+      "name": "GetUserPostsWorking2Input",
+      "type": "struct",
+      "start_line": 281,
+      "end_line": 285,
+      "content_hash": "574507afcd0cb67e910508a3a615db4111c6f39b",
+      "content": "pub struct GetUserPostsWorking2Input {\n\npub user_id: ID\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsWorking2UserReturnType_286": {
+      "name": "GetUserPostsWorking2UserReturnType",
+      "type": "struct",
+      "start_line": 286,
+      "end_line": 289,
+      "content_hash": "78035347a65de372d79bcd3199ffdd793960244c",
+      "content": "pub struct GetUserPostsWorking2UserReturnType {\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetUserPostsWorking2_290": {
+      "name": "GetUserPostsWorking2",
+      "type": "function",
+      "start_line": 290,
+      "end_line": 308,
+      "content_hash": "c6b9f5d645a90cd7c817ce6f81804f8e3e9d1a38",
+      "content": "pub fn GetUserPostsWorking2 (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<GetUserPostsWorking2Input>(&input.request.body)?;\nlet arena = Bump::new();\nlet txn = db.graph_env.read_txn().map_err(|e| GraphError::New(format!(\"Failed to start read transaction: {:?}\", e)))?;\n    let user = G::new(&db, &txn, &arena)\n.n_from_id(&data.user_id).collect_to_obj()?;\n    let posts = G::from_iter(&db, &txn, std::iter::once(user.clone()), &arena)\n\n.out_node(\"HasPost\").collect::<Result<Vec<_>, _>>()?;\nlet response = json!({\n    \"user\": GetUserPostsWorking2UserReturnType {\n    }\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsInput_309": {
+      "name": "GetUserPostsInput",
+      "type": "struct",
+      "start_line": 309,
+      "end_line": 313,
+      "content_hash": "95f1ccb14d9941d3ef59f9f523cd7abaedf4bc32",
+      "content": "pub struct GetUserPostsInput {\n\npub user_id: ID\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsUserPostsReturnType_314": {
+      "name": "GetUserPostsUserPostsReturnType",
+      "type": "struct",
+      "start_line": 314,
+      "end_line": 324,
+      "content_hash": "c44bd504a3ca8f325111e7e14eaaa653f8aa8835",
+      "content": "pub struct GetUserPostsUserPostsReturnType<'a> {\n    pub id: Option<&'a Value>,\n    pub title: Option<&'a Value>,\n    pub content: Option<&'a Value>,\n    pub label: Option<&'a Value>,\n    pub creatorName: &'a str,\n    pub creatorID: &'a str,\n}\n\n\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsUserReturnType_325": {
+      "name": "GetUserPostsUserReturnType",
+      "type": "struct",
+      "start_line": 325,
+      "end_line": 329,
+      "content_hash": "bc7d817f4b1f1c019f09a8a445e2280a5db61194",
+      "content": "pub struct GetUserPostsUserReturnType<'a> {\n    pub posts: Vec<GetUserPostsUserPostsReturnType<'a>>,\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetUserPosts_330": {
+      "name": "GetUserPosts",
+      "type": "function",
+      "start_line": 330,
+      "end_line": 356,
+      "content_hash": "283def58a1f115c87a087c5bff5bf443bc649736",
+      "content": "pub fn GetUserPosts (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<GetUserPostsInput>(&input.request.body)?;\nlet arena = Bump::new();\nlet txn = db.graph_env.read_txn().map_err(|e| GraphError::New(format!(\"Failed to start read transaction: {:?}\", e)))?;\n    let user = G::new(&db, &txn, &arena)\n.n_from_id(&data.user_id).collect_to_obj()?;\n    let posts = G::from_iter(&db, &txn, std::iter::once(user.clone()), &arena)\n\n.out_node(\"HasPost\").collect::<Result<Vec<_>, _>>()?;\nlet response = json!({\n    \"user\": GetUserPostsUserReturnType {\n        posts: G::from_iter(&db, &txn, std::iter::once(user.clone()), &arena).map(|item| item.map(|item| GetUserPostsUserPostsReturnType {\n                        id: uuid_str(item.id(), &arena),\n                        title: item.get_property(\"title\"),\n                        content: item.get_property(\"content\"),\n                        label: item.label(),\n                        creatorName: item.get_property(\"creatorName\"),\n                        creatorID: item.get_property(\"creatorID\"),\n                    })).collect::<Result<Vec<_>, _>>()?,\n    }\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n#[derive(Serialize, Deserialize, Clone)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsWorkingInput_357": {
+      "name": "GetUserPostsWorkingInput",
+      "type": "struct",
+      "start_line": 357,
+      "end_line": 361,
+      "content_hash": "4311737aedc85f2e3ae5712bdc735b45b39b1dfc",
+      "content": "pub struct GetUserPostsWorkingInput {\n\npub user_id: ID\n}\n#[derive(Serialize)]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "struct_GetUserPostsWorkingUserReturnType_362": {
+      "name": "GetUserPostsWorkingUserReturnType",
+      "type": "struct",
+      "start_line": 362,
+      "end_line": 367,
+      "content_hash": "3a8e647974dd781acb7642fa27700d01f061c593",
+      "content": "pub struct GetUserPostsWorkingUserReturnType<'a> {\n    pub id: &'a str,\n    pub name: Option<&'a Value>,\n}\n\n#[handler]",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    },
+    "function_GetUserPostsWorking_368": {
+      "name": "GetUserPostsWorking",
+      "type": "function",
+      "start_line": 368,
+      "end_line": 388,
+      "content_hash": "3c871f1ed30a8243887e7d47fb6cc1895bc4743e",
+      "content": "pub fn GetUserPostsWorking (input: HandlerInput) -> Result<Response, GraphError> {\nlet db = Arc::clone(&input.graph.storage);\nlet data = input.request.in_fmt.deserialize::<GetUserPostsWorkingInput>(&input.request.body)?;\nlet arena = Bump::new();\nlet txn = db.graph_env.read_txn().map_err(|e| GraphError::New(format!(\"Failed to start read transaction: {:?}\", e)))?;\n    let user = G::new(&db, &txn, &arena)\n.n_from_id(&data.user_id).collect_to_obj()?;\n    let posts = G::from_iter(&db, &txn, std::iter::once(user.clone()), &arena)\n\n.out_node(\"HasPost\").collect::<Result<Vec<_>, _>>()?;\nlet response = json!({\n    \"user\": GetUserPostsWorkingUserReturnType {\n        id: uuid_str(user.id(), &arena),\n        name: user.get_property(\"name\"),\n    }\n});\ntxn.commit().map_err(|e| GraphError::New(format!(\"Failed to commit transaction: {:?}\", e)))?;\nOk(input.request.out_fmt.create_response(&response))\n}\n\n",
+      "pseudo": "",
+      "tags": [],
+      "qdrant_ids": []
+    }
+  }
+}
