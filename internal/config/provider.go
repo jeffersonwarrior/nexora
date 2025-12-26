@@ -259,16 +259,27 @@ func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 	// Collect injected providers
 	injectedProviders := []catwalk.Provider{}
 	injectedCount := 0
+	injectedIDs := make(map[string]bool)
+
 	for _, injector := range injectors {
 		if p := injector(providerList); p.ID != "" {
 			injectedProviders = append(injectedProviders, p)
+			injectedIDs[string(p.ID)] = true
 			injectedCount++
 		}
 	}
 
-	// Prepend injected providers to the list (configured providers on top)
+	// Remove providers from the original list that are being overridden by injected providers
 	if injectedCount > 0 {
-		injectedProviders = append(injectedProviders, providerList...)
+		filteredProviders := []catwalk.Provider{}
+		for _, p := range providerList {
+			if !injectedIDs[string(p.ID)] {
+				filteredProviders = append(filteredProviders, p)
+			}
+		}
+
+		// Prepend injected providers to the filtered list
+		injectedProviders = append(injectedProviders, filteredProviders...)
 		providerList = injectedProviders
 		slog.Info("Injected custom providers", "count", injectedCount, "total", len(providerList))
 	}

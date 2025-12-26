@@ -7,15 +7,12 @@ import (
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
 )
 
-// SyntheticProvider creates Synthetic.new provider if it doesn't exist.
+// SyntheticProvider creates Synthetic.new provider, overriding any existing definition.
 // Synthetic.new is an OpenRouter-compatible aggregator providing access to multiple models.
+// Always returns our custom provider definition to override embedded/catwalk defaults.
 func SyntheticProvider(providers []catwalk.Provider) catwalk.Provider {
-	// Check if synthetic already exists
-	for _, provider := range providers {
-		if provider.ID == "synthetic" {
-			return catwalk.Provider{}
-		}
-	}
+	// Always return our custom provider, overriding any embedded definitions
+	// This ensures correct default models and prevents GLM-4.6 fallback issues
 
 	syntheticProvider := catwalk.Provider{
 		Name:                "Synthetic",

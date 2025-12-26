@@ -31,14 +31,22 @@ func TestSyntheticProvider_UsesOpenAICompatType(t *testing.T) {
 	require.Equal(t, "openai-compat", string(provider.Type))
 }
 
-func TestSyntheticProvider_SkipsIfAlreadyExists(t *testing.T) {
+func TestSyntheticProvider_OverridesExisting(t *testing.T) {
 	t.Parallel()
-	provider := SyntheticProvider(nil)
-	require.NotEmpty(t, provider.ID)
 
-	syntheticInList := []catwalk.Provider{provider}
+	// Create a provider list with an existing synthetic provider (simulating embedded providers)
+	existingSynthetic := catwalk.Provider{
+		ID:                  "synthetic",
+		Name:                "Old Synthetic",
+		DefaultLargeModelID: "hf:zai-org/GLM-4.6", // Old default that causes issues
+	}
+	syntheticInList := []catwalk.Provider{existingSynthetic}
+
+	// Our provider should always override, not skip
 	result := SyntheticProvider(syntheticInList)
-	require.Empty(t, result.ID)
+	require.NotEmpty(t, result.ID)
+	require.Equal(t, "synthetic", string(result.ID))
+	require.Equal(t, "minimax/minimax-m2.1", string(result.DefaultLargeModelID))
 }
 
 func TestSyntheticProvider_ModelIDs(t *testing.T) {
@@ -67,4 +75,31 @@ func TestSyntheticProvider_RespectEnvVarEndpoint(t *testing.T) {
 
 	provider := SyntheticProvider(nil)
 	require.Equal(t, customEndpoint, provider.APIEndpoint)
+}
+
+func TestSyntheticProvider_DefaultModelExists(t *testing.T) {
+	t.Parallel()
+	provider := SyntheticProvider(nil)
+
+	// Verify that the default large model actually exists in the models list
+	defaultLargeFound := false
+	for _, model := range provider.Models {
+		if model.ID == provider.DefaultLargeModelID {
+			defaultLargeFound = true
+			break
+		}
+	}
+
+	require.True(t, defaultLargeFound, "DefaultLargeModelID %s not found in models list", provider.DefaultLargeModelID)
+
+	// Verify that the default small model actually exists in the models list
+	defaultSmallFound := false
+	for _, model := range provider.Models {
+		if model.ID == provider.DefaultSmallModelID {
+			defaultSmallFound = true
+			break
+		}
+	}
+
+	require.True(t, defaultSmallFound, "DefaultSmallModelID %s not found in models list", provider.DefaultSmallModelID)
 }
