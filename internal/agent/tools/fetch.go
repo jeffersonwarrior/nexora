@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
+	"unicode"
 
 	"charm.land/fantasy"
 	md "github.com/JohannesKaufmann/html-to-markdown"
@@ -17,6 +20,16 @@ import (
 )
 
 const FetchToolName = "fetch"
+
+// Context limits for different models (approximate token limits)
+const (
+	ContextLimitSmall  = 32000  // claude-3-5-haiku
+	ContextLimitMedium = 80000  // claude-3-5-sonnet
+	ContextLimitLarge  = 200000 // claude-4-opus
+)
+
+// DefaultContextLimit is used when model-specific limit is unknown
+const DefaultContextLimit = ContextLimitSmall
 
 //go:embed fetch.md
 var fetchDescription []byte
@@ -108,8 +121,8 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 
 			content := string(body)
 
-			isValidUt8 := utf8.ValidString(content)
-			if !isValidUt8 {
+			isValidUtf8 := utf8.ValidString(content)
+			if !isValidUtf8 {
 				return fantasy.NewTextErrorResponse("Response content is not valid UTF-8"), nil
 			}
 			contentType := resp.Header.Get("Content-Type")
@@ -136,7 +149,6 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 				content = "```\n" + content + "\n```"
 
 			case "html":
-				// return only the body of the HTML document
 				if strings.Contains(contentType, "text/html") {
 					doc, err := goquery.NewDocumentFromReader(strings.NewReader(content))
 					if err != nil {
@@ -152,14 +164,47 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 					content = "<html>\n<body>\n" + body + "\n</body>\n</html>"
 				}
 			}
-			// calculate byte size of content
-			contentSize := int64(len(content))
-			if contentSize > MaxReadSize {
-				content = content[:MaxReadSize]
-				content += fmt.Sprintf("\n\n[Content truncated to %d bytes]", MaxReadSize)
+
+			// Context-aware content handling
+			tokenCount := countTokens(content)
+			
+			// Check if content fits within context limit
+			if tokenCount <= DefaultContextLimit {
+				// Content fits in context - return directly
+				contentSize := int64(len(content))
+				if contentSize > MaxReadSize {
+					content = content[:MaxReadSize]
+					content += fmt.Sprintf("\n\n[Content truncated to %d bytes]", MaxReadSize)
+				}
+				return fantasy.NewTextResponse(content), nil
 			}
 
-			return fantasy.NewTextResponse(content), nil
+			// Content too large for context - write to tmp file
+			tmpDir := filepath.Join(workingDir, "nexora-fetch-"+sessionID)
+			if err := os.MkdirAll(tmpDir, 0755); err != nil {
+				return fantasy.NewTextErrorResponse("Failed to create tmp directory: " + err.Error()), nil
+			}
+
+			// Generate filename
+			timestamp := time.Now().Format("20060102150405.000000000")
+			safeURL := sanitizeURLForFilename(params.URL)
+			tmpFilename := fmt.Sprintf("%s-%s.txt", timestamp, safeURL)
+			tmpPath := filepath.Join(tmpDir, tmpFilename)
+
+			// Write content to file
+			if err := os.WriteFile(tmpPath, []byte(content), 0644); err != nil {
+				return fantasy.NewTextErrorResponse("Failed to write content to file: " + err.Error()), nil
+			}
+
+			result := fmt.Sprintf("Content fetched from %s (%d tokens, %d bytes).\n\nContent saved to: %s\n\nUse the view and grep tools to analyze this file. Content was too large for context (%d tokens > %d limit).", 
+				params.URL, 
+				tokenCount, 
+				len(content),
+				tmpPath,
+				tokenCount,
+				DefaultContextLimit)
+			
+			return fantasy.NewTextResponse(result), nil
 		})
 }
 
@@ -184,4 +229,56 @@ func convertHTMLToMarkdown(html string) (string, error) {
 	}
 
 	return markdown, nil
+}
+
+// countTokens estimates the number of tokens in a string
+// This is a simple approximation - in production, use a proper tokenizer
+func countTokens(s string) int {
+	// Rough approximation: 4 characters per token on average
+	// This is much faster than proper tokenization
+	wordCount := 0
+	inWord := false
+	
+	for _, r := range s {
+		if unicode.IsSpace(r) {
+			inWord = false
+		} else if !inWord {
+			inWord = true
+			wordCount++
+		}
+	}
+	
+	// Add overhead for punctuation and special characters
+	punctuationCount := strings.Count(s, ",") + strings.Count(s, ".") + 
+	                  strings.Count(s, "!") + strings.Count(s, "?") + 
+	                  strings.Count(s, ";") + strings.Count(s, ":")
+	
+	// Estimate: words + punctuation/2 (approximate)
+	return wordCount + punctuationCount/2
+}
+
+// sanitizeURLForFilename converts a URL to a safe filename
+func sanitizeURLForFilename(url string) string {
+	// Remove protocol
+	url = strings.TrimPrefix(url, "https://")
+	url = strings.TrimPrefix(url, "http://")
+	
+	// Replace common URL characters with underscores
+	replacer := strings.NewReplacer(
+		"/", "_",
+		":", "_",
+		".", "_",
+		"?", "_",
+		"&", "_",
+		"=", "_",
+		"@", "_",
+	)
+	return replacer.Replace(url)
+}
+
+// generateTmpFilename generates a predictable tmp filename for testing
+func generateTmpFilename(sessionID string, url string) string {
+	timestamp := time.Now().Format("20060102150405")
+	safeURL := sanitizeURLForFilename(url)
+	return fmt.Sprintf("/tmp/nexora-fetch-%s/%s-%s.txt", sessionID, timestamp, safeURL)
 }
