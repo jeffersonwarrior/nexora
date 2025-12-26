@@ -89,11 +89,48 @@ nexora chat  # → edit files, run bash, git commit, etc.
 
 ```
 📝 Code: edit/write/multiedit/glob/grep/ls
-🐚 Shell: bash/git status/diff
+🐚 Shell: bash/git status/diff (with TMUX session support)
 🔍 Search: sourcegraph/agentic_fetch/agent
 🖼️ **Vision MCP**: @z_ai/mcp-server (image analysis)
-🌐 Web: agentic_fetch/mcp_web-reader
-📊 QA: job_output/job_kill
+🌐 Web: fetch (smart routing) / web_fetch / web_search
+📊 QA: job_output/job_kill (aliased to bash)
+```
+
+## 🔤 Natural Language Tool Aliases
+
+Use natural language to invoke tools - 47 aliases supported:
+
+| Tool | Aliases |
+|------|---------|
+| **fetch** | curl, wget, http-get, http_get, web-fetch, webfetch, web_fetch, http |
+| **view** | read, cat, open |
+| **ls** | dir, directory |
+| **edit** | modify, change, replace, update |
+| **write** | create, make, new |
+| **grep** | search, find, rg |
+| **bash** | shell, exec, execute, run, command |
+| **web_search** | web-search, websearch, search-web |
+| **sourcegraph** | sg, code-search |
+| **job_kill** | 	 bash |
+| **job_output** | 	 bash |
+
+## 🌐 Smart Fetch
+
+**Intelligent web content fetching** with context-aware handling:
+
+### Features
+- **MCP Auto-Routing**: Automatically uses MCP web_reader if available, falls back to built-in
+- **Context-Aware**: Counts tokens in content, writes large content to tmp files if needed
+- **Session-Scoped Storage**: Tmp files in `./tmp/nexora-{session-id}/`, auto-cleaned on session end
+- **Format Support**: Returns content as text, markdown, or HTML
+
+### Usage
+```bash
+# Natural language aliases supported
+curl https://example.com          # 	 fetch
+wget https://example.com          # 	 fetch
+http-get https://example.com      # 	 fetch
+web-fetch https://example.com     # 	 fetch
 ```
 
 ## 🚀 Why Nexora?
@@ -194,3 +231,12 @@ Built by **Jefferson Nunn** with the help of:
 ---
 
 **v0.29.0** - **Intelligent agent management** with **adaptive resource monitoring**, **self-healing execution**, and **local model improvements**.
+## 📺 TMUX Integration
+
+Nexora supports **persistent TMUX sessions** for AI-driven interactive terminal workflows.
+
+- Interactive editor control (vi, helix, emacs)
+- Human observation and real-time intervention
+- Multi-model orchestration (Opus + Sonnet + Haiku)
+
+See [TMUX.md](TMUX.md) for the full protocol documentation.
