@@ -17,11 +17,11 @@ func TestMiniMaxProvider_ReturnsValidProvider(t *testing.T) {
 	requireValidProvider(t, provider)
 }
 
-func TestMiniMaxProvider_HasTwoModels(t *testing.T) {
+func TestMiniMaxProvider_HasThreeModels(t *testing.T) {
 	t.Parallel()
 	provider := MiniMaxProvider(nil)
 
-	require.Len(t, provider.Models, 2)
+	require.Len(t, provider.Models, 3)
 }
 
 func TestMiniMaxProvider_UsesAnthropicType(t *testing.T) {
@@ -50,6 +50,7 @@ func TestMiniMaxProvider_ModelIDs(t *testing.T) {
 		modelIDs[string(m.ID)] = true
 	}
 
+	require.True(t, modelIDs["MiniMax-M2.1"])
 	require.True(t, modelIDs["MiniMax-M2"])
 	require.True(t, modelIDs["MiniMax-M2-Stable"])
 }

@@ -22,9 +22,20 @@ func MiniMaxProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIKey:              "$MINIMAX_API_KEY",
 		APIEndpoint:         cmp.Or(os.Getenv("MINIMAX_API_ENDPOINT"), "https://api.minimax.io/anthropic"),
 		Type:                "anthropic",
-		DefaultLargeModelID: "MiniMax-M2",
+		DefaultLargeModelID: "MiniMax-M2.1",
 		DefaultSmallModelID: "MiniMax-M2-Stable",
 		Models: []catwalk.Model{
+			{
+				ID:               "MiniMax-M2.1",
+				Name:             "MiniMax M2.1",
+				CostPer1MIn:      0.3,
+				CostPer1MOut:     1.2,
+				ContextWindow:    204800,
+				DefaultMaxTokens: 8000,
+				CanReason:        true,
+				SupportsImages:   false,
+				Options:          catwalk.ModelOptions{},
+			},
 			{
 				ID:               "MiniMax-M2",
 				Name:             "MiniMax M2",
