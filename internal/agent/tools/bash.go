@@ -502,8 +502,13 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 			}
 		}
 	} else {
-		// Create new session
-		newSessionID := fmt.Sprintf("%s-%d", sessionID, time.Now().UnixNano())
+		// Create new session with readable name
+		// Use short session prefix (first 8 chars of UUID) + timestamp
+		sessionPrefix := sessionID
+		if len(sessionID) > 8 {
+			sessionPrefix = sessionID[:8]
+		}
+		newSessionID := fmt.Sprintf("nexora-%s-%d", sessionPrefix, time.Now().UnixNano())
 		session, err = tmuxManager.NewTmuxSession(newSessionID, execWorkingDir, params.Command, params.Description)
 		if err != nil {
 			return fantasy.ToolResponse{}, fmt.Errorf("failed to create new TMUX session: %w", err)
