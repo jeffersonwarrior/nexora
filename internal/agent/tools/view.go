@@ -49,10 +49,12 @@ type ViewResponseMetadata struct {
 }
 
 const (
-	ViewToolName     = "view"
-	MaxReadSize      = 5 * 1024 * 1024 // 5MB
-	DefaultReadLimit = 100
-	MaxLineLength    = 2000
+	ViewToolName        = "view"
+	MaxReadSize         = 5 * 1024 * 1024 // 5MB
+	DefaultReadLimit    = 100
+	MaxLineLength       = 2000
+	MaxViewTokens       = 30000 // Max tokens to return in a single view (allows full file if it fits)
+	FallbackChunkLines  = 2000  // Fallback to chunking if file exceeds token limit
 )
 
 func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permission.Service, workingDir string) fantasy.AgentTool {
@@ -175,14 +177,24 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 					fileInfo.Size(), MaxReadSize)), nil
 			}
 
-			// Set default limit if not provided
-			if params.Limit <= 0 {
-				params.Limit = DefaultReadLimit
-			}
-
 			// Validate offset to prevent negative slice bounds panic
 			if params.Offset < 0 {
 				params.Offset = 0
+			}
+
+			// Smart limit determination:
+			// If no explicit limit provided and no offset, try to read entire file if it fits in context
+			// Otherwise use chunking
+			useSmartWholeFile := params.Limit <= 0 && params.Offset == 0
+
+			// Set default limit if not provided
+			if params.Limit <= 0 {
+				if useSmartWholeFile {
+					// Initial attempt - we'll validate token count later
+					params.Limit = FallbackChunkLines
+				} else {
+					params.Limit = DefaultReadLimit
+				}
 			}
 
 			isImage, mimeType := getImageMimeType(filePath)
@@ -202,7 +214,37 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 			}
 
 			// Read the file content
-			content, lineCount, err := readTextFile(filePath, params.Offset, params.Limit)
+			// If trying whole file mode, attempt to read entire file first
+			var content string
+			var lineCount int
+			var readErr error
+			if useSmartWholeFile {
+				// Try reading entire file (use very large limit to get all lines)
+				fullContent, totalLines, fullReadErr := readTextFile(filePath, 0, 1000000)
+				if fullReadErr == nil {
+					// Count tokens to see if it fits
+					tokenCount := countTokens(fullContent)
+					if tokenCount <= MaxViewTokens {
+						// Entire file fits! Use it
+						content = fullContent
+						lineCount = totalLines
+					} else {
+						// File too large, fall back to chunking with default limit
+						content, lineCount, readErr = readTextFile(filePath, params.Offset, params.Limit)
+					}
+				} else {
+					// Error reading full file, fall back to chunking
+					content, lineCount, readErr = readTextFile(filePath, params.Offset, params.Limit)
+				}
+			} else {
+				content, lineCount, readErr = readTextFile(filePath, params.Offset, params.Limit)
+			}
+
+			// Check for read errors
+			if readErr != nil {
+				return fantasy.ToolResponse{}, fmt.Errorf("error reading file: %w", readErr)
+			}
+
 			// Validate and sanitize UTF-8 content to prevent crashes
 			if !utf8.ValidString(content) {
 				// Fix invalid UTF-8 sequences instead of failing
@@ -226,9 +268,6 @@ func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 					FilePath: filePath,
 					FileSize: fileInfo.Size(),
 				}, "invalid UTF-8 sanitized")
-			}
-			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("error reading file: %w", err)
 			}
 
 			notifyLSPs(ctx, lspClients, filePath)
@@ -401,3 +440,4 @@ func (s *LineScanner) Text() string {
 func (s *LineScanner) Err() error {
 	return s.scanner.Err()
 }
+
