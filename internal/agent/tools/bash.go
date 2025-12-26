@@ -488,18 +488,26 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 	if params.ShellID != "" {
 		// Continue existing session
 		session, ok = tmuxManager.GetSession(params.ShellID)
-		if !ok {
+		if ok {
+			// Session exists, send command to it
+			err = tmuxManager.SendCommand(params.ShellID, params.Command)
+			if err != nil {
+				return fantasy.ToolResponse{}, fmt.Errorf("failed to send command to existing TMUX session: %w", err)
+			}
+		} else {
 			// Session not found, create new
 			session, err = tmuxManager.NewTmuxSession(params.ShellID, execWorkingDir, params.Command, params.Description)
+			if err != nil {
+				return fantasy.ToolResponse{}, fmt.Errorf("failed to create TMUX session: %w", err)
+			}
 		}
 	} else {
 		// Create new session
 		newSessionID := fmt.Sprintf("%s-%d", sessionID, time.Now().UnixNano())
 		session, err = tmuxManager.NewTmuxSession(newSessionID, execWorkingDir, params.Command, params.Description)
-	}
-	
-	if err != nil {
-		return fantasy.ToolResponse{}, fmt.Errorf("failed to manage TMUX session: %w", err)
+		if err != nil {
+			return fantasy.ToolResponse{}, fmt.Errorf("failed to create new TMUX session: %w", err)
+		}
 	}
 	
 	// Small delay to allow TMUX to execute the command
