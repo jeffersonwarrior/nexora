@@ -6,7 +6,20 @@ package db
 
 import (
 	"database/sql"
+	"time"
 )
+
+type Checkpoint struct {
+	ID           string       `json:"id"`
+	SessionID    string       `json:"session_id"`
+	Timestamp    time.Time    `json:"timestamp"`
+	TokenCount   int64        `json:"token_count"`
+	MessageCount int64        `json:"message_count"`
+	ContextHash  string       `json:"context_hash"`
+	State        []byte       `json:"state"`
+	Compressed   bool         `json:"compressed"`
+	CreatedAt    sql.NullTime `json:"created_at"`
+}
 
 type ContextArchive struct {
 	ID           int64        `json:"id"`
@@ -42,6 +55,38 @@ type Message struct {
 	FinishedAt       sql.NullInt64  `json:"finished_at"`
 	Provider         sql.NullString `json:"provider"`
 	IsSummaryMessage int64          `json:"is_summary_message"`
+}
+
+type PromptLibrary struct {
+	ID             string          `json:"id"`
+	Category       string          `json:"category"`
+	Subcategory    sql.NullString  `json:"subcategory"`
+	Title          string          `json:"title"`
+	Description    string          `json:"description"`
+	Content        string          `json:"content"`
+	ContentHash    sql.NullString  `json:"content_hash"`
+	Tags           sql.NullString  `json:"tags"`
+	Variables      sql.NullString  `json:"variables"`
+	Author         sql.NullString  `json:"author"`
+	Source         sql.NullString  `json:"source"`
+	SourceUrl      sql.NullString  `json:"source_url"`
+	Votes          sql.NullInt64   `json:"votes"`
+	Rating         sql.NullFloat64 `json:"rating"`
+	UsageCount     sql.NullInt64   `json:"usage_count"`
+	SuccessRate    sql.NullFloat64 `json:"success_rate"`
+	AvgTokens      sql.NullInt64   `json:"avg_tokens"`
+	AvgLatencyMs   sql.NullInt64   `json:"avg_latency_ms"`
+	LastUsedAt     sql.NullInt64   `json:"last_used_at"`
+	FavoritesCount sql.NullInt64   `json:"favorites_count"`
+	CreatedAt      int64           `json:"created_at"`
+	UpdatedAt      int64           `json:"updated_at"`
+}
+
+type PromptLibraryFt struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+	Tags        string `json:"tags"`
 }
 
 type Session struct {

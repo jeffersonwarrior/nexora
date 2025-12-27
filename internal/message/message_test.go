@@ -178,6 +178,26 @@ func (m *MockQuerier) ListNewFiles(ctx context.Context) ([]db.File, error) {
 	return []db.File{}, nil
 }
 
+// Checkpoint methods - stubs for testing
+func (m *MockQuerier) CreateCheckpoint(ctx context.Context, arg db.CreateCheckpointParams) (db.Checkpoint, error) {
+	return db.Checkpoint{}, nil
+}
+func (m *MockQuerier) GetCheckpoint(ctx context.Context, id string) (db.Checkpoint, error) {
+	return db.Checkpoint{}, nil
+}
+func (m *MockQuerier) GetLatestCheckpoint(ctx context.Context, sessionID string) (db.Checkpoint, error) {
+	return db.Checkpoint{}, nil
+}
+func (m *MockQuerier) ListCheckpoints(ctx context.Context, sessionID string) ([]db.Checkpoint, error) {
+	return []db.Checkpoint{}, nil
+}
+func (m *MockQuerier) DeleteCheckpoint(ctx context.Context, id string) error {
+	return nil
+}
+func (m *MockQuerier) DeleteOldCheckpoints(ctx context.Context, arg db.DeleteOldCheckpointsParams) error {
+	return nil
+}
+
 func TestNewService(t *testing.T) {
 	mock := NewMockQuerier()
 	svc := message.NewService(mock)
