@@ -102,3 +102,7 @@ internal/session/:memory*
 setup-config.sh
 setup-config.sh
 NEXORA.*.md
+
+# External dependencies directory
+external-deps/
+context-engine/
