@@ -256,14 +256,18 @@ build_nexora() {
     # Build using absolute path with platform-specific binary name
     BUILD_OUTPUT="$INSTALL_DIR/$BINARY_NAME"
 
-    # Set GOOS for cross-compilation if needed
-    BUILD_ENV=""
+    # Build with proper environment variables
     if [ "$IS_WINDOWS" = true ]; then
-        BUILD_ENV="GOOS=windows GOARCH=amd64"
+        BUILD_OUTPUT_LOG=$(GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o "$BUILD_OUTPUT" . 2>&1)
+        BUILD_EXIT_CODE=$?
+    else
+        BUILD_OUTPUT_LOG=$(go build -ldflags="$LDFLAGS" -o "$BUILD_OUTPUT" . 2>&1)
+        BUILD_EXIT_CODE=$?
     fi
 
-    if ! eval $BUILD_ENV go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" . >/dev/null 2>&1; then
+    if [ $BUILD_EXIT_CODE -ne 0 ]; then
         print_error "Build failed" >&2
+        echo "$BUILD_OUTPUT_LOG" >&2
         return 1
     fi
 
