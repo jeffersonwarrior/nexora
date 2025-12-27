@@ -127,6 +127,26 @@ func (m *MockQuerier) ListMessagesBySession(ctx context.Context, sessionID strin
 func (m *MockQuerier) DeleteMessage(ctx context.Context, id string) error                { return nil }
 func (m *MockQuerier) DeleteSessionMessages(ctx context.Context, sessionID string) error { return nil }
 
+// Checkpoint methods - stubs for testing
+func (m *MockQuerier) CreateCheckpoint(ctx context.Context, params db.CreateCheckpointParams) (db.Checkpoint, error) {
+	return db.Checkpoint{}, nil
+}
+func (m *MockQuerier) GetCheckpoint(ctx context.Context, id string) (db.Checkpoint, error) {
+	return db.Checkpoint{}, nil
+}
+func (m *MockQuerier) GetLatestCheckpoint(ctx context.Context, sessionID string) (db.Checkpoint, error) {
+	return db.Checkpoint{}, nil
+}
+func (m *MockQuerier) ListCheckpoints(ctx context.Context, sessionID string) ([]db.Checkpoint, error) {
+	return []db.Checkpoint{}, nil
+}
+func (m *MockQuerier) DeleteCheckpoint(ctx context.Context, id string) error {
+	return nil
+}
+func (m *MockQuerier) DeleteOldCheckpoints(ctx context.Context, params db.DeleteOldCheckpointsParams) error {
+	return nil
+}
+
 // TestDB provides an in-memory SQLite database for testing
 type TestDB struct {
 	*sql.DB
@@ -302,6 +322,24 @@ CREATE INDEX IF NOT EXISTS idx_project_session ON context_archive(project, sessi
 CREATE INDEX IF NOT EXISTS idx_project_time ON context_archive(project, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_reference_uri ON context_archive(reference_uri);
 CREATE INDEX IF NOT EXISTS idx_created_at ON context_archive(created_at DESC);
+
+-- Checkpoints
+CREATE TABLE IF NOT EXISTS checkpoints (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    token_count INTEGER NOT NULL DEFAULT 0 CHECK (token_count >= 0),
+    message_count INTEGER NOT NULL DEFAULT 0 CHECK (message_count >= 0),
+    context_hash TEXT NOT NULL,
+    state BLOB NOT NULL,
+    compressed BOOLEAN NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_checkpoints_session_id ON checkpoints(session_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_timestamp ON checkpoints(session_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_created_at ON checkpoints(created_at DESC);
 `
 
 	if _, err := db.Exec(schema); err != nil {
