@@ -26,8 +26,9 @@ type TmuxSession struct {
 
 // TmuxManager manages TMUX sessions
 type TmuxManager struct {
-	sessions map[string]*TmuxSession
-	mu       sync.RWMutex
+	sessions        map[string]*TmuxSession
+	defaultSessions map[string]string // Maps conversation sessionID -> default TMUX sessionID
+	mu              sync.RWMutex
 }
 
 var (
@@ -39,7 +40,8 @@ var (
 func GetTmuxManager() *TmuxManager {
 	tmuxManagerOnce.Do(func() {
 		tmuxManager = &TmuxManager{
-			sessions: make(map[string]*TmuxSession),
+			sessions:        make(map[string]*TmuxSession),
+			defaultSessions: make(map[string]string),
 		}
 	})
 	return tmuxManager
@@ -321,6 +323,83 @@ func processSpecialKeys(input string) string {
 	// For now, just return input unchanged - literal mode handles everything
 	// TODO: In future, process <Esc>, <Enter>, <Tab> sequences and send them separately
 	return input
+}
+
+// GetOrCreateDefaultSession returns the default session for a conversation, creating if needed
+func (m *TmuxManager) GetOrCreateDefaultSession(conversationID, workingDir string) (*TmuxSession, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	// Check if default session exists for this conversation
+	if tmuxSessionID, exists := m.defaultSessions[conversationID]; exists {
+		if session, ok := m.sessions[tmuxSessionID]; ok {
+			// Verify TMUX session still exists
+			cmd := exec.Command("tmux", "has-session", "-t", session.SessionName)
+			if cmd.Run() == nil {
+				return session, nil
+			}
+			// Session died, clean up
+			delete(m.sessions, tmuxSessionID)
+			delete(m.defaultSessions, conversationID)
+		}
+	}
+
+	// Create new default session with readable ID
+	// Format: nexora-main-001, nexora-main-002, etc.
+	tmuxSessionID := m.generateReadableSessionID()
+
+	// Create TMUX session
+	sessionName := "nexora-" + tmuxSessionID
+	createCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-x", "200", "-y", "50", "-c", workingDir)
+	if err := createCmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to create default TMUX session: %w", err)
+	}
+
+	// Get pane ID
+	paneCmd := exec.Command("tmux", "list-panes", "-t", sessionName, "-F", "#{pane_id}")
+	paneOutput, err := paneCmd.CombinedOutput()
+	if err != nil {
+		exec.Command("tmux", "kill-session", "-t", sessionName).Run()
+		return nil, fmt.Errorf("failed to get pane ID: %w", err)
+	}
+	paneID := strings.TrimSpace(string(paneOutput))
+	if paneID == "" {
+		paneID = "%0"
+	}
+
+	session := &TmuxSession{
+		ID:          tmuxSessionID,
+		SessionName: sessionName,
+		PaneID:      paneID,
+		WorkingDir:  workingDir,
+		Description: "Default persistent shell",
+		StartedAt:   time.Now(),
+		done:        make(chan struct{}),
+	}
+
+	m.sessions[tmuxSessionID] = session
+	m.defaultSessions[conversationID] = tmuxSessionID
+
+	return session, nil
+}
+
+// generateReadableSessionID creates a human-readable session ID
+func (m *TmuxManager) generateReadableSessionID() string {
+	words := []string{
+		"alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel",
+		"india", "juliet", "kilo", "lima", "mike", "november", "oscar", "papa",
+		"quebec", "romeo", "sierra", "tango", "uniform", "victor", "whiskey", "xray",
+		"yankee", "zulu", "atom", "byte", "code", "data", "edge", "flux", "gate",
+		"hash", "iron", "jade", "kite", "lens", "mesh", "node", "opus", "peak",
+		"quad", "ruby", "sync", "tide", "unit", "vibe", "wave", "zero",
+	}
+
+	// Count existing sessions to get next number
+	sessionCount := len(m.sessions)
+	wordIndex := sessionCount % len(words)
+	sequenceNum := (sessionCount / len(words)) + 1
+
+	return fmt.Sprintf("%s-%03d", words[wordIndex], sequenceNum)
 }
 
 // SessionInfo returns information about a session

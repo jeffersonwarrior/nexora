@@ -486,7 +486,7 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 	
 	// Determine if we should create a new session or use existing
 	if params.ShellID != "" {
-		// Continue existing session
+		// Continue existing session (explicitly requested)
 		session, ok = tmuxManager.GetSession(params.ShellID)
 		if ok {
 			// Session exists, send command to it
@@ -495,23 +495,23 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 				return fantasy.ToolResponse{}, fmt.Errorf("failed to send command to existing TMUX session: %w", err)
 			}
 		} else {
-			// Session not found, create new
+			// Session not found, create new with requested ID
 			session, err = tmuxManager.NewTmuxSession(params.ShellID, execWorkingDir, params.Command, params.Description)
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("failed to create TMUX session: %w", err)
 			}
 		}
 	} else {
-		// Create new session with readable name
-		// Use short session prefix (first 8 chars of UUID) + timestamp
-		sessionPrefix := sessionID
-		if len(sessionID) > 8 {
-			sessionPrefix = sessionID[:8]
-		}
-		newSessionID := fmt.Sprintf("nexora-%s-%d", sessionPrefix, time.Now().UnixNano())
-		session, err = tmuxManager.NewTmuxSession(newSessionID, execWorkingDir, params.Command, params.Description)
+		// Use default persistent session for this conversation
+		session, err = tmuxManager.GetOrCreateDefaultSession(sessionID, execWorkingDir)
 		if err != nil {
-			return fantasy.ToolResponse{}, fmt.Errorf("failed to create new TMUX session: %w", err)
+			return fantasy.ToolResponse{}, fmt.Errorf("failed to get default TMUX session: %w", err)
+		}
+
+		// Send command to default session
+		err = tmuxManager.SendCommand(session.ID, params.Command)
+		if err != nil {
+			return fantasy.ToolResponse{}, fmt.Errorf("failed to send command to default TMUX session: %w", err)
 		}
 	}
 	
