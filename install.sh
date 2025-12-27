@@ -2,6 +2,7 @@
 
 # Install script for Nexora
 # Usage: ./install.sh
+# Supports: Linux, macOS, Windows (Git Bash)
 
 # Colors for output
 RED='\033[0;31m'
@@ -10,8 +11,23 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 DEFAULT_VERSION="0.29.2"
-BINARY_NAME="nexora"
-INSTALL_DIR="$HOME/.local/bin"
+
+# Detect platform
+IS_WINDOWS=false
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
+    IS_WINDOWS=true
+    BINARY_NAME="nexora.exe"
+    # On Windows, use LOCALAPPDATA if available, otherwise .local/bin
+    if [ -n "$LOCALAPPDATA" ]; then
+        INSTALL_DIR="$LOCALAPPDATA/Programs/Nexora"
+    else
+        INSTALL_DIR="$HOME/.local/bin"
+    fi
+else
+    BINARY_NAME="nexora"
+    INSTALL_DIR="$HOME/.local/bin"
+fi
+
 TEMP_DIR="/tmp/nexora-install"
 
 # Function to print colored output
@@ -30,9 +46,16 @@ print_error() {
 # Parse command line arguments
 VERSION=${1:-$DEFAULT_VERSION}
 
-print_status "Installing Nexora v${VERSION} to $HOME/.local/bin..."
+# Warn if running with sudo (not recommended)
+if [ "$EUID" = "0" ]; then
+    print_warning "Running installer as root/sudo is not recommended!"
+    print_warning "The installer will use sudo only when needed for package installation."
+    print_warning "Consider running as a regular user: ./install.sh"
+fi
 
-mkdir -p "$HOME/.local/bin"
+print_status "Installing Nexora v${VERSION} to ${INSTALL_DIR}..."
+
+mkdir -p "$INSTALL_DIR"
 # Check both current PATH and shell config files
 CONFIG_FILE=""
 NEEDS_UPDATE=false
@@ -67,22 +90,29 @@ fi
 
 # Store whether we updated the PATH for later use
 PATH_UPDATED=false
-if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
     NEEDS_UPDATE=true
 fi
 
 if [ "$NEEDS_UPDATE" = true ]; then
-    # Add PATH export to the appropriate config file
-    echo "" >> "$CONFIG_FILE"
-    echo "# Nexora PATH addition" >> "$CONFIG_FILE"
-    echo "export PATH=\"\$PATH:$HOME/.local/bin\"" >> "$CONFIG_FILE"
-    
-    print_status "Added $HOME/.local/bin to PATH in $CONFIG_FILE"
-    print_status "You need to restart your terminal or run 'source $CONFIG_FILE' to use nexora"
-    PATH_UPDATED=true
-    
-export PATH="$PATH:$HOME/.local/bin"
-    print_status "$HOME/.local/bin is already in PATH"
+    if [ "$IS_WINDOWS" = true ]; then
+        # On Windows, we'll add to PATH via config file
+        print_warning "On Windows, you may need to manually add $INSTALL_DIR to your PATH"
+        print_status "Run this in Git Bash: echo 'export PATH=\"\$PATH:$INSTALL_DIR\"' >> ~/.bashrc"
+        export PATH="$PATH:$INSTALL_DIR"
+    else
+        # Add PATH export to the appropriate config file
+        echo "" >> "$CONFIG_FILE"
+        echo "# Nexora PATH addition" >> "$CONFIG_FILE"
+        echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> "$CONFIG_FILE"
+
+        print_status "Added $INSTALL_DIR to PATH in $CONFIG_FILE"
+        print_status "You need to restart your terminal or run 'source $CONFIG_FILE' to use nexora"
+        PATH_UPDATED=true
+    fi
+    export PATH="$PATH:$INSTALL_DIR"
+else
+    print_status "$INSTALL_DIR is already in PATH"
 fi
 
 # Check if Go is installed
@@ -221,12 +251,18 @@ build_nexora() {
     LDFLAGS="-X github.com/nexora/nexora/internal/version.Version=${VERSION}"
 
     # Create output directory and ensure permissions
-    mkdir -p "$HOME/.local/bin"
+    mkdir -p "$INSTALL_DIR"
 
-    # Build using absolute path
-    BUILD_OUTPUT="$HOME/.local/bin/nexora"
+    # Build using absolute path with platform-specific binary name
+    BUILD_OUTPUT="$INSTALL_DIR/$BINARY_NAME"
 
-    if ! go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" . >/dev/null 2>&1; then
+    # Set GOOS for cross-compilation if needed
+    BUILD_ENV=""
+    if [ "$IS_WINDOWS" = true ]; then
+        BUILD_ENV="GOOS=windows GOARCH=amd64"
+    fi
+
+    if ! eval $BUILD_ENV go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" . >/dev/null 2>&1; then
         print_error "Build failed" >&2
         return 1
     fi
@@ -244,8 +280,16 @@ build_nexora() {
 # Remove any existing Nexora installations
 remove_existing() {
     print_status "Removing any existing Nexora installations..."
-    
-    # Remove from installation directory
+
+    # Remove from installation directory (handle both .exe and non-.exe)
+    if [ -f "$INSTALL_DIR/nexora" ]; then
+        rm -f "$INSTALL_DIR/nexora"
+    fi
+    if [ -f "$INSTALL_DIR/nexora.exe" ]; then
+        rm -f "$INSTALL_DIR/nexora.exe"
+    fi
+
+    # Also check old location
     if [ -f "$HOME/.local/bin/nexora" ]; then
         rm -f "$HOME/.local/bin/nexora" 2>/dev/null || true
     fi
@@ -372,11 +416,11 @@ install_better_tools() {
             # Sometimes some repos fail but the rest work, so we ignore connection errors
             
             print_status "Installing tools with apt..."
-            # First try to install all tools
-            sudo apt-get install -y -qq ripgrep fd-find bat fzf exa jq 2>/dev/null || {
+            # First try to install all tools including tmux
+            sudo apt-get install -y -qq ripgrep fd-find bat fzf exa jq tmux 2>/dev/null || {
                 # If exa fails, try installing eza instead (exa replacement)
                 print_warning "exa package not available, trying eza (modern replacement)..."
-                sudo apt-get install -y -qq ripgrep fd-find bat fzf eza jq || {
+                sudo apt-get install -y -qq ripgrep fd-find bat fzf eza jq tmux || {
                     # Try individual installations with more specific packages
                     print_warning "Some tools failed to install, trying individually..."
                     
@@ -403,7 +447,10 @@ install_better_tools() {
                     
                     # jq
                     sudo apt-get install -y -qq jq 2>/dev/null || print_warning "Could not install jq"
-                    
+
+                    # tmux (required for Nexora bash tool)
+                    sudo apt-get install -y -qq tmux 2>/dev/null || print_warning "Could not install tmux (required for Nexora)"
+
                     print_error "Some tools could not be installed"
                 }
             }
@@ -420,32 +467,42 @@ install_better_tools() {
             ;;
         "dnf"|"yum")
             print_status "Installing tools with dnf/yum..."
-            sudo $PM install -y ripgrep fd-find bat fzf exa jq || {
+            sudo $PM install -y ripgrep fd-find bat fzf exa jq tmux || {
                 print_error "Failed to install some tools with dnf/yum"
             }
             ;;
         "pacman")
             print_status "Installing tools with pacman..."
-            sudo pacman -S --noconfirm ripgrep fd bat fzf exa jq || {
+            # Check if pacman is locked and wait/skip if necessary
+            if [ -f /var/lib/pacman/db.lck ]; then
+                print_warning "Pacman database is locked. Waiting 5 seconds..."
+                sleep 5
+                if [ -f /var/lib/pacman/db.lck ]; then
+                    print_warning "Pacman still locked. Skipping automatic tool installation."
+                    print_status "Run 'sudo pacman -S ripgrep fd bat fzf exa jq tmux' manually later"
+                    return
+                fi
+            fi
+            sudo pacman -S --noconfirm ripgrep fd bat fzf exa jq tmux || {
                 print_error "Failed to install some tools with pacman"
             }
             ;;
         "brew")
             print_status "Installing tools with Homebrew..."
-            brew install ripgrep fd bat fzf exa jq || {
+            brew install ripgrep fd bat fzf exa jq tmux || {
                 print_error "Failed to install some tools with brew"
             }
             ;;
         "pkg")
             print_status "Installing tools with pkg..."
-            sudo pkg install -y ripgrep fd bat fzf jq || {
+            sudo pkg install -y ripgrep fd bat fzf jq tmux || {
                 print_error "Failed to install some tools with pkg"
             }
             ;;
     esac
     
     print_status "Faster tools installation completed!"
-    print_status "Tools installed: ripgrep (rg), fd-find (fd), bat, fzf, exa, jq"
+    print_status "Tools installed: ripgrep (rg), fd-find (fd), bat, fzf, exa, jq, tmux"
 }
 
 # Main installation flow
@@ -480,13 +537,37 @@ main() {
     fi
     
     echo
-    print_status "Would you like to install faster development tools? (ripgrep, fd-find, bat, fzf, etc.)"
+    print_status "Would you like to install faster development tools? (ripgrep, fd-find, bat, fzf, tmux, etc.)"
     read -p "Install tools? [y/N] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         install_better_tools
     fi
-    
+
+    # Check if tmux is installed (required for Nexora bash tool)
+    echo
+    if ! command -v tmux >/dev/null 2>&1; then
+        print_warning "tmux is not installed!"
+        print_warning "Nexora requires tmux for persistent shell sessions in the bash tool."
+        print_warning "Please install tmux:"
+        if [ "$IS_WINDOWS" = true ]; then
+            print_status "  - Git Bash: pacman -S tmux (or install via package manager)"
+        elif command -v apt-get >/dev/null 2>&1; then
+            print_status "  - Ubuntu/Debian: sudo apt-get install tmux"
+        elif command -v dnf >/dev/null 2>&1; then
+            print_status "  - Fedora: sudo dnf install tmux"
+        elif command -v pacman >/dev/null 2>&1; then
+            print_status "  - Arch: sudo pacman -S tmux"
+        elif command -v brew >/dev/null 2>&1; then
+            print_status "  - macOS: brew install tmux"
+        else
+            print_status "  - Install via your system package manager"
+        fi
+    else
+        print_status "tmux is installed (required for Nexora bash tool) ✓"
+    fi
+
+    echo
     print_status "Nexora v${VERSION} installation completed successfully!"
     print_status "You can now run: $BINARY_NAME --help"
     print_status ""
