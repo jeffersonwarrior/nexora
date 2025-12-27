@@ -9,25 +9,42 @@ import (
 )
 
 type Querier interface {
+	CreateCheckpoint(ctx context.Context, arg CreateCheckpointParams) (Checkpoint, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
+	CreatePrompt(ctx context.Context, arg CreatePromptParams) (PromptLibrary, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	DeleteCheckpoint(ctx context.Context, id string) error
 	DeleteFile(ctx context.Context, id string) error
 	DeleteMessage(ctx context.Context, id string) error
+	DeleteOldCheckpoints(ctx context.Context, arg DeleteOldCheckpointsParams) error
+	DeletePrompt(ctx context.Context, id string) error
 	DeleteSession(ctx context.Context, id string) error
 	DeleteSessionFiles(ctx context.Context, sessionID string) error
 	DeleteSessionMessages(ctx context.Context, sessionID string) error
+	GetCheckpoint(ctx context.Context, id string) (Checkpoint, error)
 	GetFile(ctx context.Context, id string) (File, error)
 	GetFileByPathAndSession(ctx context.Context, arg GetFileByPathAndSessionParams) (File, error)
+	GetLatestCheckpoint(ctx context.Context, sessionID string) (Checkpoint, error)
 	GetMessage(ctx context.Context, id string) (Message, error)
+	GetPrompt(ctx context.Context, id string) (PromptLibrary, error)
+	GetPromptsByTag(ctx context.Context, arg GetPromptsByTagParams) ([]PromptLibrary, error)
 	GetSessionByID(ctx context.Context, id string) (Session, error)
+	IncrementUsage(ctx context.Context, id string) error
+	ListCheckpoints(ctx context.Context, sessionID string) ([]Checkpoint, error)
 	ListFilesByPath(ctx context.Context, path string) ([]File, error)
 	ListFilesBySession(ctx context.Context, sessionID string) ([]File, error)
 	ListLatestSessionFiles(ctx context.Context, sessionID string) ([]File, error)
 	ListMessagesBySession(ctx context.Context, sessionID string) ([]Message, error)
 	ListNewFiles(ctx context.Context) ([]File, error)
+	ListPrompts(ctx context.Context, arg ListPromptsParams) ([]PromptLibrary, error)
+	ListPromptsByCategory(ctx context.Context, arg ListPromptsByCategoryParams) ([]PromptLibrary, error)
 	ListSessions(ctx context.Context) ([]Session, error)
+	ListTopPrompts(ctx context.Context, limit int64) ([]PromptLibrary, error)
+	SearchPrompts(ctx context.Context, arg SearchPromptsParams) ([]PromptLibrary, error)
 	UpdateMessage(ctx context.Context, arg UpdateMessageParams) error
+	UpdatePrompt(ctx context.Context, arg UpdatePromptParams) error
+	UpdateRating(ctx context.Context, arg UpdateRatingParams) error
 	UpdateSession(ctx context.Context, arg UpdateSessionParams) (Session, error)
 }
 

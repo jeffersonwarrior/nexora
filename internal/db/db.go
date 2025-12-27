@@ -24,20 +24,35 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.createCheckpointStmt, err = db.PrepareContext(ctx, createCheckpoint); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateCheckpoint: %w", err)
+	}
 	if q.createFileStmt, err = db.PrepareContext(ctx, createFile); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateFile: %w", err)
 	}
 	if q.createMessageStmt, err = db.PrepareContext(ctx, createMessage); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateMessage: %w", err)
 	}
+	if q.createPromptStmt, err = db.PrepareContext(ctx, createPrompt); err != nil {
+		return nil, fmt.Errorf("error preparing query CreatePrompt: %w", err)
+	}
 	if q.createSessionStmt, err = db.PrepareContext(ctx, createSession); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateSession: %w", err)
+	}
+	if q.deleteCheckpointStmt, err = db.PrepareContext(ctx, deleteCheckpoint); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteCheckpoint: %w", err)
 	}
 	if q.deleteFileStmt, err = db.PrepareContext(ctx, deleteFile); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteFile: %w", err)
 	}
 	if q.deleteMessageStmt, err = db.PrepareContext(ctx, deleteMessage); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteMessage: %w", err)
+	}
+	if q.deleteOldCheckpointsStmt, err = db.PrepareContext(ctx, deleteOldCheckpoints); err != nil {
+		return nil, fmt.Errorf("error preparing query DeleteOldCheckpoints: %w", err)
+	}
+	if q.deletePromptStmt, err = db.PrepareContext(ctx, deletePrompt); err != nil {
+		return nil, fmt.Errorf("error preparing query DeletePrompt: %w", err)
 	}
 	if q.deleteSessionStmt, err = db.PrepareContext(ctx, deleteSession); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteSession: %w", err)
@@ -48,17 +63,35 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.deleteSessionMessagesStmt, err = db.PrepareContext(ctx, deleteSessionMessages); err != nil {
 		return nil, fmt.Errorf("error preparing query DeleteSessionMessages: %w", err)
 	}
+	if q.getCheckpointStmt, err = db.PrepareContext(ctx, getCheckpoint); err != nil {
+		return nil, fmt.Errorf("error preparing query GetCheckpoint: %w", err)
+	}
 	if q.getFileStmt, err = db.PrepareContext(ctx, getFile); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFile: %w", err)
 	}
 	if q.getFileByPathAndSessionStmt, err = db.PrepareContext(ctx, getFileByPathAndSession); err != nil {
 		return nil, fmt.Errorf("error preparing query GetFileByPathAndSession: %w", err)
 	}
+	if q.getLatestCheckpointStmt, err = db.PrepareContext(ctx, getLatestCheckpoint); err != nil {
+		return nil, fmt.Errorf("error preparing query GetLatestCheckpoint: %w", err)
+	}
 	if q.getMessageStmt, err = db.PrepareContext(ctx, getMessage); err != nil {
 		return nil, fmt.Errorf("error preparing query GetMessage: %w", err)
 	}
+	if q.getPromptStmt, err = db.PrepareContext(ctx, getPrompt); err != nil {
+		return nil, fmt.Errorf("error preparing query GetPrompt: %w", err)
+	}
+	if q.getPromptsByTagStmt, err = db.PrepareContext(ctx, getPromptsByTag); err != nil {
+		return nil, fmt.Errorf("error preparing query GetPromptsByTag: %w", err)
+	}
 	if q.getSessionByIDStmt, err = db.PrepareContext(ctx, getSessionByID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetSessionByID: %w", err)
+	}
+	if q.incrementUsageStmt, err = db.PrepareContext(ctx, incrementUsage); err != nil {
+		return nil, fmt.Errorf("error preparing query IncrementUsage: %w", err)
+	}
+	if q.listCheckpointsStmt, err = db.PrepareContext(ctx, listCheckpoints); err != nil {
+		return nil, fmt.Errorf("error preparing query ListCheckpoints: %w", err)
 	}
 	if q.listFilesByPathStmt, err = db.PrepareContext(ctx, listFilesByPath); err != nil {
 		return nil, fmt.Errorf("error preparing query ListFilesByPath: %w", err)
@@ -75,11 +108,29 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.listNewFilesStmt, err = db.PrepareContext(ctx, listNewFiles); err != nil {
 		return nil, fmt.Errorf("error preparing query ListNewFiles: %w", err)
 	}
+	if q.listPromptsStmt, err = db.PrepareContext(ctx, listPrompts); err != nil {
+		return nil, fmt.Errorf("error preparing query ListPrompts: %w", err)
+	}
+	if q.listPromptsByCategoryStmt, err = db.PrepareContext(ctx, listPromptsByCategory); err != nil {
+		return nil, fmt.Errorf("error preparing query ListPromptsByCategory: %w", err)
+	}
 	if q.listSessionsStmt, err = db.PrepareContext(ctx, listSessions); err != nil {
 		return nil, fmt.Errorf("error preparing query ListSessions: %w", err)
 	}
+	if q.listTopPromptsStmt, err = db.PrepareContext(ctx, listTopPrompts); err != nil {
+		return nil, fmt.Errorf("error preparing query ListTopPrompts: %w", err)
+	}
+	if q.searchPromptsStmt, err = db.PrepareContext(ctx, searchPrompts); err != nil {
+		return nil, fmt.Errorf("error preparing query SearchPrompts: %w", err)
+	}
 	if q.updateMessageStmt, err = db.PrepareContext(ctx, updateMessage); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateMessage: %w", err)
+	}
+	if q.updatePromptStmt, err = db.PrepareContext(ctx, updatePrompt); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdatePrompt: %w", err)
+	}
+	if q.updateRatingStmt, err = db.PrepareContext(ctx, updateRating); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateRating: %w", err)
 	}
 	if q.updateSessionStmt, err = db.PrepareContext(ctx, updateSession); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateSession: %w", err)
@@ -89,6 +140,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.createCheckpointStmt != nil {
+		if cerr := q.createCheckpointStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createCheckpointStmt: %w", cerr)
+		}
+	}
 	if q.createFileStmt != nil {
 		if cerr := q.createFileStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createFileStmt: %w", cerr)
@@ -99,9 +155,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createMessageStmt: %w", cerr)
 		}
 	}
+	if q.createPromptStmt != nil {
+		if cerr := q.createPromptStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createPromptStmt: %w", cerr)
+		}
+	}
 	if q.createSessionStmt != nil {
 		if cerr := q.createSessionStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createSessionStmt: %w", cerr)
+		}
+	}
+	if q.deleteCheckpointStmt != nil {
+		if cerr := q.deleteCheckpointStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteCheckpointStmt: %w", cerr)
 		}
 	}
 	if q.deleteFileStmt != nil {
@@ -112,6 +178,16 @@ func (q *Queries) Close() error {
 	if q.deleteMessageStmt != nil {
 		if cerr := q.deleteMessageStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing deleteMessageStmt: %w", cerr)
+		}
+	}
+	if q.deleteOldCheckpointsStmt != nil {
+		if cerr := q.deleteOldCheckpointsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deleteOldCheckpointsStmt: %w", cerr)
+		}
+	}
+	if q.deletePromptStmt != nil {
+		if cerr := q.deletePromptStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing deletePromptStmt: %w", cerr)
 		}
 	}
 	if q.deleteSessionStmt != nil {
@@ -129,6 +205,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing deleteSessionMessagesStmt: %w", cerr)
 		}
 	}
+	if q.getCheckpointStmt != nil {
+		if cerr := q.getCheckpointStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getCheckpointStmt: %w", cerr)
+		}
+	}
 	if q.getFileStmt != nil {
 		if cerr := q.getFileStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getFileStmt: %w", cerr)
@@ -139,14 +220,39 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getFileByPathAndSessionStmt: %w", cerr)
 		}
 	}
+	if q.getLatestCheckpointStmt != nil {
+		if cerr := q.getLatestCheckpointStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getLatestCheckpointStmt: %w", cerr)
+		}
+	}
 	if q.getMessageStmt != nil {
 		if cerr := q.getMessageStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getMessageStmt: %w", cerr)
 		}
 	}
+	if q.getPromptStmt != nil {
+		if cerr := q.getPromptStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getPromptStmt: %w", cerr)
+		}
+	}
+	if q.getPromptsByTagStmt != nil {
+		if cerr := q.getPromptsByTagStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getPromptsByTagStmt: %w", cerr)
+		}
+	}
 	if q.getSessionByIDStmt != nil {
 		if cerr := q.getSessionByIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getSessionByIDStmt: %w", cerr)
+		}
+	}
+	if q.incrementUsageStmt != nil {
+		if cerr := q.incrementUsageStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing incrementUsageStmt: %w", cerr)
+		}
+	}
+	if q.listCheckpointsStmt != nil {
+		if cerr := q.listCheckpointsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listCheckpointsStmt: %w", cerr)
 		}
 	}
 	if q.listFilesByPathStmt != nil {
@@ -174,14 +280,44 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing listNewFilesStmt: %w", cerr)
 		}
 	}
+	if q.listPromptsStmt != nil {
+		if cerr := q.listPromptsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listPromptsStmt: %w", cerr)
+		}
+	}
+	if q.listPromptsByCategoryStmt != nil {
+		if cerr := q.listPromptsByCategoryStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listPromptsByCategoryStmt: %w", cerr)
+		}
+	}
 	if q.listSessionsStmt != nil {
 		if cerr := q.listSessionsStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing listSessionsStmt: %w", cerr)
 		}
 	}
+	if q.listTopPromptsStmt != nil {
+		if cerr := q.listTopPromptsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing listTopPromptsStmt: %w", cerr)
+		}
+	}
+	if q.searchPromptsStmt != nil {
+		if cerr := q.searchPromptsStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing searchPromptsStmt: %w", cerr)
+		}
+	}
 	if q.updateMessageStmt != nil {
 		if cerr := q.updateMessageStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateMessageStmt: %w", cerr)
+		}
+	}
+	if q.updatePromptStmt != nil {
+		if cerr := q.updatePromptStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updatePromptStmt: %w", cerr)
+		}
+	}
+	if q.updateRatingStmt != nil {
+		if cerr := q.updateRatingStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateRatingStmt: %w", cerr)
 		}
 	}
 	if q.updateSessionStmt != nil {
@@ -228,25 +364,42 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 type Queries struct {
 	db                          DBTX
 	tx                          *sql.Tx
+	createCheckpointStmt        *sql.Stmt
 	createFileStmt              *sql.Stmt
 	createMessageStmt           *sql.Stmt
+	createPromptStmt            *sql.Stmt
 	createSessionStmt           *sql.Stmt
+	deleteCheckpointStmt        *sql.Stmt
 	deleteFileStmt              *sql.Stmt
 	deleteMessageStmt           *sql.Stmt
+	deleteOldCheckpointsStmt    *sql.Stmt
+	deletePromptStmt            *sql.Stmt
 	deleteSessionStmt           *sql.Stmt
 	deleteSessionFilesStmt      *sql.Stmt
 	deleteSessionMessagesStmt   *sql.Stmt
+	getCheckpointStmt           *sql.Stmt
 	getFileStmt                 *sql.Stmt
 	getFileByPathAndSessionStmt *sql.Stmt
+	getLatestCheckpointStmt     *sql.Stmt
 	getMessageStmt              *sql.Stmt
+	getPromptStmt               *sql.Stmt
+	getPromptsByTagStmt         *sql.Stmt
 	getSessionByIDStmt          *sql.Stmt
+	incrementUsageStmt          *sql.Stmt
+	listCheckpointsStmt         *sql.Stmt
 	listFilesByPathStmt         *sql.Stmt
 	listFilesBySessionStmt      *sql.Stmt
 	listLatestSessionFilesStmt  *sql.Stmt
 	listMessagesBySessionStmt   *sql.Stmt
 	listNewFilesStmt            *sql.Stmt
+	listPromptsStmt             *sql.Stmt
+	listPromptsByCategoryStmt   *sql.Stmt
 	listSessionsStmt            *sql.Stmt
+	listTopPromptsStmt          *sql.Stmt
+	searchPromptsStmt           *sql.Stmt
 	updateMessageStmt           *sql.Stmt
+	updatePromptStmt            *sql.Stmt
+	updateRatingStmt            *sql.Stmt
 	updateSessionStmt           *sql.Stmt
 }
 
@@ -254,25 +407,42 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
 		db:                          tx,
 		tx:                          tx,
+		createCheckpointStmt:        q.createCheckpointStmt,
 		createFileStmt:              q.createFileStmt,
 		createMessageStmt:           q.createMessageStmt,
+		createPromptStmt:            q.createPromptStmt,
 		createSessionStmt:           q.createSessionStmt,
+		deleteCheckpointStmt:        q.deleteCheckpointStmt,
 		deleteFileStmt:              q.deleteFileStmt,
 		deleteMessageStmt:           q.deleteMessageStmt,
+		deleteOldCheckpointsStmt:    q.deleteOldCheckpointsStmt,
+		deletePromptStmt:            q.deletePromptStmt,
 		deleteSessionStmt:           q.deleteSessionStmt,
 		deleteSessionFilesStmt:      q.deleteSessionFilesStmt,
 		deleteSessionMessagesStmt:   q.deleteSessionMessagesStmt,
+		getCheckpointStmt:           q.getCheckpointStmt,
 		getFileStmt:                 q.getFileStmt,
 		getFileByPathAndSessionStmt: q.getFileByPathAndSessionStmt,
+		getLatestCheckpointStmt:     q.getLatestCheckpointStmt,
 		getMessageStmt:              q.getMessageStmt,
+		getPromptStmt:               q.getPromptStmt,
+		getPromptsByTagStmt:         q.getPromptsByTagStmt,
 		getSessionByIDStmt:          q.getSessionByIDStmt,
+		incrementUsageStmt:          q.incrementUsageStmt,
+		listCheckpointsStmt:         q.listCheckpointsStmt,
 		listFilesByPathStmt:         q.listFilesByPathStmt,
 		listFilesBySessionStmt:      q.listFilesBySessionStmt,
 		listLatestSessionFilesStmt:  q.listLatestSessionFilesStmt,
 		listMessagesBySessionStmt:   q.listMessagesBySessionStmt,
 		listNewFilesStmt:            q.listNewFilesStmt,
+		listPromptsStmt:             q.listPromptsStmt,
+		listPromptsByCategoryStmt:   q.listPromptsByCategoryStmt,
 		listSessionsStmt:            q.listSessionsStmt,
+		listTopPromptsStmt:          q.listTopPromptsStmt,
+		searchPromptsStmt:           q.searchPromptsStmt,
 		updateMessageStmt:           q.updateMessageStmt,
+		updatePromptStmt:            q.updatePromptStmt,
+		updateRatingStmt:            q.updateRatingStmt,
 		updateSessionStmt:           q.updateSessionStmt,
 	}
 }
