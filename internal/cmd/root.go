@@ -40,6 +40,7 @@ func init() {
 	rootCmd.AddCommand(
 		runCmd,
 		dirsCmd,
+		aboutCmd,
 		updateProvidersCmd,
 		logsCmd,
 		schemaCmd,
