@@ -9,7 +9,9 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -74,6 +76,47 @@ type bashDescriptionData struct {
 }
 
 var bannedCommands = []string{}
+
+// detectSleepDuration parses sleep commands and returns the duration to wait
+// Supports: sleep 5, sleep 5s, sleep 0.5, sleep 1m, etc.
+func detectSleepDuration(command string) time.Duration {
+	// Match sleep command at start or after && ; |
+	patterns := []string{
+		`^sleep\s+`,
+		`&&\s*sleep\s+`,
+		`;\s*sleep\s+`,
+		`\|\s*sleep\s+`,
+	}
+
+	cmdLower := strings.ToLower(strings.TrimSpace(command))
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern + `([\d.]+)([smh]?)`)
+		matches := re.FindStringSubmatch(cmdLower)
+		if len(matches) >= 2 {
+			val, err := strconv.ParseFloat(matches[1], 64)
+			if err != nil {
+				continue
+			}
+
+			unit := "s" // default seconds
+			if len(matches) >= 3 && matches[2] != "" {
+				unit = matches[2]
+			}
+
+			switch unit {
+			case "s", "":
+				return time.Duration(val * float64(time.Second))
+			case "m":
+				return time.Duration(val * float64(time.Minute))
+			case "h":
+				return time.Duration(val * float64(time.Hour))
+			}
+		}
+	}
+
+	return 0
+}
 
 func bashDescription(attribution *config.Attribution, modelName string) string {
 	bannedCommandsStr := strings.Join(bannedCommands, ", ")
@@ -515,8 +558,15 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 		}
 	}
 	
-	// Small delay to allow TMUX to execute the command
-	time.Sleep(100 * time.Millisecond)
+	// Detect sleep commands and wait appropriately
+	waitDuration := detectSleepDuration(params.Command)
+	if waitDuration > 0 {
+		// Add small buffer for command overhead
+		time.Sleep(waitDuration + 200*time.Millisecond)
+	} else {
+		// Small delay to allow TMUX to execute the command
+		time.Sleep(100 * time.Millisecond)
+	}
 	
 	// Get output
 	output, err := tmuxManager.CaptureOutput(session.ID)
