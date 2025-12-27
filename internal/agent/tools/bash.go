@@ -26,7 +26,7 @@ type BashParams struct {
 	Command         string `json:"command" description:"The command to execute"`
 	WorkingDir      string `json:"working_dir,omitempty" description:"The working directory to execute the command in (defaults to current directory)"`
 	RunInBackground bool   `json:"run_in_background,omitempty" description:"Set to true (boolean) to run this command in the background. Use job_output to read the output later."`
-	ShellID         string `json:"shell_id,omitempty" description:"Shell ID to continue (for TMUX sessions or background jobs)"`
+	ShellID         string `json:"shell_id,omitempty" description:"ONLY use for continuing existing background jobs. Do NOT provide for new commands - sessions are managed automatically."`
 }
 
 type BashPermissionsParams struct {
