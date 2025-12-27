@@ -486,7 +486,7 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 	
 	// Determine if we should create a new session or use existing
 	if params.ShellID != "" {
-		// Continue existing session (explicitly requested)
+		// Try to continue existing session (explicitly requested)
 		session, ok = tmuxManager.GetSession(params.ShellID)
 		if ok {
 			// Session exists, send command to it
@@ -495,13 +495,13 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 				return fantasy.ToolResponse{}, fmt.Errorf("failed to send command to existing TMUX session: %w", err)
 			}
 		} else {
-			// Session not found, create new with requested ID
-			session, err = tmuxManager.NewTmuxSession(params.ShellID, execWorkingDir, params.Command, params.Description)
-			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("failed to create TMUX session: %w", err)
-			}
+			// ShellID not found - fall through to use pooled session
+			// This prevents creating new sessions for every unique ShellID the AI generates
+			params.ShellID = "" // Clear to use default session logic
 		}
-	} else {
+	}
+
+	if params.ShellID == "" {
 		// Use default persistent session for this conversation
 		session, err = tmuxManager.GetOrCreateDefaultSession(sessionID, execWorkingDir)
 		if err != nil {
