@@ -1,10 +1,13 @@
 package shell
 
 import (
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSessionStatus_String(t *testing.T) {
@@ -80,4 +83,131 @@ func TestPooledSession(t *testing.T) {
 
 	assert.Equal(t, "test-session", pooled.ID)
 	assert.Equal(t, SessionAvailable, pooled.Status)
+}
+
+// countNexoraTmuxSessions counts active nexora-prefixed tmux sessions
+func countNexoraTmuxSessions() int {
+	cmd := exec.Command("tmux", "ls")
+	output, err := cmd.Output()
+	if err != nil {
+		return 0 // tmux not running or no sessions
+	}
+
+	count := 0
+	for _, line := range strings.Split(string(output), "\n") {
+		if strings.HasPrefix(line, "nexora-") {
+			count++
+		}
+	}
+	return count
+}
+
+// TestSessionPoolPreventsLeaks verifies that session pooling prevents unbounded
+// session accumulation. This is a regression test for issue #18.
+func TestSessionPoolPreventsLeaks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
+
+	if !IsTmuxAvailable() {
+		t.Skip("tmux not available")
+	}
+
+	// Count sessions before test
+	initialCount := countNexoraTmuxSessions()
+
+	// Get the manager and configure small pool for testing
+	manager := GetTmuxManager()
+	manager.poolMu.Lock()
+	originalConfig := manager.poolConfig
+	manager.poolConfig = PoolConfig{
+		MaxSize:     3,
+		IdleTimeout: 1 * time.Minute,
+	}
+	manager.poolMu.Unlock()
+
+	// Restore config after test
+	defer func() {
+		manager.poolMu.Lock()
+		manager.poolConfig = originalConfig
+		manager.poolMu.Unlock()
+	}()
+
+	// Simulate 10 "conversations" requesting sessions
+	// Without pooling, this would create 10 sessions
+	// With pooling (max 3), should create at most 3
+	conversationIDs := []string{
+		"conv-leak-test-1", "conv-leak-test-2", "conv-leak-test-3",
+		"conv-leak-test-4", "conv-leak-test-5", "conv-leak-test-6",
+		"conv-leak-test-7", "conv-leak-test-8", "conv-leak-test-9",
+		"conv-leak-test-10",
+	}
+
+	var sessions []*TmuxSession
+	for _, convID := range conversationIDs {
+		session, err := manager.GetOrCreateDefaultSession(convID, "/tmp")
+		if err != nil {
+			// Pool exhausted is expected after max size reached
+			t.Logf("Expected pool exhaustion for %s: %v", convID, err)
+			continue
+		}
+		sessions = append(sessions, session)
+
+		// Release immediately to simulate conversation ending
+		manager.ReleaseDefaultSession(convID)
+	}
+
+	// Count sessions after test
+	finalCount := countNexoraTmuxSessions()
+	newSessions := finalCount - initialCount
+
+	// CRITICAL: With pooling, we should NOT have created 10 new sessions
+	// At most we should have created MaxSize (3) sessions
+	maxAllowed := 3
+	require.LessOrEqual(t, newSessions, maxAllowed,
+		"Session leak detected! Created %d sessions but max pool size is %d. "+
+			"This indicates sessions are not being reused.", newSessions, maxAllowed)
+
+	// Verify reuse happened
+	metrics := manager.GetMetrics()
+	t.Logf("Pool metrics: created=%d, reused=%d, released=%d",
+		metrics.Created, metrics.Reused, metrics.Released)
+
+	// If we ran 10 conversations with max 3 pool size, we should have reused sessions
+	if len(sessions) > maxAllowed {
+		require.Greater(t, metrics.Reused, int64(0),
+			"Sessions were not reused despite pool being full")
+	}
+
+	// Cleanup test sessions
+	for _, convID := range conversationIDs {
+		manager.ReleaseDefaultSession(convID)
+	}
+}
+
+// TestOrphanedSessionDetection is a canary test that fails if too many
+// nexora tmux sessions exist, indicating a potential leak in production.
+func TestOrphanedSessionDetection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
+
+	if !IsTmuxAvailable() {
+		t.Skip("tmux not available")
+	}
+
+	count := countNexoraTmuxSessions()
+
+	// Threshold: more than 20 sessions indicates a likely leak
+	// Normal operation with pooling should never exceed MaxSize (10 default)
+	const leakThreshold = 20
+
+	if count > leakThreshold {
+		t.Errorf("POTENTIAL SESSION LEAK DETECTED: Found %d nexora tmux sessions. "+
+			"Threshold is %d. Run 'tmux ls | grep nexora' to inspect. "+
+			"Clean up with: tmux ls | grep nexora | cut -d: -f1 | xargs -I {} tmux kill-session -t {}",
+			count, leakThreshold)
+	} else {
+		t.Logf("Session count OK: %d (threshold: %d)", count, leakThreshold)
+	}
 }
