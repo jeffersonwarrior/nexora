@@ -147,6 +147,41 @@ func (m *MockQuerier) DeleteOldCheckpoints(ctx context.Context, params db.Delete
 	return nil
 }
 
+// Prompt library methods - stubs for testing
+func (m *MockQuerier) CreatePrompt(ctx context.Context, arg db.CreatePromptParams) (db.PromptLibrary, error) {
+	return db.PromptLibrary{}, nil
+}
+func (m *MockQuerier) GetPrompt(ctx context.Context, id string) (db.PromptLibrary, error) {
+	return db.PromptLibrary{}, nil
+}
+func (m *MockQuerier) ListPrompts(ctx context.Context, arg db.ListPromptsParams) ([]db.PromptLibrary, error) {
+	return []db.PromptLibrary{}, nil
+}
+func (m *MockQuerier) ListPromptsByCategory(ctx context.Context, arg db.ListPromptsByCategoryParams) ([]db.PromptLibrary, error) {
+	return []db.PromptLibrary{}, nil
+}
+func (m *MockQuerier) SearchPrompts(ctx context.Context, arg db.SearchPromptsParams) ([]db.PromptLibrary, error) {
+	return []db.PromptLibrary{}, nil
+}
+func (m *MockQuerier) UpdatePrompt(ctx context.Context, arg db.UpdatePromptParams) error {
+	return nil
+}
+func (m *MockQuerier) DeletePrompt(ctx context.Context, id string) error {
+	return nil
+}
+func (m *MockQuerier) IncrementUsage(ctx context.Context, id string) error {
+	return nil
+}
+func (m *MockQuerier) UpdateRating(ctx context.Context, arg db.UpdateRatingParams) error {
+	return nil
+}
+func (m *MockQuerier) GetPromptsByTag(ctx context.Context, arg db.GetPromptsByTagParams) ([]db.PromptLibrary, error) {
+	return []db.PromptLibrary{}, nil
+}
+func (m *MockQuerier) ListTopPrompts(ctx context.Context, limit int64) ([]db.PromptLibrary, error) {
+	return []db.PromptLibrary{}, nil
+}
+
 // TestDB provides an in-memory SQLite database for testing
 type TestDB struct {
 	*sql.DB
