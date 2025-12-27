@@ -10,6 +10,57 @@ import (
 	"time"
 )
 
+// SessionStatus represents the current state of a pooled session
+type SessionStatus int
+
+const (
+	SessionAvailable SessionStatus = iota // Ready for reuse
+	SessionBusy                           // Currently in use
+	SessionDraining                       // Marked for cleanup
+)
+
+func (s SessionStatus) String() string {
+	switch s {
+	case SessionAvailable:
+		return "available"
+	case SessionBusy:
+		return "busy"
+	case SessionDraining:
+		return "draining"
+	default:
+		return "unknown"
+	}
+}
+
+// PoolConfig configures session pool behavior
+type PoolConfig struct {
+	MaxSize     int           // Maximum pool size (default: 10)
+	IdleTimeout time.Duration // Cleanup idle sessions after this (default: 5min)
+}
+
+// DefaultPoolConfig returns sensible defaults
+func DefaultPoolConfig() PoolConfig {
+	return PoolConfig{
+		MaxSize:     10,
+		IdleTimeout: 5 * time.Minute,
+	}
+}
+
+// PoolMetrics tracks session pool statistics
+type PoolMetrics struct {
+	Created  int64 // Total sessions created
+	Reused   int64 // Sessions reused from pool
+	Released int64 // Sessions returned to pool
+	Cleaned  int64 // Sessions cleaned up due to idle
+}
+
+// PooledSession extends TmuxSession with pool metadata
+type PooledSession struct {
+	*TmuxSession
+	Status     SessionStatus
+	LastUsedAt time.Time
+}
+
 // TmuxSession represents a TMUX session managed by Nexora
 type TmuxSession struct {
 	ID          string    // Nexora's internal ID (e.g., "nexora-abc123-def456")
@@ -24,11 +75,24 @@ type TmuxSession struct {
 	done        chan struct{}
 }
 
-// TmuxManager manages TMUX sessions
+// TmuxManager manages TMUX sessions with pooling support
 type TmuxManager struct {
 	sessions        map[string]*TmuxSession
 	defaultSessions map[string]string // Maps conversation sessionID -> default TMUX sessionID
 	mu              sync.RWMutex
+
+	// Session pool
+	pool       map[string]*PooledSession // Pooled sessions by ID
+	poolConfig PoolConfig
+	poolMu     sync.RWMutex
+
+	// Metrics
+	metrics   PoolMetrics
+	metricsMu sync.RWMutex
+
+	// Cleanup
+	cleanupStop chan struct{}
+	cleanupOnce sync.Once
 }
 
 var (
@@ -42,9 +106,23 @@ func GetTmuxManager() *TmuxManager {
 		tmuxManager = &TmuxManager{
 			sessions:        make(map[string]*TmuxSession),
 			defaultSessions: make(map[string]string),
+			pool:            make(map[string]*PooledSession),
+			poolConfig:      DefaultPoolConfig(),
+			cleanupStop:     make(chan struct{}),
 		}
+		// Start background cleanup
+		tmuxManager.startCleanup()
 	})
 	return tmuxManager
+}
+
+// GetTmuxManagerWithConfig returns manager with custom config (for testing)
+func GetTmuxManagerWithConfig(config PoolConfig) *TmuxManager {
+	m := GetTmuxManager()
+	m.poolMu.Lock()
+	m.poolConfig = config
+	m.poolMu.Unlock()
+	return m
 }
 
 // IsAvailable checks if TMUX is installed and accessible
@@ -326,9 +404,9 @@ func processSpecialKeys(input string) string {
 }
 
 // GetOrCreateDefaultSession returns the default session for a conversation, creating if needed
+// Now uses session pooling for efficient resource management
 func (m *TmuxManager) GetOrCreateDefaultSession(conversationID, workingDir string) (*TmuxSession, error) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 
 	// Check if default session exists for this conversation
 	if tmuxSessionID, exists := m.defaultSessions[conversationID]; exists {
@@ -336,6 +414,7 @@ func (m *TmuxManager) GetOrCreateDefaultSession(conversationID, workingDir strin
 			// Verify TMUX session still exists
 			cmd := exec.Command("tmux", "has-session", "-t", session.SessionName)
 			if cmd.Run() == nil {
+				m.mu.Unlock()
 				return session, nil
 			}
 			// Session died, clean up
@@ -343,44 +422,34 @@ func (m *TmuxManager) GetOrCreateDefaultSession(conversationID, workingDir strin
 			delete(m.defaultSessions, conversationID)
 		}
 	}
+	m.mu.Unlock()
 
-	// Create new default session with readable ID
-	// Format: nexora-main-001, nexora-main-002, etc.
-	tmuxSessionID := m.generateReadableSessionID()
-
-	// Create TMUX session
-	sessionName := "nexora-" + tmuxSessionID
-	createCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-x", "200", "-y", "50", "-c", workingDir)
-	if err := createCmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to create default TMUX session: %w", err)
-	}
-
-	// Get pane ID
-	paneCmd := exec.Command("tmux", "list-panes", "-t", sessionName, "-F", "#{pane_id}")
-	paneOutput, err := paneCmd.CombinedOutput()
+	// Use pooled session instead of creating new
+	session, err := m.GetPooledSession(workingDir)
 	if err != nil {
-		exec.Command("tmux", "kill-session", "-t", sessionName).Run()
-		return nil, fmt.Errorf("failed to get pane ID: %w", err)
-	}
-	paneID := strings.TrimSpace(string(paneOutput))
-	if paneID == "" {
-		paneID = "%0"
+		return nil, fmt.Errorf("failed to get pooled session: %w", err)
 	}
 
-	session := &TmuxSession{
-		ID:          tmuxSessionID,
-		SessionName: sessionName,
-		PaneID:      paneID,
-		WorkingDir:  workingDir,
-		Description: "Default persistent shell",
-		StartedAt:   time.Now(),
-		done:        make(chan struct{}),
-	}
-
-	m.sessions[tmuxSessionID] = session
-	m.defaultSessions[conversationID] = tmuxSessionID
+	// Map this conversation to the pooled session
+	m.mu.Lock()
+	m.defaultSessions[conversationID] = session.ID
+	m.mu.Unlock()
 
 	return session, nil
+}
+
+// ReleaseDefaultSession releases a conversation's session back to pool
+func (m *TmuxManager) ReleaseDefaultSession(conversationID string) {
+	m.mu.Lock()
+	tmuxSessionID, exists := m.defaultSessions[conversationID]
+	if exists {
+		delete(m.defaultSessions, conversationID)
+	}
+	m.mu.Unlock()
+
+	if exists {
+		m.ReleaseSession(tmuxSessionID)
+	}
 }
 
 // generateReadableSessionID creates a human-readable session ID
@@ -417,4 +486,272 @@ func (s *TmuxSession) SessionInfo() map[string]interface{} {
 		"started_at":   s.StartedAt,
 		"running_time": time.Since(s.StartedAt).String(),
 	}
+}
+
+// ============================================================================
+// Session Pool Methods
+// ============================================================================
+
+// startCleanup starts background goroutine for idle session cleanup
+func (m *TmuxManager) startCleanup() {
+	m.cleanupOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(30 * time.Second)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ticker.C:
+					m.cleanupIdleSessions()
+				case <-m.cleanupStop:
+					return
+				}
+			}
+		}()
+	})
+}
+
+// StopCleanup stops the background cleanup goroutine
+func (m *TmuxManager) StopCleanup() {
+	select {
+	case <-m.cleanupStop:
+		// Already closed
+	default:
+		close(m.cleanupStop)
+	}
+}
+
+// cleanupIdleSessions removes sessions that have been idle too long
+func (m *TmuxManager) cleanupIdleSessions() {
+	m.poolMu.Lock()
+	defer m.poolMu.Unlock()
+
+	now := time.Now()
+	var toRemove []string
+
+	for id, ps := range m.pool {
+		if ps.Status == SessionAvailable && now.Sub(ps.LastUsedAt) > m.poolConfig.IdleTimeout {
+			toRemove = append(toRemove, id)
+		}
+	}
+
+	for _, id := range toRemove {
+		ps := m.pool[id]
+		// Kill the actual tmux session
+		exec.Command("tmux", "kill-session", "-t", ps.SessionName).Run()
+		delete(m.pool, id)
+
+		m.metricsMu.Lock()
+		m.metrics.Cleaned++
+		m.metricsMu.Unlock()
+	}
+}
+
+// GetPooledSession returns an available session from pool or creates new one
+// This is the main entry point for session pooling
+func (m *TmuxManager) GetPooledSession(workingDir string) (*TmuxSession, error) {
+	// First try to find an available session with matching working dir
+	m.poolMu.Lock()
+
+	for _, ps := range m.pool {
+		if ps.Status == SessionAvailable && ps.WorkingDir == workingDir {
+			// Verify session still exists
+			cmd := exec.Command("tmux", "has-session", "-t", ps.SessionName)
+			if cmd.Run() == nil {
+				ps.Status = SessionBusy
+				ps.LastUsedAt = time.Now()
+				m.poolMu.Unlock()
+
+				m.metricsMu.Lock()
+				m.metrics.Reused++
+				m.metricsMu.Unlock()
+
+				return ps.TmuxSession, nil
+			}
+			// Session died, remove from pool
+			delete(m.pool, ps.ID)
+		}
+	}
+
+	// Check pool size limit
+	poolSize := len(m.pool)
+	maxSize := m.poolConfig.MaxSize
+	m.poolMu.Unlock()
+
+	if poolSize >= maxSize {
+		// Try to find ANY available session and change its working dir
+		m.poolMu.Lock()
+		for _, ps := range m.pool {
+			if ps.Status == SessionAvailable {
+				cmd := exec.Command("tmux", "has-session", "-t", ps.SessionName)
+				if cmd.Run() == nil {
+					// Change working directory
+					cdCmd := exec.Command("tmux", "send-keys", "-t", ps.SessionName, "cd "+workingDir, "Enter")
+					cdCmd.Run()
+
+					ps.WorkingDir = workingDir
+					ps.Status = SessionBusy
+					ps.LastUsedAt = time.Now()
+					m.poolMu.Unlock()
+
+					m.metricsMu.Lock()
+					m.metrics.Reused++
+					m.metricsMu.Unlock()
+
+					return ps.TmuxSession, nil
+				}
+				delete(m.pool, ps.ID)
+			}
+		}
+		m.poolMu.Unlock()
+		return nil, fmt.Errorf("session pool exhausted (max %d)", maxSize)
+	}
+
+	// Create new session
+	sessionID := m.generateReadableSessionID()
+	sessionName := "nexora-" + sessionID
+
+	createCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-x", "200", "-y", "50", "-c", workingDir)
+	if err := createCmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to create pooled session: %w", err)
+	}
+
+	paneCmd := exec.Command("tmux", "list-panes", "-t", sessionName, "-F", "#{pane_id}")
+	paneOutput, err := paneCmd.CombinedOutput()
+	if err != nil {
+		exec.Command("tmux", "kill-session", "-t", sessionName).Run()
+		return nil, fmt.Errorf("failed to get pane ID: %w", err)
+	}
+	paneID := strings.TrimSpace(string(paneOutput))
+	if paneID == "" {
+		paneID = "%0"
+	}
+
+	session := &TmuxSession{
+		ID:          sessionID,
+		SessionName: sessionName,
+		PaneID:      paneID,
+		WorkingDir:  workingDir,
+		Description: "Pooled session",
+		StartedAt:   time.Now(),
+		done:        make(chan struct{}),
+	}
+
+	pooled := &PooledSession{
+		TmuxSession: session,
+		Status:      SessionBusy,
+		LastUsedAt:  time.Now(),
+	}
+
+	m.poolMu.Lock()
+	m.pool[sessionID] = pooled
+	m.poolMu.Unlock()
+
+	m.metricsMu.Lock()
+	m.metrics.Created++
+	m.metricsMu.Unlock()
+
+	// Also add to main sessions map for compatibility
+	m.mu.Lock()
+	m.sessions[sessionID] = session
+	m.mu.Unlock()
+
+	return session, nil
+}
+
+// ReleaseSession returns a session to the pool for reuse
+func (m *TmuxManager) ReleaseSession(sessionID string) {
+	m.poolMu.Lock()
+	defer m.poolMu.Unlock()
+
+	if ps, exists := m.pool[sessionID]; exists {
+		// Clear the terminal for next use
+		exec.Command("tmux", "send-keys", "-t", ps.SessionName, "clear", "Enter").Run()
+
+		ps.Status = SessionAvailable
+		ps.LastUsedAt = time.Now()
+
+		m.metricsMu.Lock()
+		m.metrics.Released++
+		m.metricsMu.Unlock()
+	}
+}
+
+// GetMetrics returns current pool metrics
+func (m *TmuxManager) GetMetrics() PoolMetrics {
+	m.metricsMu.RLock()
+	defer m.metricsMu.RUnlock()
+	return m.metrics
+}
+
+// PoolStatus returns pool status info
+func (m *TmuxManager) PoolStatus() map[string]interface{} {
+	m.poolMu.RLock()
+	defer m.poolMu.RUnlock()
+
+	available := 0
+	busy := 0
+	draining := 0
+
+	for _, ps := range m.pool {
+		switch ps.Status {
+		case SessionAvailable:
+			available++
+		case SessionBusy:
+			busy++
+		case SessionDraining:
+			draining++
+		}
+	}
+
+	metrics := m.GetMetrics()
+
+	return map[string]interface{}{
+		"pool_size":  len(m.pool),
+		"max_size":   m.poolConfig.MaxSize,
+		"available":  available,
+		"busy":       busy,
+		"draining":   draining,
+		"created":    metrics.Created,
+		"reused":     metrics.Reused,
+		"released":   metrics.Released,
+		"cleaned":    metrics.Cleaned,
+		"reuse_rate": calculateReuseRate(metrics),
+	}
+}
+
+// calculateReuseRate computes session reuse percentage
+func calculateReuseRate(m PoolMetrics) float64 {
+	total := m.Created + m.Reused
+	if total == 0 {
+		return 0
+	}
+	return float64(m.Reused) / float64(total) * 100
+}
+
+// DrainPool marks all sessions for cleanup
+func (m *TmuxManager) DrainPool() {
+	m.poolMu.Lock()
+	defer m.poolMu.Unlock()
+
+	for _, ps := range m.pool {
+		if ps.Status == SessionAvailable {
+			ps.Status = SessionDraining
+		}
+	}
+}
+
+// KillAllPooled kills all pooled sessions immediately
+func (m *TmuxManager) KillAllPooled() int {
+	m.poolMu.Lock()
+	defer m.poolMu.Unlock()
+
+	killed := 0
+	for id, ps := range m.pool {
+		exec.Command("tmux", "kill-session", "-t", ps.SessionName).Run()
+		delete(m.pool, id)
+		killed++
+	}
+
+	return killed
 }
