@@ -8,17 +8,19 @@ import (
 
 // Task represents a focused task with milestone tracking
 type Task struct {
-	ID          string                 `json:"id"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	Context     string                 `json:"context"` // Current working context
-	Milestones  []Milestone            `json:"milestones"`
-	Status      TaskStatus             `json:"status"`
-	Priority    Priority               `json:"priority"`
-	SessionID   string                 `json:"session_id"`
-	Created     time.Time              `json:"created"`
-	Updated     time.Time              `json:"updated"`
-	Metadata    map[string]interface{} `json:"metadata"`
+	ID           string                 `json:"id"`
+	Title        string                 `json:"title"`
+	Description  string                 `json:"description"`
+	Context      string                 `json:"context"` // Current working context
+	Milestones   []Milestone            `json:"milestones"`
+	Status       TaskStatus             `json:"status"`
+	Priority     Priority               `json:"priority"`
+	SessionID    string                 `json:"session_id"`
+	Created      time.Time              `json:"created"`
+	Updated      time.Time              `json:"updated"`
+	Metadata     map[string]interface{} `json:"metadata"`
+	Dependencies []string               `json:"dependencies"` // Task IDs this depends on
+	Dependents   []string               `json:"dependents"`   // Tasks that depend on this
 }
 
 // Milestone represents a checkable progress point
