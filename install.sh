@@ -9,7 +9,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-DEFAULT_VERSION="0.29.0"
+DEFAULT_VERSION="0.29.2"
 BINARY_NAME="nexora"
 INSTALL_DIR="$HOME/.local/bin"
 TEMP_DIR="/tmp/nexora-install"
@@ -204,62 +204,40 @@ install_go() {
 build_nexora() {
     # Ensure we're in the project directory (find go.mod file)
     SCRIPT_DIR="$(dirname "$0")"
-    print_status "Script directory: $SCRIPT_DIR"
-    print_status "Current directory: $(pwd)"
-    print_status "Looking for go.mod in: $SCRIPT_DIR/go.mod and ./go.mod"
-    
+
     if [ -f "$SCRIPT_DIR/go.mod" ]; then
         cd "$SCRIPT_DIR"
-        print_status "Found go.mod in script directory, changed to: $(pwd)"
+    elif [ -f "./go.mod" ]; then
+        cd "."
     else
-        # If go.mod not in script dir, try current directory
-        if [ -f "./go.mod" ]; then
-            cd "."
-            print_status "Found go.mod in current directory, staying in: $(pwd)"
-        else
-            print_error "Could not find go.mod file. Make sure you're running this script from the project directory."
-            print_error "Script dir: $SCRIPT_DIR, Current dir: $(pwd)"
-            return 1
-        fi
-    fi
-    
-    # Update dependencies before building (suppress output)
-    if ! go mod tidy >/dev/null 2>&1 && go get -u ./... >/dev/null 2>&1 && go mod tidy >/dev/null 2>&1; then
-        print_warning "Failed to update some dependencies, using existing ones..."
-    fi
-    
-    # Set up build flags
-    LDFLAGS="-X github.com/nexora/cli/internal/version.Version=${VERSION}"
-    
-    # Create output directory and ensure permissions
-    mkdir -p "$HOME/.local/bin"
-    
-    # Build using absolute path and explicit GOPATH/bin override
-    BUILD_OUTPUT="$HOME/.local/bin/nexora"
-    
-    print_status "Building to: $BUILD_OUTPUT"
-    print_status "Current directory: $(pwd)"
-    print_status "Go version: $(go version)"
-    print_status "Environment: HOME=$HOME, USER=$USER"
-    if ! go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" . 2>&1; then
-        print_error "Build failed, trying alternative method..."
-        # Fallback: build in current directory then move
-        if ! go build -ldflags="${LDFLAGS}" -o nexora . 2>&1; then
-            print_error "Both build methods failed"
-            return 1
-        fi
-        if ! mv nexora "$BUILD_OUTPUT"; then
-            return 1
-        fi
-    fi
-    
-    # Check if binary was created
-    if [ ! -f "$BUILD_OUTPUT" ]; then
-        print_error "Binary not found at $BUILD_OUTPUT"
+        print_error "Could not find go.mod file. Make sure you're running this script from the project directory." >&2
         return 1
     fi
-    
-    # Return the path to the built binary
+
+    # Update dependencies before building (suppress output)
+    go mod tidy >/dev/null 2>&1
+
+    # Set up build flags
+    LDFLAGS="-X github.com/nexora/nexora/internal/version.Version=${VERSION}"
+
+    # Create output directory and ensure permissions
+    mkdir -p "$HOME/.local/bin"
+
+    # Build using absolute path
+    BUILD_OUTPUT="$HOME/.local/bin/nexora"
+
+    if ! go build -ldflags="${LDFLAGS}" -o "$BUILD_OUTPUT" . >/dev/null 2>&1; then
+        print_error "Build failed" >&2
+        return 1
+    fi
+
+    # Check if binary was created
+    if [ ! -f "$BUILD_OUTPUT" ]; then
+        print_error "Binary not found at $BUILD_OUTPUT" >&2
+        return 1
+    fi
+
+    # Return the path to the built binary (only stdout output)
     echo "$BUILD_OUTPUT"
 }
 
@@ -487,9 +465,8 @@ main() {
     # Build Nexora directly to the install directory
     print_status "Building Nexora with version: ${VERSION}..."
     print_status "Updating dependencies to latest versions..."
-    if ! BINARY_PATH=$(build_nexora 2>&1); then
+    if ! BINARY_PATH=$(build_nexora); then
         print_error "Failed to build Nexora binary"
-        print_error "Error details: $BINARY_PATH"
         return 1
     fi
     
