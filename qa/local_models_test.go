@@ -13,6 +13,9 @@ import (
 
 // TestLocalModelsFullFlow tests the local detector without imports
 func TestLocalModelsFullFlow(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping timeout test in short mode")
+	}
 	// Test 1: Ollama detection + model list + context window
 	t.Run("OllamaFullFlow", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

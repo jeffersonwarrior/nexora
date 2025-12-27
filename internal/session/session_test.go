@@ -192,8 +192,9 @@ type TestDB struct {
 
 // NewTestDB creates a new in-memory SQLite database with migrations
 func NewTestDB(t *testing.T) *TestDB {
-	// Use in-memory SQLite for speed
-	dsn := ":memory:?_journal_mode=WAL&_synchronous=NORMAL&_cache_size=1000"
+	// Use in-memory SQLite for tests - must use file::memory:?mode=memory&cache=shared for shared cache
+	// or just :memory: for truly isolated tests (recommended)
+	dsn := "file::memory:?cache=shared"
 
 	sqlDB, err := sql.Open("sqlite3", dsn)
 	if err != nil {

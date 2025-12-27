@@ -13,6 +13,9 @@ import (
 // This tests the fix for the issue where MessageCount == 0 check alone
 // wasn't sufficient to trigger title generation.
 func TestTitleGenerationForNewSession(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping VCR tests in short mode - requires API keys and network")
+	}
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows for now")
 	}

@@ -1,0 +1,37 @@
+{
+  "projectDir": "/home/nexora",
+  "taskDescription": "Nexora v0.29.3 Development Phase - Implement features #3-7 using Test-Driven Development (TDD) with git branches, comprehensive testing, and production-quality code.\n\nFEATURES TO IMPLEMENT:\n\n1. PROMPT LIBRARY (#3) - HIGH PRIORITY\n   - Database layer with sqlc queries for prompt_library table\n   - Service layer in internal/prompts/service.go\n   - TUI component for browsing/searching prompts\n   - CLI commands: nexora prompts list/search/show\n   - Full-text search using existing FTS5 index\n   - CRUD operations with rating/usage tracking\n   \n2. ABOUT COMMAND (#4) - MEDIUM PRIORITY\n   - Create internal/cmd/about.go\n   - Display version, platform, Go version, license\n   - Community links (Discord, Twitter/X, Reddit)\n   - Repository links\n   - Lipgloss styling\n   - Register in root.go\n\n3. TEST COVERAGE AUDIT (#5) - HIGH PRIORITY\n   - Increase coverage from 29% to 40%\n   - Focus on internal/agent/, internal/db/, internal/session/\n   - Add tests for critical paths\n   - CI/CD coverage enforcement setup\n\n4. TASK GRAPH ENRICHMENT (#6) - MEDIUM PRIORITY\n   - Add dependency tracking to internal/task/manager.go\n   - Visual ASCII graph representation\n   - Progress roll-up through dependencies\n   - TUI task relationship visualization\n\n5. CHECKPOINT SYSTEM (#7) - MEDIUM PRIORITY\n   - State serialization in internal/session/\n   - Auto-checkpoint on context threshold\n   - Manual checkpoint creation\n   - Session restore on crash/interrupt\n\nDEVELOPMENT REQUIREMENTS:\n- TDD: Write tests FIRST, then implementation\n- Git branches for each feature: feature/prompt-library, feature/about-command, etc.\n- Commits to branch with proof of work\n- Run go build ./... && go vet ./... after each change\n- Full test suite: go test ./... -race\n- Target coverage: 40%+\n\nEXISTING INFRASTRUCTURE:\n- Database migrations exist for prompt_library (20251225000007)\n- Task system in internal/task/ (manager.go, service.go)\n- Session system in internal/session/\n- Command structure in internal/cmd/\n- Uses cobra, lipgloss, bubble tea",
+  "lastUpdated": "2025-12-27T22:23:14.037Z",
+  "features": [
+    {
+      "id": "feature-1",
+      "description": "#3 Prompt Library: Database layer (sqlc), Service layer, TUI browser, CLI commands (list/search/show), FTS5 search, CRUD with metrics",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-2",
+      "description": "#4 About Command: Create internal/cmd/about.go, version/platform info, community links, lipgloss styling, register in root.go",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-3",
+      "description": "#5 Test Coverage: Audit critical paths, add tests for agent/db/session packages, increase coverage 29%→40%, CI/CD setup",
+      "status": "failed",
+      "passes": false
+    },
+    {
+      "id": "feature-4",
+      "description": "#6 Task Graph: Add dependencies to Task struct, create dependency resolver, ASCII visualization, progress rollup, TUI integration",
+      "status": "completed",
+      "passes": true
+    },
+    {
+      "id": "feature-5",
+      "description": "#7 Checkpoint: State serialization, checkpoint creation/restore, session recovery, minimal overhead",
+      "status": "completed",
+      "passes": true
+    }
+  ]
+}

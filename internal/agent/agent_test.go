@@ -54,6 +54,9 @@ func hasAPIKey(provider string) bool {
 }
 
 func TestCoderAgent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping VCR tests in short mode - requires API keys and network")
+	}
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows for now")
 	}

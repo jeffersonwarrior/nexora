@@ -48,6 +48,9 @@ func TestBashTool_MissingCommand(t *testing.T) {
 }
 
 func TestBashTool_SimpleCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
 	mockPermissions := &mockPermissionService{}
 	attribution := &config.Attribution{}
 
@@ -75,6 +78,9 @@ func TestBashTool_SimpleCommand(t *testing.T) {
 }
 
 func TestBashTool_WorkingDirectory(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
 	mockPermissions := &mockPermissionService{}
 	attribution := &config.Attribution{}
 
@@ -103,6 +109,9 @@ func TestBashTool_WorkingDirectory(t *testing.T) {
 }
 
 func TestBashTool_BackgroundCommand(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
 	mockPermissions := &mockPermissionService{}
 	attribution := &config.Attribution{}
 
@@ -131,6 +140,9 @@ func TestBashTool_BackgroundCommand(t *testing.T) {
 }
 
 func TestBashTool_InvalidWorkingDir(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
 	mockPermissions := &mockPermissionService{}
 	attribution := &config.Attribution{}
 
@@ -159,6 +171,9 @@ func TestBashTool_InvalidWorkingDir(t *testing.T) {
 }
 
 func TestBashTool_WithSessionContext(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
 	mockPermissions := &mockPermissionService{}
 	attribution := &config.Attribution{}
 
@@ -186,6 +201,9 @@ func TestBashTool_WithSessionContext(t *testing.T) {
 }
 
 func TestBashTool_CommandWithOutput(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TMUX-dependent test in short mode")
+	}
 	mockPermissions := &mockPermissionService{}
 	attribution := &config.Attribution{}
 

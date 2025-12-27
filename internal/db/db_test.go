@@ -87,6 +87,52 @@ UPDATE sessions SET
     message_count = message_count - 1
 WHERE id = old.session_id;
 END;
+
+-- Checkpoints
+CREATE TABLE IF NOT EXISTS checkpoints (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    token_count INTEGER NOT NULL DEFAULT 0 CHECK (token_count >= 0),
+    message_count INTEGER NOT NULL DEFAULT 0 CHECK (message_count >= 0),
+    context_hash TEXT NOT NULL,
+    state BLOB NOT NULL,
+    compressed BOOLEAN NOT NULL DEFAULT 0,
+    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+-- Prompt Library
+CREATE TABLE IF NOT EXISTS prompt_library (
+    id TEXT PRIMARY KEY,
+    category TEXT NOT NULL,
+    subcategory TEXT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    content TEXT NOT NULL,
+    content_hash TEXT,
+    tags TEXT,
+    variables TEXT,
+    author TEXT,
+    source TEXT,
+    source_url TEXT,
+    votes INTEGER DEFAULT 0,
+    rating REAL DEFAULT 0.0,
+    usage_count INTEGER DEFAULT 0,
+    success_rate REAL DEFAULT 0.5,
+    avg_tokens INTEGER DEFAULT 0,
+    avg_latency_ms INTEGER DEFAULT 0,
+    last_used_at INTEGER,
+    favorites_count INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+
+-- FTS virtual table for prompt search
+CREATE VIRTUAL TABLE IF NOT EXISTS prompt_library_fts USING fts5(
+    title, description, content, tags,
+    content=prompt_library
+);
 `
 
 	if _, err := db.Exec(schema); err != nil {
