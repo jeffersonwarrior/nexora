@@ -12,8 +12,8 @@ All release planning consolidated in: **NEXORA.0.29.2.12.26.md**
 | Version | Focus | Status |
 |---------|-------|--------|
 | **v0.29.1-RC1** | Bug fixes, test coverage, tool consolidation | In Progress (Phases 0-2 complete) |
-| **v0.29.2** | Agent hierarchy + capability cards + pre-flight | Planned |
-| **v0.29.3** | Task graph enrichment + checkpoints | Planned |
+| **v0.29.2** | MiniMax M2.1, Synthetic provider, TMUX fixes, Windows support | ✅ Released |
+| **v0.29.3** | About command, task graph enrichment + checkpoints | Planned |
 | **v0.29.4** | Internal A2A + ACP communication | Planned |
 | **v0.29.5** | Protocol composition + conflict resolution | Planned |
 | **v3.0** | ModelScan integration + VNC/Docker dual-mode | Planned |
@@ -449,3 +449,68 @@ find internal/agent/tools -name "*.go" -type f | wc -l
 ## Phase 5: TUI Enhancements (Future)
 
 **Prerequisite:** Phase 4 complete
+---
+
+## v0.29.3 Features
+
+**Status:** Planned  
+**Release Date:** TBD
+
+### Feature: About Command (`nexora about`)
+
+**Goal:** Display project information, version, community links, and platform details matching README badges
+
+**Command:** `nexora about`
+
+**Output Format:**
+```
+Nexora v0.29.3
+AI-Powered CLI Agent
+
+Platform: linux/amd64
+Go Version: go1.23.4
+License: MIT
+
+Production-Ready AI Terminal Assistant with intelligent state 
+management, adaptive resource monitoring, and self-healing execution.
+
+🌐 Community
+  Discord:    https://discord.gg/GCyC6qT79M
+  Twitter/X:  https://x.com/i/communities/2004598673062216166/
+  Reddit:     r/Zackor
+
+📦 Repository
+  GitHub:     https://github.com/jeffersonwarrior/nexora
+  Releases:   https://github.com/jeffersonwarrior/nexora/releases
+
+✨ Features
+  • 70+ AI models across 9+ providers
+  • TMUX-based persistent shell sessions
+  • MCP integration (Z.AI Vision, Web Reader/Search)
+  • Cross-platform support (Linux, macOS, Windows)
+
+For more information, visit: https://nexora.land
+```
+
+**Implementation:**
+- New command file: `internal/cmd/about.go`
+- Add to root command in `internal/cmd/root.go`
+- Use lipgloss for styled output
+- Include runtime.GOOS, runtime.GOARCH, runtime.Version()
+- Pull version from `internal/version/version.go`
+
+**Success Criteria:**
+- [ ] `nexora about` displays formatted project info
+- [ ] All community links included (Discord, Twitter/X, Reddit)
+- [ ] Platform and Go version shown
+- [ ] Styled output with lipgloss
+- [ ] Matches README badge information
+
+---
+
+### Other v0.29.3 Features (Planned)
+
+- Task graph enrichment
+- Checkpoint system
+- Additional improvements TBD
+
