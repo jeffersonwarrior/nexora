@@ -1,0 +1,121 @@
+{
+  "strictness": 3,
+  "commentTypes": ["logic", "syntax", "style"],
+  "triggerOnUpdates": false,
+  "model": "gpt-4o",
+  "fileChangeLimit": 100,
+  "ignorePatterns": "**/*_test.go\n**/*.golden\n**/testdata/**\n**/vendor/**\n**/node_modules/**\nexternal-deps/**\ncontext-engine/**\narchive/**\narchives/**\n.tmp/**\n**/*.pb.go\n**/*.gen.go",
+  "instructions": "This is Nexora - an AI-native terminal application built in Go. Focus on production-grade code quality, test coverage, and adherence to documented patterns. This is math and science work - measure results scientifically, not subjectively.",
+  "customContext": {
+    "rules": [
+      {
+        "rule": "All exported functions, types, and constants must have doc comments starting with the name",
+        "scope": "internal/**/*.go"
+      },
+      {
+        "rule": "Use testify/require for assertions, never assert. All tests must call t.Parallel() unless they modify global state",
+        "scope": "**/*_test.go"
+      },
+      {
+        "rule": "Error wrapping must use fmt.Errorf with %w verb to preserve error chains",
+        "scope": "internal/**/*.go"
+      },
+      {
+        "rule": "Context must be first parameter in all functions that accept it. Never use context.Background() except in main() or tests",
+        "scope": "internal/**/*.go"
+      },
+      {
+        "rule": "NEVER create markdown documentation files unless explicitly requested. Update existing docs instead",
+        "scope": "**/*.md"
+      },
+      {
+        "rule": "Tool implementations must follow the pattern in internal/agent/tools/ with proper permission checks",
+        "scope": "internal/agent/tools/**/*.go"
+      },
+      {
+        "rule": "Database migrations must be idempotent with IF NOT EXISTS clauses. Never modify existing migrations",
+        "scope": "internal/db/migrations/**/*.sql"
+      },
+      {
+        "rule": "All bash commands must go through safety blockers defined in internal/shell/shell.go",
+        "scope": "internal/agent/tools/bash.go"
+      },
+      {
+        "rule": "TMUX sessions must be managed via TmuxManager. Never create raw tmux commands",
+        "scope": "internal/shell/tmux.go,internal/agent/tools/bash.go"
+      },
+      {
+        "rule": "Provider implementations must match catwalk.Provider interface and be injected via injectCustomProviders",
+        "scope": "internal/config/providers/**/*.go"
+      }
+    ],
+    "files": [
+      {
+        "path": "NEXORA.md",
+        "description": "System prompt and core development rules"
+      },
+      {
+        "path": "PROJECT_OPERATIONS.md",
+        "description": "Build processes, testing, and operational procedures"
+      },
+      {
+        "path": "AGENTS.md",
+        "description": "Agent development guide and essential commands"
+      },
+      {
+        "path": "codedocs/agentic/README.md",
+        "description": "Swarm orchestration guidelines and workflow"
+      },
+      {
+        "path": ".golangci.yml",
+        "description": "Linter configuration and code quality standards"
+      }
+    ],
+    "other": [
+      {
+        "content": "Sacred Rules: (1) Never guess - read files before answering, (2) Never create files unless necessary - prefer editing existing, (3) Never claim 'done' without validation, (4) Never suppress warnings, (5) Never touch production without approval, (6) Never commit secrets",
+        "scope": "**/*"
+      },
+      {
+        "content": "Validation workflow: go build ./... && go vet ./... must pass. Mark complete ONLY when validation passes with actual output shown",
+        "scope": "**/*.go"
+      },
+      {
+        "content": "Testing hierarchy: Unit → Integration → Module → E2E → User Journey. Test coverage target: 50%+",
+        "scope": "**/*_test.go"
+      },
+      {
+        "content": "Git workflow: All work on branches. Commit to branch. Proof of work in commits. Merge only after validation",
+        "scope": "**/*"
+      }
+    ]
+  },
+  "includeBranches": ["main", "feature/**", "fix/**", "refactor/**"],
+  "excludeAuthors": ["dependabot[bot]", "github-actions[bot]"],
+  "disabledLabels": ["skip-review", "wip", "draft"],
+  "statusCheck": true,
+  "fixWithAI": true,
+  "summarySection": {
+    "included": true,
+    "collapsible": false,
+    "defaultOpen": true
+  },
+  "issuesTableSection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": true
+  },
+  "confidenceScoreSection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "sequenceDiagramSection": {
+    "included": false
+  },
+  "comment": "🤖 Nexora Code Review - Production Quality Standards",
+  "shouldUpdateDescription": false,
+  "updateExistingSummaryComment": true,
+  "hideFooter": false,
+  "statusCommentsEnabled": true
+}
