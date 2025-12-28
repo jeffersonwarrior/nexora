@@ -12,11 +12,11 @@ import (
 
 // TmuxSession represents a TMUX session managed by Nexora
 type TmuxSession struct {
-	ID          string    // Nexora's internal ID (e.g., "nexora-abc123-def456")
-	SessionName string    // TMUX session name
-	PaneID      string    // TMUX pane identifier
+	ID          string // Nexora's internal ID (e.g., "nexora-abc123-def456")
+	SessionName string // TMUX session name
+	PaneID      string // TMUX pane identifier
 	WorkingDir  string
-	Command     string    // Last command executed
+	Command     string // Last command executed
 	Description string
 	StartedAt   time.Time
 	Output      bytes.Buffer
@@ -71,7 +71,7 @@ func (m *TmuxManager) NewTmuxSession(sessionID, workingDir, command, description
 
 	// Create TMUX session
 	sessionName := "nexora-" + sessionID
-	
+
 	// Create new TMUX session with a window
 	// Format: tmux new-session -d -s sessionName -x 200 -y 50 -c workingDir
 	createCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-x", "200", "-y", "50", "-c", workingDir)

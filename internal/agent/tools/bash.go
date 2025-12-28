@@ -43,7 +43,7 @@ type BashResponseMetadata struct {
 	WorkingDirectory string `json:"working_directory"`
 	Background       bool   `json:"background,omitempty"`
 	ShellID          string `json:"shell_id,omitempty"`
-	
+
 	// TMUX fields
 	TmuxSessionID string `json:"tmux_session_id,omitempty"`
 	TmuxPaneID    string `json:"tmux_pane_id,omitempty"`
@@ -148,9 +148,9 @@ func blockFuncs() []shell.BlockFunc {
 		func(args []string) bool {
 			cmdStr := strings.Join(args, " ")
 			forkBombPatterns := []string{
-				":()",      // Classic bash fork bomb
+				":()",        // Classic bash fork bomb
 				"while true", // Infinite while loop
-				":|:",      // Fork bomb variant
+				":|:",        // Fork bomb variant
 			}
 			for _, pattern := range forkBombPatterns {
 				if strings.Contains(cmdStr, pattern) {
@@ -477,13 +477,13 @@ func normalizeWorkingDir(path string) string {
 func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.ToolCall, execWorkingDir string, sessionID string) (fantasy.ToolResponse, error) {
 	tmuxManager := shell.GetTmuxManager()
 	tmuxAvailable := shell.IsTmuxAvailable()
-	
+
 	startTime := time.Now()
-	
+
 	var session *shell.TmuxSession
 	var err error
 	var ok bool
-	
+
 	// Determine if we should create a new session or use existing
 	if params.ShellID != "" {
 		// Continue existing session (explicitly requested)
@@ -514,24 +514,24 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 			return fantasy.ToolResponse{}, fmt.Errorf("failed to send command to default TMUX session: %w", err)
 		}
 	}
-	
+
 	// Small delay to allow TMUX to execute the command
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Get output
 	output, err := tmuxManager.CaptureOutput(session.ID)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to capture TMUX output: %w", err)
 	}
-	
+
 	// Apply output management (truncation, tmp file, etc.)
 	managedOutput := ManageOutput(output, "bash", execWorkingDir, sessionID)
-	
+
 	// Format output with working directory
 	if managedOutput.Content != "" {
 		managedOutput.Content += fmt.Sprintf("\n\n<cwd>%s</cwd>", normalizeWorkingDir(execWorkingDir))
 	}
-	
+
 	// Build metadata
 	metadata := BashResponseMetadata{
 		StartTime:        startTime.UnixMilli(),
@@ -544,12 +544,12 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 		TmuxPaneID:       session.PaneID,
 		TmuxAvailable:    tmuxAvailable,
 	}
-	
+
 	// Add truncation notice if applicable
 	if truncationMsg := FormatOutputForModel(managedOutput, "bash"); truncationMsg != "" {
 		managedOutput.Content += "\n\n" + truncationMsg
 	}
-	
+
 	return fantasy.WithResponseMetadata(fantasy.NewTextResponse(managedOutput.Content), metadata), nil
 }
 
@@ -558,18 +558,18 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 // executeJobManagement handles job_kill and job_output functionality via bash tool
 func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir string) (fantasy.ToolResponse, error) {
 	bgManager := shell.GetBackgroundShellManager()
-	
+
 	// Get the background shell
 	bgShell, ok := bgManager.Get(params.ShellID)
 	if !ok {
 		return fantasy.NewTextErrorResponse(fmt.Sprintf("background shell not found: %s", params.ShellID)), nil
 	}
-	
+
 	// Determine if this is a kill or output request
 	if params.Command == "" || strings.HasPrefix(strings.ToLower(params.Command), "output") {
 		// job_output functionality
 		stdout, stderr, done, execErr := bgShell.GetOutput()
-		
+
 		var outputParts []string
 		if stdout != "" {
 			outputParts = append(outputParts, stdout)
@@ -577,7 +577,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 		if stderr != "" {
 			outputParts = append(outputParts, stderr)
 		}
-		
+
 		status := "running"
 		if done {
 			status = "completed"
@@ -588,12 +588,12 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 				}
 			}
 		}
-		
+
 		output := strings.Join(outputParts, "\n")
 		if output == "" {
 			output = BashNoOutput
 		}
-		
+
 		metadata := BashResponseMetadata{
 			StartTime:        startTime.UnixMilli(),
 			EndTime:          time.Now().UnixMilli(),
@@ -603,7 +603,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 			ShellID:          params.ShellID,
 			Background:       true,
 		}
-		
+
 		result := fmt.Sprintf("Status: %s\n\n%s", status, output)
 		return fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil
 	} else {
@@ -612,7 +612,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 		if err != nil {
 			return fantasy.NewTextErrorResponse(err.Error()), nil
 		}
-		
+
 		result := fmt.Sprintf("Background shell %s terminated successfully", params.ShellID)
 		metadata := BashResponseMetadata{
 			StartTime:        startTime.UnixMilli(),
@@ -621,7 +621,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 			WorkingDirectory: execWorkingDir,
 			ShellID:          params.ShellID,
 		}
-		
+
 		return fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil
 	}
 }

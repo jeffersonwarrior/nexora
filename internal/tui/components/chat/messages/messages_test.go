@@ -8,8 +8,8 @@ import (
 
 func TestNewMessageCmp(t *testing.T) {
 	msg := message.Message{
-		ID:   "test-1",
-		Role: message.User,
+		ID:    "test-1",
+		Role:  message.User,
 		Parts: []message.ContentPart{message.TextContent{Text: "Test"}},
 	}
 	cmp := NewMessageCmp(msg)
@@ -20,8 +20,8 @@ func TestNewMessageCmp(t *testing.T) {
 
 func TestMessageCmpView(t *testing.T) {
 	msg := message.Message{
-		ID:   "test-1",
-		Role: message.User,
+		ID:    "test-1",
+		Role:  message.User,
 		Parts: []message.ContentPart{message.TextContent{Text: "Test"}},
 	}
 	cmp := NewMessageCmp(msg).(*messageCmp)
@@ -119,8 +119,8 @@ func TestMessageCmpGetMessage(t *testing.T) {
 func TestMessageCmpSpinningFalseWithContent(t *testing.T) {
 	// Assistant with content should not spin
 	msg := message.Message{
-		ID:   "1",
-		Role: message.Assistant,
+		ID:    "1",
+		Role:  message.Assistant,
 		Parts: []message.ContentPart{message.TextContent{Text: "I can help you with that."}},
 	}
 	cmp := NewMessageCmp(msg).(*messageCmp)
@@ -133,8 +133,8 @@ func TestMessageCmpSpinningFalseWithContent(t *testing.T) {
 func TestMessageCmpWithToolCalls(t *testing.T) {
 	// Assistant with tool calls should not spin
 	msg := message.Message{
-		ID:   "1",
-		Role: message.Assistant,
+		ID:    "1",
+		Role:  message.Assistant,
 		Parts: []message.ContentPart{},
 	}
 	cmp := NewMessageCmp(msg).(*messageCmp)
@@ -146,8 +146,8 @@ func TestMessageCmpWithToolCalls(t *testing.T) {
 func TestMessageCmpReasoningContent(t *testing.T) {
 	// Message with reasoning content
 	msg := message.Message{
-		ID:   "1",
-		Role: message.Assistant,
+		ID:    "1",
+		Role:  message.Assistant,
 		Parts: []message.ContentPart{},
 	}
 	cmp := NewMessageCmp(msg).(*messageCmp)
@@ -218,11 +218,11 @@ func TestMessageCmpWidthClamping(t *testing.T) {
 		expected int
 	}{
 		{100, 100},
-		{200, 120},    // clamped to max 120
-		{0, 1},        // clamped to min 1
-		{-10, 1},      // clamped to min 1
-		{120, 120},    // at max
-		{121, 120},    // over max
+		{200, 120}, // clamped to max 120
+		{0, 1},     // clamped to min 1
+		{-10, 1},   // clamped to min 1
+		{120, 120}, // at max
+		{121, 120}, // over max
 	}
 
 	for _, tt := range tests {
@@ -266,8 +266,8 @@ func TestMessageCmpMultipleMessages(t *testing.T) {
 func TestMessageCmpNilParts(t *testing.T) {
 	// Message with nil/empty parts
 	msg := message.Message{
-		ID:   "1",
-		Role: message.Assistant,
+		ID:    "1",
+		Role:  message.Assistant,
 		Parts: nil,
 	}
 	cmp := NewMessageCmp(msg).(*messageCmp)
@@ -281,8 +281,8 @@ func TestMessageCmpNilParts(t *testing.T) {
 func TestMessageCmpEmptyContent(t *testing.T) {
 	// Message with empty text content
 	msg := message.Message{
-		ID:   "1",
-		Role: message.Assistant,
+		ID:    "1",
+		Role:  message.Assistant,
 		Parts: []message.ContentPart{message.TextContent{Text: ""}},
 	}
 	cmp := NewMessageCmp(msg).(*messageCmp)

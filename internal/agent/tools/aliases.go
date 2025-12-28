@@ -6,58 +6,58 @@ import "strings"
 // Key: alias (case-insensitive), Value: canonical tool name
 var toolAliases = map[string]string{
 	// Fetch tool aliases
-	"curl":          "fetch",
-	"wget":          "fetch",
-	"get":           "fetch",
-	"http-get":      "fetch",
-	"http_get":      "fetch",
-	"web-fetch":     "fetch",
-	"webfetch":      "fetch",
-	"web_fetch":     "fetch",
-	"http":          "fetch",
-	
+	"curl":      "fetch",
+	"wget":      "fetch",
+	"get":       "fetch",
+	"http-get":  "fetch",
+	"http_get":  "fetch",
+	"web-fetch": "fetch",
+	"webfetch":  "fetch",
+	"web_fetch": "fetch",
+	"http":      "fetch",
+
 	// File tools
-	"read":          "view",
-	"cat":           "view",
-	"open":          "view",
-	"ls":            "list",
-	"dir":           "list",
-	"directory":     "list",
-	
+	"read":      "view",
+	"cat":       "view",
+	"open":      "view",
+	"ls":        "list",
+	"dir":       "list",
+	"directory": "list",
+
 	// Edit tools
-	"modify":        "edit",
-	"change":        "edit",
-	"replace":       "edit",
-	"update":        "edit",
-	
+	"modify":  "edit",
+	"change":  "edit",
+	"replace": "edit",
+	"update":  "edit",
+
 	// Write tools
-	"create":        "write",
-	"make":          "write",
-	"new":           "write",
-	
+	"create": "write",
+	"make":   "write",
+	"new":    "write",
+
 	// Search tools
-	"search":        "grep",
-	"find":          "grep",
-	"rg":            "grep",
-	
+	"search": "grep",
+	"find":   "grep",
+	"rg":     "grep",
+
 	// Bash/shell tools
-	"shell":         "bash",
-	"exec":          "bash",
-	"execute":       "bash",
-	"run":           "bash",
-	"command":       "bash",
-	"job_kill":      "bash",       // Kill background jobs via bash
-	"job_output":    "bash",       // Get job output via bash
-	
+	"shell":      "bash",
+	"exec":       "bash",
+	"execute":    "bash",
+	"run":        "bash",
+	"command":    "bash",
+	"job_kill":   "bash", // Kill background jobs via bash
+	"job_output": "bash", // Get job output via bash
+
 	// Web tools
-	"web-search":    "web_search",
-	"websearch":     "web_search",
-	"search-web":    "web_search",
-	
+	"web-search": "web_search",
+	"websearch":  "web_search",
+	"search-web": "web_search",
+
 	// Sourcegraph
-	"sourcegraph":   "sourcegraph",
-	"sg":            "sourcegraph",
-	"code-search":   "sourcegraph",
+	"sourcegraph": "sourcegraph",
+	"sg":          "sourcegraph",
+	"code-search": "sourcegraph",
 }
 
 // ResolveToolName resolves a tool name alias to its canonical name
@@ -66,12 +66,12 @@ func ResolveToolName(name string) string {
 	if name == "" {
 		return name
 	}
-	
+
 	// Try exact match (case-insensitive)
 	if canonical, ok := toolAliases[strings.ToLower(name)]; ok {
 		return canonical
 	}
-	
+
 	// No alias found, return original
 	return name
 }

@@ -29,7 +29,7 @@ func TestTitleGenerationForNewSession(t *testing.T) {
 			if pair.name == "openai-gpt-5" || pair.name == "zai-glm4.6" {
 				t.Skip("Skipping known VCR failing provider - see NEXORA.md for details")
 			}
-			
+
 			agent, env := setupAgent(t, pair)
 
 			// Create session with default "New Session" title

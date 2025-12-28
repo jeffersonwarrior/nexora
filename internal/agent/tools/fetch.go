@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"unicode/utf8"
 	"unicode"
+	"unicode/utf8"
 
 	"charm.land/fantasy"
 	md "github.com/JohannesKaufmann/html-to-markdown"
@@ -167,7 +167,7 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 
 			// Context-aware content handling
 			tokenCount := countTokens(content)
-			
+
 			// Check if content fits within context limit
 			if tokenCount <= DefaultContextLimit {
 				// Content fits in context - return directly
@@ -196,14 +196,14 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 				return fantasy.NewTextErrorResponse("Failed to write content to file: " + err.Error()), nil
 			}
 
-			result := fmt.Sprintf("Content fetched from %s (%d tokens, %d bytes).\n\nContent saved to: %s\n\nUse the view and grep tools to analyze this file. Content was too large for context (%d tokens > %d limit).", 
-				params.URL, 
-				tokenCount, 
+			result := fmt.Sprintf("Content fetched from %s (%d tokens, %d bytes).\n\nContent saved to: %s\n\nUse the view and grep tools to analyze this file. Content was too large for context (%d tokens > %d limit).",
+				params.URL,
+				tokenCount,
 				len(content),
 				tmpPath,
 				tokenCount,
 				DefaultContextLimit)
-			
+
 			return fantasy.NewTextResponse(result), nil
 		})
 }
@@ -238,7 +238,7 @@ func countTokens(s string) int {
 	// This is much faster than proper tokenization
 	wordCount := 0
 	inWord := false
-	
+
 	for _, r := range s {
 		if unicode.IsSpace(r) {
 			inWord = false
@@ -247,12 +247,12 @@ func countTokens(s string) int {
 			wordCount++
 		}
 	}
-	
+
 	// Add overhead for punctuation and special characters
-	punctuationCount := strings.Count(s, ",") + strings.Count(s, ".") + 
-	                  strings.Count(s, "!") + strings.Count(s, "?") + 
-	                  strings.Count(s, ";") + strings.Count(s, ":")
-	
+	punctuationCount := strings.Count(s, ",") + strings.Count(s, ".") +
+		strings.Count(s, "!") + strings.Count(s, "?") +
+		strings.Count(s, ";") + strings.Count(s, ":")
+
 	// Estimate: words + punctuation/2 (approximate)
 	return wordCount + punctuationCount/2
 }
@@ -262,7 +262,7 @@ func sanitizeURLForFilename(url string) string {
 	// Remove protocol
 	url = strings.TrimPrefix(url, "https://")
 	url = strings.TrimPrefix(url, "http://")
-	
+
 	// Replace common URL characters with underscores
 	replacer := strings.NewReplacer(
 		"/", "_",

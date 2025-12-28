@@ -13,7 +13,7 @@ func TestModelListRendering(t *testing.T) {
 		{Name: "Claude Opus 4", Provider: "Anthropic"},
 		{Name: "Grok 4", Provider: "xAI"},
 	}
-	
+
 	if len(models) != 3 {
 		t.Errorf("Expected 3 models, got %d", len(models))
 	}
@@ -24,7 +24,7 @@ func TestModelSelection(t *testing.T) {
 		{ID: "model1", Name: "MiniMax M2.1", Selected: false},
 		{ID: "model2", Name: "Claude Opus 4", Selected: true},
 	}
-	
+
 	selected := false
 	for _, m := range models {
 		if m.Selected {
@@ -34,7 +34,7 @@ func TestModelSelection(t *testing.T) {
 			}
 		}
 	}
-	
+
 	if !selected {
 		t.Error("No model selected")
 	}
@@ -42,11 +42,11 @@ func TestModelSelection(t *testing.T) {
 
 func TestModelSelectionToggle(t *testing.T) {
 	m := Model{ID: "test", Name: "Test Model", Selected: false}
-	
+
 	if m.Selected {
 		t.Error("Model should not be selected initially")
 	}
-	
+
 	m.Selected = true
 	if !m.Selected {
 		t.Error("Model should be selected after toggle")
@@ -60,12 +60,12 @@ func TestProviderFiltering(t *testing.T) {
 		{Name: "Model3", Provider: "Anthropic"},
 		{Name: "Model4", Provider: "xAI"},
 	}
-	
+
 	anthropic := filterByProvider(allModels, "Anthropic")
 	if len(anthropic) != 2 {
 		t.Errorf("Expected 2 Anthropic models, got %d", len(anthropic))
 	}
-	
+
 	minimax := filterByProvider(allModels, "MiniMax")
 	if len(minimax) != 1 {
 		t.Errorf("Expected 1 MiniMax model, got %d", len(minimax))
@@ -78,17 +78,17 @@ func TestModelSearch(t *testing.T) {
 		{Name: "MiniMax M2.1 Fast"},
 		{Name: "Claude Opus 4"},
 	}
-	
+
 	results := searchModels(models, "MiniMax")
 	if len(results) != 2 {
 		t.Errorf("Expected 2 MiniMax results, got %d", len(results))
 	}
-	
+
 	results = searchModels(models, "Opus")
 	if len(results) != 1 {
 		t.Errorf("Expected 1 Opus result, got %d", len(results))
 	}
-	
+
 	results = searchModels(models, "NotExist")
 	if len(results) != 0 {
 		t.Errorf("Expected 0 results for non-existent, got %d", len(results))
@@ -101,13 +101,13 @@ func TestModelSorting(t *testing.T) {
 		{Name: "A-Model", Provider: "A-Provider"},
 		{Name: "M-Model", Provider: "M-Provider"},
 	}
-	
+
 	sorted := sortByName(models)
-	
+
 	if sorted[0].Name != "A-Model" {
 		t.Error("First model should be A-Model after sorting")
 	}
-	
+
 	if sorted[2].Name != "Z-Model" {
 		t.Error("Last model should be Z-Model after sorting")
 	}
@@ -115,15 +115,15 @@ func TestModelSorting(t *testing.T) {
 
 func TestModelValidation(t *testing.T) {
 	tests := []struct {
-		name    string
-		model   Model
-		valid   bool
+		name  string
+		model Model
+		valid bool
 	}{
 		{"valid model", Model{ID: "m1", Name: "Test", Provider: "Provider"}, true},
 		{"empty name", Model{ID: "m1", Name: "", Provider: "Provider"}, false},
 		{"empty id", Model{ID: "", Name: "Test", Provider: "Provider"}, false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.model.IsValid(); got != tt.valid {
@@ -143,7 +143,7 @@ func TestModelType(t *testing.T) {
 		{"fast", Model{Name: "MiniMax Fast", Type: ModelTypeFast}, ModelTypeFast},
 		{"default", Model{Name: "Default"}, ModelTypeFast},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.model.Type != tt.expected {
@@ -159,9 +159,9 @@ func TestRecentlyUsedModels(t *testing.T) {
 		{Name: "Used2", LastUsed: timeNow().Add(-2 * time.Hour)},
 		{Name: "Used3", LastUsed: timeNow().Add(-30 * time.Minute)},
 	}
-	
+
 	sorted := sortByRecentlyUsed(models)
-	
+
 	if sorted[0].Name != "Used3" {
 		t.Error("Most recently used should be first")
 	}
@@ -174,9 +174,9 @@ func TestModelCategories(t *testing.T) {
 		{Name: "R2", Category: "Reasoning"},
 		{Name: "F2", Category: "Fast"},
 	}
-	
+
 	categories := extractCategories(models)
-	
+
 	if len(categories) != 2 {
 		t.Errorf("Expected 2 categories, got %d", len(categories))
 	}
@@ -184,13 +184,13 @@ func TestModelCategories(t *testing.T) {
 
 // Helper types and functions (would use actual implementation)
 type Model struct {
-	ID        string
-	Name      string
-	Provider  string
-	Selected  bool
-	Type      ModelType
-	Category  string
-	LastUsed  time.Time
+	ID       string
+	Name     string
+	Provider string
+	Selected bool
+	Type     ModelType
+	Category string
+	LastUsed time.Time
 }
 
 type ModelType int
@@ -258,7 +258,7 @@ func extractCategories(models []Model) []string {
 			set[m.Category] = true
 		}
 	}
-	
+
 	categories := make([]string, 0, len(set))
 	for c := range set {
 		categories = append(categories, c)

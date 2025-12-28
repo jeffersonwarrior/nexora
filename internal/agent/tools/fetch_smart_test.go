@@ -189,7 +189,7 @@ func TestTokenCounting_Accurate(t *testing.T) {
 			// Token counting function should exist
 			// This tests that the function is implemented
 			tokens := countTokens(tc.content)
-			
+
 			// Allow some variance in token counting
 			assert.GreaterOrEqual(t, tokens, tc.expected-tc.expected/2)
 			assert.LessOrEqual(t, tokens, tc.expected+tc.expected/2+5)
@@ -235,11 +235,11 @@ func TestTmpFile_SessionScoped(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, resp.IsError)
-	
+
 	// Should return a path in the tmp directory
 	assert.Contains(t, resp.Content, tmpDir, "Response should mention the tmp directory")
 	assert.Contains(t, resp.Content, "nexora-fetch-test-session-123")
-	
+
 	// File should exist - extract path from response
 	filePath := extractFilePath(resp.Content)
 	assert.NotEmpty(t, filePath, "Should be able to extract file path from response")
@@ -251,27 +251,27 @@ func TestTmpFile_SessionScoped(t *testing.T) {
 func TestTmpFile_CleanupOnSessionEnd(t *testing.T) {
 	// This test verifies that cleanup happens
 	// In practice, cleanup would be triggered when session ends
-	
+
 	tmpDir, err := os.MkdirTemp("", "nexora-fetch-cleanup-test-*")
 	require.NoError(t, err)
-	
+
 	// Simulate session by creating a session-scoped subdirectory
 	sessionTmpDir := filepath.Join(tmpDir, "nexora-session-test-session")
 	err = os.MkdirAll(sessionTmpDir, 0755)
 	require.NoError(t, err)
-	
+
 	// Create a test file in the session directory
 	testFile := filepath.Join(sessionTmpDir, "test-content.txt")
 	err = os.WriteFile(testFile, []byte("test content"), 0644)
 	require.NoError(t, err)
-	
+
 	// Verify file exists
 	assert.True(t, fileExists(testFile))
-	
+
 	// Cleanup should remove the entire session directory
 	err = os.RemoveAll(sessionTmpDir)
 	require.NoError(t, err)
-	
+
 	// Verify cleanup worked
 	assert.False(t, fileExists(testFile))
 	assert.False(t, fileExists(sessionTmpDir))
@@ -281,7 +281,7 @@ func TestTmpFilePath_NamingConvention(t *testing.T) {
 	// Test that tmp file naming follows convention
 	sessionID := "test-session-abc"
 	filename := generateTmpFilename(sessionID, "https://example.com/page.html")
-	
+
 	// Should contain session ID
 	assert.Contains(t, filename, sessionID)
 	// Should have timestamp
@@ -328,7 +328,7 @@ func TestTimeout_BuiltInRespectsTimeout(t *testing.T) {
 
 	// Should timeout quickly (within a few seconds of timeout value)
 	assert.True(t, elapsed < 15*time.Second, "Request should timeout before 15 seconds")
-	
+
 	// Should return an error (timeout)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "context deadline exceeded")

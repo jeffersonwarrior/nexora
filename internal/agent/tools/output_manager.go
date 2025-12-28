@@ -11,26 +11,26 @@ import (
 // Output management constants
 const (
 	// Token limits for tool output (conservative estimates)
-	SmallOutputLimit   = 4000   // Safe for all models
-	MediumOutputLimit  = 12000  // Good for most models  
-	LargeOutputLimit   = 28000  // For models with 32K+ context
-	
+	SmallOutputLimit  = 4000  // Safe for all models
+	MediumOutputLimit = 12000 // Good for most models
+	LargeOutputLimit  = 28000 // For models with 32K+ context
+
 	// Fallback to byte limit if token counting fails
 	MaxOutputBytes = 100 * 1024 // 100KB
-	
+
 	// When to write to tmp file instead of truncating
 	TooLargeForContext = 50000 // Tokens - definitely too big
 )
 
 // OutputResult represents the managed output
 type OutputResult struct {
-	Content       string // The actual content (possibly truncated)
-	WasTruncated  bool   // Whether output was truncated
-	WasWrittenToFile bool // Whether output was written to a tmp file
-	FilePath      string // Path to tmp file if written
-	TokenCount    int    // Estimated token count
-	OriginalSize  int    // Original size in bytes
-	ActionTaken   string // What we did: "returned", "truncated", "written_to_file"
+	Content          string // The actual content (possibly truncated)
+	WasTruncated     bool   // Whether output was truncated
+	WasWrittenToFile bool   // Whether output was written to a tmp file
+	FilePath         string // Path to tmp file if written
+	TokenCount       int    // Estimated token count
+	OriginalSize     int    // Original size in bytes
+	ActionTaken      string // What we did: "returned", "truncated", "written_to_file"
 }
 
 // ManageOutput is the main smart output wrapper
@@ -40,44 +40,44 @@ func ManageOutput(output string, toolName string, workingDir string, sessionID s
 		Content:      output,
 		OriginalSize: len(output),
 	}
-	
+
 	if output == "" {
 		result.ActionTaken = "returned_empty"
 		return result
 	}
-	
+
 	// Count tokens
 	tokenCount := countTokens(output)
 	result.TokenCount = tokenCount
-	
+
 	// Determine appropriate limit based on tool type
 	limit := getOutputLimitForTool(toolName)
-	
+
 	// If within limit, return as-is
 	if tokenCount <= limit {
 		result.ActionTaken = "returned"
 		return result
 	}
-	
+
 	// If extremely large, write to tmp file
 	if tokenCount > TooLargeForContext {
 		filePath, err := writeToTmpFile(output, toolName, workingDir, sessionID)
 		if err == nil {
 			result.WasWrittenToFile = true
 			result.FilePath = filePath
-			result.Content = fmt.Sprintf("Output too large (%d tokens, %d bytes).\n\nWritten to: %s\n\nUse view tool to read this file.\n\nThis file will be deleted when the session ends.", 
+			result.Content = fmt.Sprintf("Output too large (%d tokens, %d bytes).\n\nWritten to: %s\n\nUse view tool to read this file.\n\nThis file will be deleted when the session ends.",
 				tokenCount, len(output), filePath)
 			result.ActionTaken = "written_to_file"
 			return result
 		}
 		// If write fails, fall through to truncate
 	}
-	
+
 	// Truncate to fit token limit
 	result.WasTruncated = true
 	result.Content = truncateToTokenLimit(output, limit)
 	result.ActionTaken = "truncated"
-	
+
 	return result
 }
 
@@ -115,16 +115,16 @@ func truncateToTokenLimit(content string, maxTokens int) string {
 	if len(content) <= maxBytes {
 		return content
 	}
-	
+
 	// Truncate to maxBytes first
 	truncated := content[:maxBytes]
-	
+
 	// Then refine by counting tokens and adjusting
 	currentTokens := countTokens(truncated)
 	if currentTokens <= maxTokens {
 		return truncated
 	}
-	
+
 	// Binary search for exact token limit
 	low, high := 0, len(truncated)
 	for low < high {
@@ -136,7 +136,7 @@ func truncateToTokenLimit(content string, maxTokens int) string {
 			high = mid - 1
 		}
 	}
-	
+
 	return truncated[:low]
 }
 
@@ -147,18 +147,18 @@ func writeToTmpFile(content string, toolName string, workingDir string, sessionI
 	if err := os.MkdirAll(tmpDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create tmp directory: %w", err)
 	}
-	
+
 	// Generate filename
 	timestamp := time.Now().Format("20060102150405.000000000")
 	safeToolName := strings.ReplaceAll(toolName, "/", "_")
 	filename := fmt.Sprintf("%s-%s.txt", timestamp, safeToolName)
 	tmpPath := filepath.Join(tmpDir, filename)
-	
+
 	// Write content
 	if err := os.WriteFile(tmpPath, []byte(content), 0644); err != nil {
 		return "", fmt.Errorf("failed to write tmp file: %w", err)
 	}
-	
+
 	return tmpPath, nil
 }
 
