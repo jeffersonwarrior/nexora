@@ -19,6 +19,7 @@ import (
 
 	"charm.land/fantasy"
 	"github.com/charmbracelet/catwalk/pkg/catwalk"
+	"github.com/nexora/nexora/internal/agent/delegation"
 	"github.com/nexora/nexora/internal/agent/prompt"
 	"github.com/nexora/nexora/internal/agent/tools"
 	"github.com/nexora/nexora/internal/aiops"
@@ -127,6 +128,7 @@ type coordinator struct {
 	aiops           aiops.Ops
 	sessionLog      *sessionlog.Manager
 	resourceMonitor *resources.Monitor
+	delegatePool    *delegation.Pool
 
 	currentAgent SessionAgent
 	agents       map[string]SessionAgent
@@ -532,6 +534,13 @@ func (c *coordinator) buildTools(ctx context.Context, agent config.Agent) ([]fan
 		)
 	}
 
+	// Add delegate tool for sub-agent spawning
+	delegateTool, err := c.delegateTool(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create delegate tool: %w", err)
+	}
+	allTools = append(allTools, delegateTool)
+
 	var filteredTools []fantasy.AgentTool
 	for _, tool := range allTools {
 		if tool == nil {
@@ -769,10 +778,6 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 	if !ok {
 		return Model{}, Model{}, errors.New("large model not selected")
 	}
-	smallModelCfg, ok := c.cfg.Models[config.SelectedModelTypeSmall]
-	if !ok {
-		return Model{}, Model{}, errors.New("small model not selected")
-	}
 
 	largeProviderCfg, ok := c.cfg.Providers.Get(largeModelCfg.Provider)
 	if !ok {
@@ -784,14 +789,32 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		return Model{}, Model{}, err
 	}
 
-	smallProviderCfg, ok := c.cfg.Providers.Get(smallModelCfg.Provider)
-	if !ok {
-		return Model{}, Model{}, errors.New("small model provider not configured")
+	// Small model is optional - fallback to large model if not configured
+	smallModelCfg, smallConfigured := c.cfg.Models[config.SelectedModelTypeSmall]
+	var smallProviderCfg config.ProviderConfig
+	var smallProvider fantasy.Provider
+
+	if smallConfigured {
+		var providerOk bool
+		smallProviderCfg, providerOk = c.cfg.Providers.Get(smallModelCfg.Provider)
+		if providerOk {
+			smallProvider, err = c.buildProvider(smallProviderCfg, smallModelCfg)
+			if err != nil {
+				// Fall back to large model on error
+				slog.Warn("failed to build small model provider, falling back to large model", "error", err)
+				smallConfigured = false
+			}
+		} else {
+			smallConfigured = false
+		}
 	}
 
-	smallProvider, err := c.buildProvider(smallProviderCfg, smallModelCfg)
-	if err != nil {
-		return Model{}, Model{}, err
+	// Fallback to large model
+	if !smallConfigured {
+		slog.Info("small model not configured, using large model for all operations")
+		smallModelCfg = largeModelCfg
+		smallProviderCfg = largeProviderCfg
+		smallProvider = largeProvider
 	}
 
 	var largeCatwalkModel *catwalk.Model

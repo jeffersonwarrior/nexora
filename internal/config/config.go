@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -401,23 +402,19 @@ func (c *Config) IsConfigured() bool {
 	return len(c.EnabledProviders()) > 0
 }
 
-// AreModelsConfigured return true if both large and small models are configured
+// AreModelsConfigured returns true if at least the large model is configured.
+// Small model is optional - falls back to large model if not configured.
 func (c *Config) AreModelsConfigured() bool {
 	_, largeSelected := c.Models[SelectedModelTypeLarge]
-	_, smallSelected := c.Models[SelectedModelTypeSmall]
-
-	if !largeSelected || !smallSelected {
+	if !largeSelected {
 		return false
 	}
 
-	// Check if providers exist for both models
-	largeModel, _ := c.Models[SelectedModelTypeLarge]
-	smallModel, _ := c.Models[SelectedModelTypeSmall]
-
+	// Check if provider exists for large model
+	largeModel := c.Models[SelectedModelTypeLarge]
 	_, largeProviderExists := c.Providers.Get(largeModel.Provider)
-	_, smallProviderExists := c.Providers.Get(smallModel.Provider)
 
-	return largeProviderExists && smallProviderExists
+	return largeProviderExists
 }
 
 func (c *Config) GetModel(provider, model string) *catwalk.Model {
@@ -837,6 +834,7 @@ func allToolNames() []string {
 		"bash",
 		"job_output",
 		"job_kill",
+		"delegate",
 		"download",
 		"edit",
 		"multiedit",
@@ -939,14 +937,18 @@ func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {
 		if c.ID == "kimi-coding" {
 			testURL = baseURL + "/v1/models"
 		}
-		// MiniMax uses Authorization header
+		// MiniMax uses Authorization header and doesn't have a /models endpoint
+		// Use POST to /v1/messages - returns 400 (valid key) or 401 (invalid key)
 		if c.ID == "minimax" {
 			headers["Authorization"] = "Bearer " + apiKey
-			testURL = baseURL + "/v1/models" // MiniMax uses /v1/models for testing
+			testURL = baseURL + "/v1/messages"
+			// Mark for POST request with empty body
+			headers["Content-Type"] = "application/json"
+			headers["X-Nexora-Test-Method"] = "POST" // Internal marker for POST validation
 		} else {
 			headers["x-api-key"] = apiKey
+			headers["anthropic-version"] = "2023-06-01"
 		}
-		headers["anthropic-version"] = "2023-06-01"
 	case catwalk.TypeGoogle:
 		baseURL, _ := resolver.ResolveValue(c.BaseURL)
 		if baseURL == "" {
@@ -957,7 +959,19 @@ func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	client := &http.Client{}
-	req, err := http.NewRequestWithContext(ctx, "GET", testURL, nil)
+
+	// Determine HTTP method and body
+	method := "GET"
+	var body io.Reader
+	usePostValidation := false
+	if headers["X-Nexora-Test-Method"] == "POST" {
+		method = "POST"
+		body = strings.NewReader("{}")
+		usePostValidation = true
+		delete(headers, "X-Nexora-Test-Method") // Remove internal marker
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, testURL, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request for provider %s: %w", c.ID, err)
 	}
@@ -971,10 +985,19 @@ func (c *ProviderConfig) TestConnection(resolver VariableResolver) error {
 	if err != nil {
 		return fmt.Errorf("failed to create request for provider %s: %w", c.ID, err)
 	}
+	defer b.Body.Close()
+
+	// For POST validation (minimax), 400 means valid key (bad body), 401/403 means invalid key
+	if usePostValidation {
+		if b.StatusCode == http.StatusUnauthorized || b.StatusCode == http.StatusForbidden {
+			return fmt.Errorf("failed to connect to provider %s: %s", c.ID, b.Status)
+		}
+		return nil
+	}
+
 	if b.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to connect to provider %s: %s", c.ID, b.Status)
 	}
-	_ = b.Body.Close()
 	return nil
 }
 
