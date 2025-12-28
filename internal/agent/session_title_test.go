@@ -13,8 +13,6 @@ import (
 // This tests the fix for the issue where MessageCount == 0 check alone
 // wasn't sufficient to trigger title generation.
 func TestTitleGenerationForNewSession(t *testing.T) {
-	// TODO: Title generation after first message is not working - fix in session/agent layer
-	t.Skip("skipping - title generation after first message needs fixing")
 
 	if testing.Short() {
 		t.Skip("skipping VCR tests in short mode - requires API keys and network")

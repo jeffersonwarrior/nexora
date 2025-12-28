@@ -234,7 +234,7 @@ func (m *TmuxManager) sendCommandToSession(session *TmuxSession, command string)
 	return nil
 }
 
-// CaptureOutput captures the current pane output
+// CaptureOutput captures the current pane output and clears history to prevent duplication
 func (m *TmuxManager) CaptureOutput(sessionID string) (string, error) {
 	m.mu.RLock()
 	session, exists := m.sessions[sessionID]
@@ -250,6 +250,11 @@ func (m *TmuxManager) CaptureOutput(sessionID string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to capture output: %w", err)
 	}
+
+	// Clear pane and history to prevent duplicate output on next capture
+	// This ensures each capture only shows output from the current command
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "clear", "Enter").Run()
+	exec.Command("tmux", "clear-history", "-t", session.SessionName).Run()
 
 	return string(output), nil
 }

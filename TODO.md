@@ -76,6 +76,12 @@ All tool tests passing with -race flag
 
 ## v0.29.4 Planned Features
 
+### Native GitHub Tools
+- Built-in GitHub API integration (issues, PRs, releases, workflows)
+- Create/update issues and PRs directly from agent
+- Query GitHub APIs without external dependencies
+- Native tools: `github_create_issue`, `github_create_pr`, `github_get_issue`, `github_list_prs`, etc.
+
 ### Project Management & Per-Project Database
 - Enable nexora to work on projects from any directory
 - Project-scoped database with projects table

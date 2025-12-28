@@ -539,7 +539,6 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		fantasy.WithTools(a.tools...),
 	)
 
-	sessionLock := sync.Mutex{}
 	currentSession, err := a.sessions.Get(ctx, call.SessionID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get session: %w", err)
@@ -553,20 +552,16 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	// Add the session to the context early to avoid race with goroutine
 	ctx = context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
 
-	var wg sync.WaitGroup
 	// Generate title if first message or if title is still the default placeholder.
 	// Check both MessageCount == 0 (first message) and Title == "New Session" (placeholder)
 	needsTitle := currentSession.MessageCount == 0 || currentSession.Title == "New Session"
 	if needsTitle {
-		// Copy currentSession for safe concurrent access in goroutine
+		// Generate title synchronously before agent loop to prevent race condition
+		// where main loop saves session with old title, overwriting the generated one
 		sessionCopy := currentSession
-		wg.Go(func() {
-			sessionLock.Lock()
-			a.generateTitle(ctx, &sessionCopy, call.Prompt)
-			sessionLock.Unlock()
-		})
-		// Ensure we wait for title generation even if there's an error
-		defer wg.Wait()
+		a.generateTitle(ctx, &sessionCopy, call.Prompt)
+		// Copy generated title back to currentSession so main loop saves correct title
+		currentSession.Title = sessionCopy.Title
 	}
 
 	// Add the user message to the session.
@@ -1016,9 +1011,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 			}
 			currentAssistant.AddFinish(finishReason, "", "")
 			a.updateSessionUsage(a.largeModel, &currentSession, stepResult.Usage, a.openrouterCost(stepResult.ProviderMetadata))
-			sessionLock.Lock()
 			_, sessionErr := a.sessions.Save(genCtx, currentSession)
-			sessionLock.Unlock()
 			if sessionErr != nil {
 				return sessionErr
 			}

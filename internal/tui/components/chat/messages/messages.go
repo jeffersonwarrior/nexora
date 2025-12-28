@@ -410,7 +410,9 @@ func (m *assistantSectionModel) View() string {
 	finishData := m.message.FinishPart()
 	finishTime := time.Unix(finishData.Time, 0)
 	duration := finishTime.Sub(m.lastUserMessageTime)
-	infoMsg := t.S().Subtle.Render(duration.String())
+	durationStr := t.S().Subtle.Render(duration.String())
+	timestamp := t.S().Subtle.Render(finishTime.UTC().Format("2006-01-02 15:04:05 MST"))
+	infoMsg := fmt.Sprintf("%s · %s", durationStr, timestamp)
 	icon := t.S().Subtle.Render(styles.ModelIcon)
 	model := config.Get().GetModel(m.message.Provider, m.message.Model)
 

@@ -274,6 +274,11 @@ func (c *Compactor) keepRecent(msgs []message.Message) []message.Message {
 		recentIdx = 0
 	}
 
+	// Expand recentIdx backwards to include any tool_use messages that have
+	// corresponding tool_results in the recent messages. This prevents the
+	// "tool_use_id not found" error from APIs.
+	recentIdx = c.expandToIncludeToolCalls(msgs, recentIdx)
+
 	// If summary exists and is before recentIdx, include it
 	if summaryIdx >= 0 && summaryIdx < recentIdx {
 		// Add summary
@@ -328,6 +333,10 @@ func (c *Compactor) aggressive(msgs []message.Message) []message.Message {
 		startIdx = 0
 	}
 
+	// Expand startIdx backwards to include any tool_use messages that have
+	// corresponding tool_results in the recent messages.
+	startIdx = c.expandToIncludeToolCalls(msgs, startIdx)
+
 	for i := startIdx; i < len(msgs); i++ {
 		if !msgs[i].IsSummaryMessage {
 			result = append(result, msgs[i])
@@ -335,6 +344,48 @@ func (c *Compactor) aggressive(msgs []message.Message) []message.Message {
 	}
 
 	return result
+}
+
+// expandToIncludeToolCalls finds tool_result IDs in messages from startIdx onwards,
+// then expands startIdx backwards to include the corresponding tool_use messages.
+// This prevents "tool_use_id not found" errors from APIs.
+func (c *Compactor) expandToIncludeToolCalls(msgs []message.Message, startIdx int) int {
+	if startIdx <= 0 {
+		return 0
+	}
+
+	// Collect all tool_result IDs from messages we're keeping
+	toolResultIDs := make(map[string]bool)
+	for i := startIdx; i < len(msgs); i++ {
+		for _, part := range msgs[i].Parts {
+			if tr, ok := part.(message.ToolResult); ok {
+				toolResultIDs[tr.ToolCallID] = true
+			}
+		}
+	}
+
+	if len(toolResultIDs) == 0 {
+		return startIdx
+	}
+
+	// Find the earliest message containing a tool_use that matches a tool_result
+	for i := startIdx - 1; i >= 0; i-- {
+		for _, part := range msgs[i].Parts {
+			if tc, ok := part.(message.ToolCall); ok {
+				if toolResultIDs[tc.ID] {
+					// Found a matching tool_use, update startIdx
+					startIdx = i
+					delete(toolResultIDs, tc.ID)
+				}
+			}
+		}
+		// If we've found all tool_uses, stop searching
+		if len(toolResultIDs) == 0 {
+			break
+		}
+	}
+
+	return startIdx
 }
 
 // estimateTextTokens estimates tokens for text content.
