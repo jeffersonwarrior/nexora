@@ -10,6 +10,7 @@ type KeyMap struct {
 	Previous,
 	Choose,
 	Tab,
+	Edit,
 	Close key.Binding
 
 	isAPIKeyHelp  bool
@@ -43,6 +44,10 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("tab"),
 			key.WithHelp("tab", "toggle type"),
 		),
+		Edit: key.NewBinding(
+			key.WithKeys("ctrl+e"),
+			key.WithHelp("ctrl+e", "edit key"),
+		),
 		Close: key.NewBinding(
 			key.WithKeys("esc", "alt+esc"),
 			key.WithHelp("esc", "exit"),
@@ -57,6 +62,7 @@ func (k KeyMap) KeyBindings() []key.Binding {
 		k.Next,
 		k.Previous,
 		k.Tab,
+		k.Edit,
 		k.Close,
 	}
 }
@@ -145,6 +151,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 			key.WithHelp("↑↓", "choose"),
 		),
 		k.Tab,
+		k.Edit,
 		k.Select,
 		k.Close,
 	}

@@ -340,6 +340,30 @@ func (m *modelDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 				askForApiKey()
 				return m, nil
 			}
+		case key.Matches(msg, m.keyMap.Edit):
+			// Edit API key for currently selected provider
+			if m.showLocalModels || m.needsAPIKey || m.showClaudeAuthMethodChooser || m.showClaudeOAuth2 {
+				return m, nil
+			}
+			selectedItem := m.modelList.SelectedModel()
+			if selectedItem == nil || selectedItem.Model.ID == "local-models" {
+				return m, nil
+			}
+			// Only allow editing if provider is already configured
+			if m.isProviderConfigured(string(selectedItem.Provider.ID)) {
+				modelType := config.SelectedModelTypeLarge
+				if m.modelList.GetModelType() == SmallModelType {
+					modelType = config.SelectedModelTypeSmall
+				}
+				m.keyMap.isAPIKeyHelp = true
+				m.needsAPIKey = true
+				m.selectedModel = selectedItem
+				m.selectedModelType = modelType
+				m.apiKeyInput.SetProviderName(selectedItem.Provider.Name)
+				m.apiKeyInput.Reset()
+				return m, nil
+			}
+			return m, nil
 		case key.Matches(msg, m.keyMap.Tab):
 			// Don't handle Tab if local models dialog is showing
 			if m.showLocalModels {

@@ -11,6 +11,7 @@ type KeyMap struct {
 	Suspend  key.Binding
 	Models   key.Binding
 	Sessions key.Binding
+	Settings key.Binding
 
 	pageBindings []key.Binding
 }
@@ -34,12 +35,16 @@ func DefaultKeyMap() KeyMap {
 			key.WithHelp("ctrl+z", "suspend"),
 		),
 		Models: key.NewBinding(
-			key.WithKeys("ctrl+l", "ctrl+m"),
-			key.WithHelp("ctrl+l", "models"),
+			key.WithKeys("ctrl+m"),
+			key.WithHelp("ctrl+m", "models"),
 		),
 		Sessions: key.NewBinding(
 			key.WithKeys("ctrl+s"),
 			key.WithHelp("ctrl+s", "sessions"),
+		),
+		Settings: key.NewBinding(
+			key.WithKeys("ctrl+,"),
+			key.WithHelp("ctrl+,", "settings"),
 		),
 	}
 }
