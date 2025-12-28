@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"charm.land/fantasy"
 
@@ -271,5 +272,25 @@ func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation
 		return "", fmt.Errorf("failed to save parent session cost: %w", err)
 	}
 
-	return result.Response.Content.Text(), nil
+	// Extract all text content from response, not just the first block
+	// This handles models that may output reasoning/thinking content before text
+	var textParts []string
+	for _, content := range result.Response.Content {
+		if content.GetType() == fantasy.ContentTypeText {
+			if tc, ok := content.(fantasy.TextContent); ok && tc.Text != "" {
+				textParts = append(textParts, tc.Text)
+			}
+		}
+	}
+
+	// If no text content found, try reasoning text as fallback
+	if len(textParts) == 0 {
+		reasoningText := result.Response.Content.ReasoningText()
+		if reasoningText != "" {
+			return reasoningText, nil
+		}
+		return "", fmt.Errorf("delegate produced no text output")
+	}
+
+	return strings.Join(textParts, "\n"), nil
 }
