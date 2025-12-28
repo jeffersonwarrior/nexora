@@ -102,6 +102,11 @@ type sessionAgent struct {
 	// Resource monitoring
 	resourceMonitor *resources.Monitor
 
+	// Inline compaction
+	compactor *Compactor
+	// Background compaction
+	backgroundCompactor *BackgroundCompactor
+
 	// State for loop and drift detection
 	recentCalls       []aiops.ToolCall
 	callCount         int
@@ -145,11 +150,18 @@ type SessionAgentOptions struct {
 	Tools                []fantasy.AgentTool
 	AIOPS                aiops.Ops          // AIOPS client
 	ResourceMonitor      *resources.Monitor // Resource monitor for pause/resume
+	BackgroundCompactor  *BackgroundCompactor // Background compactor for idle-time optimization
 }
 
 func NewSessionAgent(
 	opts SessionAgentOptions,
 ) SessionAgent {
+	// Initialize compactor with model's context window
+	var compactor *Compactor
+	if opts.LargeModel.CatwalkCfg.ContextWindow > 0 {
+		compactor = NewCompactor(DefaultCompactionConfig(int64(opts.LargeModel.CatwalkCfg.ContextWindow)))
+	}
+
 	return &sessionAgent{
 		convoMgr:             NewConversationManager(),
 		largeModel:           opts.LargeModel,
@@ -165,6 +177,8 @@ func NewSessionAgent(
 		activeRequests:       csync.NewMap[string, context.CancelFunc](),
 		aiops:                opts.AIOPS,
 		resourceMonitor:      opts.ResourceMonitor,
+		compactor:            compactor,
+		backgroundCompactor:  opts.BackgroundCompactor,
 		sessionStates:        csync.NewMap[string, string](),
 		stateMachines:        csync.NewMap[string, *state.StateMachine](),
 		recoveryRegistry:     recovery.NewRecoveryRegistry(),
@@ -495,7 +509,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 
 	// Transition to processing state
 	if err := sm.TransitionTo(state.StateProcessingPrompt); err != nil {
-		slog.Warn("failed to transition to processing state", "error", err, "session_id", call.SessionID)
+		return nil, fmt.Errorf("failed to transition to processing state for session %s: %w", call.SessionID, err)
 	}
 
 	// Queue the message if busy
@@ -536,13 +550,19 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		return nil, fmt.Errorf("failed to get session messages: %w", err)
 	}
 
+	// Add the session to the context early to avoid race with goroutine
+	ctx = context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
+
 	var wg sync.WaitGroup
 	// Generate title if first message or if title is still the default placeholder.
 	// Check both MessageCount == 0 (first message) and Title == "New Session" (placeholder)
-	if currentSession.MessageCount == 0 || currentSession.Title == "New Session" {
+	needsTitle := currentSession.MessageCount == 0 || currentSession.Title == "New Session"
+	if needsTitle {
+		// Copy currentSession for safe concurrent access in goroutine
+		sessionCopy := currentSession
 		wg.Go(func() {
 			sessionLock.Lock()
-			a.generateTitle(ctx, &currentSession, call.Prompt)
+			a.generateTitle(ctx, &sessionCopy, call.Prompt)
 			sessionLock.Unlock()
 		})
 		// Ensure we wait for title generation even if there's an error
@@ -555,9 +575,6 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 		return nil, err
 	}
 
-	// Add the session to the context.
-	ctx = context.WithValue(ctx, tools.SessionIDContextKey, call.SessionID)
-
 	// Tool timeout enforcement is handled at coordinator level during tool creation
 
 	genCtx, cancel := context.WithCancel(ctx)
@@ -565,6 +582,14 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 
 	defer cancel()
 	defer a.activeRequests.Del(call.SessionID)
+
+	// Apply inline compaction if available and context usage is high
+	if a.compactor != nil {
+		currentTokens := currentSession.PromptTokens + currentSession.CompletionTokens
+		if compactedMsgs, applied := a.compactor.Compact(msgs, currentTokens); applied {
+			msgs = compactedMsgs
+		}
+	}
 
 	history, files := a.preparePrompt(msgs, call.Attachments...)
 
@@ -1447,6 +1472,20 @@ func (a *sessionAgent) preparePrompt(msgs []message.Message, attachments ...mess
 }
 
 func (a *sessionAgent) getSessionMessages(ctx context.Context, session session.Session) ([]message.Message, error) {
+	// Check if background compactor has cached compacted messages
+	if a.backgroundCompactor != nil {
+		if cached := a.backgroundCompactor.GetCompactedHistory(session.ID); cached != nil {
+			slog.Debug("using background compacted messages",
+				"session", session.ID,
+				"original", cached.OriginalLen,
+				"compacted", len(cached.Messages),
+				"tokens_saved", cached.TokensSaved,
+			)
+			return cached.Messages, nil
+		}
+	}
+
+	// Fallback to loading from database
 	msgs, err := a.messages.List(ctx, session.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list messages: %w", err)
@@ -1717,7 +1756,7 @@ func (a *sessionAgent) Model() Model {
 
 func (a *sessionAgent) promptPrefix() string {
 	if a.isClaudeCode() {
-		return "You are Claude Code, Anthropic's official CLI for Claude."
+		return "You are Nexora, an AI-native terminal application."
 	}
 	return a.systemPromptPrefix
 }

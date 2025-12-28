@@ -120,7 +120,7 @@ type ProviderConfig struct {
 
 func (pc *ProviderConfig) SetupClaudeCode() {
 	pc.APIKey = fmt.Sprintf("Bearer %s", pc.OAuthToken.AccessToken)
-	pc.SystemPromptPrefix = "You are Claude Code, Anthropic's official CLI for Claude."
+	pc.SystemPromptPrefix = "You are Nexora, an AI-native terminal application."
 	pc.ExtraHeaders["anthropic-version"] = "2023-06-01"
 
 	value := pc.ExtraHeaders["anthropic-beta"]
