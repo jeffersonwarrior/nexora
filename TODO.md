@@ -14,7 +14,7 @@ All release planning consolidated in: **NEXORA.0.29.2.12.26.md**
 | **v0.29.1-RC1** | Bug fixes, test coverage, tool consolidation | In Progress (Phases 0-2 complete) |
 | **v0.29.2** | MiniMax M2.1, Synthetic provider, TMUX fixes, Windows support | ✅ Released |
 | **v0.29.3** | About command, task graph enrichment + checkpoints | Planned |
-| **v0.29.4** | Internal A2A + ACP communication | Planned |
+| **v0.29.4** | sqlite3vfshttp, A2A + ACP communication | Planned |
 | **v0.29.5** | Protocol composition + conflict resolution | Planned |
 | **v3.0** | ModelScan integration + VNC/Docker dual-mode | Planned |
 
@@ -512,5 +512,129 @@ For more information, visit: https://nexora.land
 
 - Task graph enrichment
 - Checkpoint system
+- Additional improvements TBD
+
+---
+
+## v0.29.4 Features
+
+**Status:** Planned
+**Release Date:** TBD
+
+### Feature: SQLite HTTP VFS (`sqlite3vfshttp`)
+
+**Goal:** Replace local SQLite file reads with HTTP-based virtual filesystem for remote database access
+
+**Library:** [psanford/sqlite3vfshttp](https://github.com/psanford/sqlite3vfshttp)
+
+**Use Case:**
+- Enable reading SQLite databases over HTTP without downloading the entire file
+- Supports range requests for efficient partial reads
+- Useful for distributed/remote database access scenarios
+
+**Implementation:**
+- Add `github.com/psanford/sqlite3vfshttp` dependency
+- Modify `internal/db/db.go` to support HTTP-based database connections
+- Add configuration option for HTTP vs local file mode
+- Implement connection string parsing for HTTP URLs
+
+**Technical Notes:**
+```go
+import (
+    "github.com/psanford/sqlite3vfshttp"
+    "database/sql"
+)
+
+// Register HTTP VFS
+sqlite3vfshttp.RegisterHTTP()
+
+// Open database over HTTP
+db, err := sql.Open("sqlite3", "http://example.com/database.db?vfs=httpvfs")
+```
+
+**Success Criteria:**
+- [ ] HTTP VFS registered on startup
+- [ ] Database reads work over HTTP with range requests
+- [ ] Fallback to local file if HTTP unavailable
+- [ ] Configuration option for HTTP mode
+- [ ] All existing DB tests pass
+
+---
+
+### Feature: Internal A2A + ACP Communication
+
+**Goal:** Enable agent-to-agent and agent-control-plane communication
+
+**Status:** Planned
+
+---
+
+### Feature: Project Management & Per-Project Database
+
+**Goal:** Enable nexora to spawn from any folder and connect to project-scoped resources
+
+**Problem:**
+- Current DB structure ties sessions to filesystem location
+- Cannot work on a project from different directories
+- No support for remote project resources
+
+**Solution:**
+- Add project-scoped database schema (projects table with id, name, path, remote_url, metadata)
+- CRUD operations for project management
+- Project context resolution independent of CWD
+- Support both local and remote project resources
+
+**Implementation:**
+- New migration: `internal/db/migrations/00X_add_projects.sql`
+  - `projects` table (id, name, local_path, remote_url, metadata_json, created_at, updated_at)
+  - Add `project_id` FK to sessions table
+- New queries: `internal/db/queries/projects.sql`
+  - CreateProject, GetProject, ListProjects, UpdateProject, DeleteProject
+  - GetProjectByPath, GetProjectByName
+- New commands:
+  - `nexora project add <name> [--path=.] [--remote=url]`
+  - `nexora project list`
+  - `nexora project set <name>` (set active project)
+  - `nexora project rm <name>`
+- Project resolution on startup:
+  - Check for active project in config
+  - Fall back to CWD-based project detection
+  - Create implicit project if none exists
+- Remote resource support:
+  - Git remote detection
+  - HTTP/HTTPS resource URLs
+  - Future: SSH, cloud storage
+
+**Database Schema:**
+```sql
+CREATE TABLE projects (
+    id INTEGER PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    local_path TEXT,
+    remote_url TEXT,
+    metadata_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE sessions ADD COLUMN project_id INTEGER REFERENCES projects(id);
+```
+
+**Success Criteria:**
+- [ ] Projects table and migration created
+- [ ] CRUD sqlc queries generated
+- [ ] CLI commands for project management
+- [ ] Project context resolution on startup
+- [ ] Sessions scoped to projects, not CWD
+- [ ] Backward compatibility (CWD fallback)
+- [ ] Remote URL support in schema
+- [ ] All existing tests pass
+
+---
+
+### Other v0.29.4 Features (Planned)
+
+- A2A protocol implementation
+- ACP communication layer
 - Additional improvements TBD
 

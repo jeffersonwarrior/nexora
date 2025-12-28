@@ -4,7 +4,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -49,12 +48,22 @@ func TestConfig_setDefaults(t *testing.T) {
 	require.NotNil(t, cfg.Models)
 	require.NotNil(t, cfg.LSP)
 	require.NotNil(t, cfg.MCP)
-	require.Equal(t, filepath.Join("/tmp", ".nexora"), cfg.Options.DataDirectory)
+	// Data directory now uses system-wide location (GlobalDataDir)
+	require.Equal(t, GlobalDataDir(), cfg.Options.DataDirectory)
 	require.Equal(t, "AGENTS.md", cfg.Options.InitializeAs)
 	for _, path := range defaultContextPaths {
 		require.Contains(t, cfg.Options.ContextPaths, path)
 	}
 	require.Equal(t, "/tmp", cfg.workingDir)
+}
+
+func TestConfig_setDefaults_WithExplicitDataDir(t *testing.T) {
+	cfg := &Config{}
+
+	// When explicit data dir is provided, it should be used
+	cfg.setDefaults("/tmp", "/custom/data/dir")
+
+	require.Equal(t, "/custom/data/dir", cfg.Options.DataDirectory)
 }
 
 func TestConfig_configureProviders(t *testing.T) {
@@ -509,7 +518,7 @@ func TestConfig_AreModelsConfigured(t *testing.T) {
 		require.False(t, cfg.AreModelsConfigured())
 	})
 
-	t.Run("returns false when small model is not selected", func(t *testing.T) {
+	t.Run("returns true when only large model is configured (small model is optional)", func(t *testing.T) {
 		cfg := &Config{
 			Models: map[SelectedModelType]SelectedModel{
 				SelectedModelTypeLarge: {
@@ -526,7 +535,7 @@ func TestConfig_AreModelsConfigured(t *testing.T) {
 			}),
 		}
 
-		require.False(t, cfg.AreModelsConfigured())
+		require.True(t, cfg.AreModelsConfigured())
 	})
 
 	t.Run("returns false when provider for large model doesn't exist", func(t *testing.T) {
@@ -586,7 +595,7 @@ func TestConfig_setupAgentsWithDisabledTools(t *testing.T) {
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
 
-	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "multiedit", "lsp_diagnostics", "lsp_references", "fetch", "agentic_fetch", "glob", "ls", "sourcegraph", "view", "write"}, coderAgent.AllowedTools)
+	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "delegate", "multiedit", "lsp_diagnostics", "lsp_references", "fetch", "agentic_fetch", "glob", "ls", "sourcegraph", "view", "write"}, coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
@@ -609,7 +618,7 @@ func TestConfig_setupAgentsWithEveryReadOnlyToolDisabled(t *testing.T) {
 	cfg.SetupAgents()
 	coderAgent, ok := cfg.Agents[AgentCoder]
 	require.True(t, ok)
-	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "download", "edit", "multiedit", "lsp_diagnostics", "lsp_references", "fetch", "agentic_fetch", "write"}, coderAgent.AllowedTools)
+	assert.Equal(t, []string{"agent", "bash", "job_output", "job_kill", "delegate", "download", "edit", "multiedit", "lsp_diagnostics", "lsp_references", "fetch", "agentic_fetch", "write"}, coderAgent.AllowedTools)
 
 	taskAgent, ok := cfg.Agents[AgentTask]
 	require.True(t, ok)
