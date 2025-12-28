@@ -1,4 +1,4 @@
-## [0.29.3] - 2025-12-28 - **Production Polish & CLI Enhancements**
+## [0.29.3] - 2025-12-28 - **Production Polish & Critical Fixes**
 
 ### ✨ New Features
 - **`nexora about`** - Display version, platform info, community links, and license
@@ -6,11 +6,19 @@
 - **Clean version format** - Strips pseudo-version suffixes (e.g., `-0.20251228+dirty` → `v0.29.3`)
 - **Unified command palette** - User commands now appear alongside system commands when typing `/`
 - **Ctrl+E to edit API key** - Quick edit shortcut in models dialog
+- **AI response timestamps** - Full UTC datetime displayed after each AI turn
+
+### 🐛 Bug Fixes
+- **Session title race condition** - Title generation now runs synchronously before agent loop, preventing race where main loop overwrote generated titles
+- **TMUX output duplication** - Clear pane and history after capture to prevent accumulating output
+- **Compaction tool_use/tool_result pairing** - `expandToIncludeToolCalls()` ensures tool results always have matching tool calls, fixing "tool_use_id not found" API errors
+- **Session title test** - Re-enabled previously skipped test
 
 ### 🔧 Improvements
 - **install.sh** - Dynamically pulls version from `version.go` instead of hardcoded value
 - **Command display** - Removed `user:` prefix from user commands for cleaner display
 - **GitHub link** - Added repository URL to `nexora --help` output
+- **Title generation logging** - Added Info-level logs for debugging title generation issues
 
 ### 📦 Files
 - Created: `internal/cmd/about.go` - About command implementation
@@ -18,12 +26,17 @@
 - Modified: `internal/cmd/root.go` - Dynamic help with version, removed EXAMPLES section
 - Modified: `internal/tui/components/dialogs/commands/commands.go` - Unified command list
 - Modified: `internal/tui/components/dialogs/models/models.go` - Ctrl+E key binding
+- Modified: `internal/agent/agent.go` - Synchronous title generation, debug logging
+- Modified: `internal/agent/compaction.go` - Tool call/result pairing preservation
+- Modified: `internal/shell/tmux.go` - Clear history after output capture
+- Modified: `internal/tui/components/chat/messages/messages.go` - UTC timestamp display
 
 ### 🧪 Test Coverage
 - Added tests for `version.Display()` function
 - Added tests for root command help output (version, GitHub link, no examples)
 - Updated command dialog tests for combined user/system commands
 - Updated models dialog tests for Ctrl+E key binding
+- Re-enabled `TestTitleGenerationForNewSession`
 
 ---
 

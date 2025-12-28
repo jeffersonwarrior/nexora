@@ -555,12 +555,21 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 	// Generate title if first message or if title is still the default placeholder.
 	// Check both MessageCount == 0 (first message) and Title == "New Session" (placeholder)
 	needsTitle := currentSession.MessageCount == 0 || currentSession.Title == "New Session"
+	slog.Info("title generation check",
+		"session_id", currentSession.ID,
+		"needs_title", needsTitle,
+		"message_count", currentSession.MessageCount,
+		"current_title", currentSession.Title)
 	if needsTitle {
 		// Generate title synchronously before agent loop to prevent race condition
 		// where main loop saves session with old title, overwriting the generated one
 		sessionCopy := currentSession
 		a.generateTitle(ctx, &sessionCopy, call.Prompt)
 		// Copy generated title back to currentSession so main loop saves correct title
+		slog.Info("title generation complete",
+			"session_id", currentSession.ID,
+			"old_title", currentSession.Title,
+			"new_title", sessionCopy.Title)
 		currentSession.Title = sessionCopy.Title
 	}
 
@@ -1506,7 +1515,7 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 		return
 	}
 
-	slog.Debug("generateTitle: starting",
+	slog.Info("generateTitle: starting",
 		"session_id", session.ID,
 		"small_model", a.smallModel.ModelCfg.Model,
 		"provider", a.smallModel.ModelCfg.Provider)
