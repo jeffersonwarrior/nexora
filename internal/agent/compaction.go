@@ -217,6 +217,11 @@ func (c *Compactor) dropToolResults(msgs []message.Message) []message.Message {
 		recentIdx = 0
 	}
 
+	// Expand recentIdx backwards to include any tool_use messages that have
+	// corresponding tool_results in the recent messages. This prevents the
+	// "tool_use_id not found" error from APIs like MiniMax.
+	recentIdx = c.expandToIncludeToolCalls(msgs, recentIdx)
+
 	for i, msg := range msgs {
 		// Keep recent messages fully intact
 		if i >= recentIdx {
