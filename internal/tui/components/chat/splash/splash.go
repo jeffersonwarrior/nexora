@@ -767,7 +767,7 @@ func (s *splashCmp) logoBlock() string {
 		)
 	}
 	return logoStyle.Render(
-		logo.Render(version.Version, false, logo.Opts{
+		logo.Render(version.Display(), false, logo.Opts{
 			FieldColor:   t.Primary,
 			TitleColorA:  t.Secondary,
 			TitleColorB:  t.Primary,

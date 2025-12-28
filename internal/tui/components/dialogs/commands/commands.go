@@ -83,6 +83,7 @@ type (
 	OpenReasoningDialogMsg struct{}
 	OpenExternalEditorMsg  struct{}
 	ToggleYoloModeMsg      struct{}
+	AboutNexoraMsg         struct{}
 	CompactMsg             struct {
 		SessionID string
 	}
@@ -464,6 +465,14 @@ func (c *commandDialogCmp) defaultCommands() []Command {
 				return util.CmdHandler(chat.SendMsg{
 					Text: initPrompt,
 				})
+			},
+		},
+		{
+			ID:          "about",
+			Title:       "About Nexora",
+			Description: "Show version and system information",
+			Handler: func(cmd Command) tea.Cmd {
+				return util.CmdHandler(AboutNexoraMsg{})
 			},
 		},
 		{

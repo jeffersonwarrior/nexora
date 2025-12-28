@@ -5,7 +5,16 @@ import (
 	"strings"
 )
 
-var Version = "v0.29.2"
+var Version = "v0.29.3"
+
+// Display returns a sanitized version string for UI display.
+// Strips any +suffix (e.g., +dirty, +dev) from the version.
+func Display() string {
+	if idx := strings.Index(Version, "+"); idx != -1 {
+		return Version[:idx]
+	}
+	return Version
+}
 
 func init() {
 	info, ok := debug.ReadBuildInfo()

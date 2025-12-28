@@ -16,6 +16,7 @@ import (
 	"github.com/nexora/nexora/internal/session"
 	"github.com/nexora/nexora/internal/tui/styles"
 	"github.com/nexora/nexora/internal/tui/util"
+	"github.com/nexora/nexora/internal/version"
 )
 
 type Header interface {
@@ -73,9 +74,9 @@ func (h *header) View() string {
 
 	var b strings.Builder
 
-	b.WriteString(t.S().Base.Foreground(t.Secondary).Render("Nexora"))
-	b.WriteString(gap)
 	b.WriteString(styles.ApplyBoldForegroundGrad("NEXORA", t.Secondary, t.Primary))
+	b.WriteString(gap)
+	b.WriteString(t.S().Base.Foreground(t.FgMuted).Render(version.Display()))
 	b.WriteString(gap)
 
 	availDetailWidth := h.width - leftPadding - rightPadding - lipgloss.Width(b.String()) - minDiags

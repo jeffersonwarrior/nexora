@@ -24,6 +24,7 @@ import (
 	"github.com/nexora/nexora/internal/tui/components/core"
 	"github.com/nexora/nexora/internal/tui/components/core/status"
 	"github.com/nexora/nexora/internal/tui/components/dialogs"
+	"github.com/nexora/nexora/internal/tui/components/dialogs/about"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/commands"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/filepicker"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/models"
@@ -292,6 +293,10 @@ func (a *appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case commands.QuitMsg:
 		return a, util.CmdHandler(dialogs.OpenDialogMsg{
 			Model: quit.NewQuitDialog(),
+		})
+	case commands.AboutNexoraMsg:
+		return a, util.CmdHandler(dialogs.OpenDialogMsg{
+			Model: about.NewAboutDialog(),
 		})
 	case commands.ToggleYoloModeMsg:
 		a.app.Permissions.SetSkipRequests(!a.app.Permissions.SkipRequests())
