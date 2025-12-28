@@ -180,6 +180,144 @@ func TestCompactor_DropToolResults(t *testing.T) {
 	assert.Equal(t, "new output", tr2.Content)
 }
 
+// TestCompactor_DropToolResults_PreservesToolCallPairing tests the MiniMax bug fix.
+// Ensures that tool calls are included when their corresponding tool results are in
+// the recent message window, preventing "tool call result does not follow tool call" errors.
+func TestCompactor_DropToolResults_PreservesToolCallPairing(t *testing.T) {
+	config := DefaultCompactionConfig(100000)
+	config.RecentMessageCount = 1 // Only keep last 1 message
+	c := NewCompactor(config)
+
+	// Create a conversation where:
+	// 1. Assistant makes tool call (old, outside recent window)
+	// 2. Tool result for that call (recent, inside window)
+	// Without the fix, the tool call would be dropped but result kept -> API error
+	msgs := []message.Message{
+		{
+			Role: message.User,
+			Parts: []message.ContentPart{
+				message.TextContent{Text: "Run ls command"},
+			},
+		},
+		{
+			Role: message.Assistant,
+			Parts: []message.ContentPart{
+				message.ToolCall{
+					ID:    "call_abc123",
+					Name:  "bash",
+					Input: `{"command":"ls"}`,
+				},
+			},
+		},
+		{
+			Role: message.Tool,
+			Parts: []message.ContentPart{
+				message.ToolResult{
+					ToolCallID: "call_abc123",
+					Name:       "bash",
+					Content:    "file1.txt\nfile2.txt",
+				},
+			},
+		},
+		{
+			Role: message.User,
+			Parts: []message.ContentPart{
+				message.TextContent{Text: "What files are there?"},
+			},
+		},
+	}
+
+	result, applied := c.Compact(msgs, 70000) // 70% triggers dropToolResults
+
+	require.True(t, applied)
+
+	// Find the tool call and tool result in compacted messages
+	var foundToolCall bool
+	var foundToolResult bool
+	var toolCallIdx, toolResultIdx int
+
+	for i, msg := range result {
+		for _, part := range msg.Parts {
+			if tc, ok := part.(message.ToolCall); ok && tc.ID == "call_abc123" {
+				foundToolCall = true
+				toolCallIdx = i
+			}
+			if tr, ok := part.(message.ToolResult); ok && tr.ToolCallID == "call_abc123" {
+				foundToolResult = true
+				toolResultIdx = i
+			}
+		}
+	}
+
+	// Both tool call and result must be present
+	assert.True(t, foundToolCall, "tool call should be preserved to match tool result")
+	assert.True(t, foundToolResult, "tool result should be preserved")
+
+	// Tool call must come before tool result
+	assert.Less(t, toolCallIdx, toolResultIdx, "tool call must come before its result")
+}
+
+// TestCompactor_DropToolResults_MultipleToolPairs tests handling multiple tool call/result pairs.
+func TestCompactor_DropToolResults_MultipleToolPairs(t *testing.T) {
+	config := DefaultCompactionConfig(100000)
+	config.RecentMessageCount = 2
+	c := NewCompactor(config)
+
+	msgs := []message.Message{
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "First request"}}},
+		{
+			Role: message.Assistant,
+			Parts: []message.ContentPart{
+				message.ToolCall{ID: "call_1", Name: "bash", Input: `{"command":"echo 1"}`},
+			},
+		},
+		{
+			Role: message.Tool,
+			Parts: []message.ContentPart{
+				message.ToolResult{ToolCallID: "call_1", Content: "1"},
+			},
+		},
+		{Role: message.User, Parts: []message.ContentPart{message.TextContent{Text: "Second request"}}},
+		{
+			Role: message.Assistant,
+			Parts: []message.ContentPart{
+				message.ToolCall{ID: "call_2", Name: "bash", Input: `{"command":"echo 2"}`},
+			},
+		},
+		{
+			Role: message.Tool,
+			Parts: []message.ContentPart{
+				message.ToolResult{ToolCallID: "call_2", Content: "2"},
+			},
+		},
+	}
+
+	result, applied := c.Compact(msgs, 70000) // 70% triggers dropToolResults
+
+	require.True(t, applied)
+
+	// Collect all tool call IDs and tool result IDs
+	toolCalls := make(map[string]bool)
+	toolResults := make(map[string]bool)
+
+	for _, msg := range result {
+		for _, part := range msg.Parts {
+			if tc, ok := part.(message.ToolCall); ok {
+				toolCalls[tc.ID] = true
+			}
+			if tr, ok := part.(message.ToolResult); ok {
+				toolResults[tr.ToolCallID] = true
+			}
+		}
+	}
+
+	// Every tool result must have its corresponding tool call
+	for resultID := range toolResults {
+		assert.True(t, toolCalls[resultID],
+			"tool result %s must have corresponding tool call", resultID)
+	}
+}
+
 func TestCompactor_KeepRecent(t *testing.T) {
 	config := DefaultCompactionConfig(100000)
 	config.RecentMessageCount = 2
