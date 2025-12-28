@@ -48,6 +48,9 @@ func init() {
 		suggestToolsCmd,
 		indexCmd,
 		aiopsCmd,
+		resetCmd,
+		tasksCmd,
+		checkpointCmd,
 	)
 }
 
