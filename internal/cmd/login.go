@@ -22,7 +22,7 @@ var loginCmd = &cobra.Command{
 The platform should be provided as an argument.
 Available platforms are: claude.`,
 	Example: `
-# Authenticate with Claude Code Max
+# Authenticate with Anthropic
 nexora login claude
   `,
 	ValidArgs: []cobra.Completion{
@@ -69,7 +69,7 @@ func loginClaude() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Open the following URL and follow the instructions to authenticate with Claude Code Max:")
+	fmt.Println("Open the following URL and follow the instructions to authenticate with Anthropic:")
 	fmt.Println()
 	fmt.Println(lipgloss.NewStyle().Hyperlink(url, "id=claude").Render(url))
 	fmt.Println()
@@ -103,6 +103,6 @@ func loginClaude() error {
 	}
 
 	fmt.Println()
-	fmt.Println("You're now authenticated with Claude Code Max!")
+	fmt.Println("You're now authenticated with Anthropic!")
 	return nil
 }

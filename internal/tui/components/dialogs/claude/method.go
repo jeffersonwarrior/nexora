@@ -86,7 +86,7 @@ func (a *AuthMethodChooser) View() string {
 		lipgloss.JoinHorizontal(
 			lipgloss.Center,
 			square.MarginLeft(1).
-				Inherit(oauthBorder).Render(squareText.Inherit(oauthText).Render("Claude Account\nwith Subscription")),
+				Inherit(oauthBorder).Render(squareText.Inherit(oauthText).Render("Anthropic Account\nwith Subscription")),
 			square.MarginRight(1).
 				Inherit(apiKeyBorder).Render(squareText.Inherit(apiKeyText).Render("API Key")),
 		),
