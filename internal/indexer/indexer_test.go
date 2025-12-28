@@ -71,8 +71,6 @@ var TestVariable = "variable"
 
 	// Test Storage
 	t.Run("Storage", func(t *testing.T) {
-		ctx := context.Background()
-
 		// Create indexer
 		dbPath := filepath.Join(tempDir, "test.db")
 		indexer, err := NewIndexer(dbPath)
@@ -80,7 +78,7 @@ var TestVariable = "variable"
 		defer indexer.Close()
 
 		// Store symbols
-		ctx = context.Background()
+		ctx := context.Background()
 		parser := NewASTParser()
 		symbols, err := parser.ParseDirectory(ctx, tempDir)
 		require.NoError(t, err)
@@ -154,14 +152,12 @@ var TestVariable = "variable"
 
 	// Test Graph
 	t.Run("Graph", func(t *testing.T) {
-		ctx := context.Background()
-
 		dbPath := filepath.Join(tempDir, "test.db")
 		indexer, err := NewIndexer(dbPath)
 		require.NoError(t, err)
 		defer indexer.Close()
 
-		ctx = context.Background()
+		ctx := context.Background()
 		parser := NewASTParser()
 		symbols, err := parser.ParseDirectory(ctx, tempDir)
 		require.NoError(t, err)
@@ -201,8 +197,6 @@ var TestVariable = "variable"
 
 	// Test Query Engine
 	t.Run("Query Engine", func(t *testing.T) {
-		ctx := context.Background()
-
 		dbPath := filepath.Join(tempDir, "test.db")
 		storage, err := NewIndexer(dbPath)
 		require.NoError(t, err)
@@ -212,7 +206,7 @@ var TestVariable = "variable"
 		embeddingEngine := NewEmbeddingEngine(provider, storage)
 
 		// Setup data
-		ctx = context.Background()
+		ctx := context.Background()
 		parser := NewASTParser()
 		symbols := []Symbol{}
 		parsedSymbols, err := parser.ParseDirectory(ctx, tempDir)

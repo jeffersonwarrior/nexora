@@ -4,6 +4,19 @@ import "strings"
 
 // Tool aliases map alternative names to canonical tool names
 // Key: alias (case-insensitive), Value: canonical tool name
+//
+// Canonical tools (not aliased):
+// - bash: Execute shell commands
+// - download: Download files
+// - find: Find files by name or pattern
+// - glob: Match files by glob pattern
+// - job_kill: Kill background jobs
+// - job_output: Get background job output
+// - multiedit: Edit multiple files
+// - smart_edit: Smart editing with AI
+// - agentic_fetch: Fetch with agentic retry logic
+// - lsp_diagnostics: Language server protocol diagnostics
+// - lsp_references: Language server protocol references
 var toolAliases = map[string]string{
 	// Fetch tool aliases
 	"curl":          "fetch",
@@ -11,51 +24,46 @@ var toolAliases = map[string]string{
 	"get":           "fetch",
 	"http-get":      "fetch",
 	"http_get":      "fetch",
-	"web-fetch":     "fetch",
-	"webfetch":      "fetch",
-	"web_fetch":     "fetch",
+	"web-fetch":     "web_fetch",
+	"webfetch":      "web_fetch",
 	"http":          "fetch",
-	
+
 	// File tools
 	"read":          "view",
 	"cat":           "view",
 	"open":          "view",
-	"ls":            "list",
-	"dir":           "list",
-	"directory":     "list",
-	
+	"list":          "ls",
+	"dir":           "ls",
+	"directory":     "ls",
+
 	// Edit tools
 	"modify":        "edit",
 	"change":        "edit",
 	"replace":       "edit",
 	"update":        "edit",
-	
+
 	// Write tools
 	"create":        "write",
 	"make":          "write",
 	"new":           "write",
-	
+
 	// Search tools
 	"search":        "grep",
-	"find":          "grep",
 	"rg":            "grep",
-	
+
 	// Bash/shell tools
 	"shell":         "bash",
 	"exec":          "bash",
 	"execute":       "bash",
 	"run":           "bash",
 	"command":       "bash",
-	"job_kill":      "bash",       // Kill background jobs via bash
-	"job_output":    "bash",       // Get job output via bash
-	
+
 	// Web tools
 	"web-search":    "web_search",
 	"websearch":     "web_search",
 	"search-web":    "web_search",
-	
+
 	// Sourcegraph
-	"sourcegraph":   "sourcegraph",
 	"sg":            "sourcegraph",
 	"code-search":   "sourcegraph",
 }

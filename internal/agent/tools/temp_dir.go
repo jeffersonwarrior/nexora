@@ -22,7 +22,7 @@ func NewTempDir() *TempDir {
 
 // CreateTempDir creates a new temporary directory with a given prefix
 func (t *TempDir) CreateTempDir(prefix string) (string, error) {
-	if err := os.MkdirAll(t.basePath, 0755); err != nil {
+	if err := os.MkdirAll(t.basePath, 0o700); err != nil {
 		return "", fmt.Errorf("failed to create base temp directory: %w", err)
 	}
 
@@ -43,7 +43,7 @@ func (t *TempDir) CreateTempFile(prefix, content string) (string, error) {
 	}
 
 	filePath := filepath.Join(tempDir, prefix+".txt")
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte(content), 0o600); err != nil {
 		return "", fmt.Errorf("failed to write temp file: %w", err)
 	}
 

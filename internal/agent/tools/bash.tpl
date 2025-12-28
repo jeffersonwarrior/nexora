@@ -14,11 +14,17 @@ Use forward slashes for paths: "ls C:/foo/bar" not "ls C:\foo\bar".
 6. Return Result: Include errors, metadata with <cwd></cwd> tags
 </execution_steps>
 
+<terminal_environment>
+- Terminal: {{ .TerminalInfo }} (scrollback: {{ .ScrollbackLines }} lines)
+- Output truncation: {{ .MaxOutputLength }} characters
+- Shell persistence: TMUX sessions persist across commands when shell_id provided
+</terminal_environment>
+
 <usage_notes>
 - Command required, working_dir optional (defaults to current directory)
 - IMPORTANT: Use Grep/Glob/Agent tools instead of 'find'/'grep'. Use View/LS instead of 'cat'/'head'/'tail'/'ls'
 - Chain with ';' or '&&', avoid newlines except in quoted strings
-- Each command runs in independent shell (no state persistence)
+- Commands without shell_id run in independent shells; with shell_id, state persists
 - Prefer absolute paths over 'cd'
 </usage_notes>
 

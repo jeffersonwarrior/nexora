@@ -207,7 +207,7 @@ func IsZAITool(toolName string) bool {
 // RunZAITool executes a Z.ai vision tool
 func RunZAITool(ctx context.Context, toolName string, arguments map[string]interface{}) (*mcp.CallToolResult, error) {
 	if zaiManager == nil {
-		return nil, fmt.Errorf("Z.ai MCP manager not initialized")
+		return nil, fmt.Errorf("z.ai MCP manager not initialized")
 	}
 
 	client, err := zaiManager.GetClient()

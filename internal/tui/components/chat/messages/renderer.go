@@ -270,10 +270,17 @@ func (br bashRenderer) Render(v *toolCallCmp) string {
 		}
 	}
 
-	return br.renderWithParams(v, "Bash", args, func() string {
-		var meta tools.BashResponseMetadata
-		if err := br.unmarshalParams(v.result.Metadata, &meta); err != nil {
-			return renderPlainContent(v, v.result.Content)
+	// Build header with optional TMUX session name
+	headerName := "Bash"
+	var meta tools.BashResponseMetadata
+	if err := br.unmarshalParams(v.result.Metadata, &meta); err == nil && meta.TmuxSessionID != "" {
+		headerName = fmt.Sprintf("Bash : %s", meta.TmuxSessionID)
+	}
+
+	return br.renderWithParams(v, headerName, args, func() string {
+		if meta.TmuxSessionID == "" {
+			// Re-parse if not already parsed
+			_ = br.unmarshalParams(v.result.Metadata, &meta)
 		}
 		// for backwards compatibility with older tool calls.
 		if meta.Output == "" && v.result.Content != tools.BashNoOutput {

@@ -10,7 +10,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-DEFAULT_VERSION="0.29.2"
+# Extract version from version.go if in project directory
+if [ -f "internal/version/version.go" ]; then
+    EXTRACTED_VERSION=$(grep 'var Version' internal/version/version.go | sed 's/.*"\(v[^"]*\)".*/\1/' | sed 's/^v//')
+    DEFAULT_VERSION="${EXTRACTED_VERSION:-0.29.3}"
+else
+    DEFAULT_VERSION="0.29.3"
+fi
 
 # Detect platform
 IS_WINDOWS=false
@@ -421,10 +427,10 @@ install_better_tools() {
             
             print_status "Installing tools with apt..."
             # First try to install all tools including tmux
-            sudo apt-get install -y -qq ripgrep fd-find bat fzf exa jq tmux 2>/dev/null || {
+            sudo apt-get install -y -qq ripgrep fd-find bat fzf exa jq tmux xclip 2>/dev/null || {
                 # If exa fails, try installing eza instead (exa replacement)
                 print_warning "exa package not available, trying eza (modern replacement)..."
-                sudo apt-get install -y -qq ripgrep fd-find bat fzf eza jq tmux || {
+                sudo apt-get install -y -qq ripgrep fd-find bat fzf eza jq tmux xclip || {
                     # Try individual installations with more specific packages
                     print_warning "Some tools failed to install, trying individually..."
                     
@@ -455,6 +461,9 @@ install_better_tools() {
                     # tmux (required for Nexora bash tool)
                     sudo apt-get install -y -qq tmux 2>/dev/null || print_warning "Could not install tmux (required for Nexora)"
 
+                    # xclip (clipboard support)
+                    sudo apt-get install -y -qq xclip 2>/dev/null || print_warning "Could not install xclip (clipboard support)"
+
                     print_error "Some tools could not be installed"
                 }
             }
@@ -483,11 +492,11 @@ install_better_tools() {
                 sleep 5
                 if [ -f /var/lib/pacman/db.lck ]; then
                     print_warning "Pacman still locked. Skipping automatic tool installation."
-                    print_status "Run 'sudo pacman -S ripgrep fd bat fzf exa jq tmux' manually later"
+                    print_status "Run 'sudo pacman -S ripgrep fd bat fzf exa jq tmux xclip' manually later"
                     return
                 fi
             fi
-            sudo pacman -S --noconfirm ripgrep fd bat fzf exa jq tmux || {
+            sudo pacman -S --noconfirm ripgrep fd bat fzf exa jq tmux xclip || {
                 print_error "Failed to install some tools with pacman"
             }
             ;;

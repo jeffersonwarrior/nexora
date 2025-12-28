@@ -175,6 +175,8 @@ func coderAgent(r *vcr.Recorder, env fakeEnv, large, small fantasy.LanguageModel
 		prompt.WithTimeFunc(fixedTime),
 		prompt.WithPlatform("linux"),
 		prompt.WithWorkingDir(filepath.ToSlash(env.workingDir)),
+		prompt.WithMemoryInfo("31Gi total, 23Gi available"),
+		prompt.WithDiskInfo("16G total, 15G free"),
 	)
 	if err != nil {
 		return nil, err

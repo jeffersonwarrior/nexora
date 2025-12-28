@@ -25,8 +25,8 @@ func TestDetectFastestSummarizer(t *testing.T) {
 		if result.Provider != "cerebras" {
 			t.Errorf("Expected cerebras provider, got: %s", result.Provider)
 		}
-		if result.Model != "llama3.1-8b" {
-			t.Errorf("Expected llama3.1-8b model, got: %s", result.Model)
+		if result.Model != "zai-glm-4.6" {
+			t.Errorf("Expected zai-glm-4.6 model, got: %s", result.Model)
 		}
 	})
 
@@ -44,8 +44,27 @@ func TestDetectFastestSummarizer(t *testing.T) {
 		if result.Provider != "xai" {
 			t.Errorf("Expected xai provider, got: %s", result.Provider)
 		}
-		if result.Model != "grok-3-mini" {
-			t.Errorf("Expected grok-3-mini model, got: %s", result.Model)
+		if result.Model != "grok-4-1-fast" {
+			t.Errorf("Expected grok-4-1-fast model, got: %s", result.Model)
+		}
+	})
+
+	t.Run("Z.AI fallback", func(t *testing.T) {
+		providers := csync.NewMap[string, config.ProviderConfig]()
+		providers.Set("zai", config.ProviderConfig{
+			APIKey: "test-key",
+		})
+
+		cfg := config.Config{
+			Providers: providers,
+		}
+
+		result := DetectFastestSummarizer(cfg)
+		if result.Provider != "zai" {
+			t.Errorf("Expected zai provider, got: %s", result.Provider)
+		}
+		if result.Model != "glm-4.5-flash" {
+			t.Errorf("Expected glm-4.5-flash model, got: %s", result.Model)
 		}
 	})
 
@@ -65,15 +84,27 @@ func TestDetectFastestSummarizer(t *testing.T) {
 }
 
 func TestIsFastSummarizer(t *testing.T) {
-	t.Run("Cerebras llama3.1-8b is fast", func(t *testing.T) {
-		if !IsFastSummarizer("cerebras", "llama3.1-8b") {
-			t.Error("Expected cerebras llama3.1-8b to be considered fast")
+	t.Run("Cerebras zai-glm-4.6 is fast", func(t *testing.T) {
+		if !IsFastSummarizer("cerebras", "zai-glm-4.6") {
+			t.Error("Expected cerebras zai-glm-4.6 to be considered fast")
 		}
 	})
 
-	t.Run("xAI grok-3-mini is fast", func(t *testing.T) {
-		if !IsFastSummarizer("xai", "grok-3-mini") {
-			t.Error("Expected xai grok-3-mini to be considered fast")
+	t.Run("xAI grok-4-1-fast is fast", func(t *testing.T) {
+		if !IsFastSummarizer("xai", "grok-4-1-fast") {
+			t.Error("Expected xai grok-4-1-fast to be considered fast")
+		}
+	})
+
+	t.Run("Z.AI glm-4.5-flash is fast", func(t *testing.T) {
+		if !IsFastSummarizer("zai", "glm-4.5-flash") {
+			t.Error("Expected zai glm-4.5-flash to be considered fast")
+		}
+	})
+
+	t.Run("Synthetic minimax is fast", func(t *testing.T) {
+		if !IsFastSummarizer("synthetic", "minimax/minimax-m2.1") {
+			t.Error("Expected synthetic minimax/minimax-m2.1 to be considered fast")
 		}
 	})
 

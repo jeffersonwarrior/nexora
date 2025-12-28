@@ -21,7 +21,6 @@ import (
 	"github.com/nexora/nexora/internal/env"
 
 	powernapConfig "github.com/charmbracelet/x/powernap/pkg/config"
-	"github.com/nexora/nexora/internal/fsext"
 	"github.com/nexora/nexora/internal/home"
 	"github.com/nexora/nexora/internal/log"
 	"github.com/nexora/nexora/internal/oauth/claude"
@@ -403,11 +402,10 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 	if dataDir != "" {
 		c.Options.DataDirectory = dataDir
 	} else if c.Options.DataDirectory == "" {
-		if path, ok := fsext.LookupClosest(workingDir, defaultDataDirectory); ok {
-			c.Options.DataDirectory = path
-		} else {
-			c.Options.DataDirectory = filepath.Join(workingDir, defaultDataDirectory)
-		}
+		// Use system-wide data directory for database and persistent data
+		// - Linux/macOS: ~/.local/share/nexora/
+		// - Windows: %LOCALAPPDATA%/nexora/
+		c.Options.DataDirectory = GlobalDataDir()
 	}
 	if c.Providers == nil {
 		c.Providers = csync.NewMap[string, ProviderConfig]()
@@ -803,26 +801,41 @@ func GlobalConfig() string {
 	return filepath.Join(home.Dir(), ".config", appName, fmt.Sprintf("%s.json", appName))
 }
 
-// GlobalConfigData returns the path to the main data directory for the application.
-// this config is used when the app overrides configurations instead of updating the global config.
-func GlobalConfigData() string {
+// GlobalDataDir returns the system-wide data directory for the application.
+// This is the canonical location for database and persistent data files.
+// - Linux/macOS: ~/.local/share/nexora/
+// - Windows: %LOCALAPPDATA%/nexora/
+func GlobalDataDir() string {
 	xdgDataHome := os.Getenv("XDG_DATA_HOME")
 	if xdgDataHome != "" {
-		return filepath.Join(xdgDataHome, appName, fmt.Sprintf("%s.json", appName))
+		return filepath.Join(xdgDataHome, appName)
 	}
 
-	// return the path to the main data directory
-	// for windows, it should be in `%LOCALAPPDATA%/nexora/`
-	// for linux and macOS, it should be in `$HOME/.local/share/nexora/`
 	if runtime.GOOS == "windows" {
 		localAppData := os.Getenv("LOCALAPPDATA")
 		if localAppData == "" {
 			localAppData = filepath.Join(os.Getenv("USERPROFILE"), "AppData", "Local")
 		}
-		return filepath.Join(localAppData, appName, fmt.Sprintf("%s.json", appName))
+		return filepath.Join(localAppData, appName)
 	}
 
-	return filepath.Join(home.Dir(), ".local", "share", appName, fmt.Sprintf("%s.json", appName))
+	return filepath.Join(home.Dir(), ".local", "share", appName)
+}
+
+// EnsureGlobalDataDir creates the global data directory if it doesn't exist.
+// Returns the path to the directory.
+func EnsureGlobalDataDir() (string, error) {
+	dir := GlobalDataDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", fmt.Errorf("failed to create data directory %s: %w", dir, err)
+	}
+	return dir, nil
+}
+
+// GlobalConfigData returns the path to the main data directory for the application.
+// this config is used when the app overrides configurations instead of updating the global config.
+func GlobalConfigData() string {
+	return filepath.Join(GlobalDataDir(), fmt.Sprintf("%s.json", appName))
 }
 
 func assignIfNil[T any](ptr **T, val T) {

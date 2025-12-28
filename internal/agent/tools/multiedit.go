@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -135,7 +134,7 @@ func processMultiEditWithCreation(edit editContext, params MultiEditParams, call
 
 	// Create parent directories
 	dir := filepath.Dir(params.FilePath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to create parent directories: %w", err)
 	}
 
@@ -192,7 +191,7 @@ func processMultiEditWithCreation(edit editContext, params MultiEditParams, call
 	}
 
 	// Write the file
-	err := os.WriteFile(params.FilePath, []byte(currentContent), 0o644)
+	err := os.WriteFile(params.FilePath, []byte(currentContent), 0o600)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -205,7 +204,7 @@ func processMultiEditWithCreation(edit editContext, params MultiEditParams, call
 
 	_, err = edit.files.CreateVersion(edit.ctx, sessionID, params.FilePath, currentContent)
 	if err != nil {
-		slog.Error("Error creating file history version", "error", err)
+		return fantasy.ToolResponse{}, fmt.Errorf("error creating file history version: %w", err)
 	}
 
 	recordFileWrite(params.FilePath)
@@ -337,7 +336,7 @@ func processMultiEditExistingFile(edit editContext, params MultiEditParams, call
 	}
 
 	// Write the updated content
-	err = os.WriteFile(params.FilePath, []byte(currentContent), 0o644)
+	err = os.WriteFile(params.FilePath, []byte(currentContent), 0o600)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -354,14 +353,14 @@ func processMultiEditExistingFile(edit editContext, params MultiEditParams, call
 		// User manually changed the content, store an intermediate version
 		_, err = edit.files.CreateVersion(edit.ctx, sessionID, params.FilePath, oldContent)
 		if err != nil {
-			slog.Error("Error creating file history version", "error", err)
+			return fantasy.ToolResponse{}, fmt.Errorf("error creating intermediate file history version: %w", err)
 		}
 	}
 
 	// Store the new version
 	_, err = edit.files.CreateVersion(edit.ctx, sessionID, params.FilePath, currentContent)
 	if err != nil {
-		slog.Error("Error creating file history version", "error", err)
+		return fantasy.ToolResponse{}, fmt.Errorf("error creating file history version: %w", err)
 	}
 
 	recordFileWrite(params.FilePath)

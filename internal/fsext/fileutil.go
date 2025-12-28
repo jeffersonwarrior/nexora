@@ -3,6 +3,7 @@ package fsext
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -90,7 +91,9 @@ func GlobWithDoubleStar(pattern, searchPath string, limit int) ([]string, bool, 
 	}
 	err := fastwalk.Walk(&conf, searchPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			return nil // Skip files we can't access
+			// Skip files we can't access (permission denied, broken symlinks, etc.)
+			slog.Debug("fastwalk: skipping inaccessible path", "path", path, "error", err)
+			return nil
 		}
 
 		if d.IsDir() {
@@ -129,7 +132,14 @@ func GlobWithDoubleStar(pattern, searchPath string, limit int) ([]string, bool, 
 		return nil
 	})
 	if err != nil && !errors.Is(err, filepath.SkipAll) {
-		return nil, false, fmt.Errorf("fastwalk error: %w", err)
+		// Check if the search path itself doesn't exist - this is a hard error
+		if _, statErr := os.Stat(searchPath); os.IsNotExist(statErr) {
+			return nil, false, fmt.Errorf("search path does not exist: %s", searchPath)
+		}
+		// For other errors (permission denied, broken symlinks during walk),
+		// log and continue with partial results
+		slog.Warn("fastwalk encountered errors during walk, returning partial results",
+			"searchPath", searchPath, "error", err)
 	}
 
 	matches := slices.SortedFunc(found.Seq(), func(a, b FileInfo) int {

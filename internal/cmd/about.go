@@ -46,7 +46,7 @@ Repository:
   GitHub:    https://github.com/jeffersonwarrior/nexora
   Releases:  https://github.com/jeffersonwarrior/nexora/releases
 `,
-		version.Version,
+		version.Display(),
 		runtime.GOOS,
 		runtime.GOARCH,
 		runtime.Version(),
@@ -77,7 +77,7 @@ func formatStyledAbout() string {
 		Underline(true)
 
 	// Title
-	title := titleStyle.Render(fmt.Sprintf("Nexora %s", version.Version))
+	title := titleStyle.Render(fmt.Sprintf("Nexora %s", version.Display()))
 	subtitle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render("AI-Powered CLI Agent")
 
 	// Platform info

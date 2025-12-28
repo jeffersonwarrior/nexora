@@ -350,3 +350,266 @@ func TestLongContent(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, longContent, retrieved.Parts)
 }
+
+func TestSessionList(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	q := New(db)
+
+	tests := []struct {
+		name  string
+		id    string
+		title string
+	}{
+		{"first session", "sess-1", "First Session"},
+		{"second session", "sess-2", "Second Session"},
+		{"third session", "sess-3", "Third Session"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := q.CreateSession(ctx, CreateSessionParams{
+				ID:    tt.id,
+				Title: tt.title,
+			})
+			require.NoError(t, err)
+		})
+	}
+
+	// List all sessions
+	sessions, err := q.ListSessions(ctx)
+	require.NoError(t, err)
+	require.Len(t, sessions, 3)
+}
+
+func TestSessionUpdate(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	q := New(db)
+
+	// Create session
+	session, err := q.CreateSession(ctx, CreateSessionParams{
+		ID:    "update-test-session",
+		Title: "Original Title",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Original Title", session.Title)
+
+	// Update session
+	updated, err := q.UpdateSession(ctx, UpdateSessionParams{
+		ID:    session.ID,
+		Title: "Updated Title",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Updated Title", updated.Title)
+	require.Equal(t, session.ID, updated.ID)
+}
+
+func TestSessionDelete(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	q := New(db)
+
+	// Create session
+	session, err := q.CreateSession(ctx, CreateSessionParams{
+		ID:    "delete-test-session",
+		Title: "To Be Deleted",
+	})
+	require.NoError(t, err)
+
+	// Delete session
+	err = q.DeleteSession(ctx, session.ID)
+	require.NoError(t, err)
+
+	// Verify it's gone
+	_, err = q.GetSessionByID(ctx, session.ID)
+	require.Error(t, err)
+}
+
+func TestMessageList(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	q := New(db)
+
+	// Create session
+	session, err := q.CreateSession(ctx, CreateSessionParams{
+		ID:    "message-list-session",
+		Title: "Message List Test",
+	})
+	require.NoError(t, err)
+
+	// Create multiple messages
+	for i := 1; i <= 5; i++ {
+		_, err := q.CreateMessage(ctx, CreateMessageParams{
+			ID:        string(rune('m')) + string(rune('0'+i)),
+			SessionID: session.ID,
+			Role:      "user",
+			Parts:     "Message content",
+		})
+		require.NoError(t, err)
+	}
+
+	// List messages
+	messages, err := q.ListMessagesBySession(ctx, session.ID)
+	require.NoError(t, err)
+	require.Len(t, messages, 5)
+}
+
+func TestQueriesInitialization(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	// Test that Prepare works
+	q, err := Prepare(ctx, db)
+	require.NoError(t, err)
+	require.NotNil(t, q)
+
+	// Test that New works
+	q2 := New(db)
+	require.NotNil(t, q2)
+
+	// Close prepared statements
+	err = q.Close()
+	require.NoError(t, err)
+}
+
+func TestTransactionSupport(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	// Start a transaction
+	tx, err := db.BeginTx(ctx, nil)
+	require.NoError(t, err)
+
+	q := New(tx)
+
+	// Create session in transaction
+	_, err = q.CreateSession(ctx, CreateSessionParams{
+		ID:    "tx-session",
+		Title: "Transaction Test",
+	})
+	require.NoError(t, err)
+
+	// Rollback
+	err = tx.Rollback()
+	require.NoError(t, err)
+
+	// Verify session doesn't exist
+	q2 := New(db)
+	_, err = q2.GetSessionByID(ctx, "tx-session")
+	require.Error(t, err)
+}
+
+func TestBatchOperations(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	q := New(db)
+
+	// Create session
+	session, err := q.CreateSession(ctx, CreateSessionParams{
+		ID:    "batch-session",
+		Title: "Batch Test",
+	})
+	require.NoError(t, err)
+
+	// Create multiple messages in a loop
+	for i := 0; i < 10; i++ {
+		msgID := "msg-" + string(rune('0'+i))
+		_, err := q.CreateMessage(ctx, CreateMessageParams{
+			ID:        msgID,
+			SessionID: session.ID,
+			Role:      "user",
+			Parts:     "Message content",
+		})
+		require.NoError(t, err)
+	}
+
+	// Verify all messages created
+	messages, err := q.ListMessagesBySession(ctx, session.ID)
+	require.NoError(t, err)
+	require.Len(t, messages, 10)
+
+	// Verify session message count updated by trigger
+	retrieved, err := q.GetSessionByID(ctx, session.ID)
+	require.NoError(t, err)
+	require.Equal(t, int64(10), retrieved.MessageCount)
+}
+
+func TestNullableFields(t *testing.T) {
+	ctx := context.Background()
+
+	db, err := sql.Open("sqlite3", ":memory:")
+	require.NoError(t, err)
+	defer db.Close()
+
+	err = createTestSchema(db)
+	require.NoError(t, err)
+
+	q := New(db)
+
+	// Create session with null parent
+	session, err := q.CreateSession(ctx, CreateSessionParams{
+		ID:              "null-test-session",
+		ParentSessionID: sql.NullString{Valid: false},
+		Title:           "Null Test",
+	})
+	require.NoError(t, err)
+	require.False(t, session.ParentSessionID.Valid)
+
+	// Create session with parent
+	child, err := q.CreateSession(ctx, CreateSessionParams{
+		ID:              "child-session",
+		ParentSessionID: sql.NullString{String: session.ID, Valid: true},
+		Title:           "Child Session",
+	})
+	require.NoError(t, err)
+	require.True(t, child.ParentSessionID.Valid)
+	require.Equal(t, session.ID, child.ParentSessionID.String)
+}

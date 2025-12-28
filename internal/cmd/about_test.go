@@ -26,7 +26,7 @@ func TestAboutCommand_Executes(t *testing.T) {
 }
 
 func TestAboutCommand_ContainsVersion(t *testing.T) {
-	// Test output includes version string
+	// Test output includes version string (using Display() which strips pseudo-version)
 	var buf bytes.Buffer
 	cmd := &cobra.Command{
 		Use: "test",
@@ -38,7 +38,7 @@ func TestAboutCommand_ContainsVersion(t *testing.T) {
 	cmd.Run(cmd, []string{})
 
 	output := buf.String()
-	require.Contains(t, output, version.Version)
+	require.Contains(t, output, version.Display())
 	require.Contains(t, output, "Nexora")
 }
 

@@ -103,6 +103,12 @@ install-tools:
 version:
 	@echo $(VERSION)
 
+# Run static analysis with staticcheck
+.PHONY: lint
+lint:
+	@which staticcheck > /dev/null || (echo "staticcheck not installed. Run: go install honnef.co/go/tools/cmd/staticcheck@latest" && exit 1)
+	staticcheck ./...
+
 # Help
 .PHONY: help
 help:
@@ -119,5 +125,6 @@ help:
 	@echo "  test-limited - Run tests with resource limits (memory/CPU)"
 	@echo "  test-qa-limited - Run QA tests with resource limits"
 	@echo "  install-tools- Install development tools"
+	@echo "  lint         - Run static analysis with staticcheck"
 	@echo "  version      - Show version"
 	@echo "  help         - Show this help"

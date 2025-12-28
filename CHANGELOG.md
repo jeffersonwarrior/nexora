@@ -1,3 +1,45 @@
+## [0.29.3] - 2025-12-28 - **Production Polish & CLI Enhancements**
+
+### ✨ New Features
+- **`nexora about`** - Display version, platform info, community links, and license
+- **Version display in help** - `nexora --help` now shows version at the top
+- **Clean version format** - Strips pseudo-version suffixes (e.g., `-0.20251228+dirty` → `v0.29.3`)
+- **Unified command palette** - User commands now appear alongside system commands when typing `/`
+- **Ctrl+E to edit API key** - Quick edit shortcut in models dialog
+
+### 🔧 Improvements
+- **install.sh** - Dynamically pulls version from `version.go` instead of hardcoded value
+- **Command display** - Removed `user:` prefix from user commands for cleaner display
+- **GitHub link** - Added repository URL to `nexora --help` output
+
+### 📦 Files
+- Created: `internal/cmd/about.go` - About command implementation
+- Modified: `internal/version/version.go` - Added `Display()` function for clean versions
+- Modified: `internal/cmd/root.go` - Dynamic help with version, removed EXAMPLES section
+- Modified: `internal/tui/components/dialogs/commands/commands.go` - Unified command list
+- Modified: `internal/tui/components/dialogs/models/models.go` - Ctrl+E key binding
+
+### 🧪 Test Coverage
+- Added tests for `version.Display()` function
+- Added tests for root command help output (version, GitHub link, no examples)
+- Updated command dialog tests for combined user/system commands
+- Updated models dialog tests for Ctrl+E key binding
+
+---
+
+## [0.29.2] - 2025-12-27 - **MiniMax M2.1 & Multi-Provider Support**
+
+### ✨ New Features
+- **MiniMax M2.1** - Added MiniMax provider with Kimi model support
+- **Synthetic provider** - New synthetic model provider for testing
+- **Windows support** - Improved cross-platform compatibility
+
+### 🔧 Improvements
+- **TMUX fixes** - Resolved session management issues
+- **API key validation** - Better handling of MiniMax key format
+
+---
+
 ## [0.29.1-RC1] - 2025-12-26 - **Tool Consolidation & Natural Language Support**
 
 ### 🎯 Tool Aliasing System

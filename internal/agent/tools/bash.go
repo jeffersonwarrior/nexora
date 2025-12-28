@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -69,10 +70,30 @@ var bashDescriptionTpl = template.Must(
 )
 
 type bashDescriptionData struct {
-	BannedCommands  string
-	MaxOutputLength int
-	Attribution     config.Attribution
-	ModelName       string
+	BannedCommands   string
+	MaxOutputLength  int
+	ScrollbackLines  int
+	TerminalInfo     string
+	Attribution      config.Attribution
+	ModelName        string
+}
+
+const defaultScrollbackLines = 10000 // typical terminal scrollback
+
+// getTerminalInfo returns terminal dimensions as "COLSxROWS" or "unknown"
+func getTerminalInfo() string {
+	cols := os.Getenv("COLUMNS")
+	rows := os.Getenv("LINES")
+	if cols != "" && rows != "" {
+		return cols + "x" + rows
+	}
+	// Try tput if env vars not set
+	if colsOut, err := exec.Command("tput", "cols").Output(); err == nil {
+		if rowsOut, err := exec.Command("tput", "lines").Output(); err == nil {
+			return strings.TrimSpace(string(colsOut)) + "x" + strings.TrimSpace(string(rowsOut))
+		}
+	}
+	return "unknown"
 }
 
 var bannedCommands = []string{}
@@ -122,10 +143,12 @@ func bashDescription(attribution *config.Attribution, modelName string) string {
 	bannedCommandsStr := strings.Join(bannedCommands, ", ")
 	var out bytes.Buffer
 	if err := bashDescriptionTpl.Execute(&out, bashDescriptionData{
-		BannedCommands:  bannedCommandsStr,
-		MaxOutputLength: MaxOutputLength,
-		Attribution:     *attribution,
-		ModelName:       modelName,
+		BannedCommands:   bannedCommandsStr,
+		MaxOutputLength:  MaxOutputLength,
+		ScrollbackLines:  defaultScrollbackLines,
+		TerminalInfo:     getTerminalInfo(),
+		Attribution:      *attribution,
+		ModelName:        modelName,
 	}); err != nil {
 		// this should never happen.
 		panic("failed to execute bash description template: " + err.Error())
@@ -561,8 +584,12 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 	// Detect sleep commands and wait appropriately
 	waitDuration := detectSleepDuration(params.Command)
 	if waitDuration > 0 {
-		// Add small buffer for command overhead
-		time.Sleep(waitDuration + 200*time.Millisecond)
+		// Deduct 2 seconds for TMUX send/receive timing overhead, then add small buffer
+		// The TMUX command dispatch has ~2s latency that needs compensation
+		adjustedWait := waitDuration - 2*time.Second + 200*time.Millisecond
+		if adjustedWait > 0 {
+			time.Sleep(adjustedWait)
+		}
 	} else {
 		// Small delay to allow TMUX to execute the command
 		time.Sleep(100 * time.Millisecond)

@@ -34,6 +34,7 @@ import (
 	"github.com/nexora/nexora/internal/tui/components/dialogs/filepicker"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/models"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/reasoning"
+	"github.com/nexora/nexora/internal/tui/components/dialogs/settings"
 	"github.com/nexora/nexora/internal/tui/page"
 	"github.com/nexora/nexora/internal/tui/styles"
 	"github.com/nexora/nexora/internal/tui/util"
@@ -239,6 +240,12 @@ func (p *chatPage) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 		u, cmd := p.editor.Update(msg)
 		p.editor = u.(editor.Editor)
 		return p, cmd
+	case chat.IdleMsg:
+		// User has been idle - trigger background compaction
+		if p.app.BackgroundCompactor != nil && msg.SessionID != "" {
+			p.app.BackgroundCompactor.OnIdle(msg.SessionID)
+		}
+		return p, nil
 	case chat.SendMsg:
 		return p, p.sendMessage(msg.Text, msg.Attachments)
 	case chat.SessionSelectedMsg:
@@ -265,6 +272,8 @@ func (p *chatPage) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 		return p, p.openReasoningDialog()
 	case reasoning.ReasoningEffortSelectedMsg:
 		return p, p.handleReasoningEffortSelected(msg.Effort)
+	case settings.OpenSettingsMsg:
+		return p, p.openSettingsDialog()
 	case commands.OpenExternalEditorMsg:
 		u, cmd := p.editor.Update(msg)
 		p.editor = u.(editor.Editor)
@@ -321,8 +330,20 @@ func (p *chatPage) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 		return p, tea.Batch(cmds...)
-	case pubsub.Event[message.Message],
-		anim.StepMsg,
+	case pubsub.Event[message.Message]:
+		// Route message events to appropriate components
+		if p.focusedPane == PanelTypeSplash {
+			u, cmd := p.splash.Update(msg)
+			p.splash = u.(splash.Splash)
+			cmds = append(cmds, cmd)
+		} else {
+			u, cmd := p.chat.Update(msg)
+			p.chat = u.(chat.MessageListCmp)
+			cmds = append(cmds, cmd)
+		}
+
+		return p, tea.Batch(cmds...)
+	case anim.StepMsg,
 		spinner.TickMsg:
 		if p.focusedPane == PanelTypeSplash {
 			u, cmd := p.splash.Update(msg)
@@ -382,6 +403,8 @@ func (p *chatPage) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 		return p, p.newSession()
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, p.keyMap.OpenSettings):
+			return p, util.CmdHandler(settings.OpenSettingsMsg{})
 		case key.Matches(msg, p.keyMap.NewSession):
 			// if we have no agent do nothing
 			if p.app.AgentCoordinator == nil {
@@ -538,6 +561,7 @@ func (p *chatPage) View() string {
 		)
 		layers = append(layers, lipgloss.NewLayer(details).X(1).Y(1))
 	}
+
 	canvas := lipgloss.NewCanvas(
 		layers...,
 	)
@@ -600,6 +624,14 @@ func (p *chatPage) openReasoningDialog() tea.Cmd {
 			}
 		}
 		return nil
+	}
+}
+
+func (p *chatPage) openSettingsDialog() tea.Cmd {
+	return func() tea.Msg {
+		return dialogs.OpenDialogMsg{
+			Model: settings.NewSettingsDialog(p.app),
+		}
 	}
 }
 

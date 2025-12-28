@@ -107,7 +107,7 @@ func executeSmartEdit(edit smartEditContext, params SmartEditParams) (fantasy.To
 	newContent := strings.Join(newLines, "\n")
 
 	// Write back
-	err = os.WriteFile(params.FilePath, []byte(newContent), 0o644)
+	err = os.WriteFile(params.FilePath, []byte(newContent), 0o600)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -87,7 +86,7 @@ func NewWriteTool(lspClients *csync.Map[string, *lsp.Client], permissions permis
 			}
 
 			dir := filepath.Dir(filePath)
-			if err = os.MkdirAll(dir, 0o755); err != nil {
+			if err = os.MkdirAll(dir, 0o700); err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error creating directory: %w", err)
 			}
 
@@ -129,7 +128,7 @@ func NewWriteTool(lspClients *csync.Map[string, *lsp.Client], permissions permis
 				return fantasy.ToolResponse{}, permission.ErrorPermissionDenied
 			}
 
-			err = os.WriteFile(filePath, []byte(params.Content), 0o644)
+			err = os.WriteFile(filePath, []byte(params.Content), 0o600)
 			if err != nil {
 				return fantasy.ToolResponse{}, fmt.Errorf("error writing file: %w", err)
 			}
@@ -147,13 +146,13 @@ func NewWriteTool(lspClients *csync.Map[string, *lsp.Client], permissions permis
 				// User Manually changed the content store an intermediate version
 				_, err = files.CreateVersion(ctx, sessionID, filePath, oldContent)
 				if err != nil {
-					slog.Error("Error creating file history version", "error", err)
+					return fantasy.ToolResponse{}, fmt.Errorf("error creating intermediate file history version: %w", err)
 				}
 			}
 			// Store the new version
 			_, err = files.CreateVersion(ctx, sessionID, filePath, params.Content)
 			if err != nil {
-				slog.Error("Error creating file history version", "error", err)
+				return fantasy.ToolResponse{}, fmt.Errorf("error creating file history version: %w", err)
 			}
 
 			recordFileWrite(filePath)

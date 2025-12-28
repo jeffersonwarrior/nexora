@@ -31,6 +31,7 @@ import (
 	"github.com/nexora/nexora/internal/tui/components/dialogs/permissions"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/quit"
 	"github.com/nexora/nexora/internal/tui/components/dialogs/sessions"
+	"github.com/nexora/nexora/internal/tui/components/dialogs/settings"
 	"github.com/nexora/nexora/internal/tui/page"
 	"github.com/nexora/nexora/internal/tui/page/chat"
 	"github.com/nexora/nexora/internal/tui/styles"
@@ -574,6 +575,30 @@ func (a *appModel) handleKeyPressMsg(msg tea.KeyPressMsg) tea.Cmd {
 			},
 		)
 		return tea.Sequence(cmds...)
+	case key.Matches(msg, a.keyMap.Settings):
+		// if the app is not configured show no settings
+		if !a.isConfigured {
+			return nil
+		}
+		if a.dialog.ActiveDialogID() == settings.SettingsDialogID {
+			return util.CmdHandler(dialogs.CloseDialogMsg{})
+		}
+		if a.dialog.HasDialogs() {
+			return nil
+		}
+		return util.CmdHandler(dialogs.OpenDialogMsg{
+			Model: settings.NewSettingsDialog(a.app),
+		})
+	case key.Matches(msg, a.keyMap.About):
+		if a.dialog.ActiveDialogID() == about.AboutDialogID {
+			return util.CmdHandler(dialogs.CloseDialogMsg{})
+		}
+		if a.dialog.HasDialogs() {
+			return nil
+		}
+		return util.CmdHandler(dialogs.OpenDialogMsg{
+			Model: about.NewAboutDialog(),
+		})
 	case key.Matches(msg, a.keyMap.Suspend):
 		if a.app.AgentCoordinator != nil && a.app.AgentCoordinator.IsBusy() {
 			return util.ReportWarn("Agent is busy, please wait...")

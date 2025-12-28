@@ -33,7 +33,7 @@
 curl -fsSL https://nexora.land/install.sh | sh
 
 # Or build from source
-git clone https://github.com/nexora/nexora.git && cd nexora
+git clone https://github.com/jeffersonwarrior/nexora.git && cd nexora
 make build && make setup
 
 # First run launches TUI for setup
@@ -224,8 +224,8 @@ export ANTHROPIC_API_KEY="your-key"
 ## 🤝 Contributing
 
 ```bash
-git clone https://github.com/nexora/nexora.git
-cd cli
+git clone https://github.com/jeffersonwarrior/nexora.git
+cd nexora
 make build test-qa setup
 nexora chat  # Test your changes!
 ```
@@ -243,7 +243,7 @@ Built by **Jefferson Nunn** with the help of:
 
 ---
 
-**v0.29.0** - **Intelligent agent management** with **adaptive resource monitoring**, **self-healing execution**, and **local model improvements**.
+**v0.29.3** - **Production-ready CLI** with **version display**, **about command**, **task/checkpoint system**, and **unified command palette**.
 ## 📺 TMUX Integration
 
 Nexora supports **persistent TMUX sessions** for AI-driven interactive terminal workflows.

@@ -106,3 +106,12 @@ NEXORA.*.md
 # External dependencies directory
 external-deps/
 context-engine/
+
+# Codebase indexing cache (context-engine)
+.codebase/
+
+# Claude orchestrator state (transient)
+.claude/orchestrator/
+
+# Claude Code instructions (use NEXORA.md instead)
+CLAUDE.md

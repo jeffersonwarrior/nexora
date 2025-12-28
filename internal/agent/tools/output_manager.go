@@ -144,7 +144,7 @@ func truncateToTokenLimit(content string, maxTokens int) string {
 func writeToTmpFile(content string, toolName string, workingDir string, sessionID string) (string, error) {
 	// Create session-scoped tmp directory
 	tmpDir := filepath.Join(workingDir, "nexora-output-"+sessionID)
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+	if err := os.MkdirAll(tmpDir, 0o700); err != nil {
 		return "", fmt.Errorf("failed to create tmp directory: %w", err)
 	}
 	
@@ -155,7 +155,7 @@ func writeToTmpFile(content string, toolName string, workingDir string, sessionI
 	tmpPath := filepath.Join(tmpDir, filename)
 	
 	// Write content
-	if err := os.WriteFile(tmpPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(tmpPath, []byte(content), 0o600); err != nil {
 		return "", fmt.Errorf("failed to write tmp file: %w", err)
 	}
 	

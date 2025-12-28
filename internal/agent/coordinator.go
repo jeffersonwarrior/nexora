@@ -126,9 +126,10 @@ type coordinator struct {
 	history         history.Service
 	lspClients      *csync.Map[string, *lsp.Client]
 	aiops           aiops.Ops
-	sessionLog      *sessionlog.Manager
-	resourceMonitor *resources.Monitor
-	delegatePool    *delegation.Pool
+	sessionLog         *sessionlog.Manager
+	resourceMonitor    *resources.Monitor
+	delegatePool       *delegation.Pool
+	backgroundCompactor *BackgroundCompactor
 
 	currentAgent SessionAgent
 	agents       map[string]SessionAgent
@@ -147,18 +148,20 @@ func NewCoordinator(
 	aiops aiops.Ops,
 	sessionLog *sessionlog.Manager,
 	resourceMonitor *resources.Monitor,
+	backgroundCompactor *BackgroundCompactor,
 ) (Coordinator, error) {
 	c := &coordinator{
-		cfg:             cfg,
-		sessions:        sessions,
-		messages:        messages,
-		permissions:     permissions,
-		history:         history,
-		lspClients:      lspClients,
-		aiops:           aiops,
-		sessionLog:      sessionLog,
-		resourceMonitor: resourceMonitor,
-		agents:          make(map[string]SessionAgent),
+		cfg:                 cfg,
+		sessions:            sessions,
+		messages:            messages,
+		permissions:         permissions,
+		history:             history,
+		lspClients:          lspClients,
+		aiops:               aiops,
+		sessionLog:          sessionLog,
+		resourceMonitor:     resourceMonitor,
+		backgroundCompactor: backgroundCompactor,
+		agents:              make(map[string]SessionAgent),
 	}
 
 	agentCfg, ok := cfg.Agents[config.AgentCoder]
@@ -389,16 +392,16 @@ func (c *coordinator) buildAgent(ctx context.Context, prompt *prompt.Prompt, age
 
 	largeProviderCfg, _ := c.cfg.Providers.Get(large.ModelCfg.Provider)
 	result := NewSessionAgent(SessionAgentOptions{
-		LargeModel:         large,
-		SmallModel:         small,
-		SystemPromptPrefix: largeProviderCfg.SystemPromptPrefix,
-		SystemPrompt:       systemPrompt,
-		Sessions:           c.sessions,
-		Messages:           c.messages,
-
-		Tools:           nil,
-		AIOPS:           c.aiops,
-		ResourceMonitor: c.resourceMonitor,
+		LargeModel:          large,
+		SmallModel:          small,
+		SystemPromptPrefix:  largeProviderCfg.SystemPromptPrefix,
+		SystemPrompt:        systemPrompt,
+		Sessions:            c.sessions,
+		Messages:            c.messages,
+		Tools:               nil,
+		AIOPS:               c.aiops,
+		ResourceMonitor:     c.resourceMonitor,
+		BackgroundCompactor: c.backgroundCompactor,
 	})
 	c.readyWg.Go(func() error {
 		defer func() {

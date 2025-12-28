@@ -28,6 +28,12 @@ type SendMsg struct {
 	Attachments []message.Attachment
 }
 
+// IdleMsg is sent when user has been idle (not typing) for a threshold duration.
+// Used to trigger background operations like compaction.
+type IdleMsg struct {
+	SessionID string
+}
+
 type SessionSelectedMsg = session.Session
 
 type SessionClearedMsg struct{}

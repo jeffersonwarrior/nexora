@@ -54,6 +54,11 @@ type checkpointService struct {
 	config CheckpointConfig
 }
 
+// CheckpointServiceImpl exposes internal methods for testing
+type CheckpointServiceImpl struct {
+	*checkpointService
+}
+
 // NewCheckpointService creates a new checkpoint service
 func NewCheckpointService(q db.Querier) CheckpointService {
 	return &checkpointService{
@@ -66,6 +71,21 @@ func NewCheckpointService(q db.Querier) CheckpointService {
 			CompressionLevel: 6,
 		},
 	}
+}
+
+// NewCheckpointServiceImpl creates a CheckpointServiceImpl for testing
+func NewCheckpointServiceImpl(q db.Querier) *CheckpointServiceImpl {
+	svc := &checkpointService{
+		q: q,
+		config: CheckpointConfig{
+			Enabled:          true,
+			TokenThreshold:   50000,
+			IntervalSeconds:  300,
+			MaxCheckpoints:   10,
+			CompressionLevel: 6,
+		},
+	}
+	return &CheckpointServiceImpl{checkpointService: svc}
 }
 
 // SetConfig updates the checkpoint configuration
@@ -291,4 +311,31 @@ func (s *checkpointService) fromDBCheckpoint(dbcp db.Checkpoint) Checkpoint {
 		State:        dbcp.State,
 		Compressed:   dbcp.Compressed,
 	}
+}
+
+// Exported methods for testing
+
+// SerializeSession exposes serializeSession for testing
+func (s *CheckpointServiceImpl) SerializeSession(session *Session) ([]byte, error) {
+	return s.checkpointService.serializeSession(session)
+}
+
+// DeserializeSession exposes deserializeSession for testing
+func (s *CheckpointServiceImpl) DeserializeSession(data []byte) (*Session, error) {
+	return s.checkpointService.deserializeSession(data)
+}
+
+// CompressData exposes compressData for testing
+func (s *CheckpointServiceImpl) CompressData(data []byte, level int) ([]byte, error) {
+	return s.checkpointService.compressData(data, level)
+}
+
+// DecompressData exposes decompressData for testing
+func (s *CheckpointServiceImpl) DecompressData(data []byte) ([]byte, error) {
+	return s.checkpointService.decompressData(data)
+}
+
+// HashData exposes hashData for testing
+func (s *CheckpointServiceImpl) HashData(data []byte) string {
+	return s.checkpointService.hashData(data)
 }

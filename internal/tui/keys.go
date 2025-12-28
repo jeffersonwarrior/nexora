@@ -12,6 +12,7 @@ type KeyMap struct {
 	Models   key.Binding
 	Sessions key.Binding
 	Settings key.Binding
+	About    key.Binding
 
 	pageBindings []key.Binding
 }
@@ -45,6 +46,10 @@ func DefaultKeyMap() KeyMap {
 		Settings: key.NewBinding(
 			key.WithKeys("ctrl+,"),
 			key.WithHelp("ctrl+,", "settings"),
+		),
+		About: key.NewBinding(
+			key.WithKeys("ctrl+i"),
+			key.WithHelp("ctrl+i", "about"),
 		),
 	}
 }

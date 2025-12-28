@@ -8,6 +8,9 @@
 **4. FULL IMPLEMENTATION**: Complete tasks end-to-end, no partial work.
 **5. CONCISE COMMUNICATION**: Under 4 lines unless explaining complex changes.
 **6. MINIMAL DOCUMENTATION**: Only create documents when explicitly requested or absolutely necessary. Prefer updating existing docs over creating new ones.
+**7. NEVER DELETE TESTS**: Fix code, don't delete tests to make builds pass.
+**8. NEVER USE t.Skip()**: Without explicit user approval - skipping hides bugs.
+**9. NEVER REDUCE TEST COUNT**: Tests can only be added, never removed.
 
 ## 📚 Documentation References **(CRITICAL: MINIMAL CREATION POLICY)**
 

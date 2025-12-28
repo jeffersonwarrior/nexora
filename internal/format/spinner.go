@@ -97,12 +97,5 @@ type SpinnerInterface interface {
 
 // NewSpinnerInterface creates a new spinner using the native implementation by default
 func NewSpinnerInterface(ctx context.Context, cancel context.CancelFunc, settings Settings) SpinnerInterface {
-	nativeSettings := NativeSettings{
-		Size:       settings.Size,
-		Label:      settings.Label,
-		LabelColor: settings.LabelColor,
-		ColorStart: settings.ColorStart,
-		ColorEnd:   settings.ColorEnd,
-	}
-	return NewNativeSpinner(ctx, cancel, nativeSettings)
+	return NewNativeSpinner(ctx, cancel, NativeSettings(settings))
 }

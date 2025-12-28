@@ -1,6 +1,7 @@
 package zai
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -195,7 +196,7 @@ func TestManager(t *testing.T) {
 		assert.Contains(t, status.Message, "ZAI_API_KEY not set")
 
 		// Try to start
-		err := manager.Start(nil)
+		err := manager.Start(context.TODO())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "ZAI_API_KEY environment variable is required")
 	})
@@ -215,7 +216,7 @@ func TestManager(t *testing.T) {
 		assert.Contains(t, err.Error(), "not initialized")
 
 		// Start manager
-		err = manager.Start(nil)
+		err = manager.Start(context.TODO())
 		// Note: This will fail in mock mode, but we can still test the structure
 		// In a real environment with proper MCP server, this would succeed
 		if err != nil {

@@ -1,63 +1,123 @@
 # Nexora Roadmap
 
-**Current Version:** v0.29.1-RC1
-**Status:** See NEXORA.0.29.2.12.26.md for complete roadmap
+**Current Version:** v0.29.3
+**Release Date:** 2025-12-28
+**Status:** Production Ready
 
 ---
 
 ## Quick Reference
 
-All release planning consolidated in: **NEXORA.0.29.2.12.26.md**
-
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v0.29.1-RC1** | Bug fixes, test coverage, tool consolidation | In Progress (Phases 0-2 complete) |
-| **v0.29.2** | MiniMax M2.1, Synthetic provider, TMUX fixes, Windows support | ✅ Released |
-| **v0.29.3** | About command, task graph enrichment + checkpoints | Planned |
-| **v0.29.4** | sqlite3vfshttp, A2A + ACP communication | Planned |
-| **v0.29.5** | Protocol composition + conflict resolution | Planned |
-| **v3.0** | ModelScan integration + VNC/Docker dual-mode | Planned |
+| **v0.29.3** | About command, version display, unified command palette, CLI enhancements | ✅ Released |
+| **v0.29.4** | Project management, A2A communication, code memory | Planned |
+| **v0.29.5** | Protocol composition, conflict resolution | Planned |
+| **v3.0** | ModelScan integration, VNC/Docker dual-mode | Planned |
 
 ---
 
-## Current Work: v0.29.1-RC1
+## v0.29.3 Release (Current)
 
-**Status Documents:**
-- Roadmap: `NEXORA.29.1-RC1.12.25.md` (in archives/historical-docs/)
-- Audit: `RC1-AUDIT-REPORT.md`
-- VCR Strategy: `VCR_TEST_STRATEGY.md`
+**Released:** 2025-12-28
 
-**Progress:**
-- Phase 0 (Pre-flight): ✅ Complete
-- Phase 1 (Critical Fixes): ✅ Complete
-- Phase 2 (High Priority Fixes): ✅ Complete
-- Phase 3 (Test Coverage): ⚠️ **Functionally Complete with Limitations**
-- Phase 4 (Tool Consolidation): ⏳ Pending
-- Phase 5 (TUI Enhancements): ⏳ Pending
+### Completed Features
 
-**Phase 3 Assessment:**
+1. **About Command** (`nexora about`)
+   - Display version, platform info, community links, license
+   - See: `internal/cmd/about.go`
 
-✅ **Achieved:**
-- Session title generation fix implemented (agent.go:540)
-- New test added: `TestTitleGenerationForNewSession`
-- VCR cassettes recorded for all 4 providers
-- Non-VCR test packages stable (session: 88.3%, config: 49.7%, db: 32.0%)
-- Overall coverage: 29.4%
+2. **Version Display**
+   - Clean version format in help output
+   - Strips pseudo-version suffixes (e.g., `-0.20251228+dirty` 	 `v0.29.3`)
+   - See: `internal/version/version.go`
 
-⚠️ **Limitations (Documented):**
-- VCR tests have inherent flakiness due to non-deterministic request matching
-- Anthropic: 100% reliable
-- OpenAI: 100% reliable
-- OpenRouter: 93% reliable (1 flaky test)
-- ZAI: 50% reliable (7 flaky tests)
-- Total reliable agent tests: 28/56 = 50%
+3. **Unified Command Palette**
+   - User commands appear alongside system commands when typing `/`
+   - See: `internal/tui/components/dialogs/commands/commands.go`
 
-📋 **Decision:**
-Accept current state as "Phase 3 complete" with documented VCR limitations. Focus CI on stable tests, proceed to Phase 4.
+4. **Ctrl+E to Edit API Key**
+   - Quick edit shortcut in models dialog
+   - See: `internal/tui/components/dialogs/models/models.go`
 
-**See Also:**
-- `VCR_TEST_STRATEGY.md` - Known flaky tests and mitigation
-- `TESTING_PROGRESS_REPORT.md` - Detailed progress tracking
+5. **Tool Aliasing (47 aliases)**
+   - curl/wget 	 fetch, read/cat/open 	 view, dir 	 ls
+   - modify/change/replace/update 	 edit, create/make/new 	 write
+   - search/find/rg 	 grep, shell/exec/execute/run/command 	 bash
+   - And more...
+
+6. **Smart Fetch**
+   - MCP auto-routing, context-aware handling
+   - Session-scoped tmp files, automatic cleanup
+
+7. **Bash TMUX Integration**
+   - Persistent shell sessions
+   - Session continuation via ShellID parameter
+   - job_kill/job_output aliased to bash
+
+8. **Bash Safety Blockers**
+   - Destructive command protection (rm -rf, etc.)
+   - Process kill protection (nexora, tmux processes)
+   - Disk format/wipe protection
+   - Fork bomb detection
+   - 35 safety tests (all pass)
+
+### Build & Test Status
+
+```bash
+go build .                    # Clean build
+go test ./internal/version/... # All version tests pass
+go test ./internal/config/...  # All config tests pass
+go test ./internal/session/... # All session tests pass
+All tool tests passing with -race flag
+```
+
+---
+
+## v0.29.4 Planned Features
+
+### Project Management & Per-Project Database
+- Enable nexora to work on projects from any directory
+- Project-scoped database with projects table
+- CLI commands: `nexora project add/list/set/rm`
+
+### Code Memory (Vector-Indexed Codebase)
+- Integrate vector memory system for semantic code understanding
+- Intercept grep/search tool calls and route to vector search first
+- Auto-sync code changes to vector index
+- CLI commands: `nexora index --status/--watch/--clear`
+
+### A2A + ACP Communication
+- Agent-to-agent communication protocol
+- Agent-control-plane communication layer
+
+---
+
+## v0.29.5 Planned Features
+
+### Protocol Composition & Conflict Resolution
+- Detect conflicting operations across agents
+- Merge/sequence operations automatically
+- Multi-agent workflow composition
+- Priority-based conflict resolution
+
+---
+
+## v3.0 Future Vision
+
+### ModelScan Integration
+- Built-in tool for validating AI provider APIs
+- Direct API validation, model discovery, capability detection
+- Multiple export formats (SQLite, Markdown reports)
+
+### VNC/Docker Dual-Mode
+- Visual terminal mode via VNC
+- Docker-based isolated execution
+- Enhanced security for untrusted code
+
+---
+
+*Last Updated: 2025-12-28*
 
 ---
 
@@ -629,6 +689,80 @@ ALTER TABLE sessions ADD COLUMN project_id INTEGER REFERENCES projects(id);
 - [ ] Backward compatibility (CWD fallback)
 - [ ] Remote URL support in schema
 - [ ] All existing tests pass
+
+---
+
+### Feature: Code Memory (Vector-Indexed Codebase)
+
+**Goal:** Integrate vector memory system for intelligent code understanding and retrieval
+
+**Problem:**
+- Grep/search operations are slow on large codebases
+- No semantic understanding of code relationships
+- Manual context gathering for AI assistance
+- Code changes not reflected in AI's understanding
+
+**Solution:**
+- Index codebase into vector memory on project initialization
+- Intercept grep/search tool calls and route to vector search first
+- Auto-sync code changes to vector index
+- Leverage existing claude-mem/context-engine MCP servers
+
+**Implementation:**
+
+1. **Code Indexer** (`internal/indexer/`)
+   - Parse source files into semantic chunks (functions, classes, modules)
+   - Generate embeddings via local model or API
+   - Store in Qdrant via context-engine MCP
+   - Track file hashes for incremental updates
+
+2. **Search Interception** (`internal/agent/tools/`)
+   - Wrap grep/rg tool to check vector memory first
+   - Fall back to filesystem grep if vector search insufficient
+   - Blend results: vector (semantic) + grep (exact match)
+   - Return ranked, deduplicated results
+
+3. **Auto-Sync Daemon**
+   - Watch for file changes (fsnotify)
+   - Debounced re-indexing of modified files
+   - Background goroutine, non-blocking
+   - Configurable watch patterns (respect .gitignore)
+
+4. **CLI Commands**
+   - `nexora index` - Force full reindex
+   - `nexora index --status` - Show index stats
+   - `nexora index --watch` - Start file watcher
+   - `nexora index --clear` - Clear vector index
+
+**Integration Points:**
+- Use `context-engine-indexer` MCP for Qdrant operations
+- Use `context-engine-memory` MCP for semantic search
+- Hook into existing grep tool dispatch in `agent.go`
+- Store index metadata in projects table
+
+**Configuration:**
+```yaml
+code_memory:
+  enabled: true
+  auto_index: true
+  watch_files: true
+  exclude_patterns:
+    - "vendor/**"
+    - "node_modules/**"
+    - "*.min.js"
+  chunk_size: 500  # tokens per chunk
+  overlap: 50      # token overlap between chunks
+```
+
+**Success Criteria:**
+- [ ] Code indexed on project init/first run
+- [ ] Grep calls check vector memory first
+- [ ] File changes trigger incremental reindex
+- [ ] CLI commands for index management
+- [ ] Semantic search returns relevant code spans
+- [ ] Performance: vector search < 100ms
+- [ ] Fallback to filesystem grep works
+- [ ] All existing grep tests pass
 
 ---
 

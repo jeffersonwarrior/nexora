@@ -541,7 +541,12 @@ func (e *EmbeddingEngine) createEmbeddingText(symbol Symbol) string {
 			parts = append(parts, "Methods: "+strings.Join(symbol.Methods, ", "))
 		}
 	case "var", "const":
-		parts = append(parts, fmt.Sprintf("Type: %s", strings.Title(symbol.Type)))
+		// Capitalize first letter of type
+		symbolType := symbol.Type
+		if len(symbolType) > 0 {
+			symbolType = strings.ToUpper(symbolType[:1]) + symbolType[1:]
+		}
+		parts = append(parts, fmt.Sprintf("Type: %s", symbolType))
 	}
 
 	// Add package context

@@ -31,6 +31,14 @@ import (
 )
 
 func init() {
+	// Set Long description with version at top
+	rootCmd.Long = fmt.Sprintf(`Nexora %s - Terminal-based AI assistant for software development.
+
+Provides an interactive chat interface with AI capabilities, code analysis, and LSP integration
+to assist developers in writing, debugging, and understanding code directly from the terminal.
+
+For more information, visit our GitHub at https://github.com/jeffersonwarrior/nexora`, version.Display())
+
 	rootCmd.PersistentFlags().StringP("cwd", "c", "", "Current working directory")
 	rootCmd.PersistentFlags().StringP("data-dir", "D", "", "Custom nexora data directory")
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "Debug")
@@ -51,37 +59,13 @@ func init() {
 		resetCmd,
 		tasksCmd,
 		checkpointCmd,
+		installCmd,
 	)
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "nexora",
 	Short: "Terminal-based AI assistant for software development",
-	Long: `Nexora is a powerful terminal-based AI assistant that helps with software development tasks.
-It provides an interactive chat interface with AI capabilities, code analysis, and LSP integration
-to assist developers in writing, debugging, and understanding code directly from the terminal.`,
-	Example: `
-# Run in interactive mode
-nexora
-
-# Run with debug logging
-nexora -d
-
-# Run with debug logging in a specific directory
-nexora -d -c /path/to/project
-
-# Run with custom data directory
-nexora -D /path/to/custom/.nexora
-
-# Print version
-nexora -v
-
-# Run a single non-interactive prompt
-nexora run "Explain the use of context in Go"
-
-# Run in dangerous mode (auto-accept all permissions)
-nexora -y
-  `,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Ensure working directory is set correctly for all commands
 		_, err := ResolveCwd(cmd)
@@ -177,7 +161,7 @@ func Execute() error {
 	if err := fang.Execute(
 		context.Background(),
 		rootCmd,
-		fang.WithVersion(version.Version),
+		fang.WithVersion(version.Display()),
 		fang.WithNotifySignal(os.Interrupt),
 	); err != nil {
 		return err

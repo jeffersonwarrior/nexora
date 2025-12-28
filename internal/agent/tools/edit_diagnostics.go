@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -207,7 +208,7 @@ func LogSelfHealingAttempt(filePath, reason string, success bool, originalLen, i
 	if !success {
 		level = slog.LevelWarn
 	}
-	slog.Log(nil, level,
+	slog.Log(context.TODO(), level,
 		"Self-healing edit retry",
 		"file", filePath,
 		"reason", reason,

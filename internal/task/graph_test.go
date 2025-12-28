@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -408,5 +409,429 @@ func TestGraph_CalculateProgress(t *testing.T) {
 		g := NewTaskGraph()
 		progress := g.CalculateProgress("non-existent")
 		assert.Equal(t, 0.0, progress)
+	})
+}
+
+func TestGraph_CriticalPath(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty graph returns empty path", func(t *testing.T) {
+		g := NewTaskGraph()
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+		assert.Empty(t, path)
+	})
+
+	t.Run("single task with no dependencies", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		g.AddTask(taskA)
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+		assert.Equal(t, []string{"A"}, path)
+	})
+
+	t.Run("linear chain dependency (A depends on B, B depends on C)", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+		taskC := &Task{ID: "C", Title: "Task C"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+		g.AddTask(taskC)
+
+		// A -> B -> C (A depends on B, B depends on C)
+		g.AddDependency("A", "B")
+		g.AddDependency("B", "C")
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+		require.Len(t, path, 3)
+
+		// Path should be from root (C) to dependent (A)
+		assert.Equal(t, "C", path[0])
+		assert.Equal(t, "B", path[1])
+		assert.Equal(t, "A", path[2])
+	})
+
+	t.Run("diamond dependency (A depends on B and C, both depend on D)", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+		taskC := &Task{ID: "C", Title: "Task C"}
+		taskD := &Task{ID: "D", Title: "Task D"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+		g.AddTask(taskC)
+		g.AddTask(taskD)
+
+		// Diamond: A depends on B and C, both B and C depend on D
+		g.AddDependency("A", "B")
+		g.AddDependency("A", "C")
+		g.AddDependency("B", "D")
+		g.AddDependency("C", "D")
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+
+		// Critical path should be: D -> B -> A or D -> C -> A (both have length 3)
+		// We verify the structure is correct
+		assert.Equal(t, "D", path[0]) // Must start with D
+		assert.Equal(t, "A", path[2]) // Must end with A
+		assert.Contains(t, []string{"B", "C"}, path[1]) // Middle should be B or C
+	})
+
+	t.Run("complex graph with multiple paths", func(t *testing.T) {
+		// Graph:
+		//        E
+		//       / \
+		//      B   F
+		//     /   /
+		//    A   /
+		//     \ /
+		//      C
+		//      |
+		//      D
+		//
+		// Path A->C->D = 3
+		// Path B->C->D = 3
+		// Path E->F->C->D = 4  (longest)
+		g := NewTaskGraph()
+
+		for id := range []string{"A", "B", "C", "D", "E", "F"} {
+			taskID := string(rune('A' + id))
+			g.AddTask(&Task{ID: taskID, Title: "Task " + taskID})
+		}
+
+		// Define dependencies
+		g.AddDependency("C", "A") // C depends on A
+		g.AddDependency("C", "B") // C depends on B
+		g.AddDependency("C", "F") // C depends on F
+		g.AddDependency("B", "E") // B depends on E
+		g.AddDependency("F", "E") // F depends on E
+		g.AddDependency("D", "C") // D depends on C
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+
+		// Critical path should include E and have length 4
+		require.Len(t, path, 4)
+		assert.Equal(t, "E", path[0]) // Must start with E
+		assert.Equal(t, "D", path[3]) // Must end with D
+		// Should go through F or B (both depend on E)
+		assert.Contains(t, []string{"B", "F"}, path[1])
+	})
+
+	t.Run("fails on cyclic dependency", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+
+		// Create cycle: A -> B -> A
+		g.AddDependency("A", "B")
+		g.AddDependency("B", "A")
+
+		_, err := g.CriticalPath()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cycle")
+	})
+
+	t.Run("independent tasks (no dependencies)", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+		taskC := &Task{ID: "C", Title: "Task C"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+		g.AddTask(taskC)
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+
+		// With no dependencies, critical path length is 1
+		// Any single task is a valid critical path
+		assert.Len(t, path, 1)
+		assert.Contains(t, []string{"A", "B", "C"}, path[0])
+	})
+
+	t.Run("branching structure (one root, multiple branches)", func(t *testing.T) {
+		// Graph:
+		//     A
+		//    / \
+		//   B   C
+		//   |   |
+		//   D   E
+		//    \ /
+		//     F
+		//
+		// Path D->B->A->F = 4
+		// Path E->C->A->F = 4
+		// Path A->B->D = 3
+		// Path A->C->E = 3
+		g := NewTaskGraph()
+
+		for id := range []string{"A", "B", "C", "D", "E", "F"} {
+			taskID := string(rune('A' + id))
+			g.AddTask(&Task{ID: taskID, Title: "Task " + taskID})
+		}
+
+		g.AddDependency("B", "A")
+		g.AddDependency("C", "A")
+		g.AddDependency("D", "B")
+		g.AddDependency("E", "C")
+		g.AddDependency("F", "D")
+		g.AddDependency("F", "E")
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+
+		// Critical path should be length 4
+		require.Len(t, path, 4)
+		assert.Equal(t, "A", path[0]) // Must start with A
+		assert.Equal(t, "F", path[3]) // Must end with F
+	})
+
+	t.Run("W-shaped topology (multiple convergence points)", func(t *testing.T) {
+		// Graph:
+		//   A     D
+		//   |     |
+		//   B     E
+		//    \   /
+		//     C
+		//
+		// Path A->B->C = 3
+		// Path D->E->C = 3
+		g := NewTaskGraph()
+
+		for id := range []string{"A", "B", "C", "D", "E"} {
+			taskID := string(rune('A' + id))
+			g.AddTask(&Task{ID: taskID, Title: "Task " + taskID})
+		}
+
+		g.AddDependency("B", "A")
+		g.AddDependency("E", "D")
+		g.AddDependency("C", "B")
+		g.AddDependency("C", "E")
+
+		path, err := g.CriticalPath()
+		require.NoError(t, err)
+
+		// Critical path should be length 3
+		require.Len(t, path, 3)
+		assert.Equal(t, "C", path[2]) // Must end with C
+		// Should start with either A or D
+		assert.Contains(t, []string{"A", "D"}, path[0])
+	})
+}
+
+func TestGraph_RemoveTask(t *testing.T) {
+	t.Parallel()
+
+	t.Run("removes task without dependencies", func(t *testing.T) {
+		g := NewTaskGraph()
+		task := &Task{ID: "A", Title: "Task A"}
+		g.AddTask(task)
+
+		assert.NotNil(t, g.nodes["A"])
+		delete(g.nodes, "A")
+		delete(g.edges, "A")
+		assert.Nil(t, g.nodes["A"])
+	})
+
+	t.Run("graph state after task removal", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+		g.AddDependency("A", "B")
+
+		// Remove task A
+		delete(g.nodes, "A")
+		delete(g.edges, "A")
+
+		// Verify B still exists
+		assert.NotNil(t, g.nodes["B"])
+		assert.Nil(t, g.nodes["A"])
+	})
+}
+
+func TestGraph_GetTask(t *testing.T) {
+	t.Parallel()
+
+	t.Run("retrieves existing task", func(t *testing.T) {
+		g := NewTaskGraph()
+		task := &Task{ID: "A", Title: "Task A"}
+		g.AddTask(task)
+
+		retrieved, exists := g.nodes["A"]
+		assert.True(t, exists)
+		assert.Equal(t, task.ID, retrieved.ID)
+		assert.Equal(t, task.Title, retrieved.Title)
+	})
+
+	t.Run("returns nil for non-existent task", func(t *testing.T) {
+		g := NewTaskGraph()
+		retrieved, exists := g.nodes["non-existent"]
+		assert.False(t, exists)
+		assert.Nil(t, retrieved)
+	})
+}
+
+func TestGraph_MultipleRoots(t *testing.T) {
+	t.Parallel()
+
+	t.Run("handles graph with multiple root nodes", func(t *testing.T) {
+		g := NewTaskGraph()
+		// Two independent chains
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+		taskC := &Task{ID: "C", Title: "Task C"}
+		taskD := &Task{ID: "D", Title: "Task D"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+		g.AddTask(taskC)
+		g.AddTask(taskD)
+
+		// Chain 1: A -> B
+		g.AddDependency("B", "A")
+		// Chain 2: C -> D
+		g.AddDependency("D", "C")
+
+		sorted, err := g.TopologicalSort()
+		require.NoError(t, err)
+		assert.Len(t, sorted, 4)
+
+		// Both A and C should appear before their dependents
+		var idxA, idxB, idxC, idxD int
+		for i, task := range sorted {
+			switch task.ID {
+			case "A":
+				idxA = i
+			case "B":
+				idxB = i
+			case "C":
+				idxC = i
+			case "D":
+				idxD = i
+			}
+		}
+
+		assert.Less(t, idxA, idxB)
+		assert.Less(t, idxC, idxD)
+	})
+}
+
+func TestGraph_DependenciesEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("adding duplicate dependency", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+
+		err := g.AddDependency("A", "B")
+		assert.NoError(t, err)
+
+		// Add same dependency again
+		err = g.AddDependency("A", "B")
+		assert.NoError(t, err) // Should not error, just duplicates in slice
+
+		// Verify dependency exists
+		assert.Contains(t, g.edges["A"], "B")
+	})
+
+	t.Run("task with empty ID", func(t *testing.T) {
+		g := NewTaskGraph()
+		task := &Task{ID: "", Title: "Empty ID Task"}
+
+		err := g.AddTask(task)
+		assert.NoError(t, err) // Empty ID is technically allowed
+
+		// Verify it was added
+		_, exists := g.nodes[""]
+		assert.True(t, exists)
+	})
+}
+
+func TestGraph_LargeGraph(t *testing.T) {
+	t.Parallel()
+
+	t.Run("handles large graph with many tasks", func(t *testing.T) {
+		g := NewTaskGraph()
+
+		// Create 100 tasks in a linear chain
+		for i := 0; i < 100; i++ {
+			taskID := fmt.Sprintf("task-%d", i)
+			g.AddTask(&Task{ID: taskID, Title: fmt.Sprintf("Task %d", i)})
+		}
+
+		// Create linear dependencies
+		for i := 1; i < 100; i++ {
+			fromID := fmt.Sprintf("task-%d", i)
+			toID := fmt.Sprintf("task-%d", i-1)
+			g.AddDependency(fromID, toID)
+		}
+
+		// Verify topological sort works
+		sorted, err := g.TopologicalSort()
+		require.NoError(t, err)
+		assert.Len(t, sorted, 100)
+
+		// Verify order is correct
+		for i := 0; i < 99; i++ {
+			curr := sorted[i].ID
+			next := sorted[i+1].ID
+			// task-0 should come before task-1, etc.
+			var currNum, nextNum int
+			fmt.Sscanf(curr, "task-%d", &currNum)
+			fmt.Sscanf(next, "task-%d", &nextNum)
+			assert.Less(t, currNum, nextNum)
+		}
+	})
+}
+
+func TestGraph_GetDependents(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns tasks that depend on given task", func(t *testing.T) {
+		g := NewTaskGraph()
+		taskA := &Task{ID: "A", Title: "Task A"}
+		taskB := &Task{ID: "B", Title: "Task B"}
+		taskC := &Task{ID: "C", Title: "Task C"}
+
+		g.AddTask(taskA)
+		g.AddTask(taskB)
+		g.AddTask(taskC)
+
+		// B and C depend on A
+		g.AddDependency("B", "A")
+		g.AddDependency("C", "A")
+
+		// Find all tasks that depend on A
+		dependents := []string{}
+		for taskID, deps := range g.edges {
+			for _, dep := range deps {
+				if dep == "A" {
+					dependents = append(dependents, taskID)
+				}
+			}
+		}
+
+		assert.Len(t, dependents, 2)
+		assert.Contains(t, dependents, "B")
+		assert.Contains(t, dependents, "C")
 	})
 }

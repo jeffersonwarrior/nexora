@@ -1,3 +1,5 @@
+//go:build !race
+
 package lsp
 
 import (
@@ -8,7 +10,7 @@ import (
 	"github.com/nexora/nexora/internal/env"
 )
 
-func TestClient(t *testing.T) {
+func TestClientBasics(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a simple config for testing

@@ -36,6 +36,8 @@ type Prompt struct {
 	now        func() time.Time
 	platform   string
 	workingDir string
+	memoryInfo string  // Override for tests
+	diskInfo   string  // Override for tests
 }
 
 type PromptDat struct {
@@ -88,6 +90,18 @@ func WithPlatform(platform string) Option {
 func WithWorkingDir(workingDir string) Option {
 	return func(p *Prompt) {
 		p.workingDir = workingDir
+	}
+}
+
+func WithMemoryInfo(memoryInfo string) Option {
+	return func(p *Prompt) {
+		p.memoryInfo = memoryInfo
+	}
+}
+
+func WithDiskInfo(diskInfo string) Option {
+	return func(p *Prompt) {
+		p.diskInfo = diskInfo
 	}
 }
 
@@ -220,6 +234,10 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, cfg con
 		gitUserEmail = envData.GitUserEmail
 	}
 
+	// Use overrides for MemoryInfo and DiskInfo if provided (for deterministic tests)
+	memInfo := cmp.Or(p.memoryInfo, envData.MemoryInfo)
+	diskInfo := cmp.Or(p.diskInfo, envData.DiskInfo)
+
 	data := PromptDat{
 		Provider:       provider,
 		Model:          model,
@@ -237,8 +255,8 @@ func (p *Prompt) promptData(ctx context.Context, provider, model string, cfg con
 		ShellType:      shellType,
 		GitUserName:    gitUserName,
 		GitUserEmail:   gitUserEmail,
-		MemoryInfo:     envData.MemoryInfo,
-		DiskInfo:       envData.DiskInfo,
+		MemoryInfo:     memInfo,
+		DiskInfo:       diskInfo,
 		Architecture:   envData.Architecture,
 		ContainerType:  envData.ContainerType,
 		TerminalInfo:   envData.TerminalInfo,

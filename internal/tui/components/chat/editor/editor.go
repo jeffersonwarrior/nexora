@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"time"
 	"unicode"
 
 	"charm.land/bubbles/v2/key"
@@ -49,6 +50,14 @@ type FileCompletionItem struct {
 	Path string // The file path
 }
 
+// idleThreshold is how long the user must be idle before triggering background compaction.
+const idleThreshold = 5 * time.Second
+
+// idleTickMsg is sent when the idle timer fires.
+type idleTickMsg struct {
+	seq int // sequence number to avoid stale ticks
+}
+
 type editorCmp struct {
 	width              int
 	height             int
@@ -67,6 +76,9 @@ type editorCmp struct {
 	currentQuery          string
 	completionsStartIndex int
 	isCompletionsOpen     bool
+
+	// Idle detection for background compaction
+	idleSeq int // incremented on each keypress to invalidate old timers
 }
 
 var DeleteKeyMaps = DeleteAttachmentKeyMaps{
@@ -174,6 +186,16 @@ func (m *editorCmp) repositionCompletions() tea.Msg {
 func (m *editorCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+
+	// Handle idle tick first - check if this is still the current sequence
+	if tick, ok := msg.(idleTickMsg); ok {
+		if tick.seq == m.idleSeq && m.session.ID != "" {
+			// User has been idle, trigger background compaction
+			cmds = append(cmds, util.CmdHandler(chat.IdleMsg{SessionID: m.session.ID}))
+		}
+		return m, tea.Batch(cmds...)
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		return m, m.repositionCompletions
@@ -363,6 +385,13 @@ func (m *editorCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 					cmds = append(cmds, util.CmdHandler(completions.CloseCompletionsMsg{}))
 				}
 			}
+
+			// Reset idle timer on any keypress - increment sequence to invalidate old timers
+			m.idleSeq++
+			seq := m.idleSeq
+			cmds = append(cmds, tea.Tick(idleThreshold, func(time.Time) tea.Msg {
+				return idleTickMsg{seq: seq}
+			}))
 		}
 	}
 

@@ -3,6 +3,7 @@ package header
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -129,6 +130,10 @@ func (h *header) details(availWidth int) string {
 		title = title[:22] + "..."
 	}
 	parts = append(parts, s.Subtitle.Bold(true).Render(title))
+
+	// Add current datetime
+	datetime := time.Now().Format("Jan 2 15:04")
+	parts = append(parts, s.Muted.Render(datetime))
 
 	agentCfg := config.Get().Agents[config.AgentCoder]
 	model := config.Get().GetModelByType(agentCfg.Model)

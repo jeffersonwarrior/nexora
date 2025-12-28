@@ -110,6 +110,8 @@ func GetTmuxManager() *TmuxManager {
 			poolConfig:      DefaultPoolConfig(),
 			cleanupStop:     make(chan struct{}),
 		}
+		// Recover orphaned sessions from previous run
+		tmuxManager.recoverOrphanedSessions()
 		// Start background cleanup
 		tmuxManager.startCleanup()
 	})
@@ -453,6 +455,7 @@ func (m *TmuxManager) ReleaseDefaultSession(conversationID string) {
 }
 
 // generateReadableSessionID creates a human-readable session ID
+// Retries with incrementing counter if session name already exists in tmux
 func (m *TmuxManager) generateReadableSessionID() string {
 	words := []string{
 		"alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel",
@@ -463,12 +466,35 @@ func (m *TmuxManager) generateReadableSessionID() string {
 		"quad", "ruby", "sync", "tide", "unit", "vibe", "wave", "zero",
 	}
 
-	// Count existing sessions to get next number
-	sessionCount := len(m.sessions)
-	wordIndex := sessionCount % len(words)
-	sequenceNum := (sessionCount / len(words)) + 1
+	// Count both regular and pooled sessions to get next number
+	// Need to acquire both locks to get accurate count
+	m.mu.RLock()
+	regularCount := len(m.sessions)
+	m.mu.RUnlock()
 
-	return fmt.Sprintf("%s-%03d", words[wordIndex], sequenceNum)
+	m.poolMu.RLock()
+	poolCount := len(m.pool)
+	m.poolMu.RUnlock()
+
+	sessionCount := regularCount + poolCount
+
+	// Try up to 100 times to find a unique session name
+	for attempt := 0; attempt < 100; attempt++ {
+		wordIndex := (sessionCount + attempt) % len(words)
+		sequenceNum := ((sessionCount + attempt) / len(words)) + 1
+		sessionID := fmt.Sprintf("%s-%03d", words[wordIndex], sequenceNum)
+		sessionName := "nexora-" + sessionID
+
+		// Check if this session already exists in tmux
+		cmd := exec.Command("tmux", "has-session", "-t", sessionName)
+		if cmd.Run() != nil {
+			// Session doesn't exist, we can use this ID
+			return sessionID
+		}
+	}
+
+	// Fallback to UUID if all attempts failed
+	return fmt.Sprintf("session-%d", time.Now().UnixNano())
 }
 
 // SessionInfo returns information about a session
@@ -547,6 +573,35 @@ func (m *TmuxManager) cleanupIdleSessions() {
 	}
 }
 
+// recoverOrphanedSessions discovers and kills orphaned nexora-* tmux sessions
+// from previous runs that are not tracked in memory
+func (m *TmuxManager) recoverOrphanedSessions() {
+	// List all tmux sessions
+	cmd := exec.Command("tmux", "list-sessions", "-F", "#{session_name}")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// No tmux server or no sessions - that's fine
+		return
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, sessionName := range lines {
+		sessionName = strings.TrimSpace(sessionName)
+		if sessionName == "" {
+			continue
+		}
+
+		// Only process nexora-* sessions
+		if !strings.HasPrefix(sessionName, "nexora-") {
+			continue
+		}
+
+		// Kill orphaned sessions from previous runs
+		// They're not in our pool, so they're stale
+		exec.Command("tmux", "kill-session", "-t", sessionName).Run()
+	}
+}
+
 // GetPooledSession returns an available session from pool or creates new one
 // This is the main entry point for session pooling
 func (m *TmuxManager) GetPooledSession(workingDir string) (*TmuxSession, error) {
@@ -612,8 +667,18 @@ func (m *TmuxManager) GetPooledSession(workingDir string) (*TmuxSession, error) 
 	sessionName := "nexora-" + sessionID
 
 	createCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-x", "200", "-y", "50", "-c", workingDir)
-	if err := createCmd.Run(); err != nil {
-		return nil, fmt.Errorf("failed to create pooled session: %w", err)
+	output, err := createCmd.CombinedOutput()
+	if err != nil {
+		// Check if session already exists (race condition or orphan)
+		checkCmd := exec.Command("tmux", "has-session", "-t", sessionName)
+		if checkCmd.Run() == nil {
+			// Session exists - adopt it instead of failing
+			// Change to the requested working directory
+			cdCmd := exec.Command("tmux", "send-keys", "-t", sessionName, "cd "+workingDir, "Enter")
+			cdCmd.Run()
+		} else {
+			return nil, fmt.Errorf("failed to create pooled session: %w (output: %s)", err, string(output))
+		}
 	}
 
 	paneCmd := exec.Command("tmux", "list-panes", "-t", sessionName, "-F", "#{pane_id}")

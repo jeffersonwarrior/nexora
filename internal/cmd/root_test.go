@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/nexora/nexora/internal/version"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,4 +156,76 @@ func TestShouldQueryTerminalVersion(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestRootCmd_HelpContainsVersion(t *testing.T) {
+	// Test that the help output includes the version number at the top
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+	rootCmd.SetErr(&buf)
+
+	// Get help output
+	err := rootCmd.Help()
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Should contain the version display (stripped semver format)
+	assert.Contains(t, output, version.Display())
+	assert.Contains(t, output, "Nexora")
+}
+
+func TestRootCmd_HelpContainsGitHubLink(t *testing.T) {
+	// Test that the help output includes the GitHub repository link
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+	rootCmd.SetErr(&buf)
+
+	// Get help output
+	err := rootCmd.Help()
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Should contain the GitHub URL
+	assert.Contains(t, output, "https://github.com/jeffersonwarrior/nexora")
+}
+
+func TestRootCmd_HelpVersionFormat(t *testing.T) {
+	// Test that the version in help is in clean semver format (vX.Y.Z)
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+	rootCmd.SetErr(&buf)
+
+	// Get help output
+	err := rootCmd.Help()
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Version should be clean semver format without pseudo-version suffix
+	displayVersion := version.Display()
+	assert.True(t, strings.HasPrefix(displayVersion, "v"), "Version should start with 'v'")
+	assert.Contains(t, output, displayVersion)
+
+	// Should NOT contain pseudo-version patterns
+	assert.NotContains(t, output, "-0.2025")
+	assert.NotContains(t, output, "+dirty")
+}
+
+func TestRootCmd_NoExamplesSection(t *testing.T) {
+	// Test that the help output does NOT include an EXAMPLES section
+	var buf bytes.Buffer
+	rootCmd.SetOut(&buf)
+	rootCmd.SetErr(&buf)
+
+	// Get help output
+	err := rootCmd.Help()
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	// Should NOT contain examples section headers
+	assert.NotContains(t, strings.ToUpper(output), "EXAMPLES:")
+	assert.NotContains(t, strings.ToUpper(output), "EXAMPLE:")
 }

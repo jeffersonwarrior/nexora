@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"strings"
+
 	"github.com/nexora/nexora/internal/config"
 )
 
@@ -10,45 +12,53 @@ type ModelProvider struct {
 	Model    string
 }
 
-// DetectFastestSummarizer determines the fastest available summarization model
-// based on the provider configuration and known performance characteristics.
-// Returns empty ModelProvider if no fast summarizer is available.
+// FastSummarizerModels defines the explicit fast models for summarization/compaction.
+// These are high-throughput models optimized for fast inference.
+// Order: fastest inference first.
+var FastSummarizerModels = []ModelProvider{
+	// Cerebras GLM 4.6 - ~2000+ tokens/sec via Cerebras' custom silicon
+	{Provider: "cerebras", Model: "zai-glm-4.6"},
+	// Grok 4.1 Fast - non-thinking mode, optimized for speed
+	{Provider: "xai", Model: "grok-4-1-fast"},
+	// Z.AI GLM 4.5 Flash - free tier, fast inference
+	{Provider: "zai", Model: "glm-4.5-flash"},
+	// Z.AI GLM 4.5 Air - budget tier fallback
+	{Provider: "zai", Model: "glm-4.5-air"},
+	// Synthetic MiniMax - fast via aggregator
+	{Provider: "synthetic", Model: "minimax/minimax-m2.1"},
+}
+
+// DetectFastestSummarizer finds the first available fast summarizer model.
+// Iterates through FastSummarizerModels in priority order and returns
+// the first one whose provider is configured and enabled.
 func DetectFastestSummarizer(cfg config.Config) ModelProvider {
-	// Known fast summarizers in order of preference (fastest first):
-	// 1. Cerebras llama-3.1-8b: ~2000 tokens/second
-	// 2. xAI grok-3-mini: ~1200 tokens/second
-
-	// Check for Cerebras provider first (highest preference)
-	if cfg.Providers != nil {
-		if provider, ok := cfg.Providers.Get("cerebras"); ok && !provider.Disable {
-			return ModelProvider{
-				Provider: "cerebras",
-				Model:    "llama3.1-8b",
-			}
-		}
-
-		// Check for xAI provider as second choice
-		if provider, ok := cfg.Providers.Get("xai"); ok && !provider.Disable {
-			return ModelProvider{
-				Provider: "xai",
-				Model:    "grok-3-mini",
-			}
-		}
+	if cfg.Providers == nil {
+		return ModelProvider{}
 	}
 
-	// No fast summarizer available
+	for _, mp := range FastSummarizerModels {
+		cfgProvider, ok := cfg.Providers.Get(mp.Provider)
+		if !ok || cfgProvider.Disable {
+			continue
+		}
+
+		// Provider is configured and enabled, use this fast model
+		return mp
+	}
+
 	return ModelProvider{}
 }
 
-// IsFastSummarizer checks if the given provider/model combination is considered
-// a "fast" summarizer (can handle >1000 tokens/second).
+// IsFastSummarizer checks if the given provider/model is a known fast summarizer.
 func IsFastSummarizer(provider, model string) bool {
-	switch provider {
-	case "cerebras":
-		return model == "llama3.1-8b" || model == "llama-3.1-8b"
-	case "xai":
-		return model == "grok-3-mini" || model == "grok-3-mini-beta"
-	default:
-		return false
+	provider = strings.ToLower(provider)
+	model = strings.ToLower(model)
+
+	for _, mp := range FastSummarizerModels {
+		if strings.ToLower(mp.Provider) == provider &&
+			strings.Contains(model, strings.ToLower(mp.Model)) {
+			return true
+		}
 	}
+	return false
 }

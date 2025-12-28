@@ -10,6 +10,11 @@ import (
 	"github.com/nexora/nexora/internal/permission"
 )
 
+// contextKey is a custom type for context keys to avoid collisions
+type contextKey string
+
+const sessionIDKey contextKey = "session_id"
+
 // BashParams are the parameters for the bash tool
 type BashParams struct {
 	Description     string `json:"description" description:"A brief description of what the command does, try to keep it under 30 characters or so"`
@@ -29,11 +34,16 @@ type BashResponseMetadata struct {
 	ShellID          string `json:"shell_id,omitempty"`
 }
 
+// WithSessionID returns a new context with the session ID embedded
+func WithSessionID(ctx context.Context, sessionID string) context.Context {
+	return context.WithValue(ctx, sessionIDKey, sessionID)
+}
+
 // GetSessionFromContext extracts session ID from context
 // This function needs to be implemented based on how session IDs are stored in context
 func GetSessionFromContext(ctx context.Context) string {
 	// TODO: Implement based on actual context structure
-	if sessionID, ok := ctx.Value("session_id").(string); ok {
+	if sessionID, ok := ctx.Value(sessionIDKey).(string); ok {
 		return sessionID
 	}
 	return ""

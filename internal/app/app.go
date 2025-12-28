@@ -45,7 +45,8 @@ type App struct {
 	History     history.Service
 	Permissions permission.Service
 
-	AgentCoordinator agent.Coordinator
+	AgentCoordinator    agent.Coordinator
+	BackgroundCompactor *agent.BackgroundCompactor
 
 	LSPClients      *csync.Map[string, *lsp.Client]
 	AIOPS           aiops.Ops
@@ -99,6 +100,13 @@ func New(ctx context.Context, conn *sql.DB, cfg *config.Config) (*App, error) {
 
 	app.setupEvents()
 
+	// Initialize background compactor
+	app.BackgroundCompactor = agent.NewBackgroundCompactor(
+		sessions,
+		messages,
+		agent.DefaultBackgroundCompactorConfig(),
+	)
+
 	// Initialize LSP clients in the background.
 	app.initLSPClients(ctx)
 
@@ -114,6 +122,13 @@ func New(ctx context.Context, conn *sql.DB, cfg *config.Config) (*App, error) {
 	app.ResourceMonitor = resources.NewMonitor(resources.DefaultConfig())
 	app.cleanupFuncs = append(app.cleanupFuncs, func() error {
 		app.ResourceMonitor.Stop()
+		return nil
+	})
+
+	// Start background compactor
+	app.BackgroundCompactor.Start(ctx)
+	app.cleanupFuncs = append(app.cleanupFuncs, func() error {
+		app.BackgroundCompactor.Stop()
 		return nil
 	})
 
@@ -368,6 +383,7 @@ func (app *App) InitCoderAgent(ctx context.Context) error {
 		app.AIOPS,
 		sessionLogMgr,
 		app.ResourceMonitor,
+		app.BackgroundCompactor,
 	)
 	if err != nil {
 		slog.Error("Failed to create coder agent", "err", err)
@@ -466,4 +482,73 @@ func (app *App) checkForUpdates(ctx context.Context) {
 		LatestVersion:  info.Latest,
 		IsDevelopment:  info.IsDevelopment(),
 	}
+}
+
+// SettingsManager interface implementation
+
+func (app *App) GetAutoApprove() bool {
+	if app.config == nil || app.config.Permissions == nil {
+		return false
+	}
+	return app.config.Permissions.SkipRequests
+}
+
+func (app *App) GetThinkingEnabled() bool {
+	if app.config == nil {
+		return true // Default to enabled
+	}
+	// Check if thinking is disabled in options
+	if app.config.Options != nil {
+		return !app.config.Options.DisableAutoSummarize
+	}
+	return true
+}
+
+func (app *App) GetStreaming() bool {
+	// Streaming is always enabled in current implementation
+	return true
+}
+
+func (app *App) GetVimMode() bool {
+	// VimMode is not yet implemented, return false for now
+	return false
+}
+
+func (app *App) GetAutoLSP() bool {
+	// AutoLSP detection is not yet implemented, return false for now
+	return false
+}
+
+func (app *App) SetAutoApprove(enabled bool) {
+	if app.config == nil {
+		return
+	}
+	if app.config.Permissions == nil {
+		app.config.Permissions = &config.Permissions{}
+	}
+	app.config.Permissions.SkipRequests = enabled
+	app.Permissions.SetSkipRequests(enabled)
+}
+
+func (app *App) SetThinkingEnabled(enabled bool) {
+	if app.config == nil {
+		return
+	}
+	if app.config.Options == nil {
+		app.config.Options = &config.Options{}
+	}
+	// Invert the logic: enabled=true means DisableAutoSummarize=false
+	app.config.Options.DisableAutoSummarize = !enabled
+}
+
+func (app *App) SetStreaming(enabled bool) {
+	// Streaming toggle not implemented yet - no-op
+}
+
+func (app *App) SetVimMode(enabled bool) {
+	// VimMode toggle not implemented yet - no-op
+}
+
+func (app *App) SetAutoLSP(enabled bool) {
+	// AutoLSP toggle not implemented yet - no-op
 }

@@ -15,7 +15,7 @@ func TestResolveToolName_FetchAliases(t *testing.T) {
 		{"curl to fetch", "curl", "fetch"},
 		{"wget to fetch", "wget", "fetch"},
 		{"http-get to fetch", "http-get", "fetch"},
-		{"web_fetch to fetch", "web_fetch", "fetch"},
+		{"web_fetch to web_fetch", "web_fetch", "web_fetch"},
 		{"uppercase curl", "CURL", "fetch"},
 		{"mixed case Curl", "cUrL", "fetch"},
 	}
@@ -53,9 +53,9 @@ func TestResolveToolName_ListAliases(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"ls to list", "ls", "list"},
-		{"dir to list", "dir", "list"},
-		{"directory to list", "directory", "list"},
+		{"list to ls", "list", "ls"},
+		{"dir to ls", "dir", "ls"},
+		{"directory to ls", "directory", "ls"},
 	}
 
 	for _, tc := range testCases {
@@ -73,7 +73,7 @@ func TestResolveToolName_GrepAliases(t *testing.T) {
 		expected string
 	}{
 		{"search to grep", "search", "grep"},
-		{"find to grep", "find", "grep"},
+		{"find to find", "find", "find"},
 		{"rg to grep", "rg", "grep"},
 	}
 
@@ -109,8 +109,9 @@ func TestResolveToolName_BashAliases(t *testing.T) {
 func TestResolveToolName_CanonicalReturnsUnchanged(t *testing.T) {
 	// Canonical tool names should return themselves
 	canonicalNames := []string{
-		"fetch", "view", "edit", "write", "list", "grep",
+		"fetch", "view", "edit", "write", "ls", "grep",
 		"bash", "web_search", "sourcegraph", "download",
+		"find", "glob", "job_kill", "job_output", "multiedit", "web_fetch",
 	}
 
 	for _, name := range canonicalNames {

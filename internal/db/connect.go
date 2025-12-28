@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 
 	"github.com/ncruces/go-sqlite3"
@@ -18,6 +19,12 @@ func Connect(ctx context.Context, dataDir string) (*sql.DB, error) {
 	if dataDir == "" {
 		return nil, fmt.Errorf("data.dir is not set")
 	}
+
+	// Ensure the data directory exists before opening the database
+	if err := os.MkdirAll(dataDir, 0o700); err != nil {
+		return nil, fmt.Errorf("failed to create data directory %s: %w", dataDir, err)
+	}
+
 	dbPath := filepath.Join(dataDir, "nexora.db")
 
 	// Set pragmas for better performance

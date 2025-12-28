@@ -186,7 +186,7 @@ func createNewFile(edit editContext, filePath, content string, call fantasy.Tool
 	}
 
 	dir := filepath.Dir(filePath)
-	if err = os.MkdirAll(dir, 0o755); err != nil {
+	if err = os.MkdirAll(dir, 0o700); err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to create parent directories: %w", err)
 	}
 
@@ -219,7 +219,7 @@ func createNewFile(edit editContext, filePath, content string, call fantasy.Tool
 		return fantasy.ToolResponse{}, permission.ErrorPermissionDenied
 	}
 
-	err = os.WriteFile(filePath, []byte(content), 0o644)
+	err = os.WriteFile(filePath, []byte(content), 0o600)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -234,8 +234,7 @@ func createNewFile(edit editContext, filePath, content string, call fantasy.Tool
 	// Add the new content to the file history
 	_, err = edit.files.CreateVersion(edit.ctx, sessionID, filePath, content)
 	if err != nil {
-		// Log error but don't fail the operation
-		slog.Error("Error creating file history version", "error", err)
+		return fantasy.ToolResponse{}, fmt.Errorf("error creating file history version: %w", err)
 	}
 
 	recordFileWrite(filePath)
@@ -356,7 +355,7 @@ func deleteContent(edit editContext, filePath, oldString string, replaceAll bool
 		newContent, _ = fsext.ToWindowsLineEndings(newContent)
 	}
 
-	err = os.WriteFile(filePath, []byte(newContent), 0o644)
+	err = os.WriteFile(filePath, []byte(newContent), 0o600)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -374,13 +373,13 @@ func deleteContent(edit editContext, filePath, oldString string, replaceAll bool
 		// User Manually changed the content store an intermediate version
 		_, err = edit.files.CreateVersion(edit.ctx, sessionID, filePath, oldContent)
 		if err != nil {
-			slog.Error("Error creating file history version", "error", err)
+			return fantasy.ToolResponse{}, fmt.Errorf("error creating intermediate file history version: %w", err)
 		}
 	}
 	// Store the new version
 	_, err = edit.files.CreateVersion(edit.ctx, sessionID, filePath, "")
 	if err != nil {
-		slog.Error("Error creating file history version", "error", err)
+		return fantasy.ToolResponse{}, fmt.Errorf("error creating file history version: %w", err)
 	}
 
 	recordFileWrite(filePath)
@@ -759,7 +758,7 @@ func replaceContent(edit editContext, params EditParams, filePath, oldString, ne
 		newContent, _ = fsext.ToWindowsLineEndings(newContent)
 	}
 
-	err = os.WriteFile(filePath, []byte(newContent), 0o644)
+	err = os.WriteFile(filePath, []byte(newContent), 0o600)
 	if err != nil {
 		return fantasy.ToolResponse{}, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -783,7 +782,7 @@ func replaceContent(edit editContext, params EditParams, filePath, oldString, ne
 	// Store the new version
 	_, err = edit.files.CreateVersion(edit.ctx, sessionID, filePath, newContent)
 	if err != nil {
-		slog.Error("Error creating file history version", "error", err)
+		return fantasy.ToolResponse{}, fmt.Errorf("error creating file history version: %w", err)
 	}
 
 	recordFileWrite(filePath)

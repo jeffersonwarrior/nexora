@@ -163,7 +163,8 @@ func (c *commandDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 				command.Handler(command),
 			)
 		case key.Matches(msg, c.keyMap.Tab):
-			if len(c.userCommands) == 0 && c.mcpPrompts.Len() == 0 {
+			// Only tab if there are MCP prompts (user commands are combined with system)
+			if c.mcpPrompts.Len() == 0 {
 				return c, nil
 			}
 			return c, c.setCommandType(c.next())
@@ -181,23 +182,29 @@ func (c *commandDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 func (c *commandDialogCmp) next() commandType {
 	switch c.selected {
 	case SystemCommands:
-		if len(c.userCommands) > 0 {
-			return UserCommands
-		}
+		// Skip UserCommands since they're now combined with System
 		if c.mcpPrompts.Len() > 0 {
 			return MCPPrompts
 		}
-		fallthrough
+		return SystemCommands
 	case UserCommands:
+		// Legacy: skip to MCP or back to System
 		if c.mcpPrompts.Len() > 0 {
 			return MCPPrompts
 		}
-		fallthrough
+		return SystemCommands
 	case MCPPrompts:
 		return SystemCommands
 	default:
 		return SystemCommands
 	}
+}
+
+// stripCommandPrefix removes user: or project: prefix from command IDs/titles
+func stripCommandPrefix(s string) string {
+	s = strings.TrimPrefix(s, "user:")
+	s = strings.TrimPrefix(s, "project:")
+	return s
 }
 
 func (c *commandDialogCmp) View() string {
@@ -206,7 +213,8 @@ func (c *commandDialogCmp) View() string {
 	radio := c.commandTypeRadio()
 
 	header := t.S().Base.Padding(0, 1, 1, 1).Render(core.Title("Commands", c.width-lipgloss.Width(radio)-5) + " " + radio)
-	if len(c.userCommands) == 0 && c.mcpPrompts.Len() == 0 {
+	// Only show radio if there are MCP prompts (user commands are now combined with system)
+	if c.mcpPrompts.Len() == 0 {
 		header = t.S().Base.Padding(0, 1, 1, 1).Render(core.Title("Commands", c.width-4))
 	}
 	content := lipgloss.JoinVertical(
@@ -243,9 +251,7 @@ func (c *commandDialogCmp) commandTypeRadio() string {
 	parts := []string{
 		fn(SystemCommands),
 	}
-	if len(c.userCommands) > 0 {
-		parts = append(parts, fn(UserCommands))
-	}
+	// User commands are now combined with System, so don't show User tab
 	if c.mcpPrompts.Len() > 0 {
 		parts = append(parts, fn(MCPPrompts))
 	}
@@ -262,8 +268,17 @@ func (c *commandDialogCmp) setCommandType(commandType commandType) tea.Cmd {
 	var commands []Command
 	switch c.selected {
 	case SystemCommands:
+		// Combine system and user commands into one list
 		commands = c.defaultCommands()
+		// Append user commands with cleaned titles (strip user:/project: prefix)
+		for _, cmd := range c.userCommands {
+			cleanCmd := cmd
+			cleanCmd.Title = stripCommandPrefix(cmd.Title)
+			cleanCmd.ID = stripCommandPrefix(cmd.ID)
+			commands = append(commands, cleanCmd)
+		}
 	case UserCommands:
+		// This case is no longer used, but keep for backwards compatibility
 		commands = c.userCommands
 	case MCPPrompts:
 		commands = slices.Collect(c.mcpPrompts.Seq())

@@ -59,7 +59,7 @@ func (m *Manager) GetClient() (*Client, error) {
 	defer m.mutex.RUnlock()
 
 	if m.client == nil {
-		return nil, fmt.Errorf("Z.ai MCP client not initialized. Call Start() first")
+		return nil, fmt.Errorf("z.ai MCP client not initialized; call Start() first")
 	}
 
 	return m.client, nil
@@ -149,7 +149,7 @@ func ValidateConfig() error {
 // GetAvailableTools returns the list of available vision tools if the manager is running
 func (m *Manager) GetAvailableTools() ([]string, error) {
 	if !m.IsStarted() {
-		return nil, fmt.Errorf("Z.ai MCP manager not started")
+		return nil, fmt.Errorf("z.ai MCP manager not started")
 	}
 
 	client, err := m.GetClient()

@@ -1,0 +1,81 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests with Race Detection
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ['1.25.5']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download && go mod verify
+
+      - name: Count tests before run
+        id: test_count
+        run: |
+          COUNT=$(go test -list 'Test.*' ./... 2>/dev/null | grep -c '^Test' || echo 0)
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "Test count: $COUNT"
+
+      - name: Check test count minimum
+        run: |
+          MIN_TESTS=100
+          COUNT=${{ steps.test_count.outputs.count }}
+          if [ "$COUNT" -lt "$MIN_TESTS" ]; then
+            echo "::error::Test count ($COUNT) below minimum ($MIN_TESTS). Tests may have been deleted!"
+            exit 1
+          fi
+          echo "Test count OK: $COUNT >= $MIN_TESTS"
+
+      - name: Run tests with race detection
+        run: go test -race -timeout=10m -coverprofile=coverage.out $(go list ./... | grep -v '/qa$')
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Verify no test function deletions
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD -- '*_test.go' > /tmp/test_diff.txt
+          REMOVED=$(grep -c '^-func Test' /tmp/test_diff.txt || echo 0)
+          ADDED=$(grep -c '^+func Test' /tmp/test_diff.txt || echo 0)
+          if [ "$REMOVED" -gt "$ADDED" ]; then
+            echo "::error::PR reduces test functions (removed: $REMOVED, added: $ADDED)"
+            exit 1
+          fi
+          echo "Test function balance OK: +$ADDED -$REMOVED"
+
+      - name: Build binary
+        run: |
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo 'dev')
+          go build -ldflags="-X github.com/nexora/nexora/internal/version.Version=$VERSION" -o nexora ./cmd/nexora
+
+      - name: Upload coverage to Codecov
+        if: matrix.go-version == '1.25.5'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

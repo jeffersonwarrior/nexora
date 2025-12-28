@@ -290,17 +290,12 @@ func TestGetSessionFromContext(t *testing.T) {
 	}{
 		{
 			name:       "context with session ID",
-			ctx:        context.WithValue(context.Background(), "session_id", "test-session-123"),
+			ctx:        native.WithSessionID(context.Background(), "test-session-123"),
 			expectedID: "test-session-123",
 		},
 		{
 			name:       "context without session ID",
 			ctx:        context.Background(),
-			expectedID: "",
-		},
-		{
-			name:       "context with wrong type",
-			ctx:        context.WithValue(context.Background(), "session_id", 123),
 			expectedID: "",
 		},
 	}
@@ -346,7 +341,7 @@ func TestNewBashTool_CommandExecution(t *testing.T) {
 	require.NotNil(t, tool)
 
 	// Test successful command execution with session context
-	ctx := context.WithValue(context.Background(), "session_id", "test-session")
+	ctx := native.WithSessionID(context.Background(), "test-session")
 
 	params := native.BashParams{
 		Description:     "Test command",
@@ -373,7 +368,7 @@ func TestNewBashTool_UnsafeCommandDeniedPermission(t *testing.T) {
 	require.NotNil(t, tool)
 
 	// Test unsafe command with denied permission
-	ctx := context.WithValue(context.Background(), "session_id", "test-session")
+	ctx := native.WithSessionID(context.Background(), "test-session")
 
 	params := native.BashParams{
 		Description: "Test unsafe command",
@@ -412,7 +407,7 @@ func TestNewBashTool_InvalidParameters(t *testing.T) {
 
 	tool := native.NewBashTool(mockPermissions, "/test", "test")
 
-	ctx := context.WithValue(context.Background(), "session_id", "test-session")
+	ctx := native.WithSessionID(context.Background(), "test-session")
 
 	// Test with invalid parameters
 	response, err := tool.Call(ctx, "not a valid params struct")
@@ -427,7 +422,7 @@ func TestNewBashTool_EmptyCommand(t *testing.T) {
 
 	tool := native.NewBashTool(mockPermissions, "/test", "test")
 
-	ctx := context.WithValue(context.Background(), "session_id", "test-session")
+	ctx := native.WithSessionID(context.Background(), "test-session")
 
 	// Test with empty command
 	params := native.BashParams{
