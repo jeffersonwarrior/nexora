@@ -430,4 +430,3 @@ func TestHealthStatus(t *testing.T) {
 		assert.NotNil(t, status.LastError)
 	})
 }
-
