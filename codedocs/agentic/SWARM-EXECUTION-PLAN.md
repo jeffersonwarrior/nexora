@@ -2084,6 +2084,70 @@ func runNexora(cmd *cobra.Command, args []string) error {
 - [ ] CLI flags registered for all fields
 - [ ] Flag propagation to config implemented
 - [ ] Resource limit and retention fields included
+
+**Coordinator struct fields (internal/agent/coordinator.go):**
+
+These fields must be added to the coordinator struct to support headless delegate operations:
+
+```go
+type coordinator struct {
+    // ... existing fields (cfg, sessions, messages, permissions, delegatePool, etc.)
+
+    // Headless mode support
+    headlessWriter *HeadlessOutputWriter // For stdout streaming (F7)
+
+    // Delegate tracking (F8, F9, F10, F11)
+    activeDelegates      map[string]*activeDelegateInfo
+    activeDelegatesMu    sync.RWMutex
+
+    // Delegate report queue (F11)
+    pendingDelegateReports map[string][]string // sessionID -> []taskID
+    delegateReportsMu      sync.Mutex
+
+    // Circuit breaker for delegate spawning (Concern 33)
+    delegateCircuitBreaker *CircuitBreaker
+
+    // Metrics interface (Concern 37)
+    delegateMetrics DelegateMetrics
+}
+
+// activeDelegateInfo tracks a running delegate
+type activeDelegateInfo struct {
+    SessionID   string           // tmux session ID
+    DelegateDir string           // .nexora/delegates/<task-id>
+    Task        *delegation.Task
+    StartedAt   time.Time
+}
+
+// Initialize in NewCoordinator:
+func NewCoordinator(ctx context.Context, cfg *config.Config, ...) *coordinator {
+    c := &coordinator{
+        cfg:                    cfg,
+        activeDelegates:        make(map[string]*activeDelegateInfo),
+        pendingDelegateReports: make(map[string][]string),
+        delegateCircuitBreaker: NewCircuitBreaker(5, 5*time.Minute),
+        delegateMetrics:        noopMetrics{},
+        // ... other fields
+    }
+
+    // Start cleanup goroutine if delegate pool enabled
+    if cfg.Options.MaxConcurrentDelegates > 0 {
+        go c.periodicDelegateCleanup(ctx)
+    }
+
+    return c
+}
+```
+
+**Acceptance:**
+- [ ] All headless fields added to `config.Options` struct
+- [ ] All coordinator struct fields added
+- [ ] JSON schema tags for config file support
+- [ ] CLI flags registered for all fields
+- [ ] Flag propagation to config implemented
+- [ ] Resource limit and retention fields included
+- [ ] Circuit breaker initialized
+- [ ] Cleanup goroutine started
 - [ ] Build passes
 
 ---
@@ -2098,16 +2162,30 @@ this behavior to ensure agents actually complete work rather than just describin
 
 ```go
 func (c *coordinator) RunHeadless(ctx context.Context) error {
+    // MANDATORY: Validate before any execution (Concern 27)
+    if err := c.validateHeadlessConfig(); err != nil {
+        return fmt.Errorf("headless configuration invalid: %w", err)
+    }
+
+    opts := c.cfg.Options  // Alias for cleaner code (Concern 32)
+
+    // Initialize headless output writer (Concern 28)
+    format := opts.OutputFormat
+    if format == "" {
+        format = "text"
+    }
+    c.headlessWriter = NewHeadlessOutputWriter(os.Stdout, format)
+
     // Read prompt from file
-    prompt, err := os.ReadFile(c.cfg.PromptFile)
+    prompt, err := os.ReadFile(opts.PromptFile)
     if err != nil {
         return fmt.Errorf("failed to read prompt: %w", err)
     }
 
     // Read optional context file
     var fullPrompt string
-    if c.cfg.ContextFile != "" {
-        contextData, err := os.ReadFile(c.cfg.ContextFile)
+    if opts.ContextFile != "" {
+        contextData, err := os.ReadFile(opts.ContextFile)
         if err != nil {
             return fmt.Errorf("failed to read context: %w", err)
         }
@@ -2116,12 +2194,18 @@ func (c *coordinator) RunHeadless(ctx context.Context) error {
         fullPrompt = string(prompt)
     }
 
+    // Derive delegate directory for interrupt file polling
+    var delegateDir string
+    if opts.StatusFile != "" {
+        delegateDir = filepath.Dir(opts.StatusFile)
+    }
+
     // Create session (task session if we have parent info)
     var session *session.Session
-    if c.cfg.ParentSession != "" && c.cfg.TaskID != "" {
-        agentToolSessionID := c.sessions.CreateAgentToolSessionID(c.cfg.ParentSession, c.cfg.TaskID)
+    if opts.ParentSession != "" && opts.TaskID != "" {
+        agentToolSessionID := c.sessions.CreateAgentToolSessionID(opts.ParentSession, opts.TaskID)
         taskTitle := "Headless: " + truncate(fullPrompt, 50)
-        session, err = c.sessions.CreateTaskSession(ctx, agentToolSessionID, c.cfg.ParentSession, taskTitle)
+        session, err = c.sessions.CreateTaskSession(ctx, agentToolSessionID, opts.ParentSession, taskTitle)
     } else {
         session, err = c.sessions.Create(ctx, c.cfg.WorkingDir())
     }
@@ -2129,8 +2213,10 @@ func (c *coordinator) RunHeadless(ctx context.Context) error {
         return fmt.Errorf("failed to create session: %w", err)
     }
 
-    // Auto-approve permissions in headless mode
-    c.permissions.AutoApproveSession(session.ID)
+    // Auto-approve permissions in headless mode (unless RequireConfirmation is set)
+    if !opts.RequireConfirmation {
+        c.permissions.AutoApproveSession(session.ID)
+    }
 
     // Run with continuation loop (matches executeDelegatedTask logic)
     const maxIterations = 10
@@ -2138,6 +2224,15 @@ func (c *coordinator) RunHeadless(ctx context.Context) error {
     var totalToolCalls int
 
     for iteration := 0; iteration < maxIterations; iteration++ {
+        // Check for interrupt file (graceful shutdown signal from parent)
+        if delegateDir != "" {
+            interruptPath := filepath.Join(delegateDir, "interrupt")
+            if _, err := os.Stat(interruptPath); err == nil {
+                slog.Info("interrupt file detected, stopping gracefully", "iteration", iteration)
+                break
+            }
+        }
+
         iterPrompt := fullPrompt
         if iteration > 0 {
             iterPrompt = "Continue with the task. Use the available tools to complete the work. Do not just describe what you will do - actually do it using tools."
@@ -2201,19 +2296,19 @@ func (c *coordinator) RunHeadless(ctx context.Context) error {
     // Final status
     c.writeHeadlessStatus(maxIterations, totalToolCalls, "completed")
 
-    // Write output
+    // Write output using atomic file utilities (F0)
     finalResult := strings.Join(allTextParts, "\n\n")
-    if c.cfg.OutputFile != "" {
-        if err := os.WriteFile(c.cfg.OutputFile, []byte(finalResult), 0644); err != nil {
+    if opts.OutputFile != "" {
+        if err := fsutil.WriteAtomic(opts.OutputFile, []byte(finalResult), 0644); err != nil {
             return fmt.Errorf("failed to write output: %w", err)
         }
     }
 
-    // Write done marker
-    if c.cfg.StatusFile != "" {
-        doneFile := strings.TrimSuffix(c.cfg.StatusFile, ".json")
-        doneFile = filepath.Dir(doneFile) + "/done"
-        if err := os.WriteFile(doneFile, []byte("done"), 0644); err != nil {
+    // Write done marker using atomic file utilities (F0)
+    if delegateDir != "" {
+        donePath := filepath.Join(delegateDir, "done")
+        content := fmt.Sprintf("completed_at=%s\n", time.Now().Format(time.RFC3339))
+        if err := fsutil.WriteAtomic(donePath, []byte(content), 0644); err != nil {
             slog.Warn("failed to write done marker", "error", err)
         }
     }
@@ -2223,7 +2318,8 @@ func (c *coordinator) RunHeadless(ctx context.Context) error {
 
 // writeHeadlessStatus writes status.json for monitoring
 func (c *coordinator) writeHeadlessStatus(iteration, toolCalls int, phase string) {
-    if c.cfg.StatusFile == "" {
+    opts := c.cfg.Options
+    if opts.StatusFile == "" {
         return
     }
     status := map[string]interface{}{
@@ -2232,8 +2328,8 @@ func (c *coordinator) writeHeadlessStatus(iteration, toolCalls int, phase string
         "phase":       phase,
         "last_update": time.Now().Format(time.RFC3339),
     }
-    data, _ := json.Marshal(status)
-    os.WriteFile(c.cfg.StatusFile, data, 0644)
+    // Use atomic file utilities (F0)
+    fsutil.WriteJSON(opts.StatusFile, status)
 }
 
 // containsAny checks if text contains any of the indicators
@@ -2636,6 +2732,146 @@ type activeDelegateInfo struct {
 - [ ] Cleans up on spawn failure
 - [ ] Tracks active delegates for cleanup/recovery
 - [ ] Returns immediately with session ID
+- [ ] Calls saveDelegateState() after adding to activeDelegates
+- [ ] Build passes
+
+---
+
+### F9b: Configure Pool Executor Switch
+
+**File:** `internal/agent/coordinator.go`
+
+This feature integrates the tmux executor with the existing delegation pool,
+allowing the coordinator to switch between inline and tmux-based delegation.
+
+```go
+// initDelegatePool configures the delegation pool with the appropriate executor
+func (c *coordinator) initDelegatePool(ctx context.Context) {
+    opts := c.cfg.Options
+
+    maxDelegates := opts.MaxConcurrentDelegates
+    if maxDelegates <= 0 {
+        maxDelegates = 5 // sensible default
+    }
+
+    poolConfig := delegation.PoolConfig{
+        MaxWorkers:   maxDelegates,
+        QueueTimeout: 30 * time.Second,
+    }
+
+    c.delegatePool = delegation.NewPool(poolConfig, c.resourceMonitor)
+
+    // Configure executor based on tmux availability
+    if shell.IsTmuxAvailable() && !opts.ForceInlineDelegate {
+        // Use tmux-based delegation for full tool access
+        c.delegatePool.SetExecutor(c.spawnDelegateWithRetry)
+        slog.Info("delegate pool using tmux executor")
+    } else {
+        // Fall back to inline delegation
+        c.delegatePool.SetExecutor(c.executeDelegatedTask)
+        if !shell.IsTmuxAvailable() {
+            slog.Warn("tmux not available, using inline delegate executor")
+        }
+    }
+
+    // Start the pool
+    c.delegatePool.Start(ctx)
+
+    // Recover any orphaned delegates from previous crash
+    c.recoverOrphanedDelegates(ctx)
+}
+
+// spawnDelegateWithRetry wraps executeDelegatedTaskTmux with retry logic (Concern 35)
+func (c *coordinator) spawnDelegateWithRetry(ctx context.Context, task *delegation.Task) (string, error) {
+    // Check circuit breaker first (Concern 33)
+    if !c.delegateCircuitBreaker.Allow() {
+        return "", fmt.Errorf("delegate spawning circuit breaker open - too many recent failures")
+    }
+
+    // Check resource pressure (Concern 34)
+    if err := c.checkResourcePressure(); err != nil {
+        return "", err
+    }
+
+    backoff := time.Second
+    maxRetries := 3
+    var lastErr error
+
+    for i := 0; i < maxRetries; i++ {
+        sessionID, err := c.executeDelegatedTaskTmux(ctx, task)
+        if err == nil {
+            c.delegateCircuitBreaker.RecordSuccess()
+            c.delegateMetrics.IncSpawned()
+            return sessionID, nil
+        }
+
+        lastErr = err
+
+        // Check if error is retryable
+        if !isRetryableError(err) {
+            c.delegateCircuitBreaker.RecordFailure()
+            return "", err
+        }
+
+        slog.Warn("delegate spawn failed, retrying",
+            "task_id", task.ID,
+            "attempt", i+1,
+            "error", err,
+            "backoff", backoff,
+        )
+
+        if i < maxRetries-1 {
+            select {
+            case <-ctx.Done():
+                return "", ctx.Err()
+            case <-time.After(backoff):
+            }
+            backoff *= 2
+        }
+    }
+
+    c.delegateCircuitBreaker.RecordFailure()
+    return "", fmt.Errorf("delegate spawn failed after %d retries: %w", maxRetries, lastErr)
+}
+
+func isRetryableError(err error) bool {
+    errStr := err.Error()
+    retryable := []string{
+        "tmux server not found",
+        "temporary file",
+        "resource temporarily unavailable",
+        "connection refused",
+    }
+    for _, s := range retryable {
+        if strings.Contains(errStr, s) {
+            return true
+        }
+    }
+    return false
+}
+```
+
+**Call from NewCoordinator:**
+```go
+func NewCoordinator(ctx context.Context, cfg *config.Config, ...) *coordinator {
+    c := &coordinator{...}
+
+    // Initialize delegate pool with appropriate executor
+    c.initDelegatePool(ctx)
+
+    return c
+}
+```
+
+**Acceptance:**
+- [ ] Pool configured with MaxConcurrentDelegates from config
+- [ ] Tmux executor used when tmux available and ForceInlineDelegate=false
+- [ ] Inline executor used as fallback
+- [ ] Pool.Start() called during initialization
+- [ ] Orphaned delegates recovered on startup
+- [ ] Retry logic with exponential backoff
+- [ ] Circuit breaker integration
+- [ ] Resource pressure checks
 - [ ] Build passes
 
 ---
@@ -2924,6 +3160,33 @@ type coordinator struct {
 - [ ] Parent processes reports between turns
 - [ ] Handles both success and error cases
 - [ ] Cleans up report files after processing
+
+**Integration point in coordinator.Run():**
+
+The processPendingDelegateReports() function must be called at the start of each
+coordinator.Run() call to inject delegate results before processing user input:
+
+```go
+func (c *coordinator) Run(ctx context.Context, sessionID string, prompt string) (string, error) {
+    // Process any pending delegate reports before handling new input
+    // This ensures delegate results are injected between turns, avoiding race conditions
+    if err := c.processPendingDelegateReports(ctx, sessionID); err != nil {
+        slog.Warn("failed to process pending delegate reports", "error", err)
+        // Non-fatal - continue with normal processing
+    }
+
+    // ... rest of existing Run() implementation
+}
+```
+
+**Acceptance:**
+- [ ] Uses file-based queue instead of direct c.Run() injection
+- [ ] Avoids race condition with active parent turns
+- [ ] Queues reports with proper locking
+- [ ] Parent processes reports between turns via Run() integration
+- [ ] Handles both success and error cases
+- [ ] Cleans up report files after processing
+- [ ] processPendingDelegateReports() called at start of coordinator.Run()
 - [ ] Build passes
 
 ---

@@ -3,11 +3,7 @@
 <div align="center">
 
 [![Release](https://img.shields.io/github/v/release/jeffersonwarrior/nexora?style=for-the-badge&logo=github&color=blue)](https://github.com/jeffersonwarrior/nexora/releases)
-[![License](https://img.shields.io/github/license/jeffersonwarrior/nexora?style=for-the-badge)](LICENSE)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/jeffersonwarrior/nexora?style=for-the-badge&logo=go)](go.mod)
-[![CI/CD](https://img.shields.io/github/actions/workflow/status/jeffersonwarrior/nexora/ci.yml?branch=main[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey?style=for-the-badge)](https://github.com/jeffersonwarrior/nexora)style=for-the-badge[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey?style=for-the-badge)](https://github.com/jeffersonwarrior/nexora)logo=github)](.github/workflows/ci.yml)
-[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey?style=for-the-badge)](https://github.com/jeffersonwarrior/nexora)
-
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/jeffersonwarrior/nexora/ci.yml?branch=main&style=for-the-badge&logo=github)](.github/workflows/ci.yml)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/GCyC6qT79M)
 [![Twitter/X](https://img.shields.io/badge/X-Follow%20Community-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/i/communities/2004598673062216166/)
 [![Reddit](https://img.shields.io/badge/Reddit-r%2FZackor-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://www.reddit.com/r/Zackor/)
