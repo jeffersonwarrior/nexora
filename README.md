@@ -5,6 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/jeffersonwarrior/nexora?style=for-the-badge&logo=github&color=blue)](https://github.com/jeffersonwarrior/nexora/releases)
 [![License](https://img.shields.io/github/license/jeffersonwarrior/nexora?style=for-the-badge)](LICENSE)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/jeffersonwarrior/nexora?style=for-the-badge&logo=go)](go.mod)
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/jeffersonwarrior/nexora/ci.yml?branch=main[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey?style=for-the-badge)](https://github.com/jeffersonwarrior/nexora)style=for-the-badge[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey?style=for-the-badge)](https://github.com/jeffersonwarrior/nexora)logo=github)](.github/workflows/ci.yml)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-lightgrey?style=for-the-badge)](https://github.com/jeffersonwarrior/nexora)
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/GCyC6qT79M)
@@ -64,6 +65,21 @@ nexora chat  # Opens TUI for API key input & provider configuration
 ✅ OpenAI GPT, Z.AI Vision MCP, MiniMax Kimi  
 ✅ Auto-loads .env API keys → Production ready
 ```
+
+## 🚀 CI/CD Pipeline
+
+**Comprehensive automated pipeline** with quality checks, security scanning, and release automation:
+```bash
+✅ Multi-stage CI/CD with GitHub Actions
+✅ Automated testing (unit, integration, performance)
+✅ Security scanning (Gosec, SARIF, vulnerability checks)
+✅ Code quality (linting, formatting, static analysis)
+✅ Auto-fix capabilities with PR generation
+✅ Cross-platform releases with checksums
+✅ Dependency management and updates
+```
+
+See [CICD.md](CICD.md) for detailed pipeline documentation.
 
 ## 📦 Installation Options
 
