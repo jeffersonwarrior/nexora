@@ -44,10 +44,10 @@ func DefaultPoolConfig() PoolConfig {
 	return PoolConfig{
 		MaxConcurrent: 0, // Dynamic
 		QueueTimeout:  30 * time.Minute,
-		CPUPerAgent:   15.0,
-		MemPerAgent:   512 * 1024 * 1024, // 512MB
-		MinFreeMemory: 1024 * 1024 * 1024, // 1GB
-		MinFreeCPU:    20.0,
+		CPUPerAgent:   10.0,              // Reduced from 15% - delegates are lightweight
+		MemPerAgent:   256 * 1024 * 1024, // Reduced from 512MB - delegates share model
+		MinFreeMemory: 512 * 1024 * 1024, // Reduced from 1GB - more permissive
+		MinFreeCPU:    10.0,              // Reduced from 20% - more permissive
 	}
 }
 

@@ -26,7 +26,6 @@ func TestGeminiProvider(t *testing.T) {
 		require.NotNil(t, provider)
 		assert.NotEmpty(t, provider.Models)
 		assert.Equal(t, "gemini-3-pro", provider.DefaultLargeModelID)
-		assert.Equal(t, "gemini-2-5-flash", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

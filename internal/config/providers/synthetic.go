@@ -21,7 +21,6 @@ func SyntheticProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("SYNTHETIC_API_ENDPOINT"), "https://api.synthetic.new/v1"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "minimax/minimax-m2.1",
-		DefaultSmallModelID: "minimax/minimax-m2.1",
 		Models: []catwalk.Model{
 			{
 				ID:               "minimax/minimax-m2.1",

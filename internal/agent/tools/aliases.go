@@ -1,6 +1,10 @@
 package tools
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/nexora/nexora/internal/agent/utils"
+)
 
 // Tool aliases map alternative names to canonical tool names
 // Key: alias (case-insensitive), Value: canonical tool name
@@ -70,17 +74,22 @@ var toolAliases = map[string]string{
 
 // ResolveToolName resolves a tool name alias to its canonical name
 // Returns the canonical name if an alias is found, otherwise returns the original name
+// Also sanitizes tool names to remove XML/JSON artifacts that some models leak
 func ResolveToolName(name string) string {
 	if name == "" {
 		return name
 	}
-	
+
+	// Sanitize first to handle models that leak serialization format
+	// Example: "grep_path_pattern</arg_key><arg_value>..." -> "grep_path_pattern"
+	name = utils.SanitizeToolName(name)
+
 	// Try exact match (case-insensitive)
 	if canonical, ok := toolAliases[strings.ToLower(name)]; ok {
 		return canonical
 	}
-	
-	// No alias found, return original
+
+	// No alias found, return sanitized name
 	return name
 }
 

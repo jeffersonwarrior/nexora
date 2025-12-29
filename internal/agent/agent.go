@@ -838,18 +838,34 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (*fantasy
 					"tool_calls", sm.GetToolCallCount(),
 				)
 
-				// Create system message about being stuck
-				_, _ = a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
-					Role: message.System,
-					Parts: []message.ContentPart{
-						message.TextContent{
-							Text: fmt.Sprintf("🛑 Loop detected: %s\n\nStopping execution to prevent infinite loop. Please review the error and try a different approach.", reason),
-						},
-					},
-				})
+				// Differentiate between hard errors and "no progress" warnings
+				isErrorLoop := strings.Contains(strings.ToLower(reason), "error") || strings.Contains(strings.ToLower(reason), "oscillating")
+				isNoProgress := strings.Contains(strings.ToLower(reason), "no meaningful progress")
 
-				// Return error to halt execution
-				return fmt.Errorf("loop detected: %s", reason)
+				// Create system message about being stuck
+				if isErrorLoop {
+					// Hard error loop - halt execution
+					_, _ = a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
+						Role: message.System,
+						Parts: []message.ContentPart{
+							message.TextContent{
+								Text: fmt.Sprintf("🛑 Loop detected: %s\n\nStopping execution to prevent infinite loop. Please review the error and try a different approach.", reason),
+							},
+						},
+					})
+					return fmt.Errorf("loop detected: %s", reason)
+				} else if isNoProgress {
+					// Soft warning for no progress - don't halt, just warn
+					_, _ = a.messages.Create(genCtx, currentAssistant.SessionID, message.CreateMessageParams{
+						Role: message.System,
+						Parts: []message.ContentPart{
+							message.TextContent{
+								Text: fmt.Sprintf("⚠️ Progress warning: %s\n\nIf you're exploring or gathering information, you can continue. If you're stuck, try a different approach.", reason),
+							},
+						},
+					})
+					// Don't return error - let agent continue
+				}
 			}
 
 			// Track tool call for loop detection (existing AIOPS code)
@@ -1531,11 +1547,11 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 	}
 
 	agent := fantasy.NewAgent(a.smallModel.Model,
-		fantasy.WithSystemPrompt(string(titlePrompt)+"\n /no_think"),
+		fantasy.WithSystemPrompt(string(titlePrompt)),
 	)
 
 	resp, err := agent.Stream(ctx, fantasy.AgentStreamCall{
-		Prompt:          fmt.Sprintf("Generate a concise title for the following content:\n\n%s\n <think>\n\n</think>", prompt),
+		Prompt:          fmt.Sprintf("Generate a short title (max 50 chars) for this message:\n\n%s", prompt),
 		MaxOutputTokens: &maxOutput,
 		PrepareStep: func(callContext context.Context, options fantasy.PrepareStepFunctionOptions) (_ context.Context, prepared fantasy.PrepareStepResult, err error) {
 			prepared.Messages = options.Messages
@@ -1588,11 +1604,34 @@ func (a *sessionAgent) generateTitle(ctx context.Context, session *session.Sessi
 	if idx := strings.Index(title, "</think>"); idx > 0 {
 		title = title[idx+len("</think>"):]
 	}
+	// Also check for <think> opening tag
+	if idx := strings.Index(title, "<think>"); idx >= 0 {
+		// Find closing tag or take content after
+		if endIdx := strings.Index(title, "</think>"); endIdx > idx {
+			title = title[endIdx+len("</think>"):]
+		} else {
+			title = title[:idx]
+		}
+	}
 
 	title = strings.TrimSpace(title)
+
+	// Check for invalid/placeholder titles that models sometimes generate
+	invalidTitles := []string{
+		"empty message", "empty", "untitled", "no title",
+		"message", "conversation", "chat", "new session",
+	}
+	titleLower := strings.ToLower(title)
+	for _, invalid := range invalidTitles {
+		if titleLower == invalid {
+			title = "" // Force fallback
+			break
+		}
+	}
+
 	if title == "" {
 		slog.Warn("failed to generate title, using prompt fallback",
-			"warn", "empty title",
+			"warn", "empty or invalid title",
 			"session_id", session.ID,
 			"original_response", resp.Response.Content.Text())
 		// Fallback: use first 50 chars of prompt

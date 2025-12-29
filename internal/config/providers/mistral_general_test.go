@@ -72,7 +72,6 @@ func TestMistralGeneralProvider_HasDefaultModelIDs(t *testing.T) {
 	provider := MistralGeneralProvider(nil)
 
 	require.Equal(t, "mistral-large-3-25-12", string(provider.DefaultLargeModelID))
-	require.Equal(t, "ministral-3-8b-25-12", string(provider.DefaultSmallModelID))
 }
 
 func TestMistralGeneralProvider_LargeModelIsExpensive(t *testing.T) {

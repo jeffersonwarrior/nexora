@@ -240,10 +240,8 @@ func (m *modelDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 				return m, m.localModelsDialog.Init()
 			}
 
+			// Always use large model (small model support removed)
 			modelType := config.SelectedModelTypeLarge
-			if m.modelList.GetModelType() == SmallModelType {
-				modelType = config.SelectedModelTypeSmall
-			}
 
 			askForApiKey := func() {
 				m.keyMap.isClaudeAuthChoiseHelp = false
@@ -351,10 +349,8 @@ func (m *modelDialogCmp) Update(msg tea.Msg) (util.Model, tea.Cmd) {
 			}
 			// Only allow editing if provider is already configured
 			if m.isProviderConfigured(string(selectedItem.Provider.ID)) {
+				// Always use large model (small model support removed)
 				modelType := config.SelectedModelTypeLarge
-				if m.modelList.GetModelType() == SmallModelType {
-					modelType = config.SelectedModelTypeSmall
-				}
 				m.keyMap.isAPIKeyHelp = true
 				m.needsAPIKey = true
 				m.selectedModel = selectedItem

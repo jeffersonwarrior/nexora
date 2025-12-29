@@ -620,13 +620,19 @@ func (m *TmuxManager) GetPooledSession(workingDir string) (*TmuxSession, error) 
 			if cmd.Run() == nil {
 				ps.Status = SessionBusy
 				ps.LastUsedAt = time.Now()
+				session := ps.TmuxSession
 				m.poolMu.Unlock()
+
+				// Ensure session is in main sessions map for SendCommand compatibility
+				m.mu.Lock()
+				m.sessions[session.ID] = session
+				m.mu.Unlock()
 
 				m.metricsMu.Lock()
 				m.metrics.Reused++
 				m.metricsMu.Unlock()
 
-				return ps.TmuxSession, nil
+				return session, nil
 			}
 			// Session died, remove from pool
 			delete(m.pool, ps.ID)
@@ -652,13 +658,19 @@ func (m *TmuxManager) GetPooledSession(workingDir string) (*TmuxSession, error) 
 					ps.WorkingDir = workingDir
 					ps.Status = SessionBusy
 					ps.LastUsedAt = time.Now()
+					session := ps.TmuxSession
 					m.poolMu.Unlock()
+
+					// Ensure session is in main sessions map for SendCommand compatibility
+					m.mu.Lock()
+					m.sessions[session.ID] = session
+					m.mu.Unlock()
 
 					m.metricsMu.Lock()
 					m.metrics.Reused++
 					m.metricsMu.Unlock()
 
-					return ps.TmuxSession, nil
+					return session, nil
 				}
 				delete(m.pool, ps.ID)
 			}

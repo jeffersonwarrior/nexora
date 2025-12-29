@@ -26,7 +26,6 @@ func TestAnthropicProvider(t *testing.T) {
 		require.NotNil(t, provider)
 		assert.NotEmpty(t, provider.Models)
 		assert.Equal(t, "claude-opus-4-5-20251101", provider.DefaultLargeModelID)
-		assert.Equal(t, "claude-haiku-4-5-20241022", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

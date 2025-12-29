@@ -23,7 +23,6 @@ func XAIProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("XAI_API_ENDPOINT"), "https://api.x.ai/v1"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "grok-4-1-fast-reasoning",
-		DefaultSmallModelID: "grok-4-1-fast",
 		Models: []catwalk.Model{
 			{
 				ID:               "grok-4-1-fast-reasoning",

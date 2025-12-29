@@ -23,7 +23,6 @@ func KimiProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("KIMI_API_ENDPOINT"), "https://api.kimi.com/coding/"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "kimi-k2",
-		DefaultSmallModelID: "kimi-k2-turbo",
 		Models: []catwalk.Model{
 			// Kimi K2 - Latest flagship
 			{

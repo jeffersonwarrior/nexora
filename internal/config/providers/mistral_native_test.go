@@ -19,7 +19,6 @@ func TestMistralNativeProvider(t *testing.T) {
 		require.Equal(t, "https://api.mistral.ai/v1", provider.APIEndpoint)
 		require.Len(t, provider.Models, 2)
 		require.Equal(t, "devstral-2512", provider.DefaultLargeModelID)
-		require.Equal(t, "devstral-small-2512", provider.DefaultSmallModelID)
 
 		var devstralModel *catwalk.Model
 		for i := range provider.Models {

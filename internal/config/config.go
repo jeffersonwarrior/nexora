@@ -51,7 +51,6 @@ type SelectedModelType string
 
 const (
 	SelectedModelTypeLarge SelectedModelType = "large"
-	SelectedModelTypeSmall SelectedModelType = "small"
 )
 
 const (
@@ -402,8 +401,7 @@ func (c *Config) IsConfigured() bool {
 	return len(c.EnabledProviders()) > 0
 }
 
-// AreModelsConfigured returns true if at least the large model is configured.
-// Small model is optional - falls back to large model if not configured.
+// AreModelsConfigured returns true if the large model is configured.
 func (c *Config) AreModelsConfigured() bool {
 	_, largeSelected := c.Models[SelectedModelTypeLarge]
 	if !largeSelected {
@@ -486,14 +484,6 @@ func (c *Config) GetModelByType(modelType SelectedModelType) *catwalk.Model {
 
 func (c *Config) LargeModel() *catwalk.Model {
 	model, ok := c.Models[SelectedModelTypeLarge]
-	if !ok {
-		return nil
-	}
-	return c.GetModel(model.Provider, model.Model)
-}
-
-func (c *Config) SmallModel() *catwalk.Model {
-	model, ok := c.Models[SelectedModelTypeSmall]
 	if !ok {
 		return nil
 	}
@@ -655,18 +645,14 @@ func (c *Config) ValidateAndFallbackModels() (bool, error) {
 		return false, nil
 	}
 
-	// Validate current models
+	// Validate current model
 	largeValid, err := c.validateModel(SelectedModelTypeLarge)
 	if err != nil {
 		return false, err
 	}
-	smallValid, err := c.validateModel(SelectedModelTypeSmall)
-	if err != nil {
-		return false, err
-	}
 
-	if largeValid && smallValid {
-		return true, nil // Current models are valid
+	if largeValid {
+		return true, nil // Current model is valid
 	}
 
 	// Try recent models fallback
@@ -699,14 +685,13 @@ func (c *Config) validateModel(modelType SelectedModelType) (bool, error) {
 	return false, nil
 }
 
-// tryRecentModelsFallback attempts to fallback to recent models if current models are invalid
+// tryRecentModelsFallback attempts to fallback to recent models if current model is invalid
 func (c *Config) tryRecentModelsFallback() (bool, error) {
 	if c.RecentModels == nil {
 		return false, nil // No recent models to try
 	}
 
 	// Try recent models for large model
-	success := false
 	if recentLarge, exists := c.RecentModels[SelectedModelTypeLarge]; exists && len(recentLarge) > 0 {
 		for _, recentModel := range recentLarge {
 			if c.isValidRecentModel(SelectedModelTypeLarge, recentModel) {
@@ -714,29 +699,12 @@ func (c *Config) tryRecentModelsFallback() (bool, error) {
 				if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeLarge), recentModel); err != nil {
 					return false, fmt.Errorf("failed to update fallback large model: %w", err)
 				}
-				success = true
-				break
+				return true, nil
 			}
 		}
 	}
 
-	// Try recent models for small model
-	smallSuccess := false
-	if recentSmall, exists := c.RecentModels[SelectedModelTypeSmall]; exists && len(recentSmall) > 0 {
-		for _, recentModel := range recentSmall {
-			if c.isValidRecentModel(SelectedModelTypeSmall, recentModel) {
-				c.Models[SelectedModelTypeSmall] = recentModel
-				if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeSmall), recentModel); err != nil {
-					return false, fmt.Errorf("failed to update fallback small model: %w", err)
-				}
-				smallSuccess = true
-				break
-			}
-		}
-	}
-
-	// Return true if at least one model was successfully restored
-	return success || smallSuccess, nil
+	return false, nil
 }
 
 // isValidRecentModel checks if a recent model is valid and can be used as fallback

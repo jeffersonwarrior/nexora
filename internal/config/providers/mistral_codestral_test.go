@@ -26,7 +26,6 @@ func TestMistralCodestralProvider(t *testing.T) {
 		require.NotNil(t, provider)
 		require.Len(t, provider.Models, 2)
 		assert.Equal(t, "codestral-25-08", provider.DefaultLargeModelID)
-		assert.Equal(t, "codestral-25-08", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

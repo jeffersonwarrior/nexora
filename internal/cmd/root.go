@@ -233,9 +233,6 @@ func setupApp(cmd *cobra.Command) (*app.App, error) {
 			if _, exists := cfg.Models[config.SelectedModelTypeLarge]; !exists {
 				cfg.Models[config.SelectedModelTypeLarge] = config.SelectedModel{}
 			}
-			if _, exists := cfg.Models[config.SelectedModelTypeSmall]; !exists {
-				cfg.Models[config.SelectedModelTypeSmall] = config.SelectedModel{}
-			}
 			appInstance, err = app.New(ctx, conn, cfg)
 			if err != nil {
 				slog.Error("Failed to create app instance with fallback config", "error", err)

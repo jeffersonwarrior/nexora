@@ -26,7 +26,6 @@ func TestKimiProvider(t *testing.T) {
 		require.NotNil(t, provider)
 		require.Len(t, provider.Models, 4)
 		assert.Equal(t, "kimi-k2", provider.DefaultLargeModelID)
-		assert.Equal(t, "kimi-k2-turbo", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

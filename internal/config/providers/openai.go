@@ -23,7 +23,6 @@ func OpenAIProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("OPENAI_API_ENDPOINT"), "https://api.openai.com/v1"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "gpt-4o",
-		DefaultSmallModelID: "gpt-4o-mini",
 		Models: []catwalk.Model{
 			// Reasoning models (O1 series)
 			{

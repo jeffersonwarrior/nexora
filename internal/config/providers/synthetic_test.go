@@ -91,15 +91,4 @@ func TestSyntheticProvider_DefaultModelExists(t *testing.T) {
 	}
 
 	require.True(t, defaultLargeFound, "DefaultLargeModelID %s not found in models list", provider.DefaultLargeModelID)
-
-	// Verify that the default small model actually exists in the models list
-	defaultSmallFound := false
-	for _, model := range provider.Models {
-		if model.ID == provider.DefaultSmallModelID {
-			defaultSmallFound = true
-			break
-		}
-	}
-
-	require.True(t, defaultSmallFound, "DefaultSmallModelID %s not found in models list", provider.DefaultSmallModelID)
 }

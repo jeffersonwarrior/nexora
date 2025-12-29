@@ -12,6 +12,7 @@ import (
 	"github.com/nexora/nexora/internal/agent/delegation"
 	"github.com/nexora/nexora/internal/agent/prompt"
 	"github.com/nexora/nexora/internal/agent/tools"
+	"github.com/nexora/nexora/internal/message"
 	"github.com/nexora/nexora/internal/permission"
 )
 
@@ -29,7 +30,6 @@ type DelegateParams struct {
 	Context    string `json:"context,omitempty" description:"Additional context or background information for the sub-agent."`
 	WorkingDir string `json:"working_dir,omitempty" description:"Working directory for the sub-agent (defaults to current project root)."`
 	MaxTokens  int    `json:"max_tokens,omitempty" description:"Maximum tokens for the sub-agent response (default: 4096)."`
-	Background bool   `json:"background,omitempty" description:"Run the delegated task in the background and return immediately with a task ID."`
 }
 
 // DelegatePermissionsParams is the permission-safe version of DelegateParams
@@ -37,7 +37,6 @@ type DelegatePermissionsParams struct {
 	Task       string `json:"task"`
 	Context    string `json:"context"`
 	WorkingDir string `json:"working_dir"`
-	Background bool   `json:"background"`
 }
 
 // delegateValidationResult holds validated parameters from tool call context
@@ -105,7 +104,6 @@ func (c *coordinator) delegateTool(ctx context.Context) (fantasy.AgentTool, erro
 						Task:       params.Task,
 						Context:    params.Context,
 						WorkingDir: params.WorkingDir,
-						Background: params.Background,
 					},
 				},
 			)
@@ -126,8 +124,8 @@ func (c *coordinator) delegateTool(ctx context.Context) (fantasy.AgentTool, erro
 				maxTokens = 4096
 			}
 
-			// Submit to pool
-			taskID, done, err := c.delegatePool.Submit(
+			// Submit to pool - always runs asynchronously
+			taskID, _, err := c.delegatePool.Submit(
 				params.Task,
 				params.Context,
 				workingDir,
@@ -138,32 +136,20 @@ func (c *coordinator) delegateTool(ctx context.Context) (fantasy.AgentTool, erro
 				return fantasy.NewTextErrorResponse(fmt.Sprintf("failed to submit task: %s", err)), nil
 			}
 
-			// If background mode, return task ID immediately
-			if params.Background {
-				stats := c.delegatePool.Stats()
-				return fantasy.NewTextResponse(fmt.Sprintf(
-					"Task queued with ID: %s\n\nPool status: %d running, %d queued (max %d concurrent)\n\nUse delegate with action='status' and task_id='%s' to check progress.",
-					taskID,
-					stats.Running,
-					stats.Queued,
-					stats.MaxConcurrent,
-					taskID,
-				)), nil
-			}
-
-			// Wait for task completion
-			<-done
-
-			result, err := c.delegatePool.Wait(taskID)
-			if err != nil {
-				return fantasy.NewTextErrorResponse(fmt.Sprintf("delegate task failed: %s", err)), nil
-			}
-
-			return fantasy.NewTextResponse(result), nil
+			// Always return immediately - the delegate will report back when complete
+			stats := c.delegatePool.Stats()
+			return fantasy.NewTextResponse(fmt.Sprintf(
+				"Task delegated (ID: %s). The sub-agent is now working on this task.\n\nPool status: %d running, %d queued\n\nYou can continue with other work. The delegate will report back when complete.",
+				taskID,
+				stats.Running,
+				stats.Queued,
+			)), nil
 		}), nil
 }
 
 // executeDelegatedTask runs a delegated task with a sub-agent.
+// It implements a continuation loop to ensure the agent actually completes work
+// rather than just outputting plans without executing them.
 func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation.Task) (string, error) {
 	// Build the full prompt with context
 	fullPrompt := task.Description
@@ -181,20 +167,20 @@ func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation
 		return "", fmt.Errorf("error creating prompt: %w", err)
 	}
 
-	// Use small model for delegated tasks (efficient and cost-effective)
-	_, small, err := c.buildAgentModels(ctx)
+	// Use large model for delegated tasks (small model support removed)
+	_, model, err := c.buildAgentModels(ctx)
 	if err != nil {
 		return "", fmt.Errorf("error building models: %w", err)
 	}
 
-	systemPrompt, err := promptTemplate.Build(ctx, small.Model.Provider(), small.Model.Model(), *c.cfg)
+	systemPrompt, err := promptTemplate.Build(ctx, model.Model.Provider(), model.Model.Model(), *c.cfg)
 	if err != nil {
 		return "", fmt.Errorf("error building system prompt: %w", err)
 	}
 
-	smallProviderCfg, ok := c.cfg.Providers.Get(small.ModelCfg.Provider)
+	providerCfg, ok := c.cfg.Providers.Get(model.ModelCfg.Provider)
 	if !ok {
-		return "", fmt.Errorf("small model provider not configured")
+		return "", fmt.Errorf("model provider not configured")
 	}
 
 	// Build tools for the sub-agent - give it access to core tools
@@ -202,14 +188,14 @@ func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation
 		tools.NewGlobTool(task.WorkingDir),
 		tools.NewGrepTool(task.WorkingDir),
 		tools.NewViewTool(c.lspClients, c.permissions, task.WorkingDir),
-		tools.NewBashTool(c.permissions, task.WorkingDir, c.cfg.Options.Attribution, small.Model.Model()),
+		tools.NewBashTool(c.permissions, task.WorkingDir, c.cfg.Options.Attribution, model.Model.Model()),
 	}
 
 	// Create the sub-agent
 	agent := NewSessionAgent(SessionAgentOptions{
-		LargeModel:           small,
-		SmallModel:           small,
-		SystemPromptPrefix:   smallProviderCfg.SystemPromptPrefix,
+		LargeModel:           model,
+		SmallModel:           model,
+		SystemPromptPrefix:   providerCfg.SystemPromptPrefix,
 		SystemPrompt:         systemPrompt,
 		DisableAutoSummarize: true, // Sub-agents don't need auto-summarize
 		IsYolo:               c.permissions.SkipRequests(),
@@ -239,20 +225,152 @@ func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation
 		slog.Warn("delegate: MaxTokens < 1, using fallback", "original", maxTokens, "fallback", 4096)
 	}
 
-	// Run the sub-agent
-	result, err := agent.Run(ctx, SessionAgentCall{
-		SessionID:        session.ID,
-		Prompt:           fullPrompt,
-		MaxOutputTokens:  maxTokens,
-		ProviderOptions:  getProviderOptions(small, smallProviderCfg),
-		Temperature:      small.ModelCfg.Temperature,
-		TopP:             small.ModelCfg.TopP,
-		TopK:             small.ModelCfg.TopK,
-		FrequencyPenalty: small.ModelCfg.FrequencyPenalty,
-		PresencePenalty:  small.ModelCfg.PresencePenalty,
-	})
-	if err != nil {
-		return "", fmt.Errorf("agent run failed: %w", err)
+	// Run the sub-agent with continuation loop
+	// The agent may need multiple turns to actually complete work
+	const maxIterations = 10
+	var allTextParts []string
+	var totalToolCalls int
+
+	for iteration := 0; iteration < maxIterations; iteration++ {
+		prompt := fullPrompt
+		if iteration > 0 {
+			// For continuation, prompt the agent to continue with the task
+			prompt = "Continue with the task. Use the available tools (view, glob, grep, bash) to complete the work. Do not just describe what you will do - actually do it using tools."
+		}
+
+		slog.Debug("delegate iteration",
+			"task_id", task.ID,
+			"iteration", iteration,
+			"total_tool_calls", totalToolCalls,
+		)
+
+		result, err := agent.Run(ctx, SessionAgentCall{
+			SessionID:        session.ID,
+			Prompt:           prompt,
+			MaxOutputTokens:  maxTokens,
+			ProviderOptions:  getProviderOptions(model, providerCfg),
+			Temperature:      model.ModelCfg.Temperature,
+			TopP:             model.ModelCfg.TopP,
+			TopK:             model.ModelCfg.TopK,
+			FrequencyPenalty: model.ModelCfg.FrequencyPenalty,
+			PresencePenalty:  model.ModelCfg.PresencePenalty,
+		})
+		if err != nil {
+			// If we have some results, return them even on error
+			if len(allTextParts) > 0 {
+				slog.Warn("delegate iteration failed but returning partial results",
+					"task_id", task.ID,
+					"iteration", iteration,
+					"error", err,
+				)
+				break
+			}
+			return "", fmt.Errorf("agent run failed: %w", err)
+		}
+
+		// Count tool calls by checking messages in the session
+		// Tool calls are tracked on assistant messages, not on StepResult
+		msgs, listErr := c.messages.List(ctx, session.ID)
+		iterationToolCalls := 0
+		if listErr == nil {
+			for _, msg := range msgs {
+				if msg.Role == message.Assistant {
+					iterationToolCalls += len(msg.ToolCalls())
+				}
+			}
+		}
+		// Only count new tool calls from this iteration
+		newToolCalls := iterationToolCalls - totalToolCalls
+		if newToolCalls < 0 {
+			newToolCalls = 0
+		}
+		totalToolCalls = iterationToolCalls
+
+		// Extract text content from this iteration
+		for _, content := range result.Response.Content {
+			if content.GetType() == fantasy.ContentTypeText {
+				if tc, ok := content.(fantasy.TextContent); ok && tc.Text != "" {
+					allTextParts = append(allTextParts, tc.Text)
+				}
+			}
+		}
+
+		// Check if the agent is done or needs to continue
+		responseText := strings.ToLower(result.Response.Content.Text())
+
+		// Check for work-in-progress indicators that suggest we need to continue
+		workInProgress := false
+		continueIndicators := []string{
+			"now let me", "next, i'll", "let me create", "i'll now",
+			"let me check", "let me examine", "let me review",
+			"let me implement", "now i'll", "moving on to",
+			"let me update", "let me modify", "let me add",
+		}
+		for _, indicator := range continueIndicators {
+			if strings.Contains(responseText, indicator) {
+				workInProgress = true
+				break
+			}
+		}
+
+		// Check for completion indicators
+		completionIndicators := []string{
+			"task completed", "finished", "done", "complete",
+			"successfully completed", "all set", "here are the results",
+			"summary:", "## summary", "findings:",
+		}
+		taskComplete := false
+		for _, indicator := range completionIndicators {
+			if strings.Contains(responseText, indicator) {
+				taskComplete = true
+				break
+			}
+		}
+
+		// Decision: continue or stop
+		// Stop if:
+		// 1. Task appears complete, OR
+		// 2. We've done real work (tool calls) AND no work-in-progress indicators, OR
+		// 3. This iteration had no tool calls and no work-in-progress (agent is stuck)
+		if taskComplete {
+			slog.Debug("delegate task complete",
+				"task_id", task.ID,
+				"iteration", iteration,
+				"total_tool_calls", totalToolCalls,
+			)
+			break
+		}
+
+		if totalToolCalls > 0 && !workInProgress {
+			slog.Debug("delegate finished work",
+				"task_id", task.ID,
+				"iteration", iteration,
+				"total_tool_calls", totalToolCalls,
+			)
+			break
+		}
+
+		if newToolCalls == 0 && !workInProgress {
+			// Agent didn't use tools in this iteration and isn't indicating more work - might be stuck
+			if iteration > 0 {
+				slog.Warn("delegate appears stuck, stopping",
+					"task_id", task.ID,
+					"iteration", iteration,
+					"total_tool_calls", totalToolCalls,
+				)
+				break
+			}
+			// First iteration with no tools - continue once to give it a chance
+		}
+
+		// If we're still here, continue to next iteration
+		slog.Debug("delegate continuing",
+			"task_id", task.ID,
+			"iteration", iteration,
+			"work_in_progress", workInProgress,
+			"new_tool_calls", newToolCalls,
+			"total_tool_calls", totalToolCalls,
+		)
 	}
 
 	// Update parent session with costs
@@ -272,25 +390,51 @@ func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation
 		return "", fmt.Errorf("failed to save parent session cost: %w", err)
 	}
 
-	// Extract all text content from response, not just the first block
-	// This handles models that may output reasoning/thinking content before text
-	var textParts []string
-	for _, content := range result.Response.Content {
-		if content.GetType() == fantasy.ContentTypeText {
-			if tc, ok := content.(fantasy.TextContent); ok && tc.Text != "" {
-				textParts = append(textParts, tc.Text)
+	// If no text content found, try reasoning text as fallback
+	if len(allTextParts) == 0 {
+		// Check messages for any tool results that might be useful
+		msgs, listErr := c.messages.List(ctx, session.ID)
+		if listErr == nil {
+			for _, msg := range msgs {
+				if msg.Role == message.Assistant {
+					if text := msg.Content().Text; text != "" {
+						allTextParts = append(allTextParts, text)
+					}
+				}
 			}
 		}
-	}
 
-	// If no text content found, try reasoning text as fallback
-	if len(textParts) == 0 {
-		reasoningText := result.Response.Content.ReasoningText()
-		if reasoningText != "" {
-			return reasoningText, nil
+		if len(allTextParts) == 0 {
+			return "", fmt.Errorf("delegate produced no text output after %d tool calls", totalToolCalls)
 		}
-		return "", fmt.Errorf("delegate produced no text output")
 	}
 
-	return strings.Join(textParts, "\n"), nil
+	result := strings.Join(allTextParts, "\n\n")
+
+	// Trigger the main AI with the delegate's report
+	// This prompts the parent session to continue with the delegate's findings
+	go func() {
+		reportPrompt := fmt.Sprintf(
+			"[DELEGATE REPORT - Task ID: %s]\n\nThe delegated sub-agent has completed its task.\n\n## Delegate's Findings:\n\n%s\n\n---\nPlease review the delegate's report and continue accordingly.",
+			task.ID,
+			result,
+		)
+
+		slog.Info("delegate reporting to parent session",
+			"task_id", task.ID,
+			"parent_session", task.ParentSession,
+		)
+
+		// Use a fresh context since the original might be cancelled
+		reportCtx := context.Background()
+		if _, runErr := c.Run(reportCtx, task.ParentSession, reportPrompt); runErr != nil {
+			slog.Error("failed to report delegate results to parent session",
+				"task_id", task.ID,
+				"parent_session", task.ParentSession,
+				"error", runErr,
+			)
+		}
+	}()
+
+	return result, nil
 }

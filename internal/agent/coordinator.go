@@ -776,6 +776,7 @@ func (c *coordinator) getToolTimeout(toolName string) time.Duration {
 
 // TODO: when we support multiple agents we need to change this so that we pass in the agent specific model config
 // TODO: enhance agent execution by implementing: 1) Execution-first prompting that prioritizes tool usage over explanations, 2) Incremental execution pipeline with immediate tool calls after analysis, 3) Self-correction loops that retry failed actions instead of stopping, 4) Tool-chain orchestration for multi-step operations
+// buildAgentModels returns the large model (small model support removed).
 func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error) {
 	largeModelCfg, ok := c.cfg.Models[config.SelectedModelTypeLarge]
 	if !ok {
@@ -792,73 +793,24 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		return Model{}, Model{}, err
 	}
 
-	// Small model is optional - fallback to large model if not configured
-	smallModelCfg, smallConfigured := c.cfg.Models[config.SelectedModelTypeSmall]
-	var smallProviderCfg config.ProviderConfig
-	var smallProvider fantasy.Provider
-
-	if smallConfigured {
-		var providerOk bool
-		smallProviderCfg, providerOk = c.cfg.Providers.Get(smallModelCfg.Provider)
-		if providerOk {
-			smallProvider, err = c.buildProvider(smallProviderCfg, smallModelCfg)
-			if err != nil {
-				// Fall back to large model on error
-				slog.Warn("failed to build small model provider, falling back to large model", "error", err)
-				smallConfigured = false
-			}
-		} else {
-			smallConfigured = false
-		}
-	}
-
-	// Fallback to large model
-	if !smallConfigured {
-		slog.Info("small model not configured, using large model for all operations")
-		smallModelCfg = largeModelCfg
-		smallProviderCfg = largeProviderCfg
-		smallProvider = largeProvider
-	}
-
 	var largeCatwalkModel *catwalk.Model
-	var smallCatwalkModel *catwalk.Model
-
 	for _, m := range largeProviderCfg.Models {
 		if m.ID == largeModelCfg.Model {
 			largeCatwalkModel = &m
 		}
 	}
-	for _, m := range smallProviderCfg.Models {
-		if m.ID == smallModelCfg.Model {
-			smallCatwalkModel = &m
-		}
-	}
 
 	// Fall back to catwalk known providers if not found in provider config
 	knownProviders, err := config.Providers(c.cfg)
-	if err == nil {
-		if largeCatwalkModel == nil {
-			for _, p := range knownProviders {
-				if string(p.ID) == largeModelCfg.Provider {
-					for i, m := range p.Models {
-						if m.ID == largeModelCfg.Model {
-							largeCatwalkModel = &p.Models[i]
-						}
+	if err == nil && largeCatwalkModel == nil {
+		for _, p := range knownProviders {
+			if string(p.ID) == largeModelCfg.Provider {
+				for i, m := range p.Models {
+					if m.ID == largeModelCfg.Model {
+						largeCatwalkModel = &p.Models[i]
 					}
-					break
 				}
-			}
-		}
-		if smallCatwalkModel == nil {
-			for _, p := range knownProviders {
-				if string(p.ID) == smallModelCfg.Provider {
-					for i, m := range p.Models {
-						if m.ID == smallModelCfg.Model {
-							smallCatwalkModel = &p.Models[i]
-						}
-					}
-					break
-				}
+				break
 			}
 		}
 	}
@@ -867,55 +819,32 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		return Model{}, Model{}, fmt.Errorf("large model %s not found for provider %s", largeModelCfg.Model, largeModelCfg.Provider)
 	}
 
-	if smallCatwalkModel == nil {
-		return Model{}, Model{}, fmt.Errorf("small model %s not found for provider %s", smallModelCfg.Model, smallModelCfg.Provider)
-	}
-
-	// Log detected models with their context windows
-	slog.Info("Models successfully initialized",
-		"large_model", map[string]any{
+	// Log detected model with context window
+	slog.Info("Model successfully initialized",
+		"model", map[string]any{
 			"id":             largeModelCfg.Model,
 			"provider":       largeModelCfg.Provider,
 			"context_window": largeCatwalkModel.ContextWindow,
-		},
-		"small_model", map[string]any{
-			"id":             smallModelCfg.Model,
-			"provider":       smallModelCfg.Provider,
-			"context_window": smallCatwalkModel.ContextWindow,
 		})
 
 	largeModelID := largeModelCfg.Model
-	smallModelID := smallModelCfg.Model
 
 	if largeModelCfg.Provider == openrouter.Name && isExactoSupported(largeModelID) {
 		largeModelID += ":exacto"
 	}
 
-	if smallModelCfg.Provider == openrouter.Name && isExactoSupported(smallModelID) {
-		smallModelID += ":exacto"
-	}
-
-	// Legacy GPT-OSS-120B mappings removed - DeepSeek Coder 2 is default
-	// Special handling for Cerebras no longer needed
-
 	largeModel, err := largeProvider.LanguageModel(ctx, largeModelID)
 	if err != nil {
 		return Model{}, Model{}, err
 	}
-	smallModel, err := smallProvider.LanguageModel(ctx, smallModelID)
-	if err != nil {
-		return Model{}, Model{}, err
-	}
 
-	return Model{
-			Model:      largeModel,
-			CatwalkCfg: *largeCatwalkModel,
-			ModelCfg:   largeModelCfg,
-		}, Model{
-			Model:      smallModel,
-			CatwalkCfg: *smallCatwalkModel,
-			ModelCfg:   smallModelCfg,
-		}, nil
+	model := Model{
+		Model:      largeModel,
+		CatwalkCfg: *largeCatwalkModel,
+		ModelCfg:   largeModelCfg,
+	}
+	// Return same model for both large and small (backward compatibility)
+	return model, model, nil
 }
 
 func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map[string]string) (fantasy.Provider, error) {

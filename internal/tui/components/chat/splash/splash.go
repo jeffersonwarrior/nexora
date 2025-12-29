@@ -508,39 +508,7 @@ func (s *splashCmp) setPreferredModel(selectedItem models.ModelOption) tea.Cmd {
 		return util.ReportError(err)
 	}
 
-	// Now lets automatically setup the small model
-	knownProvider, err := s.getProvider(selectedItem.Provider.ID)
-	if err != nil {
-		return util.ReportError(err)
-	}
-	if knownProvider == nil {
-		// for local provider we just use the same model
-		err = cfg.UpdatePreferredModel(config.SelectedModelTypeSmall, selectedModel)
-		if err != nil {
-			return util.ReportError(err)
-		}
-	} else {
-		smallModel := knownProvider.DefaultSmallModelID
-		model := cfg.GetModel(string(selectedItem.Provider.ID), smallModel)
-		// should never happen
-		if model == nil {
-			err = cfg.UpdatePreferredModel(config.SelectedModelTypeSmall, selectedModel)
-			if err != nil {
-				return util.ReportError(err)
-			}
-			return nil
-		}
-		smallSelectedModel := config.SelectedModel{
-			Model:           smallModel,
-			Provider:        string(selectedItem.Provider.ID),
-			ReasoningEffort: model.DefaultReasoningEffort,
-			MaxTokens:       model.DefaultMaxTokens,
-		}
-		err = cfg.UpdatePreferredModel(config.SelectedModelTypeSmall, smallSelectedModel)
-		if err != nil {
-			return util.ReportError(err)
-		}
-	}
+	// Small model support removed - only large model is used
 	cfg.SetupAgents()
 	return nil
 }

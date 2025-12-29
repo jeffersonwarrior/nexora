@@ -115,15 +115,9 @@ func (m *ModelListComponent) SetModelType(modelType int) tea.Cmd {
 	itemsByKey := make(map[string]list.CompletionItem[ModelOption])
 
 	cfg := config.Get()
-	var currentModel config.SelectedModel
+	// Always use large model (small model support removed)
+	currentModel := cfg.Models[config.SelectedModelTypeLarge]
 	selectedType := config.SelectedModelTypeLarge
-	if m.modelType == LargeModelType {
-		currentModel = cfg.Models[config.SelectedModelTypeLarge]
-		selectedType = config.SelectedModelTypeLarge
-	} else {
-		currentModel = cfg.Models[config.SelectedModelTypeSmall]
-		selectedType = config.SelectedModelTypeSmall
-	}
 	recentItems := cfg.RecentModels[selectedType]
 
 	configuredIcon := t.S().Base.Foreground(t.Success).Render(styles.CheckIcon)

@@ -23,7 +23,6 @@ func ZAIProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("ZAI_API_ENDPOINT"), "https://api.z.ai/api/paas/v4"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "glm-4.6",
-		DefaultSmallModelID: "glm-4.5-air",
 		Models: []catwalk.Model{
 			// GLM-4.6 - Latest flagship
 			{

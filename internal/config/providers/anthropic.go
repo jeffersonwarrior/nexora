@@ -23,7 +23,6 @@ func AnthropicProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("ANTHROPIC_API_ENDPOINT"), "https://api.anthropic.com/v1"),
 		Type:                "anthropic",
 		DefaultLargeModelID: "claude-opus-4-5-20251101",
-		DefaultSmallModelID: "claude-haiku-4-5-20241022",
 		Models: []catwalk.Model{
 			// Opus 4.5 - Flagship
 			{

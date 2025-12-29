@@ -23,7 +23,6 @@ func CerebrasProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("CEREBRAS_API_ENDPOINT"), "https://api.cerebras.ai/v1"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "zai-glm-4.6",
-		DefaultSmallModelID: "llama3.1-8b",
 		Models: []catwalk.Model{
 			// Production Models
 			{

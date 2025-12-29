@@ -23,7 +23,6 @@ func MistralNativeProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("MISTRAL_API_ENDPOINT"), "https://api.mistral.ai/v1"),
 		Type:                catwalk.TypeOpenAICompat,
 		DefaultLargeModelID: "devstral-2512",
-		DefaultSmallModelID: "devstral-small-2512",
 		Models: []catwalk.Model{
 			// Devstral 2 - Agentic coding (72.2% SWE-bench)
 			{

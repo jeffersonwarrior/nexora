@@ -26,7 +26,6 @@ func TestCerebrasProvider(t *testing.T) {
 		require.NotNil(t, provider)
 		require.Len(t, provider.Models, 6)
 		assert.Equal(t, "zai-glm-4.6", provider.DefaultLargeModelID)
-		assert.Equal(t, "llama3.1-8b", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

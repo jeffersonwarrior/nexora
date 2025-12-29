@@ -26,7 +26,6 @@ func TestOpenAIProvider(t *testing.T) {
 		require.NotNil(t, provider)
 		assert.NotEmpty(t, provider.Models)
 		assert.Equal(t, "gpt-4o", provider.DefaultLargeModelID)
-		assert.Equal(t, "gpt-4o-mini", provider.DefaultSmallModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

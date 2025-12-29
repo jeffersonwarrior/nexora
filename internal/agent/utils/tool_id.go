@@ -90,3 +90,25 @@ func SanitizeToolCallID(id, provider string) string {
 		return id // Keep existing format
 	}
 }
+
+// SanitizeToolName removes XML/JSON artifacts that some models (GLM, etc.) leak into tool names
+// Example: "grep_path_pattern</arg_key><arg_value>internal/permission</arg_value>" -> "grep_path_pattern"
+func SanitizeToolName(toolName string) string {
+	// Common corruptions from models that leak serialization format
+	if idx := strings.Index(toolName, "<"); idx > 0 {
+		// XML-style corruption: "tool_name</arg_key>" -> "tool_name"
+		return toolName[:idx]
+	}
+	if idx := strings.Index(toolName, "{"); idx > 0 {
+		// JSON-style corruption: "tool_name{\"arg\":" -> "tool_name"
+		return toolName[:idx]
+	}
+	// Clean: only allow alphanumeric, underscore, hyphen
+	clean := strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+			return r
+		}
+		return -1
+	}, toolName)
+	return clean
+}

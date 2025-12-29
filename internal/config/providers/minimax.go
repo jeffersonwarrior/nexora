@@ -23,7 +23,6 @@ func MiniMaxProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("MINIMAX_API_ENDPOINT"), "https://api.minimax.io/anthropic"),
 		Type:                "anthropic",
 		DefaultLargeModelID: "MiniMax-M2.1",
-		DefaultSmallModelID: "MiniMax-M2-Stable",
 		Models: []catwalk.Model{
 			{
 				ID:               "MiniMax-M2.1",

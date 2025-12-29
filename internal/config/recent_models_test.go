@@ -191,17 +191,17 @@ func TestUpdatePreferredModel_UpdatesRecents(t *testing.T) {
 	cfg.dataConfigDir = filepath.Join(dir, "config.json")
 
 	sel := SelectedModel{Provider: "openai", Model: "gpt-4o"}
-	require.NoError(t, cfg.UpdatePreferredModel(SelectedModelTypeSmall, sel))
+	require.NoError(t, cfg.UpdatePreferredModel(SelectedModelTypeLarge, sel))
 
 	// in-memory
-	require.Equal(t, sel, cfg.Models[SelectedModelTypeSmall])
-	require.Len(t, cfg.RecentModels[SelectedModelTypeSmall], 1)
+	require.Equal(t, sel, cfg.Models[SelectedModelTypeLarge])
+	require.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 1)
 
 	// persisted (read via fs.FS)
 	rm := readRecentModels(t, cfg.dataConfigDir)
-	small, ok := rm[string(SelectedModelTypeSmall)].([]any)
+	large, ok := rm[string(SelectedModelTypeLarge)].([]any)
 	require.True(t, ok)
-	require.Len(t, small, 1)
+	require.Len(t, large, 1)
 }
 
 func TestRecordRecentModel_TypeIsolation(t *testing.T) {
@@ -212,28 +212,22 @@ func TestRecordRecentModel_TypeIsolation(t *testing.T) {
 	cfg.setDefaults(dir, "")
 	cfg.dataConfigDir = filepath.Join(dir, "config.json")
 
-	// Add models to both large and small types
+	// Add models to large type
 	largeModel := SelectedModel{Provider: "openai", Model: "gpt-4o"}
-	smallModel := SelectedModel{Provider: "anthropic", Model: "claude"}
 
 	require.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, largeModel))
-	require.NoError(t, cfg.recordRecentModel(SelectedModelTypeSmall, smallModel))
 
-	// in-memory: verify types maintain separate histories
+	// in-memory: verify type maintains history
 	require.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 1)
-	require.Len(t, cfg.RecentModels[SelectedModelTypeSmall], 1)
 	require.Equal(t, largeModel, cfg.RecentModels[SelectedModelTypeLarge][0])
-	require.Equal(t, smallModel, cfg.RecentModels[SelectedModelTypeSmall][0])
 
-	// Add another to large, verify small unchanged
+	// Add another to large
 	anotherLarge := SelectedModel{Provider: "google", Model: "gemini"}
 	require.NoError(t, cfg.recordRecentModel(SelectedModelTypeLarge, anotherLarge))
 
 	require.Len(t, cfg.RecentModels[SelectedModelTypeLarge], 2)
-	require.Len(t, cfg.RecentModels[SelectedModelTypeSmall], 1)
-	require.Equal(t, smallModel, cfg.RecentModels[SelectedModelTypeSmall][0])
 
-	// persisted state: verify both types exist with correct lengths and contents
+	// persisted state: verify type exists with correct length and contents
 	rm := readRecentModels(t, cfg.dataConfigDir)
 
 	large, ok := rm[string(SelectedModelTypeLarge)].([]any)
@@ -244,10 +238,4 @@ func TestRecordRecentModel_TypeIsolation(t *testing.T) {
 	require.Equal(t, "gemini", large[0].(map[string]any)["model"])
 	require.Equal(t, "openai", large[1].(map[string]any)["provider"])
 	require.Equal(t, "gpt-4o", large[1].(map[string]any)["model"])
-
-	small, ok := rm[string(SelectedModelTypeSmall)].([]any)
-	require.True(t, ok)
-	require.Len(t, small, 1)
-	require.Equal(t, "anthropic", small[0].(map[string]any)["provider"])
-	require.Equal(t, "claude", small[0].(map[string]any)["model"])
 }

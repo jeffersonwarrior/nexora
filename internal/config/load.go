@@ -543,10 +543,10 @@ func (c *Config) applyLSPDefaults() {
 	}
 }
 
-func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (largeModel SelectedModel, smallModel SelectedModel, err error) {
+func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (largeModel SelectedModel, err error) {
 	if len(knownProviders) == 0 && c.Providers.Len() == 0 {
 		err = fmt.Errorf("no providers configured, please configure at least one provider")
-		return largeModel, smallModel, err
+		return largeModel, err
 	}
 
 	// Use the first provider enabled based on the known providers order
@@ -559,7 +559,7 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 		defaultLargeModel := c.GetModel(string(p.ID), p.DefaultLargeModelID)
 		if defaultLargeModel == nil {
 			err = fmt.Errorf("default large model %s not found for provider %s", p.DefaultLargeModelID, p.ID)
-			return largeModel, smallModel, err
+			return largeModel, err
 		}
 		largeModel = SelectedModel{
 			Provider:        string(p.ID),
@@ -567,19 +567,7 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 			MaxTokens:       defaultLargeModel.DefaultMaxTokens,
 			ReasoningEffort: defaultLargeModel.DefaultReasoningEffort,
 		}
-
-		defaultSmallModel := c.GetModel(string(p.ID), p.DefaultSmallModelID)
-		if defaultSmallModel == nil {
-			err = fmt.Errorf("default small model %s not found for provider %s", p.DefaultSmallModelID, p.ID)
-			return largeModel, smallModel, err
-		}
-		smallModel = SelectedModel{
-			Provider:        string(p.ID),
-			Model:           defaultSmallModel.ID,
-			MaxTokens:       defaultSmallModel.DefaultMaxTokens,
-			ReasoningEffort: defaultSmallModel.DefaultReasoningEffort,
-		}
-		return largeModel, smallModel, err
+		return largeModel, err
 	}
 
 	enabledProviders := c.EnabledProviders()
@@ -589,13 +577,13 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 
 	if len(enabledProviders) == 0 {
 		err = fmt.Errorf("no providers configured, please configure at least one provider")
-		return largeModel, smallModel, err
+		return largeModel, err
 	}
 
 	providerConfig := enabledProviders[0]
 	if len(providerConfig.Models) == 0 {
 		err = fmt.Errorf("provider %s has no models configured", providerConfig.ID)
-		return largeModel, smallModel, err
+		return largeModel, err
 	}
 	defaultLargeModel := c.GetModel(providerConfig.ID, providerConfig.Models[0].ID)
 	largeModel = SelectedModel{
@@ -603,21 +591,15 @@ func (c *Config) defaultModelSelection(knownProviders []catwalk.Provider) (large
 		Model:     defaultLargeModel.ID,
 		MaxTokens: defaultLargeModel.DefaultMaxTokens,
 	}
-	defaultSmallModel := c.GetModel(providerConfig.ID, providerConfig.Models[0].ID)
-	smallModel = SelectedModel{
-		Provider:  providerConfig.ID,
-		Model:     defaultSmallModel.ID,
-		MaxTokens: defaultSmallModel.DefaultMaxTokens,
-	}
-	return largeModel, smallModel, err
+	return largeModel, err
 }
 
 func (c *Config) configureSelectedModels(knownProviders []catwalk.Provider) error {
-	defaultLarge, defaultSmall, err := c.defaultModelSelection(knownProviders)
+	defaultLarge, err := c.defaultModelSelection(knownProviders)
 	if err != nil {
 		return fmt.Errorf("failed to select default models: %w", err)
 	}
-	large, small := defaultLarge, defaultSmall
+	large := defaultLarge
 
 	largeModelSelected, largeModelConfigured := c.Models[SelectedModelTypeLarge]
 	if largeModelConfigured {
@@ -663,53 +645,7 @@ func (c *Config) configureSelectedModels(knownProviders []catwalk.Provider) erro
 			}
 		}
 	}
-	smallModelSelected, smallModelConfigured := c.Models[SelectedModelTypeSmall]
-	if smallModelConfigured {
-		if smallModelSelected.Model != "" {
-			small.Model = smallModelSelected.Model
-		}
-		if smallModelSelected.Provider != "" {
-			small.Provider = smallModelSelected.Provider
-		}
-
-		model := c.GetModel(small.Provider, small.Model)
-		if model == nil {
-			small = defaultSmall
-			// Override the model type to small without recording as recent.
-			// This is initialization fallback, not a user selection.
-			c.Models[SelectedModelTypeSmall] = small
-			if err := c.SetConfigField(fmt.Sprintf("models.%s", SelectedModelTypeSmall), small); err != nil {
-				return fmt.Errorf("failed to update preferred small model: %w", err)
-			}
-		} else {
-			if smallModelSelected.MaxTokens > 0 {
-				small.MaxTokens = smallModelSelected.MaxTokens
-			} else {
-				small.MaxTokens = model.DefaultMaxTokens
-			}
-			if smallModelSelected.ReasoningEffort != "" {
-				small.ReasoningEffort = smallModelSelected.ReasoningEffort
-			}
-			if smallModelSelected.Temperature != nil {
-				small.Temperature = smallModelSelected.Temperature
-			}
-			if smallModelSelected.TopP != nil {
-				small.TopP = smallModelSelected.TopP
-			}
-			if smallModelSelected.TopK != nil {
-				small.TopK = smallModelSelected.TopK
-			}
-			if smallModelSelected.FrequencyPenalty != nil {
-				small.FrequencyPenalty = smallModelSelected.FrequencyPenalty
-			}
-			if smallModelSelected.PresencePenalty != nil {
-				small.PresencePenalty = smallModelSelected.PresencePenalty
-			}
-			small.Think = smallModelSelected.Think
-		}
-	}
 	c.Models[SelectedModelTypeLarge] = large
-	c.Models[SelectedModelTypeSmall] = small
 	return nil
 }
 

@@ -23,7 +23,6 @@ func MistralGeneralProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("MISTRAL_API_ENDPOINT"), "https://api.mistral.ai/v1"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "mistral-large-3-25-12",
-		DefaultSmallModelID: "ministral-3-8b-25-12",
 		Models: []catwalk.Model{
 			// Large reasoning models
 			{

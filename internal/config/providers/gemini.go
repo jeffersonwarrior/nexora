@@ -23,7 +23,6 @@ func GeminiProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIEndpoint:         cmp.Or(os.Getenv("GEMINI_API_ENDPOINT"), "https://generativelanguage.googleapis.com/v1beta/models"),
 		Type:                "openai-compat",
 		DefaultLargeModelID: "gemini-3-pro",
-		DefaultSmallModelID: "gemini-2-5-flash",
 		Models: []catwalk.Model{
 			// Gemini 3 Pro - Latest flagship (Note: tiered pricing, using lowest tier)
 			{
