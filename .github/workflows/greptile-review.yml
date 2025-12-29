@@ -82,7 +82,12 @@ jobs:
           if [ ! -f greptile-response.json ] || [ ! -s greptile-response.json ]; then
             REVIEW_TEXT="⚠️ Greptile review could not be completed. Please check the workflow logs for details."
           else
-            # Try to parse JSON response
+            # Show what we got for debugging
+            echo "=== Response file content ==="
+            cat greptile-response.json
+            echo "=== End of response ==="
+            
+            # Try to parse JSON response (redirect stderr to avoid jq parse errors showing up)
             if jq -e . greptile-response.json >/dev/null 2>&1; then
               # Valid JSON - extract review content
               if jq -e '.message' greptile-response.json >/dev/null 2>&1; then
@@ -94,11 +99,11 @@ jobs:
                 REVIEW_TEXT="⚠️ Greptile API Error: $ERROR_MSG"
               else
                 # Show formatted JSON
-                REVIEW_TEXT="Response received:\n\`\`\`json\n$(jq '.' greptile-response.json)\n\`\`\`"
+                REVIEW_TEXT="Response received but format unexpected. Check logs for details."
               fi
             else
-              # Not valid JSON
-              REVIEW_TEXT="⚠️ Received non-JSON response from Greptile API:\n\`\`\`\n$(head -c 1000 greptile-response.json)\n\`\`\`"
+              # Not valid JSON - show safe preview
+              REVIEW_TEXT="⚠️ Greptile API returned non-JSON response. Check workflow logs for details."
             fi
           fi
           
@@ -112,6 +117,7 @@ $REVIEW_TEXT
 *Automated review by Greptile • [Configuration](https://github.com/${{ github.repository }}/blob/main/greptile.json)*"
           else
             echo "Not a pull request event, skipping comment"
+            echo "Review text would have been: $REVIEW_TEXT"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
