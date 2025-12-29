@@ -938,6 +938,70 @@ func (m *TmuxManager) IsCommandRunning(sessionID string) (bool, error) {
 	return true, nil // No prompt = still running
 }
 
+// ResetSession sends Ctrl+C, clears the terminal, and resets to a clean shell prompt
+// This helps AI escape from stuck situations (interactive prompts, running processes, etc.)
+func (m *TmuxManager) ResetSession(sessionID string) error {
+	m.mu.RLock()
+	session, exists := m.sessions[sessionID]
+	m.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("session not found: %s", sessionID)
+	}
+
+	// Send Ctrl+C to interrupt any running process
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "C-c").Run()
+	time.Sleep(100 * time.Millisecond)
+
+	// Send Ctrl+C again (for nested processes or prompts)
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "C-c").Run()
+	time.Sleep(100 * time.Millisecond)
+
+	// Send 'q' to exit any pager (less, more, man, etc.)
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "q").Run()
+	time.Sleep(50 * time.Millisecond)
+
+	// Send Escape to exit any vi/vim mode or other modal interfaces
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "Escape").Run()
+	time.Sleep(50 * time.Millisecond)
+
+	// Clear the terminal
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "clear", "Enter").Run()
+	time.Sleep(100 * time.Millisecond)
+
+	// Clear scrollback history
+	exec.Command("tmux", "clear-history", "-t", session.SessionName).Run()
+
+	return nil
+}
+
+// SendInterrupt sends Ctrl+C to interrupt the current process
+func (m *TmuxManager) SendInterrupt(sessionID string) error {
+	m.mu.RLock()
+	session, exists := m.sessions[sessionID]
+	m.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("session not found: %s", sessionID)
+	}
+
+	return exec.Command("tmux", "send-keys", "-t", session.SessionName, "C-c").Run()
+}
+
+// SendKeys sends arbitrary key sequences to a tmux session
+// Supports special keys: C-c (Ctrl+C), C-d (Ctrl+D), Escape, Enter, Tab, etc.
+func (m *TmuxManager) SendKeys(sessionID string, keys string) error {
+	m.mu.RLock()
+	session, exists := m.sessions[sessionID]
+	m.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("session not found: %s", sessionID)
+	}
+
+	return exec.Command("tmux", "send-keys", "-t", session.SessionName, keys).Run()
+}
+
 // DrainPool marks all sessions for cleanup
 func (m *TmuxManager) DrainPool() {
 	m.poolMu.Lock()

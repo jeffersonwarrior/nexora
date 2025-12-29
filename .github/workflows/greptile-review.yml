@@ -1,263 +1,63 @@
-name: Greptile Code Review
+name: Greptile Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to review'
-        required: false
-        type: string
+
+permissions:
+  pull-requests: write
+  contents: read
 
 jobs:
   greptile-review:
-    name: Greptile AI Code Review
+    name: Greptile Code Review
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      statuses: write
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get PR information
-        id: pr
+      - name: Get changed files
+        id: changed-files
         run: |
-          if [ -n "${{ github.event.inputs.pr_number }}" ]; then
-            PR_NUMBER="${{ github.event.inputs.pr_number }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin main
+            CHANGED=$(git diff --name-only origin/main...HEAD | tr '\n' ' ')
           else
-            PR_NUMBER="${{ github.event.number }}"
+            CHANGED="."
           fi
-          
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          
-          # Get PR details
-          PR_DATA=$(gh api repos/${{ github.repository }}/pulls/$PR_NUMBER)
-          echo "base_branch=$(echo "$PR_DATA" | jq -r '.base.ref')" >> $GITHUB_OUTPUT
-          echo "head_branch=$(echo "$PR_DATA" | jq -r '.head.ref')" >> $GITHUB_OUTPUT
-          echo "head_sha=$(echo "$PR_DATA" | jq -r '.head.sha')" >> $GITHUB_OUTPUT
-          echo "head_repo=$(echo "$PR_DATA" | jq -r '.head.repo.full_name')" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED"
 
-      - name: Check if repository is indexed
-        id: check-indexed
+      - name: Run Greptile Review
         run: |
-          # Check if the repository is already indexed
-          REPO="${{ steps.pr.outputs.head_repo }}"
-          
-          # Query to test if repository is indexed
-          QUERY_REQUEST='{
-            "repositories": ["'$REPO'"],
-            "query": "Is this repository indexed?"
-          }'
-          
-          echo "Checking if repository is indexed..."
-          
-          QUERY_RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GREPTILE_API_KEY }}" \
+          # Note: You'll need to set up Greptile API token as a secret
+          curl -X POST "https://api.greptile.com/v2/reviews" \
+            -H "Authorization: Bearer ${{ secrets.GREPTILE_API_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
-            -d "$QUERY_REQUEST" \
-            https://api.greptile.com/v2/query)
-          
-          # Check if we got a valid response (repository is indexed)
-          if echo "$QUERY_RESPONSE" | jq -e '.answer' > /dev/null 2>&1; then
-            echo "indexed=true" >> $GITHUB_OUTPUT
-            echo "✅ Repository is already indexed"
-          else
-            echo "indexed=false" >> $GITHUB_OUTPUT
-            echo "Repository needs to be indexed"
-          fi
-
-      - name: Index repository (if needed)
-        id: index-repo
-        if: steps.check-indexed.outputs.indexed == 'false'
-        run: |
-          # Submit the repository for indexing
-          REPO="${{ steps.pr.outputs.head_repo }}"
-          BRANCH="${{ steps.pr.outputs.head_branch }}"
-          
-          INDEX_REQUEST='{
-            "remote": "github",
-            "repository": "'$REPO'",
-            "branch": "'$BRANCH'",
-            "reload": true,
-            "notify": true
-          }'
-          
-          echo "Submitting repository for indexing..."
-          echo "Repository: $REPO"
-          echo "Branch: $BRANCH"
-          
-          INDEX_RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GREPTILE_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
-            -d "$INDEX_REQUEST" \
-            https://api.greptile.com/v2/repositories)
-          
-          echo "Index Response: $INDEX_RESPONSE"
-          
-          # Extract status endpoint
-          STATUS_ENDPOINT=$(echo "$INDEX_RESPONSE" | jq -r '.statusEndpoint // empty')
-          
-          if [ -z "$STATUS_ENDPOINT" ] || [ "$STATUS_ENDPOINT" = "null" ]; then
-            echo "❌ Failed to submit repository for indexing"
-            exit 1
-          fi
-          
-          echo "status_endpoint=$STATUS_ENDPOINT" >> $GITHUB_OUTPUT
-          echo "✅ Repository submitted for indexing"
-
-      - name: Wait for indexing (if needed)
-        id: wait-index
-        if: steps.check-indexed.outputs.indexed == 'false'
-        run: |
-          STATUS_ENDPOINT="${{ steps.index-repo.outputs.status_endpoint }}"
-          MAX_WAIT=600  # 10 minutes max for indexing
-          WAIT_INTERVAL=30
-          ELAPSED=0
-          
-          echo "⏳ Waiting for repository indexing to complete..."
-          
-          while [ $ELAPSED -lt $MAX_WAIT ]; do
-            # Check indexing status
-            STATUS_RESPONSE=$(curl -s -X GET \
-              -H "Authorization: Bearer ${{ secrets.GREPTILE_API_KEY }}" \
-              "$STATUS_ENDPOINT")
-            
-            STATUS=$(echo "$STATUS_RESPONSE" | jq -r '.status // "unknown"')
-            echo "[$(date +%H:%M:%S)] Indexing status: $STATUS (elapsed: ${ELAPSED}s)"
-            
-            if [ "$STATUS" = "completed" ]; then
-              echo "✅ Indexing completed!"
-              echo "indexed=true" >> $GITHUB_OUTPUT
-              break
-            elif [ "$STATUS" = "failed" ] || [ "$STATUS" = "error" ]; then
-              echo "❌ Indexing failed with status: $STATUS"
-              exit 1
-            fi
-            
-            sleep $WAIT_INTERVAL
-            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
-          done
-          
-          if [ $ELAPSED -ge $MAX_WAIT ]; then
-            echo "⚠️ Indexing timed out after $MAX_WAIT seconds"
-            echo "Skipping review - please try again later"
-            echo "indexed=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Review pull request with Greptile
-        id: review-pr
-        if: |
-          steps.check-indexed.outputs.indexed == 'true' || 
-          steps.wait-index.outputs.indexed == 'true'
-        run: |
-          # Query Greptile to review the changes in this PR
-          REPO="${{ steps.pr.outputs.head_repo }}"
-          PR_NUMBER="${{ steps.pr.outputs.pr_number }}"
-          BASE_BRANCH="${{ steps.pr.outputs.base_branch }}"
-          HEAD_BRANCH="${{ steps.pr.outputs.head_branch }}"
-          
-          REVIEW_QUERY='{
-            "repositories": ["'$REPO'"],
-            "query": "Please review the pull request #'$PR_NUMBER' comparing branch '$HEAD_BRANCH' to '$BASE_BRANCH'. Analyze the changes for:\n\n1. Code quality and best practices\n2. Security vulnerabilities\n3. Performance considerations\n4. Documentation completeness\n5. Test coverage\n6. Adherence to Go conventions\n\nFocus on providing actionable feedback with specific code examples when applicable. Format your response as a GitHub pull request review comment with clear sections."
-          }'
-          
-          echo "Submitting review query to Greptile..."
-          
-          REVIEW_RESPONSE=$(curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.GREPTILE_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
-            -d "$REVIEW_QUERY" \
-            https://api.greptile.com/v2/query)
-          
-          echo "Review Response: $REVIEW_RESPONSE"
-          
-          # Extract the review content
-          if echo "$REVIEW_RESPONSE" | jq -e '.answer' > /dev/null 2>&1; then
-            REVIEW_ANSWER=$(echo "$REVIEW_RESPONSE" | jq -r '.answer')
-            echo "review_answer<<EOF" >> $GITHUB_OUTPUT
-            echo "$REVIEW_ANSWER" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-            echo "✅ Review generated successfully"
-          else
-            echo "❌ Failed to generate review"
-            exit 1
-          fi
+            -d '{
+              "repository": "${{ github.repository }}",
+              "branch": "${{ github.head_ref || github.ref_name }}",
+              "filechanges": "${{ steps.changed-files.outputs.changed }}",
+              "instructions": "Please review this code for best practices, potential bugs, security issues, and suggest improvements. Focus on Go-specific patterns and idiomatic code."
+            }' | tee greptile-response.json
 
       - name: Post review comment
-        if: |
-          steps.check-indexed.outputs.indexed == 'true' || 
-          steps.wait-index.outputs.indexed == 'true'
+        if: always()
         run: |
-          # Create review comment
-          cat > review-comment.md << EOF
-          ## 🤖 Greptile AI Code Review
+          # Extract review from response and post as PR comment
+          REVIEW_TEXT=$(jq -r '.review // "Review processing completed. Check Greptile dashboard for details."' greptile-response.json)
           
-          **Repository:** `${{ steps.pr.outputs.head_repo }}`
-          **Pull Request:** #${{ steps.pr.outputs.pr_number }}
-          **Branch:** `${{ steps.pr.outputs.head_branch }}` ← `${{ steps.pr.outputs.base_branch }}`
-          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body "## 🤖 Greptile Code Review
+
+          $REVIEW_TEXT
+
           ---
-          
-          ${{ steps.review-pr.outputs.review_answer }}
-          
-          ---
-          
-          *This review was generated by [Greptile](https://greptile.com) - AI-powered code analysis*
-          
-          EOF
-          
-          # Post as a comment on the PR
-          gh pr comment ${{ steps.pr.outputs.pr_number }} --body-file review-comment.md
-          
-          echo "✅ Review comment posted to PR #${{ steps.pr.outputs.pr_number }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update status (success)
-        if: |
-          (steps.check-indexed.outputs.indexed == 'true' || steps.wait-index.outputs.indexed == 'true') &&
-          success()
-        run: |
-          gh api --method POST \
-            repos/${{ github.repository }}/statuses/${{ steps.pr.outputs.head_sha }} \
-            --field state='success' \
-            --field context='greptile-review' \
-            --field description="Greptile AI review completed"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update status (skipped)
-        if: |
-          steps.check-indexed.outputs.indexed == 'false' && 
-          steps.wait-index.outputs.indexed == 'false'
-        run: |
-          gh api --method POST \
-            repos/${{ github.repository }}/statuses/${{ steps.pr.outputs.head_sha }} \
-            --field state='pending' \
-            --field context='greptile-review' \
-            --field description="Repository indexing in progress - review pending"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update status (failure)
-        if: failure()
-        run: |
-          gh api --method POST \
-            repos/${{ github.repository }}/statuses/${{ steps.pr.outputs.head_sha }} \
-            --field state='failure' \
-            --field context='greptile-review' \
-            --field description="Greptile AI review failed"
+          *Review generated by Greptile*"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

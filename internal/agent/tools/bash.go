@@ -28,6 +28,7 @@ type BashParams struct {
 	WorkingDir      string `json:"working_dir,omitempty" description:"The working directory to execute the command in (defaults to current directory)"`
 	RunInBackground bool   `json:"run_in_background,omitempty" description:"Set to true (boolean) to run this command in the background. Use job_output to read the output later."`
 	ShellID         string `json:"shell_id,omitempty" description:"ONLY use for continuing existing background jobs. Do NOT provide for new commands - sessions are managed automatically."`
+	Reset           bool   `json:"reset,omitempty" description:"Set to true to reset the shell (sends Ctrl+C, clears screen). Use when stuck in interactive prompts, pagers, or hung processes."`
 }
 
 type BashPermissionsParams struct {
@@ -36,6 +37,7 @@ type BashPermissionsParams struct {
 	WorkingDir      string `json:"working_dir"`
 	RunInBackground bool   `json:"run_in_background"`
 	ShellID         string `json:"shell_id"`
+	Reset           bool   `json:"reset"`
 }
 
 type BashResponseMetadata struct {
@@ -545,6 +547,40 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 	tmuxAvailable := shell.IsTmuxAvailable()
 
 	startTime := time.Now()
+
+	// Handle reset request - escape from stuck states
+	if params.Reset {
+		session, err := tmuxManager.GetOrCreateDefaultSession(sessionID, execWorkingDir)
+		if err != nil {
+			return fantasy.ToolResponse{}, fmt.Errorf("failed to get session for reset: %w", err)
+		}
+
+		if err := tmuxManager.ResetSession(session.ID); err != nil {
+			return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to reset shell: %s", err.Error())), nil
+		}
+
+		// Capture output after reset to show clean state
+		output, _ := tmuxManager.CaptureOutput(session.ID)
+
+		metadata := BashResponseMetadata{
+			StartTime:        startTime.UnixMilli(),
+			EndTime:          time.Now().UnixMilli(),
+			Output:           "Shell reset complete",
+			Description:      "Reset shell session",
+			WorkingDirectory: execWorkingDir,
+			ShellID:          session.ID,
+			TmuxSessionID:    session.SessionName,
+			TmuxPaneID:       session.PaneID,
+			TmuxAvailable:    tmuxAvailable,
+		}
+
+		result := "🔄 Shell reset complete. Sent Ctrl+C, cleared screen.\n"
+		if output != "" {
+			result += "\nCurrent state:\n" + output
+		}
+
+		return fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil
+	}
 
 	var session *shell.TmuxSession
 	var err error

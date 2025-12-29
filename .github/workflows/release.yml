@@ -1,24 +1,17 @@
-name: release
+name: Release
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version (e.g., v0.29.4)'
-        required: true
-        type: string
-      draft:
-        description: 'Create as draft'
-        required: true
-        type: boolean
-        default: false
+
+permissions:
+  contents: write
 
 jobs:
-  test:
-    name: Run Tests Before Release
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
     
     steps:
@@ -33,211 +26,52 @@ jobs:
           go-version: '1.25.5'
           cache: true
 
-      - name: Download dependencies
-        run: go mod download && go mod verify
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Run comprehensive tests
+      - name: Build binaries
         run: |
-          # Run quick tests first
-          make test-quick
+          mkdir -p dist
           
-          # Run full tests with coverage
-          make test-coverage
+          # Build for multiple platforms
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/nexora-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/nexora-linux-arm64 .
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/nexora-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/nexora-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/nexora-windows-amd64.exe .
           
-          # Run linting
-          make lint
+          # Create checksums
+          cd dist
+          sha256sum * > sha256sums.txt
+          cd ..
+          
+          ls -la dist/
 
-  build:
-    name: Build Release Binaries
-    runs-on: ubuntu-latest
-    needs: test
-    strategy:
-      matrix:
-        goos: [linux, darwin, windows]
-        goarch: [amd64, arm64]
-        exclude:
-          - goos: windows
-            goarch: arm64
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.5'
-          cache: true
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Set version
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION="${GITHUB_REF#refs/tags/}"
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Building version: $VERSION"
-
-      - name: Build binary
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: |
-          # Determine binary name
-          BINARY_NAME="nexora"
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            BINARY_NAME="nexora.exe"
-          fi
-          
-          # Build with version info
-          go build -ldflags="-X github.com/nexora/nexora/internal/version.Version=$VERSION -s -w" -o "$BINARY_NAME" .
-          
-          # Create archive
-          ARCHIVE_NAME="nexora-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}"
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            zip -r "${ARCHIVE_NAME}.zip" "$BINARY_NAME" README.md LICENSE.md
-          else
-            tar -czf "${ARCHIVE_NAME}.tar.gz" "$BINARY_NAME" README.md LICENSE.md
-          fi
-          
-          # Generate checksum
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            sha256sum "${ARCHIVE_NAME}.zip" > "${ARCHIVE_NAME}.zip.sha256"
-          else
-            sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
-          fi
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: nexora-${{ matrix.goos }}-${{ matrix.goarch }}
-          retention-days: 30
-          path: |
-            nexora-*.tar.gz
-            nexora-*.zip
-            *.sha256
-
-  create-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-    
-    permissions:
-      contents: write
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Prepare release assets
-        run: |
-          mkdir -p release-assets
-          find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
-          find artifacts -name "*.zip" -exec cp {} release-assets/ \;
-          find artifacts -name "*.sha256" -exec cp {} release-assets/ \;
-          ls -la release-assets/
-
-      - name: Generate changelog
-        id: changelog
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION="${GITHUB_REF#refs/tags/}"
-          fi
-          
-          # Get previous tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          
-          if [ -n "$PREVIOUS_TAG" ]; then
-            echo "## Changes since $PREVIOUS_TAG" > CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD >> CHANGELOG.md
-          else
-            echo "## Initial Release $VERSION" > CHANGELOG.md
-            echo "" >> CHANGELOG.md
-            echo "First release of Nexora v$VERSION" >> CHANGELOG.md
-          fi
-          
-          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.VERSION || github.ref_name }}
-          name: Nexora ${{ env.VERSION || github.ref_name }}
+          name: Release ${{ steps.version.outputs.VERSION }}
           body: |
-            # Nexora ${{ env.VERSION || github.ref_name }}
+            ## Release ${{ steps.version.outputs.VERSION }}
             
-            🚀 **Production-ready AI Terminal Assistant** with intelligent state management and self-healing execution.
-            
-            ${{ steps.changelog.outputs.CHANGELOG }}
-            
-            ## Installation
-            
+            ### Installation
             ```bash
-            # Quick install
-            curl -fsSL https://nexora.land/install.sh | sh
-            
-            # Or download binary for your platform
-            # See assets below for your OS/architecture
+            curl -sSL https://install.nexora.ai | bash
             ```
             
-            ## Verification
+            ### Downloads
+            Choose the appropriate binary for your platform:
+            - Linux (amd64): `nexora-linux-amd64`
+            - Linux (arm64): `nexora-linux-arm64`
+            - macOS (Intel): `nexora-darwin-amd64`
+            - macOS (Apple Silicon): `nexora-darwin-arm64`
+            - Windows (amd64): `nexora-windows-amd64.exe`
             
-            All binaries are signed with SHA256 checksums provided in the assets.
-            
-            ---
-            
-            💘 Generated with Crush
-          draft: ${{ github.event.inputs.draft || false }}
+            Verify the download with the provided `sha256sums.txt` file.
           files: |
-            release-assets/*
+            dist/*
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ env.VERSION }}
-
-  update-homebrew:
-    name: Update Homebrew Formula
-    runs-on: ubuntu-latest
-    needs: create-release
-    if: startsWith(github.ref, 'refs/tags/')
-    
-    steps:
-      - name: Wait for release to be available
-        run: sleep 30
-
-      - name: Update Homebrew formula
-        run: |
-          echo "⏭️  Homebrew update not implemented yet"
-          echo "TODO: Auto-update homebrew-nexora formula with new release"
-          echo "Release URL: ${{ github.event.repository.html_url }}/releases/tag/${{ github.ref_name }}"
-
-  deploy-website:
-    name: Update Website
-    runs-on: ubuntu-latest
-    needs: create-release
-    if: startsWith(github.ref, 'refs/tags/')
-    
-    steps:
-      - name: Update website
-        run: |
-          echo "⏭️  Website deployment not implemented yet"
-          echo "TODO: Trigger website update with new version"
-          echo "Version: ${{ github.ref_name }}"

@@ -75,7 +75,7 @@ All tool tests passing with -race flag
 
 ---
 
-## v0.29.3 Priority: Delegate = Headless Nexora in Tmux
+## v0.29.4 Priority: Delegate = Headless Nexora in Tmux
 
 **Status:** 🔧 In Progress
 **Goal:** Delegate spawns full Nexora in tmux (same reliability as main session)
@@ -364,34 +364,7 @@ go build ./... && go vet ./...
 
 ---
 
-## v0.29.4 Planned Features
-
-### Delegate Persistence & True Parallel Execution
-
-**Priority:** P0 - Required for reliable multi-agent workflows
-
-#### File-Based State (`.nexora/delegates/`)
-
-State survives process restart and context compaction:
-
-```
-.nexora/delegates/
-├── {task_id}.prompt     # Task input
-├── {task_id}.log        # Worker output (streaming)
-├── {task_id}.status     # JSON: {status, tool_calls, last_activity}
-├── {task_id}.done       # Completion marker
-└── {task_id}.confidence # Self-reported 0-100
-```
-
-#### Tmux-Based Workers
-
-True parallel execution matching claude-swarm:
-
-- Session naming: `nexora-delegate-{task_id[:8]}`
-- Prompts passed via files (no shell injection)
-- Output captured to log files
-- Heartbeat monitoring (10s polling)
-- Auto-cleanup on session end
+## v0.29.5 Planned Features
 
 ### Native GitHub Tools
 - Built-in GitHub API integration (issues, PRs, releases, workflows)
@@ -412,7 +385,7 @@ True parallel execution matching claude-swarm:
 
 ---
 
-## v0.29.5 Planned Features
+## v0.29.6 Planned Features
 
 ### Claude-Swarm Integration Mode
 
@@ -476,22 +449,6 @@ nexora --claude-swarm-worker --feature=feature-1
 See **NEXORA.0.29.2.12.26.md** for detailed planning:
 - v0.29.2-0.29.5: Multi-agent orchestration system
 - v3.0: ModelScan integration + visual terminal (VNC/Docker)
-
----
-
-## Known Issues
-
-### Session Title Re-generation
-**Priority:** Medium
-
-Sessions with "New Session" as title don't get retitled on first message.
-
-**Root Cause:** `generateTitle()` checks `MessageCount == 0` but doesn't check if current title is placeholder.
-
-**Fix Options:**
-1. Check `MessageCount == 0 OR title == "New Session"`
-2. Add `needs_title` boolean flag to session schema
-See v3.0 section in NEXORA.0.29.2.12.26.md for details.
 
 ---
 
@@ -861,12 +818,12 @@ find internal/agent/tools -name "*.go" -type f | wc -l
 **Prerequisite:** Phase 4 complete
 ---
 
-## v0.29.3 Features
+## v0.29.3 Features (Archived)
 
-**Status:** Planned  
-**Release Date:** TBD
+**Status:** ✅ Complete
+**Released:** 2025-12-28
 
-### Feature: About Command (`nexora about`)
+### Feature: About Command (`nexora about`) ✅
 
 **Goal:** Display project information, version, community links, and platform details matching README badges
 
@@ -918,15 +875,15 @@ For more information, visit: https://nexora.land
 
 ---
 
-### Other v0.29.3 Features (Planned)
+### Other v0.29.3 Features (Archived)
 
-- Task graph enrichment
-- Checkpoint system
-- Additional improvements TBD
+- ✅ Task graph enrichment
+- ✅ Checkpoint system
+- ✅ CLI enhancements
 
 ---
 
-## v0.29.4 Features
+## v0.29.5 Features
 
 **Status:** Planned
 **Release Date:** TBD
@@ -1116,7 +1073,7 @@ code_memory:
 
 ---
 
-### Other v0.29.4 Features (Planned)
+### Other v0.29.5 Features (Planned)
 
 - A2A protocol implementation
 - ACP communication layer
