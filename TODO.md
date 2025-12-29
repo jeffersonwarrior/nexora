@@ -10,9 +10,9 @@
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v0.29.3** | About command, version display, unified command palette, CLI enhancements | ✅ Released |
-| **v0.29.4** | Project management, A2A communication, code memory | Planned |
-| **v0.29.5** | Protocol composition, conflict resolution | Planned |
+| **v0.29.3** | About command, version display, **delegate system fixes**, CLI enhancements | 🔧 In Progress |
+| **v0.29.4** | Delegate persistence, tmux workers, project management, code memory | Planned |
+| **v0.29.5** | Claude-swarm integration, protocol composition, A2A | Planned |
 | **v3.0** | ModelScan integration, VNC/Docker dual-mode | Planned |
 
 ---
@@ -74,7 +74,323 @@ All tool tests passing with -race flag
 
 ---
 
+## v0.29.3 Priority: Delegate = Headless Nexora in Tmux
+
+**Status:** 🔧 In Progress
+**Goal:** Delegate spawns full Nexora in tmux (same reliability as main session)
+**Design Doc:** `codedocs/agentic/NEXORA-SWARM-INTEGRATION.md`
+
+### Architecture Change
+
+**Before (Broken):**
+```
+delegate_tool → inline sub-agent → 4 tools → flawed stop logic
+```
+
+**After (Reliable):**
+```
+delegate_tool → tmux spawn → nexora --headless → full agent → all tools
+```
+
+**Key Insight:** Delegate = Headless Nexora, not a limited sub-agent.
+
+---
+
+### Phase 1: Headless Mode
+
+#### P0.1: Add `--headless` Flag
+
+**File:** `internal/cmd/root.go`
+
+```go
+var headlessMode bool
+
+func init() {
+    rootCmd.PersistentFlags().BoolVar(&headlessMode, "headless", false,
+        "Run without TUI (for delegates and automation)")
+}
+```
+
+**Changes:**
+- [ ] Add `--headless` flag to root command
+- [ ] Pass to coordinator config
+
+#### P0.2: Add `--prompt-file` Flag
+
+**File:** `internal/cmd/root.go`
+
+```go
+var promptFile string
+
+func init() {
+    rootCmd.PersistentFlags().StringVar(&promptFile, "prompt-file", "",
+        "Read initial prompt from file (headless mode)")
+}
+```
+
+**Changes:**
+- [ ] Add `--prompt-file` flag
+- [ ] Read prompt from file in headless mode
+
+#### P0.3: Add `--output-file` Flag
+
+**File:** `internal/cmd/root.go`
+
+```go
+var outputFile string
+
+func init() {
+    rootCmd.PersistentFlags().StringVar(&outputFile, "output-file", "",
+        "Write final result to file (headless mode)")
+}
+```
+
+**Changes:**
+- [ ] Add `--output-file` flag
+- [ ] Write result to file on completion
+
+#### P0.4: Add `--model` Flag
+
+**File:** `internal/cmd/root.go`
+
+```go
+var modelOverride string
+
+func init() {
+    rootCmd.PersistentFlags().StringVar(&modelOverride, "model", "",
+        "Model to use (e.g., 'claude-sonnet-4', 'gpt-4o', 'deepseek-v3')")
+}
+```
+
+**Changes:**
+- [ ] Add `--model` flag
+- [ ] Override model selection in coordinator config
+
+**Use cases:**
+- Fast delegates: `--model=claude-haiku-3-5`
+- Complex tasks: `--model=claude-sonnet-4`
+- Cost optimization: `--model=deepseek-v3`
+
+#### P0.5: Implement Headless Coordinator
+
+**File:** `internal/agent/coordinator.go`
+
+```go
+func (c *coordinator) RunHeadless(ctx context.Context) error {
+    prompt, _ := os.ReadFile(c.cfg.PromptFile)
+    session, _ := c.sessions.Create(ctx, c.cfg.WorkingDir())
+
+    result, _ := c.Run(ctx, session.ID, string(prompt))
+
+    os.WriteFile(c.cfg.OutputFile, []byte(result), 0644)
+    c.writeDoneFile(session.ID)
+    return nil
+}
+```
+
+**Changes:**
+- [ ] Add `Headless`, `PromptFile`, `OutputFile`, `ModelOverride` to CoordinatorConfig
+- [ ] Implement `RunHeadless()` method
+- [ ] Stream output to stdout (captured by tmux)
+- [ ] Write `.done` file on completion
+- [ ] Apply model override if specified
+
+---
+
+### Phase 2: Tmux Delegate Spawning
+
+#### P0.6: Replace Inline Executor
+
+**File:** `internal/agent/delegate_tool.go`
+
+```go
+func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation.Task) (string, error) {
+    // Write prompt to file
+    promptPath := ".nexora/delegates/{id}.prompt"
+    os.WriteFile(promptPath, []byte(task.Description), 0600)
+
+    // Spawn nexora in tmux
+    sessionName := fmt.Sprintf("nexora-delegate-%s", task.ID[:8])
+    cmd := fmt.Sprintf("nexora --headless --prompt-file=%s --output-file=%s --model=%s",
+        promptPath, outputPath, task.Model)
+    c.tmux.NewSession(sessionName, cmd)
+
+    // Monitor in background
+    go c.monitorDelegate(task, sessionName)
+
+    return sessionName, nil
+}
+```
+
+**Changes:**
+- [ ] Remove inline sub-agent execution (lines 154-442)
+- [ ] Add file-based prompt passing
+- [ ] Spawn tmux session with nexora command
+- [ ] Return immediately with session name
+
+#### P1.1: Add Delegate Monitor
+
+**File:** `internal/agent/delegate_tool.go`
+
+```go
+func (c *coordinator) monitorDelegate(task, sessionName, donePath, outputPath string) {
+    ticker := time.NewTicker(2 * time.Second)
+    timeout := time.After(30 * time.Minute)
+
+    for {
+        select {
+        case <-timeout:
+            c.tmux.KillSession(sessionName)
+            c.reportDelegateResult(task, "", errors.New("timeout"))
+        case <-ticker.C:
+            if _, err := os.Stat(donePath); err == nil {
+                result, _ := os.ReadFile(outputPath)
+                c.reportDelegateResult(task, string(result), nil)
+                return
+            }
+        }
+    }
+}
+```
+
+**Changes:**
+- [ ] Implement background monitor goroutine
+- [ ] Poll for `.done` file every 2 seconds
+- [ ] Timeout after 30 minutes
+- [ ] Read result from `.output` file
+
+#### P1.2: Implement Result Injection
+
+**File:** `internal/agent/delegate_tool.go`
+
+```go
+func (c *coordinator) reportDelegateResult(task *delegation.Task, result string, err error) {
+    prompt := fmt.Sprintf("[DELEGATE COMPLETE - %s]\n\n%s", task.ID, result)
+    c.Run(ctx, task.ParentSession, prompt)
+}
+```
+
+**Changes:**
+- [ ] Inject result to parent session
+- [ ] Format as delegate report message
+
+---
+
+### Phase 3: File-Based State
+
+#### P2.1: Status File Updates
+
+**File:** `internal/agent/coordinator.go`
+
+**Path:** `.nexora/delegates/{task_id}.status`
+
+```json
+{
+    "task_id": "abc123",
+    "status": "running",
+    "tool_calls": 15,
+    "last_tool": "edit",
+    "last_activity": "2025-12-29T04:02:30Z"
+}
+```
+
+**Changes:**
+- [ ] Write status file on each tool call (headless mode)
+- [ ] Include tool count, last tool, timestamp
+
+#### P2.2: Cleanup on Completion
+
+**File:** `internal/agent/delegate_tool.go`
+
+**Changes:**
+- [ ] Kill tmux session after result captured
+- [ ] Optionally delete .prompt, .status files
+- [ ] Keep .output and .done for debugging
+
+---
+
+### Priority Summary
+
+| Priority | Task | File | Effort |
+|----------|------|------|--------|
+| **P0.1** | `--headless` flag | `internal/cmd/root.go` | 1h |
+| **P0.2** | `--prompt-file` flag | `internal/cmd/root.go` | 30m |
+| **P0.3** | `--output-file` flag | `internal/cmd/root.go` | 30m |
+| **P0.4** | `--model` flag | `internal/cmd/root.go` | 30m |
+| **P0.5** | Headless coordinator | `internal/agent/coordinator.go` | 4h |
+| **P0.6** | Tmux spawn executor | `internal/agent/delegate_tool.go` | 3h |
+| **P1.1** | Delegate monitor | `internal/agent/delegate_tool.go` | 2h |
+| **P1.2** | Result injection | `internal/agent/delegate_tool.go` | 1h |
+| **P2.1** | Status file updates | `internal/agent/coordinator.go` | 2h |
+| **P2.2** | Cleanup | `internal/agent/delegate_tool.go` | 1h |
+
+**Total: ~16h**
+
+---
+
+### Success Criteria
+
+- [ ] `nexora --headless --prompt-file=task.txt` works standalone
+- [ ] `delegate` tool spawns tmux session with full Nexora
+- [ ] Delegate has ALL tools (same as main session)
+- [ ] Live output visible: `tmux attach -t nexora-delegate-xxx`
+- [ ] Results injected back to parent session
+- [ ] Multiple delegates run truly in parallel
+- [ ] Status files updated during execution
+- [ ] Works with any swarm orchestrator (claude-swarm compatible)
+
+### Validation Commands
+
+```bash
+# Test headless mode (default model)
+nexora --headless --prompt-file=test.txt --output-file=result.txt
+
+# Test headless mode with specific model
+nexora --headless --prompt-file=test.txt --output-file=result.txt --model=claude-haiku-3-5
+
+# Test delegate spawning
+# (from TUI) delegate "fix the bug in main.go"
+
+# Monitor delegate
+tmux attach -t nexora-delegate-abc12345
+
+# List running delegates
+tmux ls | grep nexora-delegate
+
+# Build and verify
+go build ./... && go vet ./...
+```
+
+---
+
 ## v0.29.4 Planned Features
+
+### Delegate Persistence & True Parallel Execution
+
+**Priority:** P0 - Required for reliable multi-agent workflows
+
+#### File-Based State (`.nexora/delegates/`)
+
+State survives process restart and context compaction:
+
+```
+.nexora/delegates/
+├── {task_id}.prompt     # Task input
+├── {task_id}.log        # Worker output (streaming)
+├── {task_id}.status     # JSON: {status, tool_calls, last_activity}
+├── {task_id}.done       # Completion marker
+└── {task_id}.confidence # Self-reported 0-100
+```
+
+#### Tmux-Based Workers
+
+True parallel execution matching claude-swarm:
+
+- Session naming: `nexora-delegate-{task_id[:8]}`
+- Prompts passed via files (no shell injection)
+- Output captured to log files
+- Heartbeat monitoring (10s polling)
+- Auto-cleanup on session end
 
 ### Native GitHub Tools
 - Built-in GitHub API integration (issues, PRs, releases, workflows)
@@ -93,13 +409,40 @@ All tool tests passing with -race flag
 - Auto-sync code changes to vector index
 - CLI commands: `nexora index --status/--watch/--clear`
 
-### A2A + ACP Communication
-- Agent-to-agent communication protocol
-- Agent-control-plane communication layer
-
 ---
 
 ## v0.29.5 Planned Features
+
+### Claude-Swarm Integration Mode
+
+**Goal:** Nexora can run as a claude-swarm worker
+
+#### Worker Mode
+
+```bash
+nexora --claude-swarm-worker --feature=feature-1
+```
+
+**Behavior:**
+1. Read task from `.claude/orchestrator/workers/{feature}.prompt`
+2. Write output to `{feature}.log`
+3. Write status to `{feature}.status`
+4. Write confidence to `{feature}.confidence`
+5. Write completion to `{feature}.done`
+6. Respect protocol constraints from active protocols
+
+#### Protocol Constraint Support
+
+- Read constraints from `.claude/orchestrator/protocols/active.json`
+- Enforce tool restrictions, file access rules, temporal limits
+- Report violations to audit log
+- Compatible with claude-swarm's protocol governance
+
+### A2A + ACP Communication
+- Agent-to-agent communication protocol
+- Agent-control-plane communication layer
+- Event-based messaging between delegates
+- Status broadcast to parent orchestrator
 
 ### Protocol Composition & Conflict Resolution
 - Detect conflicting operations across agents

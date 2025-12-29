@@ -220,19 +220,19 @@ func TestModelUpdateURL(t *testing.T) {
 
 func TestModelIsLoading(t *testing.T) {
 	tests := []struct {
-		name      string
-		imageStr  string
-		expected  bool
+		name     string
+		imageStr string
+		expected bool
 	}{
 		{
-			name:      "empty image string means loading",
-			imageStr:  "",
-			expected:  true,
+			name:     "empty image string means loading",
+			imageStr: "",
+			expected: true,
 		},
 		{
-			name:      "non-empty image string means not loading",
-			imageStr:  "some image data",
-			expected:  false,
+			name:     "non-empty image string means not loading",
+			imageStr: "some image data",
+			expected: false,
 		},
 	}
 

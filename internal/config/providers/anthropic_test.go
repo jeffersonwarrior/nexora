@@ -76,7 +76,7 @@ func TestAnthropicProvider(t *testing.T) {
 
 		var haikuModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "claude-haiku-4-5-20241022" {
+			if provider.Models[i].ID == "claude-haiku-4-5-20251001" {
 				haikuModel = &provider.Models[i]
 				break
 			}
@@ -86,6 +86,6 @@ func TestAnthropicProvider(t *testing.T) {
 		assert.Equal(t, "Claude Haiku 4.5", haikuModel.Name)
 		assert.Equal(t, 1.0, haikuModel.CostPer1MIn)
 		assert.Equal(t, 5.0, haikuModel.CostPer1MOut)
-		assert.False(t, haikuModel.CanReason)
+		assert.True(t, haikuModel.CanReason)
 	})
 }

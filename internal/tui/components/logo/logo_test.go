@@ -314,8 +314,8 @@ func TestLetterU(t *testing.T) {
 
 func TestCachedRandN(t *testing.T) {
 	tests := []struct {
-		name string
-		n    int
+		name  string
+		n     int
 		check func(int) bool
 	}{
 		{

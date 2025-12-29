@@ -46,7 +46,7 @@ type BashResponseMetadata struct {
 	WorkingDirectory string `json:"working_directory"`
 	Background       bool   `json:"background,omitempty"`
 	ShellID          string `json:"shell_id,omitempty"`
-	
+
 	// TMUX fields
 	TmuxSessionID string `json:"tmux_session_id,omitempty"`
 	TmuxPaneID    string `json:"tmux_pane_id,omitempty"`
@@ -70,12 +70,12 @@ var bashDescriptionTpl = template.Must(
 )
 
 type bashDescriptionData struct {
-	BannedCommands   string
-	MaxOutputLength  int
-	ScrollbackLines  int
-	TerminalInfo     string
-	Attribution      config.Attribution
-	ModelName        string
+	BannedCommands  string
+	MaxOutputLength int
+	ScrollbackLines int
+	TerminalInfo    string
+	Attribution     config.Attribution
+	ModelName       string
 }
 
 const defaultScrollbackLines = 10000 // typical terminal scrollback
@@ -143,12 +143,12 @@ func bashDescription(attribution *config.Attribution, modelName string) string {
 	bannedCommandsStr := strings.Join(bannedCommands, ", ")
 	var out bytes.Buffer
 	if err := bashDescriptionTpl.Execute(&out, bashDescriptionData{
-		BannedCommands:   bannedCommandsStr,
-		MaxOutputLength:  MaxOutputLength,
-		ScrollbackLines:  defaultScrollbackLines,
-		TerminalInfo:     getTerminalInfo(),
-		Attribution:      *attribution,
-		ModelName:        modelName,
+		BannedCommands:  bannedCommandsStr,
+		MaxOutputLength: MaxOutputLength,
+		ScrollbackLines: defaultScrollbackLines,
+		TerminalInfo:    getTerminalInfo(),
+		Attribution:     *attribution,
+		ModelName:       modelName,
 	}); err != nil {
 		// this should never happen.
 		panic("failed to execute bash description template: " + err.Error())
@@ -214,9 +214,9 @@ func blockFuncs() []shell.BlockFunc {
 		func(args []string) bool {
 			cmdStr := strings.Join(args, " ")
 			forkBombPatterns := []string{
-				":()",      // Classic bash fork bomb
+				":()",        // Classic bash fork bomb
 				"while true", // Infinite while loop
-				":|:",      // Fork bomb variant
+				":|:",        // Fork bomb variant
 			}
 			for _, pattern := range forkBombPatterns {
 				if strings.Contains(cmdStr, pattern) {
@@ -543,13 +543,13 @@ func normalizeWorkingDir(path string) string {
 func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.ToolCall, execWorkingDir string, sessionID string) (fantasy.ToolResponse, error) {
 	tmuxManager := shell.GetTmuxManager()
 	tmuxAvailable := shell.IsTmuxAvailable()
-	
+
 	startTime := time.Now()
-	
+
 	var session *shell.TmuxSession
 	var err error
 	var ok bool
-	
+
 	// Determine if we should create a new session or use existing
 	if params.ShellID != "" {
 		// Try to continue existing session (explicitly requested)
@@ -580,35 +580,42 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 			return fantasy.ToolResponse{}, fmt.Errorf("failed to send command to default TMUX session: %w", err)
 		}
 	}
-	
-	// Detect sleep commands and wait appropriately
-	waitDuration := detectSleepDuration(params.Command)
-	if waitDuration > 0 {
-		// Deduct 2 seconds for TMUX send/receive timing overhead, then add small buffer
-		// The TMUX command dispatch has ~2s latency that needs compensation
-		adjustedWait := waitDuration - 2*time.Second + 200*time.Millisecond
-		if adjustedWait > 0 {
-			time.Sleep(adjustedWait)
-		}
-	} else {
-		// Small delay to allow TMUX to execute the command
-		time.Sleep(100 * time.Millisecond)
+
+	// Determine wait configuration based on command type
+	waitConfig := shell.DefaultWaitConfig()
+
+	// Detect sleep commands and adjust wait time
+	sleepDuration := detectSleepDuration(params.Command)
+	if sleepDuration > 0 {
+		// For explicit sleep commands, wait at least that long + buffer
+		waitConfig.MaxWait = sleepDuration + 5*time.Second
 	}
-	
-	// Get output
-	output, err := tmuxManager.CaptureOutput(session.ID)
+
+	// Small initial delay to allow command to start
+	time.Sleep(100 * time.Millisecond)
+
+	// Poll for command completion (wait for shell prompt to reappear)
+	waitResult, err := tmuxManager.WaitForPrompt(session.ID, waitConfig)
 	if err != nil {
-		return fantasy.ToolResponse{}, fmt.Errorf("failed to capture TMUX output: %w", err)
+		return fantasy.ToolResponse{}, fmt.Errorf("failed while waiting for command completion: %w", err)
 	}
-	
+
+	output := waitResult.Output
+
+	// If command didn't complete within timeout, add notice
+	if !waitResult.Completed {
+		output += fmt.Sprintf("\n\n⏳ Command still running after %v (polled %d times). Use job_output to check status later.",
+			waitResult.TimeTaken.Round(time.Second), waitResult.Polls)
+	}
+
 	// Apply output management (truncation, tmp file, etc.)
 	managedOutput := ManageOutput(output, "bash", execWorkingDir, sessionID)
-	
+
 	// Format output with working directory
 	if managedOutput.Content != "" {
 		managedOutput.Content += fmt.Sprintf("\n\n<cwd>%s</cwd>", normalizeWorkingDir(execWorkingDir))
 	}
-	
+
 	// Build metadata
 	metadata := BashResponseMetadata{
 		StartTime:        startTime.UnixMilli(),
@@ -621,12 +628,12 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 		TmuxPaneID:       session.PaneID,
 		TmuxAvailable:    tmuxAvailable,
 	}
-	
+
 	// Add truncation notice if applicable
 	if truncationMsg := FormatOutputForModel(managedOutput, "bash"); truncationMsg != "" {
 		managedOutput.Content += "\n\n" + truncationMsg
 	}
-	
+
 	return fantasy.WithResponseMetadata(fantasy.NewTextResponse(managedOutput.Content), metadata), nil
 }
 
@@ -635,18 +642,18 @@ func executeTmuxCommand(ctx context.Context, params BashParams, call fantasy.Too
 // executeJobManagement handles job_kill and job_output functionality via bash tool
 func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir string) (fantasy.ToolResponse, error) {
 	bgManager := shell.GetBackgroundShellManager()
-	
+
 	// Get the background shell
 	bgShell, ok := bgManager.Get(params.ShellID)
 	if !ok {
 		return fantasy.NewTextErrorResponse(fmt.Sprintf("background shell not found: %s", params.ShellID)), nil
 	}
-	
+
 	// Determine if this is a kill or output request
 	if params.Command == "" || strings.HasPrefix(strings.ToLower(params.Command), "output") {
 		// job_output functionality
 		stdout, stderr, done, execErr := bgShell.GetOutput()
-		
+
 		var outputParts []string
 		if stdout != "" {
 			outputParts = append(outputParts, stdout)
@@ -654,7 +661,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 		if stderr != "" {
 			outputParts = append(outputParts, stderr)
 		}
-		
+
 		status := "running"
 		if done {
 			status = "completed"
@@ -665,12 +672,12 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 				}
 			}
 		}
-		
+
 		output := strings.Join(outputParts, "\n")
 		if output == "" {
 			output = BashNoOutput
 		}
-		
+
 		metadata := BashResponseMetadata{
 			StartTime:        startTime.UnixMilli(),
 			EndTime:          time.Now().UnixMilli(),
@@ -680,7 +687,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 			ShellID:          params.ShellID,
 			Background:       true,
 		}
-		
+
 		result := fmt.Sprintf("Status: %s\n\n%s", status, output)
 		return fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil
 	} else {
@@ -689,7 +696,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 		if err != nil {
 			return fantasy.NewTextErrorResponse(err.Error()), nil
 		}
-		
+
 		result := fmt.Sprintf("Background shell %s terminated successfully", params.ShellID)
 		metadata := BashResponseMetadata{
 			StartTime:        startTime.UnixMilli(),
@@ -698,7 +705,7 @@ func executeJobManagement(params BashParams, startTime time.Time, execWorkingDir
 			WorkingDirectory: execWorkingDir,
 			ShellID:          params.ShellID,
 		}
-		
+
 		return fantasy.WithResponseMetadata(fantasy.NewTextResponse(result), metadata), nil
 	}
 }

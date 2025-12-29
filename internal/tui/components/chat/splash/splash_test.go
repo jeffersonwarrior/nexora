@@ -318,10 +318,10 @@ func TestSplash_Update_ClaudeAuthenticationCompleteMsg(t *testing.T) {
 
 func TestSplash_Update_PasteMsg(t *testing.T) {
 	tests := []struct {
-		name           string
-		needsAPIKey    bool
-		isOnboarding   bool
-		showOAuth2     bool
+		name         string
+		needsAPIKey  bool
+		isOnboarding bool
+		showOAuth2   bool
 	}{
 		{"api key mode", true, false, false},
 		{"onboarding mode", false, true, false},
@@ -448,11 +448,11 @@ func TestSplash_View_SmallScreen(t *testing.T) {
 
 func TestSplash_Cursor(t *testing.T) {
 	tests := []struct {
-		name           string
-		showChooser    bool
-		showOAuth2     bool
-		needsAPIKey    bool
-		isOnboarding   bool
+		name         string
+		showChooser  bool
+		showOAuth2   bool
+		needsAPIKey  bool
+		isOnboarding bool
 	}{
 		{"default state", false, false, false, false},
 		{"showing auth method chooser", true, false, false, false},
@@ -479,13 +479,13 @@ func TestSplash_Cursor(t *testing.T) {
 
 func TestSplash_Bindings(t *testing.T) {
 	tests := []struct {
-		name            string
-		showChooser     bool
-		showOAuth2      bool
-		needsAPIKey     bool
-		isOnboarding    bool
+		name             string
+		showChooser      bool
+		showOAuth2       bool
+		needsAPIKey      bool
+		isOnboarding     bool
 		needsProjectInit bool
-		minBindings     int
+		minBindings      int
 	}{
 		{"default state", false, false, false, false, false, 0},
 		{"auth method chooser", true, false, false, false, false, 2},
@@ -653,14 +653,14 @@ func TestSplash_LogoGap(t *testing.T) {
 
 func TestSplash_GetMaxInfoWidth(t *testing.T) {
 	tests := []struct {
-		name          string
-		width         int
-		expectedMax   int
+		name        string
+		width       int
+		expectedMax int
 	}{
-		{"narrow", 50, 48},      // width - 2
-		{"medium", 80, 78},      // width - 2
-		{"wide", 100, 90},       // capped at 90
-		{"very wide", 200, 90},  // capped at 90
+		{"narrow", 50, 48},     // width - 2
+		{"medium", 80, 78},     // width - 2
+		{"wide", 100, 90},      // capped at 90
+		{"very wide", 200, 90}, // capped at 90
 	}
 
 	for _, tt := range tests {
@@ -742,9 +742,9 @@ func TestSplash_CwdPart(t *testing.T) {
 func TestSplash_InfoSection(t *testing.T) {
 	setupTestConfig(t)
 	tests := []struct {
-		name        string
-		width       int
-		height      int
+		name   string
+		width  int
+		height int
 	}{
 		{"normal screen", 80, 40},
 		{"small screen", 40, 15},

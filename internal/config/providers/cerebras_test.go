@@ -24,8 +24,8 @@ func TestCerebrasProvider(t *testing.T) {
 		provider := CerebrasProvider([]catwalk.Provider{})
 
 		require.NotNil(t, provider)
-		require.Len(t, provider.Models, 6)
-		assert.Equal(t, "zai-glm-4.6", provider.DefaultLargeModelID)
+		require.Len(t, provider.Models, 7)
+		assert.Equal(t, "llama-3.3-70b", provider.DefaultLargeModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestCerebrasProvider(t *testing.T) {
 		}
 
 		require.NotNil(t, qwenModel)
-		assert.Equal(t, int64(262144), qwenModel.ContextWindow)
+		assert.Equal(t, int64(131000), qwenModel.ContextWindow)
 		assert.True(t, qwenModel.CanReason)
 	})
 
@@ -97,6 +97,6 @@ func TestCerebrasProvider(t *testing.T) {
 
 		require.NotNil(t, glmModel)
 		assert.True(t, glmModel.SupportsImages)
-		assert.Equal(t, 0.6, glmModel.CostPer1MIn)
+		assert.Equal(t, 2.25, glmModel.CostPer1MIn)
 	})
 }

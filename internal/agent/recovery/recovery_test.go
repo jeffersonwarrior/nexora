@@ -26,7 +26,7 @@ func TestRecoveryStrategies(t *testing.T) {
 		// Create a temp file for testing
 		tmpFile := "/tmp/test_recovery_file.txt"
 		defer os.Remove(tmpFile)
-		
+
 		// Create the file
 		if err := os.WriteFile(tmpFile, []byte("test content"), 0644); err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)

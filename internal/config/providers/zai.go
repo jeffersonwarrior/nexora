@@ -22,9 +22,21 @@ func ZAIProvider(providers []catwalk.Provider) catwalk.Provider {
 		APIKey:              "$ZAI_API_KEY",
 		APIEndpoint:         cmp.Or(os.Getenv("ZAI_API_ENDPOINT"), "https://api.z.ai/api/paas/v4"),
 		Type:                "openai-compat",
-		DefaultLargeModelID: "glm-4.6",
+		DefaultLargeModelID: "glm-4.7",
 		Models: []catwalk.Model{
-			// GLM-4.6 - Latest flagship
+			// GLM-4.7 - Latest flagship
+			{
+				ID:               "glm-4.7",
+				Name:             "GLM-4.7",
+				CostPer1MIn:      0.6,
+				CostPer1MOut:     2.2,
+				ContextWindow:    204800,
+				DefaultMaxTokens: 16000,
+				CanReason:        true,
+				SupportsImages:   false,
+				Options:          catwalk.ModelOptions{},
+			},
+			// GLM-4.6 - Enhanced reasoning
 			{
 				ID:               "glm-4.6",
 				Name:             "GLM-4.6",
@@ -33,7 +45,7 @@ func ZAIProvider(providers []catwalk.Provider) catwalk.Provider {
 				ContextWindow:    200000,
 				DefaultMaxTokens: 16000,
 				CanReason:        true,
-				SupportsImages:   true,
+				SupportsImages:   false,
 				Options:          catwalk.ModelOptions{},
 			},
 			// GLM-4.5 - Stable mid-tier
@@ -45,7 +57,7 @@ func ZAIProvider(providers []catwalk.Provider) catwalk.Provider {
 				ContextWindow:    128000,
 				DefaultMaxTokens: 16000,
 				CanReason:        true,
-				SupportsImages:   true,
+				SupportsImages:   false,
 				Options:          catwalk.ModelOptions{},
 			},
 			// GLM-4.5-Air - Budget variant
@@ -60,25 +72,24 @@ func ZAIProvider(providers []catwalk.Provider) catwalk.Provider {
 				SupportsImages:   false,
 				Options:          catwalk.ModelOptions{},
 			},
-			// GLM-4.5v - Vision model
+			// GLM Vision Models
 			{
-				ID:               "glm-4.5v",
-				Name:             "GLM-4.5v (Vision)",
-				CostPer1MIn:      0.6,
-				CostPer1MOut:     2.2,
+				ID:               "glm-4.6v",
+				Name:             "GLM-4.6V (Vision)",
+				CostPer1MIn:      0.3,
+				CostPer1MOut:     0.9,
 				ContextWindow:    128000,
 				DefaultMaxTokens: 16000,
 				CanReason:        true,
 				SupportsImages:   true,
 				Options:          catwalk.ModelOptions{},
 			},
-			// GLM-4.6v - Vision model (latest)
 			{
-				ID:               "glm-4.6v",
-				Name:             "GLM-4.6v (Vision)",
+				ID:               "glm-4.5v",
+				Name:             "GLM-4.5V (Vision)",
 				CostPer1MIn:      0.6,
-				CostPer1MOut:     2.2,
-				ContextWindow:    200000,
+				CostPer1MOut:     1.8,
+				ContextWindow:    128000,
 				DefaultMaxTokens: 16000,
 				CanReason:        true,
 				SupportsImages:   true,
@@ -99,7 +110,7 @@ func ZAIProvider(providers []catwalk.Provider) catwalk.Provider {
 			// GLM-4.6v-Flash - Free vision model
 			{
 				ID:               "glm-4.6v-flash",
-				Name:             "GLM-4.6v-Flash (Free Vision)",
+				Name:             "GLM-4.6V-Flash (Free Vision)",
 				CostPer1MIn:      0.0,
 				CostPer1MOut:     0.0,
 				ContextWindow:    128000,

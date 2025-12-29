@@ -110,7 +110,10 @@ func NewSourcegraphTool(client *http.Client) fantasy.AgentTool {
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
-				body, _ := io.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("Request failed with status code: %d (failed to read error response)", resp.StatusCode)), nil
+				}
 				if len(body) > 0 {
 					return fantasy.NewTextErrorResponse(fmt.Sprintf("Request failed with status code: %d, response: %s", resp.StatusCode, string(body))), nil
 				}

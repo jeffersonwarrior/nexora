@@ -10,8 +10,8 @@ import (
 
 func TestNewAnim(t *testing.T) {
 	tests := []struct {
-		name string
-		opts Settings
+		name  string
+		opts  Settings
 		check func(*Anim) bool
 	}{
 		{
@@ -77,8 +77,8 @@ func TestAnimInit(t *testing.T) {
 
 func TestAnimView(t *testing.T) {
 	tests := []struct {
-		name string
-		opts Settings
+		name  string
+		opts  Settings
 		check func(string) bool
 	}{
 		{
@@ -213,8 +213,8 @@ func TestAnimSetLabel(t *testing.T) {
 
 func TestAnimWidth(t *testing.T) {
 	tests := []struct {
-		name string
-		opts Settings
+		name  string
+		opts  Settings
 		check func(int) bool
 	}{
 		{
@@ -255,24 +255,24 @@ func TestAnimStep(t *testing.T) {
 
 func TestColorIsUnset(t *testing.T) {
 	tests := []struct {
-		name      string
-		color     color.Color
-		expected  bool
+		name     string
+		color    color.Color
+		expected bool
 	}{
 		{
-			name:      "nil color",
-			color:     nil,
-			expected:  true,
+			name:     "nil color",
+			color:    nil,
+			expected: true,
 		},
 		{
-			name:      "color with alpha 0",
-			color:     color.RGBA{R: 255, G: 0, B: 0, A: 0},
-			expected:  true,
+			name:     "color with alpha 0",
+			color:    color.RGBA{R: 255, G: 0, B: 0, A: 0},
+			expected: true,
 		},
 		{
-			name:      "color with alpha > 0",
-			color:     color.RGBA{R: 255, G: 0, B: 0, A: 255},
-			expected:  false,
+			name:     "color with alpha > 0",
+			color:    color.RGBA{R: 255, G: 0, B: 0, A: 255},
+			expected: false,
 		},
 	}
 
@@ -327,8 +327,8 @@ func TestMakeGradientRamp(t *testing.T) {
 			},
 		},
 		{
-			name: "no stops",
-			size: 5,
+			name:  "no stops",
+			size:  5,
 			stops: []color.Color{},
 			check: func(c []color.Color) bool {
 				return len(c) == 0

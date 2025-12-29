@@ -63,11 +63,11 @@ type PooledSession struct {
 
 // TmuxSession represents a TMUX session managed by Nexora
 type TmuxSession struct {
-	ID          string    // Nexora's internal ID (e.g., "nexora-abc123-def456")
-	SessionName string    // TMUX session name
-	PaneID      string    // TMUX pane identifier
+	ID          string // Nexora's internal ID (e.g., "nexora-abc123-def456")
+	SessionName string // TMUX session name
+	PaneID      string // TMUX pane identifier
 	WorkingDir  string
-	Command     string    // Last command executed
+	Command     string // Last command executed
 	Description string
 	StartedAt   time.Time
 	Output      bytes.Buffer
@@ -151,7 +151,7 @@ func (m *TmuxManager) NewTmuxSession(sessionID, workingDir, command, description
 
 	// Create TMUX session
 	sessionName := "nexora-" + sessionID
-	
+
 	// Create new TMUX session with a window
 	// Format: tmux new-session -d -s sessionName -x 200 -y 50 -c workingDir
 	createCmd := exec.Command("tmux", "new-session", "-d", "-s", sessionName, "-x", "200", "-y", "50", "-c", workingDir)
@@ -809,6 +809,133 @@ func calculateReuseRate(m PoolMetrics) float64 {
 		return 0
 	}
 	return float64(m.Reused) / float64(total) * 100
+}
+
+// WaitForPromptConfig configures prompt waiting behavior
+type WaitForPromptConfig struct {
+	PollInterval   time.Duration // How often to check (default: 500ms)
+	MaxWait        time.Duration // Maximum time to wait (default: 60s)
+	PromptPatterns []string      // Patterns that indicate prompt (default: ["$ ", "# ", "> "])
+}
+
+// DefaultWaitConfig returns sensible defaults for prompt waiting
+func DefaultWaitConfig() WaitForPromptConfig {
+	return WaitForPromptConfig{
+		PollInterval:   500 * time.Millisecond,
+		MaxWait:        60 * time.Second,
+		PromptPatterns: []string{"$ ", "# ", "> ", "% "},
+	}
+}
+
+// WaitForPromptResult contains the result of waiting for a prompt
+type WaitForPromptResult struct {
+	Output    string        // Captured output
+	Completed bool          // True if prompt was detected
+	TimeTaken time.Duration // How long we waited
+	Polls     int           // Number of poll attempts
+}
+
+// WaitForPrompt polls the tmux pane until a shell prompt appears or timeout
+// This allows proper handling of long-running commands (builds, tests, etc.)
+func (m *TmuxManager) WaitForPrompt(sessionID string, config WaitForPromptConfig) (*WaitForPromptResult, error) {
+	m.mu.RLock()
+	session, exists := m.sessions[sessionID]
+	m.mu.RUnlock()
+
+	if !exists {
+		return nil, fmt.Errorf("session not found: %s", sessionID)
+	}
+
+	// Use defaults if not specified
+	if config.PollInterval == 0 {
+		config.PollInterval = 500 * time.Millisecond
+	}
+	if config.MaxWait == 0 {
+		config.MaxWait = 2 * time.Minute
+	}
+	if len(config.PromptPatterns) == 0 {
+		config.PromptPatterns = []string{"$ ", "# ", "> ", "% "}
+	}
+
+	startTime := time.Now()
+	polls := 0
+	var lastOutput string
+
+	for time.Since(startTime) < config.MaxWait {
+		polls++
+
+		// Capture current pane content (don't clear yet)
+		cmd := exec.Command("tmux", "capture-pane", "-t", session.SessionName, "-p")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("failed to capture output during poll: %w", err)
+		}
+
+		currentOutput := string(output)
+		lastOutput = currentOutput
+
+		// Check if output ends with a prompt pattern
+		trimmed := strings.TrimRight(currentOutput, "\n\r\t ")
+		for _, pattern := range config.PromptPatterns {
+			if strings.HasSuffix(trimmed, strings.TrimSpace(pattern)) {
+				// Prompt detected! Command has completed
+				// Now clear the pane to prevent duplicate output on next capture
+				exec.Command("tmux", "send-keys", "-t", session.SessionName, "clear", "Enter").Run()
+				exec.Command("tmux", "clear-history", "-t", session.SessionName).Run()
+
+				return &WaitForPromptResult{
+					Output:    currentOutput,
+					Completed: true,
+					TimeTaken: time.Since(startTime),
+					Polls:     polls,
+				}, nil
+			}
+		}
+
+		// Not done yet, wait before polling again
+		time.Sleep(config.PollInterval)
+	}
+
+	// Timeout reached - return what we have
+	// Clear pane to prevent stale output
+	exec.Command("tmux", "send-keys", "-t", session.SessionName, "clear", "Enter").Run()
+	exec.Command("tmux", "clear-history", "-t", session.SessionName).Run()
+
+	return &WaitForPromptResult{
+		Output:    lastOutput,
+		Completed: false,
+		TimeTaken: time.Since(startTime),
+		Polls:     polls,
+	}, nil
+}
+
+// IsCommandRunning checks if a command is still running by looking for shell prompt
+func (m *TmuxManager) IsCommandRunning(sessionID string) (bool, error) {
+	m.mu.RLock()
+	session, exists := m.sessions[sessionID]
+	m.mu.RUnlock()
+
+	if !exists {
+		return false, fmt.Errorf("session not found: %s", sessionID)
+	}
+
+	// Capture last line of pane
+	cmd := exec.Command("tmux", "capture-pane", "-t", session.SessionName, "-p")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, fmt.Errorf("failed to capture output: %w", err)
+	}
+
+	trimmed := strings.TrimRight(string(output), "\n\r\t ")
+	promptPatterns := []string{"$ ", "# ", "> ", "% "}
+
+	for _, pattern := range promptPatterns {
+		if strings.HasSuffix(trimmed, strings.TrimSpace(pattern)) {
+			return false, nil // Prompt visible = not running
+		}
+	}
+
+	return true, nil // No prompt = still running
 }
 
 // DrainPool marks all sessions for cleanup

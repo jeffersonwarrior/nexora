@@ -1,7 +1,7 @@
 # Nexora Codebase Documentation
 
-|**Version:** v0.29.3  
-|**Date:** 2025-12-29  
+|**Version:** v0.29.3
+|**Date:** 2025-12-29
 |**Status:** Production Ready|
 
 ---
@@ -106,7 +106,7 @@ The core AI agent that processes messages and executes tools.
 |--------|---------|
 | `agent.go` | Main agent loop, message processing, tool dispatch (63KB) |
 | `coordinator.go` | Sequential edit coordination, EditLocation and SequentialEditSolver types |
-| `delegate_tool.go` | Sub-agent delegation with resource pooling and enhanced validation |
+| `delegate_tool.go` | Sub-agent delegation (async-only, auto-reports to parent) |
 | `agent_tool.go` | Agent spawning and management |
 | `summarizer.go` | Context summarization for long conversations |
 | `prompts.go` | Prompt template management |
@@ -133,9 +133,9 @@ The core AI agent that processes messages and executes tools.
 | `agents/agent_parser.go` | Agent response parsing |
 | `agents/integration.go` | Agent integration |
 
-|**Delegation Module (NEW):**||
+|**Delegation Module:**||
 |---|---|
-| `delegation/pool.go` | Resource-aware concurrent agent delegation with pooling |
+| `delegation/pool.go` | Resource-aware concurrent agent delegation (10% CPU, 256MB RAM per agent) |
 | `delegation/pool_test.go` | Pool functionality tests |
 
 |**Recovery Module:**||
@@ -301,7 +301,7 @@ SQLite database for session persistence.
 |**File**|**Purpose**|
 |--------|---------|
 | `shell.go` | Shell execution with safety |
-| `tmux.go` | TMUX session management |
+| `tmux.go` | TMUX session pooling with reuse compatibility fixes |
 | `background.go` | Background process handling |
 | `command_block_test.go` | Command blocking tests |
 
@@ -484,6 +484,7 @@ make dev                      # Development mode
 
 |**Document**|**Purpose**|
 |----------|---------|
+| `ROADMAP.md` | Project roadmap and upcoming features |
 | `TMUX.md` | TMUX integration protocol |
 | `CLAUDE.md` | Claude AI instructions |
 | `NEXORA.md` | Nexora system prompt |
@@ -500,12 +501,13 @@ make dev                      # Development mode
 ## Recent Changes (v0.29.3)
 
 ### Agent Module Updates
+- **agent.go**: Fixed title generation prompt causing empty message bug; enhanced title validation to detect invalid placeholder titles
+- **delegate_tool.go**: Refactored to async-only operation (removed `background` parameter); always auto-reports to parent session
+- **delegation/pool.go**: Optimized resource thresholds for better concurrency (10% CPU, 256MB RAM per agent; min free: 10% CPU, 512MB RAM)
+- **templates/delegate.md**: Updated documentation for async-only delegate model
 - **coordinator.go**: Refactored for sequential edit coordination with new `SequentialEditSolver` and `EditLocation` types (33KB)
-- **delegate_tool.go**: Enhanced delegation with new `DelegateParams`, `DelegatePermissionsParams`, and `delegateValidationResult` structures; improved validation logic (13KB)
-- **delegation/pool.go**: New module for resource-aware concurrent agent delegation with dynamic sizing based on system resources (11KB)
-- **compaction.go**: New compaction system for message optimization (11KB)
+- **compaction.go**: Enhanced compaction system with tool call pairing to prevent orphaned tool results (11KB)
 - **background_compaction.go**: Background compaction for memory optimization (9KB)
-- **delegate_prompt.md.tpl**: Updated template with enhanced guidelines for focused sub-agent execution
 
 ### Configuration Updates
 - Multiple provider implementations updated for consistency (OpenAI, Anthropic, xAI, Mistral, Gemini, MiniMax, Z.AI, Cerebras, Kimi, OpenRouter, DeepSeek, Qwen)
@@ -525,13 +527,22 @@ make dev                      # Development mode
 - **mcp/tools.go**: MCP tool implementations
 - New tools: `fd_helper.go`, `install_manager.go`, `prompts.go`, `temp_dir.go`, `references.go`
 
+### Shell & TMUX Updates
+- **tmux.go**: Fixed session pool reuse compatibility issue where reused sessions weren't registered in main sessions map, causing SendCommand failures for delegate tasks
+
+### TUI Updates
+- **splash.go**: Updated branding and session display
+- **models/list.go**, **models/models.go**: Enhanced model selection dialogs
+- **tui.go**: Improved session management and UI responsiveness
+
 ### Test Data Updates
 - Test fixtures updated for various model providers (OpenAI GPT-4o, Anthropic Sonnet, Z.AI GLM-4.6, OpenRouter Kimi-K2)
-- VCR cassettes for deterministic testing
-- New test coverage for delegation pool
+- VCR cassettes refreshed for delegate output extraction
+- Added test coverage for tool call pairing in compaction
 
 ### Git Commits (Recent 10)
 ```
+[Pending] fix: delegate async-only refactor, title validation, TMUX pool compatibility
 0ba0ed5 fix: delegate output extraction and VCR cassette refresh
 85caad4 test: add coverage for tool call pairing in dropToolResults compaction
 c3ec3d7 fix: prevent orphaned tool results in MiniMax compaction
@@ -541,7 +552,6 @@ c3ec3d7 fix: prevent orphaned tool results in MiniMax compaction
 f09eb16 fix: update system prompt from Claude Code to Nexora
 1c881ae feat: add CLI commands for tasks and checkpoints
 da760ee feat: implement TMUX session pooling (fixes #18)
-9239ca5 test: add session leak detection tests
 ```
 
 ---
@@ -552,6 +562,14 @@ da760ee feat: implement TMUX session pooling (fixes #18)
 - `coordinator.go`: TODO - make session management dynamic when supporting multiple agents
 - `multi_session_coordinator.go`: TODO - file is incomplete and needs to be finished
 - Future enhancements: execution-first prompting, incremental execution pipeline, self-correction loops, tool-chain orchestration
+
+### Roadmap
+See `ROADMAP.md` for detailed project roadmap including:
+- State machine + resource monitoring architecture
+- Background job monitoring & TODO system
+- Test coverage expansion (target: 40%+)
+- Provider abstraction refactor
+- Performance optimization initiatives
 
 ---
 

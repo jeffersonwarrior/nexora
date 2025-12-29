@@ -36,8 +36,8 @@ type Prompt struct {
 	now        func() time.Time
 	platform   string
 	workingDir string
-	memoryInfo string  // Override for tests
-	diskInfo   string  // Override for tests
+	memoryInfo string // Override for tests
+	diskInfo   string // Override for tests
 }
 
 type PromptDat struct {

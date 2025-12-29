@@ -41,7 +41,7 @@ func TestTitleGenerationForNewSession(t *testing.T) {
 			if pair.name == "openai-gpt-4o" && !hasAPIKey("openai") {
 				t.Skip("Skipping openai-gpt-4o - partial cassettes, needs API key to complete recording")
 			}
-			
+
 			agent, env := setupAgent(t, pair)
 
 			// Create session with default "New Session" title

@@ -25,7 +25,7 @@ func TestGeminiProvider(t *testing.T) {
 
 		require.NotNil(t, provider)
 		assert.NotEmpty(t, provider.Models)
-		assert.Equal(t, "gemini-3-pro", provider.DefaultLargeModelID)
+		assert.Equal(t, "gemini-2.5-pro", provider.DefaultLargeModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {
@@ -35,31 +35,31 @@ func TestGeminiProvider(t *testing.T) {
 		assert.Equal(t, "", string(provider.ID))
 	})
 
-	t.Run("has gemini-3-pro model", func(t *testing.T) {
+	t.Run("has gemini-3-pro-preview model", func(t *testing.T) {
 		provider := GeminiProvider([]catwalk.Provider{})
 
 		var gemini3Model *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "gemini-3-pro" {
+			if provider.Models[i].ID == "gemini-3-pro-preview" {
 				gemini3Model = &provider.Models[i]
 				break
 			}
 		}
 
 		require.NotNil(t, gemini3Model)
-		assert.Equal(t, "Gemini 3 Pro", gemini3Model.Name)
+		assert.Equal(t, "Gemini 3 Pro (Preview)", gemini3Model.Name)
 		assert.Equal(t, 2.0, gemini3Model.CostPer1MIn)
 		assert.Equal(t, 12.0, gemini3Model.CostPer1MOut)
 		assert.True(t, gemini3Model.SupportsImages)
 		assert.True(t, gemini3Model.CanReason)
 	})
 
-	t.Run("has gemini-2-5-flash model", func(t *testing.T) {
+	t.Run("has gemini-2.5-flash model", func(t *testing.T) {
 		provider := GeminiProvider([]catwalk.Provider{})
 
 		var flashModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "gemini-2-5-flash" {
+			if provider.Models[i].ID == "gemini-2.5-flash" {
 				flashModel = &provider.Models[i]
 				break
 			}
@@ -67,9 +67,9 @@ func TestGeminiProvider(t *testing.T) {
 
 		require.NotNil(t, flashModel)
 		assert.Equal(t, "Gemini 2.5 Flash", flashModel.Name)
-		assert.Equal(t, 0.075, flashModel.CostPer1MIn)
-		assert.Equal(t, 0.3, flashModel.CostPer1MOut)
-		assert.False(t, flashModel.CanReason)
+		assert.Equal(t, 0.3, flashModel.CostPer1MIn)
+		assert.Equal(t, 2.5, flashModel.CostPer1MOut)
+		assert.True(t, flashModel.CanReason)
 	})
 
 	t.Run("has extended thinking model", func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestGeminiProvider(t *testing.T) {
 
 		var thinkingModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "gemini-2-0-flash-thinking-exp" {
+			if provider.Models[i].ID == "gemini-2.0-flash-thinking-exp" {
 				thinkingModel = &provider.Models[i]
 				break
 			}
@@ -85,7 +85,7 @@ func TestGeminiProvider(t *testing.T) {
 
 		require.NotNil(t, thinkingModel)
 		assert.True(t, thinkingModel.CanReason)
-		assert.Equal(t, 5.0, thinkingModel.CostPer1MIn)
-		assert.Equal(t, 20.0, thinkingModel.CostPer1MOut)
+		assert.Equal(t, 0.0, thinkingModel.CostPer1MIn)
+		assert.Equal(t, 0.0, thinkingModel.CostPer1MOut)
 	})
 }

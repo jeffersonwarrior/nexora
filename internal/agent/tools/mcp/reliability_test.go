@@ -899,15 +899,15 @@ func TestMCPErrorHandlingIntegration(t *testing.T) {
 
 	t.Run("error code string representations", func(t *testing.T) {
 		codes := map[MCPErrorCode]string{
-			ErrCodeUnknown:            "UNKNOWN",
-			ErrCodeNotConfigured:      "NOT_CONFIGURED",
-			ErrCodeDisabled:           "DISABLED",
-			ErrCodeConnectionFailed:   "CONNECTION_FAILED",
-			ErrCodeTimeout:            "TIMEOUT",
-			ErrCodeToolNotFound:       "TOOL_NOT_FOUND",
+			ErrCodeUnknown:             "UNKNOWN",
+			ErrCodeNotConfigured:       "NOT_CONFIGURED",
+			ErrCodeDisabled:            "DISABLED",
+			ErrCodeConnectionFailed:    "CONNECTION_FAILED",
+			ErrCodeTimeout:             "TIMEOUT",
+			ErrCodeToolNotFound:        "TOOL_NOT_FOUND",
 			ErrCodeToolExecutionFailed: "TOOL_EXECUTION_FAILED",
-			ErrCodeInvalidInput:       "INVALID_INPUT",
-			ErrCodePermissionDenied:   "PERMISSION_DENIED",
+			ErrCodeInvalidInput:        "INVALID_INPUT",
+			ErrCodePermissionDenied:    "PERMISSION_DENIED",
 		}
 
 		for code, expected := range codes {
@@ -915,4 +915,3 @@ func TestMCPErrorHandlingIntegration(t *testing.T) {
 		}
 	})
 }
-

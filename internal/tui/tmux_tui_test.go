@@ -26,13 +26,13 @@ func TestTUIInteractions(t *testing.T) {
 	}
 
 	sessionName := "nexora-tui-test-" + strings.Replace(t.Name(), "/", "-", -1)
-	
+
 	// Cleanup setup
 	setup := func() {
 		exec.Command("tmux", "kill-session", "-t", sessionName).Run()
 		time.Sleep(500 * time.Millisecond)
 	}
-	
+
 	teardown := func() {
 		exec.Command("tmux", "kill-session", "-t", sessionName).Run()
 	}
@@ -73,7 +73,7 @@ func TestTUIInteractions(t *testing.T) {
 		time.Sleep(300 * time.Millisecond)
 		sendKeys("C-u") // clear
 		time.Sleep(300 * time.Millisecond)
-		
+
 		screen := capture()
 		if strings.Contains(screen, "nexora") || strings.Contains(screen, "Nexora") {
 			t.Log("✓ TUI is responsive")
@@ -85,14 +85,14 @@ func TestTUIInteractions(t *testing.T) {
 		// Clear line
 		sendKeys("C-u")
 		time.Sleep(300 * time.Millisecond)
-		
+
 		// Type "/"
 		sendKeys("/")
 		time.Sleep(1 * time.Second)
-		
+
 		screen := capture()
 		t.Logf("Screen after '/': %s", screen)
-		
+
 		// Should see commands menu or dialog
 		if strings.Contains(screen, "command") || strings.Contains(screen, "Command") {
 			t.Log("✓ '/' triggers commands menu")
@@ -106,13 +106,13 @@ func TestTUIInteractions(t *testing.T) {
 		// Clear first
 		sendKeys("C-u")
 		time.Sleep(300 * time.Millisecond)
-		
+
 		// Type path
 		sendKeys("/home/user/project")
 		time.Sleep(500 * time.Millisecond)
-		
+
 		screen := capture()
-		
+
 		if strings.Contains(screen, "/home/user/project") {
 			t.Log("✓ '/' passthrough works - path typed correctly")
 		} else {
@@ -124,9 +124,9 @@ func TestTUIInteractions(t *testing.T) {
 	t.Run("CtrlEOpensModels", func(t *testing.T) {
 		sendCtrl("e")
 		time.Sleep(1 * time.Second)
-		
+
 		screen := capture()
-		
+
 		if strings.Contains(screen, "model") || strings.Contains(screen, "Model") {
 			t.Log("✓ Ctrl+E opens models dialog")
 		} else {
@@ -138,9 +138,9 @@ func TestTUIInteractions(t *testing.T) {
 	t.Run("CtrlPOpensPrompts", func(t *testing.T) {
 		sendCtrl("p")
 		time.Sleep(1 * time.Second)
-		
+
 		screen := capture()
-		
+
 		if strings.Contains(screen, "prompt") || strings.Contains(screen, "Prompt") {
 			t.Log("✓ Ctrl+P opens prompts dialog")
 		} else {
@@ -153,13 +153,13 @@ func TestTUIInteractions(t *testing.T) {
 		// Open prompts dialog
 		sendCtrl("p")
 		time.Sleep(500 * time.Millisecond)
-		
+
 		// Try j/k navigation
 		sendKeys("j")
 		time.Sleep(200 * time.Millisecond)
 		sendKeys("k")
 		time.Sleep(200 * time.Millisecond)
-		
+
 		t.Log("✓ j/k navigation attempted")
 	})
 
@@ -177,7 +177,7 @@ func TestTUIInteractions(t *testing.T) {
 		time.Sleep(300 * time.Millisecond)
 		sendKeys("C-u") // clear
 		time.Sleep(300 * time.Millisecond)
-		
+
 		screen := capture()
 		if strings.Contains(screen, "nexora") || strings.Contains(screen, "Nexora") {
 			t.Log("✓ TUI is responsive")

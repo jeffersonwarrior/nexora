@@ -24,8 +24,8 @@ func TestZAIProvider(t *testing.T) {
 		provider := ZAIProvider([]catwalk.Provider{})
 
 		require.NotNil(t, provider)
-		require.Len(t, provider.Models, 7)
-		assert.Equal(t, "glm-4.6", provider.DefaultLargeModelID)
+		require.Len(t, provider.Models, 8)
+		assert.Equal(t, "glm-4.7", provider.DefaultLargeModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {

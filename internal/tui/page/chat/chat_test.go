@@ -280,12 +280,12 @@ func TestChatPage_handleCompactMode_Logic(t *testing.T) {
 	// (handleCompactMode calls setCompactMode which needs sidebar initialization)
 
 	tests := []struct {
-		name             string
-		width            int
-		height           int
-		forceCompact     bool
-		initialCompact   bool
-		expectedCompact  bool
+		name            string
+		width           int
+		height          int
+		forceCompact    bool
+		initialCompact  bool
+		expectedCompact bool
 	}{
 		{
 			name:            "below width threshold - should become compact",

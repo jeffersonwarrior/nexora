@@ -34,7 +34,7 @@ func NewClient(apiKey string, opts ...ClientOption) *Client {
 	client := &Client{
 		apiKey:     apiKey,
 		baseURL:    DefaultBaseURL,
-		httpClient: &http.Client{Timeout: 60 * time.Second},
+		httpClient: &http.Client{Timeout: 300 * time.Second}, // 5 minutes for large generations
 		userAgent:  UserAgent,
 	}
 

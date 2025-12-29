@@ -30,39 +30,39 @@ func newTestToolCallCmp(toolName, input string, width int) *toolCallCmp {
 
 func TestRenderPlainContent(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  string
-		width    int
+		name         string
+		content      string
+		width        int
 		wantNonEmpty bool
 	}{
 		{
-			name:     "simple content",
-			content:  "Hello World",
-			width:    80,
+			name:         "simple content",
+			content:      "Hello World",
+			width:        80,
 			wantNonEmpty: true,
 		},
 		{
-			name:     "empty content",
-			content:  "",
-			width:    80,
+			name:         "empty content",
+			content:      "",
+			width:        80,
 			wantNonEmpty: false,
 		},
 		{
-			name:     "content with newlines",
-			content:  "Line 1\nLine 2\nLine 3",
-			width:    80,
+			name:         "content with newlines",
+			content:      "Line 1\nLine 2\nLine 3",
+			width:        80,
 			wantNonEmpty: true,
 		},
 		{
-			name:     "content with tabs",
-			content:  "Column1\tColumn2\tColumn3",
-			width:    80,
+			name:         "content with tabs",
+			content:      "Column1\tColumn2\tColumn3",
+			width:        80,
 			wantNonEmpty: true,
 		},
 		{
-			name:     "content with CRLF",
-			content:  "Windows\r\nLine\r\nEndings",
-			width:    80,
+			name:         "content with CRLF",
+			content:      "Windows\r\nLine\r\nEndings",
+			width:        80,
 			wantNonEmpty: true,
 		},
 	}
@@ -109,28 +109,28 @@ func TestRenderPlainContentTruncation(t *testing.T) {
 
 func TestRenderMarkdownContent(t *testing.T) {
 	tests := []struct {
-		name     string
-		content  string
+		name         string
+		content      string
 		wantNonEmpty bool
 	}{
 		{
-			name:     "simple markdown",
-			content:  "# Heading\n\nSome **bold** text",
+			name:         "simple markdown",
+			content:      "# Heading\n\nSome **bold** text",
 			wantNonEmpty: true,
 		},
 		{
-			name:     "code block",
-			content:  "```go\nfunc main() {}\n```",
+			name:         "code block",
+			content:      "```go\nfunc main() {}\n```",
 			wantNonEmpty: true,
 		},
 		{
-			name:     "empty markdown",
-			content:  "",
+			name:         "empty markdown",
+			content:      "",
 			wantNonEmpty: false,
 		},
 		{
-			name:     "list items",
-			content:  "- Item 1\n- Item 2\n- Item 3",
+			name:         "list items",
+			content:      "- Item 1\n- Item 2\n- Item 3",
 			wantNonEmpty: true,
 		},
 	}

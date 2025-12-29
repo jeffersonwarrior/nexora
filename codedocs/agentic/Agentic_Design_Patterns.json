@@ -1,0 +1,426 @@
+{
+  "title": "Agentic Design Patterns",
+  "subtitle": "A Hands-On Guide to Building Intelligent Systems",
+  "author": "Antonio Gulli",
+  "total_pages": 482,
+  "parts": [
+    {
+      "id": 1,
+      "name": "Core Patterns",
+      "chapters": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "total_pages": 103,
+      "description": "Foundational patterns for building agentic systems"
+    },
+    {
+      "id": 2,
+      "name": "Advanced Patterns",
+      "chapters": [
+        8,
+        9,
+        10,
+        11
+      ],
+      "total_pages": 61,
+      "description": "Memory, learning, and protocol patterns"
+    },
+    {
+      "id": 3,
+      "name": "Production Patterns",
+      "chapters": [
+        12,
+        13,
+        14
+      ],
+      "total_pages": 34,
+      "description": "Error handling, human oversight, and knowledge retrieval"
+    },
+    {
+      "id": 4,
+      "name": "Operational Patterns",
+      "chapters": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "total_pages": 114,
+      "description": "Communication, optimization, reasoning, and safety"
+    }
+  ],
+  "chapters": [
+    {
+      "id": 1,
+      "title": "Chapter 1: Prompt Chaining",
+      "pattern_name": "Prompt Chaining",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Prompt Chaining pattern for building agentic systems.",
+      "key_concepts": [
+        "Sequential composition of prompts",
+        "Output → Input chaining",
+        "Step-by-step decomposition",
+        "Complex reasoning tasks"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Chapter 2: Routing",
+      "pattern_name": "Routing",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Routing pattern for building agentic systems.",
+      "key_concepts": [
+        "Dynamic path selection",
+        "Request classification",
+        "Specialized handlers",
+        "Google ADK, LangGraph implementations"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Chapter 3: Parallelization",
+      "pattern_name": "Parallelization",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Parallelization pattern for building agentic systems.",
+      "key_concepts": [
+        "Concurrent execution",
+        "Independent task processing",
+        "Efficiency optimization",
+        "Google ADK, LangChain implementations"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Chapter 4: Reflection",
+      "pattern_name": "Reflection",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Reflection pattern for building agentic systems.",
+      "key_concepts": [
+        "Self-evaluation",
+        "Iterative improvement",
+        "Quality assurance",
+        "Multi-agent critique"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Chapter 5: Tool Use",
+      "pattern_name": "Tool Use",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Tool Use pattern for building agentic systems.",
+      "key_concepts": [
+        "External tool integration",
+        "Code execution",
+        "Web search",
+        "Database queries",
+        "CrewAI, LangChain implementations"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Chapter 6: Planning",
+      "pattern_name": "Planning",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Planning pattern for building agentic systems.",
+      "key_concepts": [
+        "Goal decomposition",
+        "Strategic planning",
+        "Actionable steps",
+        "Research automation"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Chapter 7: Multi-Agent",
+      "pattern_name": "Multi-Agent",
+      "part": 1,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Multi-Agent pattern for building agentic systems.",
+      "key_concepts": [
+        "Agent coordination",
+        "Specialized expertise",
+        "Collaborative problem-solving",
+        "CrewAI, ADK implementations"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Chapter 8: Memory Management",
+      "pattern_name": "Memory Management",
+      "part": 2,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Memory Management pattern for building agentic systems.",
+      "key_concepts": [
+        "Persistent storage",
+        "Context retrieval",
+        "Short-term memory",
+        "Long-term memory",
+        "Episodic and semantic memory"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Chapter 9: Learning and Adaptation",
+      "pattern_name": "Learning and Adaptation",
+      "part": 2,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Learning and Adaptation pattern for building agentic systems.",
+      "key_concepts": [
+        "Dynamic adjustment",
+        "Feedback-based learning",
+        "Performance optimization",
+        "OpenEvolve pattern"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Chapter 10: Model Context Protocol (MCP)",
+      "pattern_name": "Model Context Protocol (MCP)",
+      "part": 2,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Model Context Protocol (MCP) pattern for building agentic systems.",
+      "key_concepts": [
+        "Standardized interface",
+        "Model-tool communication",
+        "Extensible integration",
+        "FastMCP server patterns"
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Chapter 11: Goal Setting and Monitoring",
+      "pattern_name": "Goal Setting and Monitoring",
+      "part": 2,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Goal Setting and Monitoring pattern for building agentic systems.",
+      "key_concepts": [
+        "Objective definition",
+        "Progress tracking",
+        "Milestone management",
+        "Success metrics"
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Chapter 12: Exception Handling and Recovery",
+      "pattern_name": "Exception Handling and Recovery",
+      "part": 3,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Exception Handling and Recovery pattern for building agentic systems.",
+      "key_concepts": [
+        "Error recovery",
+        "Retry logic",
+        "Fallback behaviors",
+        "Graceful degradation"
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Chapter 13: Human-in-the-Loop",
+      "pattern_name": "Human-in-the-Loop",
+      "part": 3,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Human-in-the-Loop pattern for building agentic systems.",
+      "key_concepts": [
+        "Human oversight",
+        "Intervention points",
+        "Approval workflows",
+        "High-stakes decisions",
+        "Customer support escalation"
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Chapter 14: Knowledge Retrieval (RAG)",
+      "pattern_name": "Knowledge Retrieval (RAG)",
+      "part": 3,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Knowledge Retrieval (RAG) pattern for building agentic systems.",
+      "key_concepts": [
+        "Retrieval-augmented generation",
+        "Factual Q&A",
+        "Document analysis",
+        "Knowledge bases",
+        "LangChain, VertexAI implementations"
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Chapter 15: Inter-Agent Communication (A2A)",
+      "pattern_name": "Inter-Agent Communication (A2A)",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Inter-Agent Communication (A2A) pattern for building agentic systems.",
+      "key_concepts": [
+        "Agent-to-agent communication",
+        "Message protocols",
+        "Task delegation",
+        "Sync, streaming, event-based patterns"
+      ]
+    },
+    {
+      "id": 16,
+      "title": "Chapter 16: Resource-Aware Optimization",
+      "pattern_name": "Resource-Aware Optimization",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Resource-Aware Optimization pattern for building agentic systems.",
+      "key_concepts": [
+        "Resource optimization",
+        "Cost management",
+        "Latency reduction",
+        "Scaling strategies"
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Chapter 17: Reasoning Techniques",
+      "pattern_name": "Reasoning Techniques",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Reasoning Techniques pattern for building agentic systems.",
+      "key_concepts": [
+        "Chain-of-Thought (CoT)",
+        "Self-correction",
+        "Code execution",
+        "DeepSearch techniques"
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Chapter 18: Guardrails/Safety Patterns",
+      "pattern_name": "Guardrails/Safety Patterns",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Guardrails/Safety Patterns pattern for building agentic systems.",
+      "key_concepts": [
+        "Safety constraints",
+        "Content filtering",
+        "Action validation",
+        "Boundary enforcement",
+        "Audit logging"
+      ]
+    },
+    {
+      "id": 19,
+      "title": "Chapter 19: Evaluation and Monitoring",
+      "pattern_name": "Evaluation and Monitoring",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Evaluation and Monitoring pattern for building agentic systems.",
+      "key_concepts": [
+        "Performance assessment",
+        "LLM-as-Judge",
+        "Metrics collection",
+        "Observability"
+      ]
+    },
+    {
+      "id": 20,
+      "title": "Chapter 20: Prioritization",
+      "pattern_name": "Prioritization",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Prioritization pattern for building agentic systems.",
+      "key_concepts": [
+        "Task ranking",
+        "Resource allocation",
+        "Workload management",
+        "Priority scheduling"
+      ]
+    },
+    {
+      "id": 21,
+      "title": "Chapter 21: Exploration and Discovery",
+      "pattern_name": "Exploration and Discovery",
+      "part": 4,
+      "has_code": true,
+      "status": "final",
+      "summary": "Covers the Exploration and Discovery pattern for building agentic systems.",
+      "key_concepts": [
+        "Autonomous investigation",
+        "Research automation",
+        "Hypothesis generation",
+        "Agent Laboratory pattern"
+      ]
+    }
+  ],
+  "appendices": [
+    {
+      "id": "A",
+      "title": "Advanced Prompting Techniques",
+      "pages": 28
+    },
+    {
+      "id": "B",
+      "title": "AI Agentic: From GUI to Real World Environment",
+      "pages": 6
+    },
+    {
+      "id": "C",
+      "title": "Quick Overview of Agentic Frameworks",
+      "pages": 8
+    },
+    {
+      "id": "D",
+      "title": "Building an Agent with AgentSpace",
+      "pages": 6,
+      "online_only": true
+    },
+    {
+      "id": "E",
+      "title": "AI Agents on the CLI",
+      "pages": 5,
+      "online_only": true
+    },
+    {
+      "id": "F",
+      "title": "Under the Hood: Agents' Reasoning Engines",
+      "pages": 14
+    },
+    {
+      "id": "G",
+      "title": "Coding Agents",
+      "pages": 7
+    }
+  ],
+  "metadata": {
+    "donation": "All royalties donated to Save the Children",
+    "source": "https://github.com/sarwarbeing-ai/Agentic_Design_Patterns"
+  }
+}

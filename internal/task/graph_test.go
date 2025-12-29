@@ -479,8 +479,8 @@ func TestGraph_CriticalPath(t *testing.T) {
 
 		// Critical path should be: D -> B -> A or D -> C -> A (both have length 3)
 		// We verify the structure is correct
-		assert.Equal(t, "D", path[0]) // Must start with D
-		assert.Equal(t, "A", path[2]) // Must end with A
+		assert.Equal(t, "D", path[0])                   // Must start with D
+		assert.Equal(t, "A", path[2])                   // Must end with A
 		assert.Contains(t, []string{"B", "C"}, path[1]) // Middle should be B or C
 	})
 

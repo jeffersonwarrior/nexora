@@ -24,6 +24,7 @@ import (
 	"github.com/nexora/nexora/internal/agent/tools"
 	"github.com/nexora/nexora/internal/aiops"
 	"github.com/nexora/nexora/internal/config"
+	"github.com/nexora/nexora/internal/config/providers"
 	"github.com/nexora/nexora/internal/csync"
 	"github.com/nexora/nexora/internal/history"
 	"github.com/nexora/nexora/internal/log"
@@ -68,6 +69,53 @@ type Coordinator interface {
 	UpdateModels(ctx context.Context) error
 }
 
+// validateToolInput validates tool call input for common issues
+// Returns an error if the input is invalid, with a helpful message for the model
+func validateToolInput(call fantasy.ToolCall) error {
+	// Check for completely empty input (common GLM-4.7 failure)
+	if call.Input == "" || call.Input == "{}" {
+		return fmt.Errorf("tool '%s' requires input parameters but received empty input. Please provide the required arguments", call.Name)
+	}
+
+	// Check for malformed JSON (should at least be parseable)
+	var parsed map[string]interface{}
+	if err := json.Unmarshal([]byte(call.Input), &parsed); err != nil {
+		// Try to be helpful about what went wrong
+		if strings.Contains(err.Error(), "unexpected end") {
+			return fmt.Errorf("tool '%s' input is truncated or incomplete JSON. Please provide complete input", call.Name)
+		}
+		return fmt.Errorf("tool '%s' input is not valid JSON: %v", call.Name, err)
+	}
+
+	// Check for tools that require specific parameters
+	switch call.Name {
+	case "bash", "run_command", "run_shell":
+		if _, ok := parsed["command"]; !ok {
+			return fmt.Errorf("bash tool requires 'command' parameter")
+		}
+	case "edit":
+		if _, ok := parsed["file_path"]; !ok {
+			return fmt.Errorf("edit tool requires 'file_path' parameter")
+		}
+	case "view", "read", "readfile":
+		if _, ok := parsed["file_path"]; !ok {
+			if _, ok := parsed["path"]; !ok {
+				return fmt.Errorf("view tool requires 'file_path' or 'path' parameter")
+			}
+		}
+	}
+
+	return nil
+}
+
+// truncateInput truncates input string for logging
+func truncateInput(input string, maxLen int) string {
+	if len(input) <= maxLen {
+		return input
+	}
+	return input[:maxLen] + "..."
+}
+
 // timeoutWrappedTool is a tool that wraps another tool with timeout enforcement
 type timeoutWrappedTool struct {
 	original fantasy.AgentTool
@@ -82,6 +130,18 @@ func (t *timeoutWrappedTool) Info() fantasy.ToolInfo {
 
 // Run executes the original tool with timeout enforcement
 func (t *timeoutWrappedTool) Run(ctx context.Context, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+	// Resolve tool name aliases (GLM-4.7 uses run_command, run_shell, readfile, etc.)
+	call.Name = tools.ResolveToolName(call.Name)
+
+	// Validate tool input - reject empty or malformed inputs early
+	if err := validateToolInput(call); err != nil {
+		slog.Warn("Tool input validation failed",
+			"tool", call.Name,
+			"error", err,
+			"input_preview", truncateInput(call.Input, 100))
+		return fantasy.NewTextErrorResponse(err.Error()), nil
+	}
+
 	// Create timeout context
 	timeoutCtx, cancel := context.WithTimeout(ctx, t.timeout)
 	defer cancel()
@@ -96,7 +156,11 @@ func (t *timeoutWrappedTool) Run(ctx context.Context, call fantasy.ToolCall) (fa
 	// Execute original tool in goroutine
 	go func() {
 		resp, err := t.original.Run(timeoutCtx, call)
-		resultChan <- result{resp: resp, err: err}
+		select {
+		case resultChan <- result{resp: resp, err: err}:
+		case <-timeoutCtx.Done():
+			// Context cancelled, exit without blocking
+		}
 	}()
 
 	// Wait for result or timeout
@@ -104,7 +168,9 @@ func (t *timeoutWrappedTool) Run(ctx context.Context, call fantasy.ToolCall) (fa
 	case res := <-resultChan:
 		return res.resp, res.err
 	case <-timeoutCtx.Done():
-		return fantasy.NewTextErrorResponse(fmt.Sprintf("tool timed out after %v", t.timeout)), timeoutCtx.Err()
+		// Return timeout as a tool error response, NOT as a context error
+		// This allows the agent to continue processing without "context deadline exceeded" errors
+		return fantasy.NewTextErrorResponse(fmt.Sprintf("⏱️ Tool timed out after %v. The command may still be running. Consider using run_in_background=true for long-running commands.", t.timeout)), nil
 	}
 }
 
@@ -119,16 +185,16 @@ func (t *timeoutWrappedTool) SetProviderOptions(opts fantasy.ProviderOptions) {
 }
 
 type coordinator struct {
-	cfg             *config.Config
-	sessions        session.Service
-	messages        message.Service
-	permissions     permission.Service
-	history         history.Service
-	lspClients      *csync.Map[string, *lsp.Client]
-	aiops           aiops.Ops
-	sessionLog         *sessionlog.Manager
-	resourceMonitor    *resources.Monitor
-	delegatePool       *delegation.Pool
+	cfg                 *config.Config
+	sessions            session.Service
+	messages            message.Service
+	permissions         permission.Service
+	history             history.Service
+	lspClients          *csync.Map[string, *lsp.Client]
+	aiops               aiops.Ops
+	sessionLog          *sessionlog.Manager
+	resourceMonitor     *resources.Monitor
+	delegatePool        *delegation.Pool
 	backgroundCompactor *BackgroundCompactor
 
 	currentAgent SessionAgent
@@ -838,13 +904,90 @@ func (c *coordinator) buildAgentModels(ctx context.Context) (Model, Model, error
 		return Model{}, Model{}, err
 	}
 
-	model := Model{
+	largeModelStruct := Model{
 		Model:      largeModel,
 		CatwalkCfg: *largeCatwalkModel,
 		ModelCfg:   largeModelCfg,
 	}
-	// Return same model for both large and small (backward compatibility)
-	return model, model, nil
+
+	// Select fastest model for small tasks (title generation, etc.)
+	fastestModel, err := c.selectFastestModel(ctx, knownProviders)
+	if err != nil || fastestModel.Model == nil {
+		// Fallback to large model if fastest selection fails
+		slog.Warn("Failed to select fastest model, using large model for both", "error", err)
+		return largeModelStruct, largeModelStruct, nil
+	}
+
+	return largeModelStruct, fastestModel, nil
+}
+
+// selectFastestModel finds and builds the fastest available model across all providers
+func (c *coordinator) selectFastestModel(ctx context.Context, knownProviders []catwalk.Provider) (Model, error) {
+	var fastestModelID string
+	var fastestProviderID string
+	var fastestProviderCfg config.ProviderConfig
+	var fastestCatwalkModel *catwalk.Model
+	maxSpeed := 0.0
+
+	// Iterate through all enabled providers
+	for providerID, providerCfg := range c.cfg.Providers.Seq2() {
+		if providerCfg.Disable {
+			continue // Skip disabled providers
+		}
+
+		// Check models in this provider
+		for _, provider := range knownProviders {
+			if string(provider.ID) != providerID {
+				continue
+			}
+
+			for i, model := range provider.Models {
+				speed := providers.GetModelSpeed(model.ID)
+				if speed.TokensPerSecond > maxSpeed {
+					maxSpeed = speed.TokensPerSecond
+					fastestModelID = model.ID
+					fastestProviderID = providerID
+					fastestProviderCfg = providerCfg
+					fastestCatwalkModel = &provider.Models[i]
+				}
+			}
+			break
+		}
+	}
+
+	if fastestModelID == "" || fastestCatwalkModel == nil {
+		return Model{}, fmt.Errorf("no available models found")
+	}
+
+	slog.Info("Selected fastest model for title generation",
+		"model", fastestModelID,
+		"provider", fastestProviderID,
+		"speed_tps", maxSpeed,
+		"tier", providers.GetModelSpeed(fastestModelID).SpeedTier)
+
+	// Build the model config for the fastest model
+	fastestModelCfg := config.SelectedModel{
+		Model:    fastestModelID,
+		Provider: fastestProviderID,
+	}
+
+	// Build the provider
+	fastProvider, err := c.buildProvider(fastestProviderCfg, fastestModelCfg)
+	if err != nil {
+		return Model{}, fmt.Errorf("failed to build fastest model provider: %w", err)
+	}
+
+	// Get the language model
+	fastModel, err := fastProvider.LanguageModel(ctx, fastestModelID)
+	if err != nil {
+		return Model{}, fmt.Errorf("failed to load fastest model: %w", err)
+	}
+
+	return Model{
+		Model:      fastModel,
+		CatwalkCfg: *fastestCatwalkModel,
+		ModelCfg:   fastestModelCfg,
+	}, nil
 }
 
 func (c *coordinator) buildAnthropicProvider(baseURL, apiKey string, headers map[string]string) (fantasy.Provider, error) {

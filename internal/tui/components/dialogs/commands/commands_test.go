@@ -141,53 +141,53 @@ func TestCommandDialog_Next(t *testing.T) {
 	// Note: User commands are now combined with System commands,
 	// so next() should skip UserCommands and go directly to MCP
 	tests := []struct {
-		name           string
-		current        commandType
-		hasUserCmds    bool
-		hasMCPPrompts  bool
-		expectedNext   commandType
+		name          string
+		current       commandType
+		hasUserCmds   bool
+		hasMCPPrompts bool
+		expectedNext  commandType
 	}{
 		{
-			name:           "system to mcp when mcp exists (user commands combined with system)",
-			current:        SystemCommands,
-			hasUserCmds:    true,
-			hasMCPPrompts:  true,
-			expectedNext:   MCPPrompts,
+			name:          "system to mcp when mcp exists (user commands combined with system)",
+			current:       SystemCommands,
+			hasUserCmds:   true,
+			hasMCPPrompts: true,
+			expectedNext:  MCPPrompts,
 		},
 		{
-			name:           "system to mcp when no user but mcp exists",
-			current:        SystemCommands,
-			hasUserCmds:    false,
-			hasMCPPrompts:  true,
-			expectedNext:   MCPPrompts,
+			name:          "system to mcp when no user but mcp exists",
+			current:       SystemCommands,
+			hasUserCmds:   false,
+			hasMCPPrompts: true,
+			expectedNext:  MCPPrompts,
 		},
 		{
-			name:           "system to system when nothing else",
-			current:        SystemCommands,
-			hasUserCmds:    false,
-			hasMCPPrompts:  false,
-			expectedNext:   SystemCommands,
+			name:          "system to system when nothing else",
+			current:       SystemCommands,
+			hasUserCmds:   false,
+			hasMCPPrompts: false,
+			expectedNext:  SystemCommands,
 		},
 		{
-			name:           "system stays system when only user commands (no separate tab)",
-			current:        SystemCommands,
-			hasUserCmds:    true,
-			hasMCPPrompts:  false,
-			expectedNext:   SystemCommands,
+			name:          "system stays system when only user commands (no separate tab)",
+			current:       SystemCommands,
+			hasUserCmds:   true,
+			hasMCPPrompts: false,
+			expectedNext:  SystemCommands,
 		},
 		{
-			name:           "user to mcp (legacy)",
-			current:        UserCommands,
-			hasUserCmds:    true,
-			hasMCPPrompts:  true,
-			expectedNext:   MCPPrompts,
+			name:          "user to mcp (legacy)",
+			current:       UserCommands,
+			hasUserCmds:   true,
+			hasMCPPrompts: true,
+			expectedNext:  MCPPrompts,
 		},
 		{
-			name:           "mcp to system",
-			current:        MCPPrompts,
-			hasUserCmds:    true,
-			hasMCPPrompts:  true,
-			expectedNext:   SystemCommands,
+			name:          "mcp to system",
+			current:       MCPPrompts,
+			hasUserCmds:   true,
+			hasMCPPrompts: true,
+			expectedNext:  SystemCommands,
 		},
 	}
 

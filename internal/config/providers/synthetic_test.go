@@ -38,7 +38,7 @@ func TestSyntheticProvider_OverridesExisting(t *testing.T) {
 	existingSynthetic := catwalk.Provider{
 		ID:                  "synthetic",
 		Name:                "Old Synthetic",
-		DefaultLargeModelID: "hf:zai-org/GLM-4.6", // Old default that causes issues
+		DefaultLargeModelID: "glm-4.6", // Old default that causes issues
 	}
 	syntheticInList := []catwalk.Provider{existingSynthetic}
 
@@ -59,7 +59,7 @@ func TestSyntheticProvider_ModelIDs(t *testing.T) {
 	}
 
 	require.True(t, modelIDs["minimax/minimax-m2.1"])
-	require.True(t, modelIDs["hf:zai-org/GLM-4.6"])
+	require.True(t, modelIDs["glm-4.7"])
 }
 
 func TestSyntheticProvider_DefaultAPIEndpoint(t *testing.T) {

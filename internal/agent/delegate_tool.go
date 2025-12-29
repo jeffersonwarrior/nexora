@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"charm.land/fantasy"
 
@@ -425,8 +426,9 @@ func (c *coordinator) executeDelegatedTask(ctx context.Context, task *delegation
 			"parent_session", task.ParentSession,
 		)
 
-		// Use a fresh context since the original might be cancelled
-		reportCtx := context.Background()
+		// Use a fresh context with timeout since the original might be cancelled
+		reportCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
 		if _, runErr := c.Run(reportCtx, task.ParentSession, reportPrompt); runErr != nil {
 			slog.Error("failed to report delegate results to parent session",
 				"task_id", task.ID,

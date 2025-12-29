@@ -49,12 +49,12 @@ type ViewResponseMetadata struct {
 }
 
 const (
-	ViewToolName        = "view"
-	MaxReadSize         = 5 * 1024 * 1024 // 5MB
-	DefaultReadLimit    = 100
-	MaxLineLength       = 2000
-	MaxViewTokens       = 30000 // Max tokens to return in a single view (allows full file if it fits)
-	FallbackChunkLines  = 2000  // Fallback to chunking if file exceeds token limit
+	ViewToolName       = "view"
+	MaxReadSize        = 5 * 1024 * 1024 // 5MB
+	DefaultReadLimit   = 100
+	MaxLineLength      = 2000
+	MaxViewTokens      = 30000 // Max tokens to return in a single view (allows full file if it fits)
+	FallbackChunkLines = 2000  // Fallback to chunking if file exceeds token limit
 )
 
 func NewViewTool(lspClients *csync.Map[string, *lsp.Client], permissions permission.Service, workingDir string) fantasy.AgentTool {
@@ -440,4 +440,3 @@ func (s *LineScanner) Text() string {
 func (s *LineScanner) Err() error {
 	return s.scanner.Err()
 }
-

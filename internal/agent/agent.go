@@ -148,8 +148,8 @@ type SessionAgentOptions struct {
 	Sessions             session.Service
 	Messages             message.Service
 	Tools                []fantasy.AgentTool
-	AIOPS                aiops.Ops          // AIOPS client
-	ResourceMonitor      *resources.Monitor // Resource monitor for pause/resume
+	AIOPS                aiops.Ops            // AIOPS client
+	ResourceMonitor      *resources.Monitor   // Resource monitor for pause/resume
 	BackgroundCompactor  *BackgroundCompactor // Background compactor for idle-time optimization
 }
 

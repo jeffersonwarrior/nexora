@@ -689,9 +689,9 @@ func TestPermissionDialogCmp_ID(t *testing.T) {
 
 func TestPermissionDialogCmp_SupportsDiffView(t *testing.T) {
 	tests := []struct {
-		name            string
-		toolName        string
-		expectDiffView  bool
+		name           string
+		toolName       string
+		expectDiffView bool
 	}{
 		{
 			name:           "EditTool supports diff view",

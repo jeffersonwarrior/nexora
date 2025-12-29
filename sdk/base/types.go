@@ -300,7 +300,7 @@ var DefaultRetryConfig = RetryConfig{
 // DefaultClientConfig provides sensible defaults
 var DefaultClientConfig = ClientConfig{
 	UserAgent:   "nexora-sdk/1.0",
-	Timeout:     60 * time.Second,
+	Timeout:     300 * time.Second, // 5 minutes for large generations
 	RetryConfig: DefaultRetryConfig,
 }
 

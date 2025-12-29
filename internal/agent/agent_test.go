@@ -45,10 +45,10 @@ func setupAgent(t *testing.T, pair modelPair) (SessionAgent, fakeEnv) {
 
 func hasAPIKey(provider string) bool {
 	keys := map[string]string{
-		"anthropic":   os.Getenv("NEXORA_ANTHROPIC_API_KEY"),
-		"openai":      os.Getenv("NEXORA_OPENAI_API_KEY"),
-		"openrouter":   os.Getenv("NEXORA_OPENROUTER_API_KEY"),
-		"zai":         os.Getenv("NEXORA_ZAI_API_KEY"),
+		"anthropic":  os.Getenv("NEXORA_ANTHROPIC_API_KEY"),
+		"openai":     os.Getenv("NEXORA_OPENAI_API_KEY"),
+		"openrouter": os.Getenv("NEXORA_OPENROUTER_API_KEY"),
+		"zai":        os.Getenv("NEXORA_ZAI_API_KEY"),
 	}
 	return keys[provider] != ""
 }
@@ -81,7 +81,7 @@ func TestCoderAgent(t *testing.T) {
 			if pair.name == "openai-gpt-4o" && !hasAPIKey("openai") {
 				t.Skip("Skipping openai-gpt-4o - partial cassettes, needs API key to complete recording")
 			}
-			
+
 			t.Run("simple test", func(t *testing.T) {
 				agent, env := setupAgent(t, pair)
 

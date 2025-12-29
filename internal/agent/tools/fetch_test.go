@@ -347,7 +347,7 @@ func TestFetchTool_SimpleMode(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
 	params := FetchParams{
-		URL: server.URL,
+		URL:    server.URL,
 		Format: "text", // Use text format to get simple output
 	}
 	paramsJSON, _ := json.Marshal(params)
@@ -371,7 +371,7 @@ func TestFetchTool_SimpleModeInvalidURL(t *testing.T) {
 
 	ctx := context.WithValue(context.Background(), SessionIDContextKey, "test-session")
 	params := FetchParams{
-		URL: "ftp://example.com",
+		URL:    "ftp://example.com",
 		Format: "text",
 	}
 	paramsJSON, _ := json.Marshal(params)

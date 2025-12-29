@@ -22,7 +22,7 @@ func TestMistralGeneralProvider_HasCorrectModelCount(t *testing.T) {
 	t.Parallel()
 	provider := MistralGeneralProvider(nil)
 
-	require.Len(t, provider.Models, 7)
+	require.Len(t, provider.Models, 11)
 }
 
 func TestMistralGeneralProvider_ModelIDsUnique(t *testing.T) {
@@ -71,7 +71,7 @@ func TestMistralGeneralProvider_HasDefaultModelIDs(t *testing.T) {
 	t.Parallel()
 	provider := MistralGeneralProvider(nil)
 
-	require.Equal(t, "mistral-large-3-25-12", string(provider.DefaultLargeModelID))
+	require.Equal(t, "mistral-large-2512", string(provider.DefaultLargeModelID))
 }
 
 func TestMistralGeneralProvider_LargeModelIsExpensive(t *testing.T) {
@@ -84,7 +84,7 @@ func TestMistralGeneralProvider_LargeModelIsExpensive(t *testing.T) {
 		out float64
 	}
 	for _, m := range provider.Models {
-		if string(m.ID) == "mistral-large-3-25-12" {
+		if string(m.ID) == "mistral-large-2512" {
 			largeModelCost.in = m.CostPer1MIn
 			largeModelCost.out = m.CostPer1MOut
 			break

@@ -64,6 +64,7 @@ func Connect(ctx context.Context, dataDir string) (*sql.DB, error) {
 
 	if err := goose.Up(db, "migrations"); err != nil {
 		slog.Error("Failed to apply migrations", "error", err)
+		db.Close()
 		return nil, fmt.Errorf("failed to apply migrations: %w", err)
 	}
 

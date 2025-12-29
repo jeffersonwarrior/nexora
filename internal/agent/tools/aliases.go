@@ -23,53 +23,69 @@ import (
 // - lsp_references: Language server protocol references
 var toolAliases = map[string]string{
 	// Fetch tool aliases
-	"curl":          "fetch",
-	"wget":          "fetch",
-	"get":           "fetch",
-	"http-get":      "fetch",
-	"http_get":      "fetch",
-	"web-fetch":     "web_fetch",
-	"webfetch":      "web_fetch",
-	"http":          "fetch",
+	"curl":      "fetch",
+	"wget":      "fetch",
+	"get":       "fetch",
+	"http-get":  "fetch",
+	"http_get":  "fetch",
+	"web-fetch": "web_fetch",
+	"webfetch":  "web_fetch",
+	"http":      "fetch",
 
 	// File tools
-	"read":          "view",
-	"cat":           "view",
-	"open":          "view",
-	"list":          "ls",
-	"dir":           "ls",
-	"directory":     "ls",
+	"read":      "view",
+	"cat":       "view",
+	"open":      "view",
+	"readfile":  "view", // GLM-4.7 hallucination
+	"read_file": "view", // GLM-4.7 hallucination
+	"file_read": "view",
+	"view_file": "view",
+	"list":      "ls",
+	"dir":       "ls",
+	"directory": "ls",
 
 	// Edit tools
-	"modify":        "edit",
-	"change":        "edit",
-	"replace":       "edit",
-	"update":        "edit",
+	"modify":     "edit",
+	"change":     "edit",
+	"replace":    "edit",
+	"update":     "edit",
+	"multi_edit": "multiedit", // GLM-4.7 hallucination
+	"multiEdit":  "multiedit",
+	"edit_multi": "multiedit",
 
 	// Write tools
-	"create":        "write",
-	"make":          "write",
-	"new":           "write",
+	"create": "write",
+	"make":   "write",
+	"new":    "write",
 
 	// Search tools
-	"search":        "grep",
-	"rg":            "grep",
+	"search": "grep",
+	"rg":     "grep",
 
 	// Bash/shell tools
-	"shell":         "bash",
-	"exec":          "bash",
-	"execute":       "bash",
-	"run":           "bash",
-	"command":       "bash",
+	"shell":       "bash",
+	"exec":        "bash",
+	"execute":     "bash",
+	"run":         "bash",
+	"command":     "bash",
+	"run_command": "bash", // GLM-4.7 hallucination
+	"run_shell":   "bash", // GLM-4.7 hallucination
+	"runcommand":  "bash",
+	"runshell":    "bash",
 
 	// Web tools
-	"web-search":    "web_search",
-	"websearch":     "web_search",
-	"search-web":    "web_search",
+	"web-search": "web_search",
+	"websearch":  "web_search",
+	"search-web": "web_search",
 
 	// Sourcegraph
-	"sg":            "sourcegraph",
-	"code-search":   "sourcegraph",
+	"sg":          "sourcegraph",
+	"code-search": "sourcegraph",
+
+	// Agentic tools (GLM-4.7 hallucinations)
+	"agenticfetch":    "agentic_fetch",
+	"agentic-fetch":   "agentic_fetch",
+	"agentic_request": "agentic_fetch",
 }
 
 // ResolveToolName resolves a tool name alias to its canonical name

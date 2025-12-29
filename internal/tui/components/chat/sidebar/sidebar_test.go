@@ -142,8 +142,8 @@ func TestGetMaxWidth(t *testing.T) {
 		width    int
 		expected int
 	}{
-		{"width 40", 40, 38},  // 40 - 2 (padding)
-		{"width 60", 60, 58},  // max is 58
+		{"width 40", 40, 38}, // 40 - 2 (padding)
+		{"width 60", 60, 58}, // max is 58
 		{"width 30", 30, 28},
 	}
 
@@ -165,10 +165,10 @@ func TestGetMaxWidth(t *testing.T) {
 
 func TestCalculateAvailableHeight(t *testing.T) {
 	tests := []struct {
-		name          string
-		height        int
-		compactMode   bool
-		minExpected   int
+		name        string
+		height      int
+		compactMode bool
+		minExpected int
 	}{
 		{"normal mode tall", 40, false, 20},
 		{"normal mode short", 20, false, 5},
@@ -315,8 +315,8 @@ func (m *mockHistoryService) DeleteSessionFiles(ctx context.Context, sessionID s
 func contains(s, substr string) bool {
 	return len(s) > 0 && (s == substr || len(substr) == 0 ||
 		(len(s) >= len(substr) && (s[:len(substr)] == substr ||
-		s[len(s)-len(substr):] == substr ||
-		findSubstring(s, substr))))
+			s[len(s)-len(substr):] == substr ||
+			findSubstring(s, substr))))
 }
 
 func findSubstring(s, substr string) bool {

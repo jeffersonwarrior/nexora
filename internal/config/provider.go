@@ -250,10 +250,14 @@ func injectCustomProviders(providerList []catwalk.Provider) []catwalk.Provider {
 		providers.GeminiProvider,
 		providers.ZAIProvider,
 		providers.CerebrasProvider,
+		providers.CerebrasCodeProvider,
+		providers.DeepSeekProvider,
 		// Existing providers
 		providers.XAIProvider,
 		providers.MiniMaxProvider,
 		providers.SyntheticProvider,
+		providers.KimiCodingProvider,
+		providers.MoonshotProvider,
 	}
 
 	// Collect injected providers

@@ -48,8 +48,8 @@ func TestOpenAIProvider(t *testing.T) {
 
 		require.NotNil(t, gpt4oModel)
 		assert.Equal(t, "GPT-4o", gpt4oModel.Name)
-		assert.Equal(t, 2.5, gpt4oModel.CostPer1MIn)
-		assert.Equal(t, 10.0, gpt4oModel.CostPer1MOut)
+		assert.Equal(t, 5.0, gpt4oModel.CostPer1MIn)
+		assert.Equal(t, 15.0, gpt4oModel.CostPer1MOut)
 		assert.True(t, gpt4oModel.SupportsImages)
 	})
 
@@ -70,21 +70,21 @@ func TestOpenAIProvider(t *testing.T) {
 		assert.Equal(t, 0.6, miniModel.CostPer1MOut)
 	})
 
-	t.Run("has gpt-5-2 model", func(t *testing.T) {
+	t.Run("has gpt-5 model", func(t *testing.T) {
 		provider := OpenAIProvider([]catwalk.Provider{})
 
-		var gpt52Model *catwalk.Model
+		var gpt5Model *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "gpt-5-2" {
-				gpt52Model = &provider.Models[i]
+			if provider.Models[i].ID == "gpt-5" {
+				gpt5Model = &provider.Models[i]
 				break
 			}
 		}
 
-		require.NotNil(t, gpt52Model)
-		assert.Equal(t, "GPT-5.2", gpt52Model.Name)
-		assert.Equal(t, 1.75, gpt52Model.CostPer1MIn)
-		assert.Equal(t, 7.0, gpt52Model.CostPer1MOut)
+		require.NotNil(t, gpt5Model)
+		assert.Equal(t, "GPT-5", gpt5Model.Name)
+		assert.Equal(t, 1.25, gpt5Model.CostPer1MIn)
+		assert.Equal(t, 10.0, gpt5Model.CostPer1MOut)
 	})
 
 	t.Run("has o1 reasoning model", func(t *testing.T) {

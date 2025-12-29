@@ -173,8 +173,8 @@ func TestReportErrorWithDifferentErrors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		errMsg    string
+		name   string
+		errMsg string
 	}{
 		{name: "simple error", errMsg: "error occurred"},
 		{name: "complex error", errMsg: "connection failed: timeout"},

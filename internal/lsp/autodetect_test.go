@@ -222,7 +222,7 @@ func TestInstallLSPServer(t *testing.T) {
 		language   string
 		shouldSkip bool
 	}{
-		{"Go", "go", true},         // Skip actual install in tests
+		{"Go", "go", true},           // Skip actual install in tests
 		{"Unknown", "unknown", true}, // Unknown language should return error
 	}
 

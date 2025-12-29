@@ -25,7 +25,7 @@ func TestMistralCodestralProvider(t *testing.T) {
 
 		require.NotNil(t, provider)
 		require.Len(t, provider.Models, 2)
-		assert.Equal(t, "codestral-25-08", provider.DefaultLargeModelID)
+		assert.Equal(t, "codestral-latest", provider.DefaultLargeModelID)
 	})
 
 	t.Run("does not create if already exists", func(t *testing.T) {
@@ -35,38 +35,39 @@ func TestMistralCodestralProvider(t *testing.T) {
 		assert.Equal(t, "", string(provider.ID))
 	})
 
-	t.Run("has codestral model", func(t *testing.T) {
+	t.Run("has codestral latest model", func(t *testing.T) {
 		provider := MistralCodestralProvider([]catwalk.Provider{})
 
 		var codestralModel *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "codestral-25-08" {
+			if provider.Models[i].ID == "codestral-latest" {
 				codestralModel = &provider.Models[i]
 				break
 			}
 		}
 
 		require.NotNil(t, codestralModel)
-		assert.Equal(t, "Codestral", codestralModel.Name)
-		assert.Equal(t, 0.3, codestralModel.CostPer1MIn)
-		assert.Equal(t, 0.9, codestralModel.CostPer1MOut)
+		assert.Equal(t, "Codestral Latest", codestralModel.Name)
+		assert.Equal(t, 1.0, codestralModel.CostPer1MIn)
+		assert.Equal(t, 3.0, codestralModel.CostPer1MOut)
 		assert.True(t, codestralModel.CanReason)
 		assert.False(t, codestralModel.SupportsImages)
 	})
 
-	t.Run("has codestral embed model", func(t *testing.T) {
+	t.Run("has codestral 2501 model", func(t *testing.T) {
 		provider := MistralCodestralProvider([]catwalk.Provider{})
 
-		var embedModel *catwalk.Model
+		var codestral2501 *catwalk.Model
 		for i := range provider.Models {
-			if provider.Models[i].ID == "codestral-embed-25-05" {
-				embedModel = &provider.Models[i]
+			if provider.Models[i].ID == "codestral-2501" {
+				codestral2501 = &provider.Models[i]
 				break
 			}
 		}
 
-		require.NotNil(t, embedModel)
-		assert.Equal(t, "Codestral Embed", embedModel.Name)
-		assert.False(t, embedModel.CanReason)
+		require.NotNil(t, codestral2501)
+		assert.Equal(t, "Codestral 2501", codestral2501.Name)
+		assert.Equal(t, 1.0, codestral2501.CostPer1MIn)
+		assert.Equal(t, 3.0, codestral2501.CostPer1MOut)
 	})
 }

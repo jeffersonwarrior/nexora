@@ -134,21 +134,21 @@ func findIgnoreCase(s, substr string) bool {
 
 // HealthStatus represents the health status of an MCP connection
 type HealthStatus struct {
-	Name          string
-	Healthy       bool
-	LastCheck     time.Time
-	LastError     error
+	Name             string
+	Healthy          bool
+	LastCheck        time.Time
+	LastError        error
 	ConsecutiveFails int
-	Latency       time.Duration
+	Latency          time.Duration
 }
 
 // HealthMonitor monitors the health of MCP connections
 type HealthMonitor struct {
-	mu           sync.RWMutex
-	healthStatus map[string]*HealthStatus
+	mu            sync.RWMutex
+	healthStatus  map[string]*HealthStatus
 	checkInterval time.Duration
-	cancel       context.CancelFunc
-	running      bool
+	cancel        context.CancelFunc
+	running       bool
 }
 
 // NewHealthMonitor creates a new health monitor
@@ -157,7 +157,7 @@ func NewHealthMonitor(checkInterval time.Duration) *HealthMonitor {
 		checkInterval = 30 * time.Second
 	}
 	return &HealthMonitor{
-		healthStatus: make(map[string]*HealthStatus),
+		healthStatus:  make(map[string]*HealthStatus),
 		checkInterval: checkInterval,
 	}
 }

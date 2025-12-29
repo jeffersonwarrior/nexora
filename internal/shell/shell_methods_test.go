@@ -193,7 +193,6 @@ func TestShell_NewShell_CustomOptions(t *testing.T) {
 	}
 }
 
-
 // Mock logger for testing
 type mockLogger struct {
 	messages []string

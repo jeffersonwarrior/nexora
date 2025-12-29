@@ -65,19 +65,19 @@ const (
 
 // Task represents a delegated task.
 type Task struct {
-	ID          string
-	Description string
-	Context     string
-	WorkingDir  string
-	MaxTokens   int64
-	Status      TaskStatus
-	Result      string
-	Error       error
-	CreatedAt   time.Time
-	StartedAt   time.Time
-	CompletedAt time.Time
+	ID            string
+	Description   string
+	Context       string
+	WorkingDir    string
+	MaxTokens     int64
+	Status        TaskStatus
+	Result        string
+	Error         error
+	CreatedAt     time.Time
+	StartedAt     time.Time
+	CompletedAt   time.Time
 	ParentSession string
-	done        chan struct{}
+	done          chan struct{}
 }
 
 // Pool manages concurrent delegate agents with resource awareness.

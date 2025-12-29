@@ -13,8 +13,8 @@ func TestCompactor_EstimateTokens(t *testing.T) {
 	c := NewCompactor(DefaultCompactionConfig(100000))
 
 	tests := []struct {
-		name     string
-		msg      message.Message
+		name      string
+		msg       message.Message
 		minTokens int
 		maxTokens int
 	}{

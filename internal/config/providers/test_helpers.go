@@ -7,6 +7,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// allProviderFuncs returns all provider factory functions for comprehensive testing.
+func allProviderFuncs() map[string]func([]catwalk.Provider) catwalk.Provider {
+	return map[string]func([]catwalk.Provider) catwalk.Provider{
+		"anthropic":         AnthropicProvider,
+		"cerebras":          CerebrasProvider,
+		"cerebras-code":     CerebrasCodeProvider,
+		"deepseek":          DeepSeekProvider,
+		"gemini":            GeminiProvider,
+		"kimi":              KimiCodingProvider,
+		"moonshot":          MoonshotProvider,
+		"minimax":           MiniMaxProvider,
+		"mistral-codestral": MistralCodestralProvider,
+		"mistral-devstral":  MistralDevstralProvider,
+		"mistral-general":   MistralGeneralProvider,
+		"openai":            OpenAIProvider,
+		"xai":               XAIProvider,
+		"zai":               ZAIProvider,
+	}
+}
+
 // requireValidProvider ensures a provider has required fields.
 func requireValidProvider(t *testing.T, p catwalk.Provider) {
 	t.Helper()
@@ -32,5 +52,20 @@ func requireAllModelsHaveMetadata(t *testing.T, p catwalk.Provider) {
 		require.NotEmpty(t, m.ID, "Model must have ID")
 		require.NotEmpty(t, m.Name, "Model must have Name")
 		require.NotZero(t, m.ContextWindow, "Model must have ContextWindow")
+	}
+}
+
+// requireNoConflictingAuthHeaders ensures openai-compat providers don't have
+// Authorization in DefaultHeaders (catwalk handles auth via APIKey field).
+func requireNoConflictingAuthHeaders(t *testing.T, p catwalk.Provider) {
+	t.Helper()
+	if p.Type != "openai-compat" {
+		return
+	}
+	if p.DefaultHeaders != nil {
+		_, hasAuth := p.DefaultHeaders["Authorization"]
+		require.False(t, hasAuth,
+			"openai-compat provider %s should not set Authorization in DefaultHeaders (use APIKey field)",
+			p.ID)
 	}
 }

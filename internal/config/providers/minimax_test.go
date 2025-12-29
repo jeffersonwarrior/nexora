@@ -21,14 +21,14 @@ func TestMiniMaxProvider_HasThreeModels(t *testing.T) {
 	t.Parallel()
 	provider := MiniMaxProvider(nil)
 
-	require.Len(t, provider.Models, 3)
+	require.Len(t, provider.Models, 7)
 }
 
 func TestMiniMaxProvider_UsesAnthropicType(t *testing.T) {
 	t.Parallel()
 	provider := MiniMaxProvider(nil)
 
-	require.Equal(t, "anthropic", string(provider.Type))
+	require.Equal(t, "openai-compat", string(provider.Type))
 }
 
 func TestMiniMaxProvider_SkipsIfAlreadyExists(t *testing.T) {
@@ -52,14 +52,14 @@ func TestMiniMaxProvider_ModelIDs(t *testing.T) {
 
 	require.True(t, modelIDs["MiniMax-M2.1"])
 	require.True(t, modelIDs["MiniMax-M2"])
-	require.True(t, modelIDs["MiniMax-M2-Stable"])
+	require.True(t, modelIDs["MiniMax-Text-01"])
 }
 
 func TestMiniMaxProvider_DefaultAPIEndpoint(t *testing.T) {
 	t.Setenv("MINIMAX_API_ENDPOINT", "")
 
 	provider := MiniMaxProvider(nil)
-	require.Equal(t, "https://api.minimax.io/anthropic", provider.APIEndpoint)
+	require.Equal(t, "https://api.minimax.io/v1", provider.APIEndpoint)
 }
 
 func TestMiniMaxProvider_RespectEnvVarEndpoint(t *testing.T) {
@@ -68,4 +68,10 @@ func TestMiniMaxProvider_RespectEnvVarEndpoint(t *testing.T) {
 
 	provider := MiniMaxProvider(nil)
 	require.Equal(t, customEndpoint, provider.APIEndpoint)
+}
+
+func TestMiniMaxProvider_NoConflictingAuthHeaders(t *testing.T) {
+	t.Parallel()
+	provider := MiniMaxProvider(nil)
+	requireNoConflictingAuthHeaders(t, provider)
 }

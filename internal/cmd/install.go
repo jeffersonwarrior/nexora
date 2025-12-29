@@ -172,7 +172,10 @@ func fetchReleases(ctx context.Context) ([]ghRelease, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("github api returned status %d (failed to read error response)", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("github api returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -208,7 +211,10 @@ func fetchLatestRelease(ctx context.Context) (*ghRelease, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("github api returned status %d (failed to read error response)", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("github api returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -245,7 +251,10 @@ func fetchRelease(ctx context.Context, tag string) (*ghRelease, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("github api returned status %d (failed to read error response)", resp.StatusCode)
+		}
 		return nil, fmt.Errorf("github api returned status %d: %s", resp.StatusCode, string(body))
 	}
 

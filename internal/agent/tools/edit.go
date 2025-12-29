@@ -159,12 +159,25 @@ func NewEditTool(lspClients *csync.Map[string, *lsp.Client], permissions permiss
 					"file", params.FilePath,
 					"ai_mode", params.AIMode,
 					"old_string_short", params.OldString[:min(50, len(params.OldString))])
+
+				// Check circuit breaker - if too many failures, suggest alternatives
+				sessionID := GetSessionFromContext(ctx)
+				cb := GetEditCircuitBreaker()
+				if tripped, suggestion := cb.RecordFailure(sessionID, params.FilePath, params.OldString, response.Content); tripped {
+					response.Content = response.Content + suggestion
+				}
+
 				// Return early if there was an error during content replacement
 				// This prevents unnecessary LSP diagnostics processing
 				return response, nil
 			}
 
 			slog.Info("EDIT SUCCEEDED", "file", params.FilePath)
+
+			// Record success to reset circuit breaker
+			sessionID := GetSessionFromContext(ctx)
+			GetEditCircuitBreaker().RecordSuccess(sessionID, params.FilePath)
+
 			notifyLSPs(ctx, lspClients, params.FilePath)
 
 			text := fmt.Sprintf("<result>\n%s\n</result>\n", response.Content)

@@ -50,22 +50,22 @@ func AnthropicProvider(providers []catwalk.Provider) catwalk.Provider {
 			},
 			// Haiku 4.5 - Fast/Budget
 			{
-				ID:               "claude-haiku-4-5-20241022",
+				ID:               "claude-haiku-4-5-20251001",
 				Name:             "Claude Haiku 4.5",
 				CostPer1MIn:      1.0,
 				CostPer1MOut:     5.0,
 				ContextWindow:    200000,
 				DefaultMaxTokens: 8000,
-				CanReason:        false,
+				CanReason:        true,
 				SupportsImages:   true,
 				Options:          catwalk.ModelOptions{},
 			},
-			// Legacy Opus 4
+			// Legacy Opus 4.1
 			{
-				ID:               "claude-opus-4-20250514",
-				Name:             "Claude Opus 4",
-				CostPer1MIn:      15.0,
-				CostPer1MOut:     75.0,
+				ID:               "claude-opus-4-1-20250805",
+				Name:             "Claude Opus 4.1",
+				CostPer1MIn:      20.0,
+				CostPer1MOut:     80.0,
 				ContextWindow:    200000,
 				DefaultMaxTokens: 4096,
 				CanReason:        true,

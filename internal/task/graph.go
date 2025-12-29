@@ -223,30 +223,30 @@ func (g *TaskGraph) CalculateProgress(taskID string) float64 {
 //
 // 1. First, the graph is checked for cycles. A cyclic graph has no valid critical path.
 //
-// 2. Tasks are processed in reverse topological order. In our graph model, edges[A] = [B] means
-//    "A depends on B", so the topological sort returns tasks with no dependencies first.
-//    Processing in reverse means we process dependent tasks first.
+//  2. Tasks are processed in reverse topological order. In our graph model, edges[A] = [B] means
+//     "A depends on B", so the topological sort returns tasks with no dependencies first.
+//     Processing in reverse means we process dependent tasks first.
 //
 // 3. For each task, we compute its critical path length (longest path from that task to any leaf):
-//    - A task with no dependents (no other tasks depend on it) has critical path length = 1
-//    - A task with dependents has critical path length = 1 + max(critical path length of all dependents)
+//   - A task with no dependents (no other tasks depend on it) has critical path length = 1
+//   - A task with dependents has critical path length = 1 + max(critical path length of all dependents)
 //
-// 4. The critical path is reconstructed by tracing forward from the task with the longest
-//    critical path, always choosing the dependent that contributed to that length.
+//  4. The critical path is reconstructed by tracing forward from the task with the longest
+//     critical path, always choosing the dependent that contributed to that length.
 //
 // Example graph:
 //
-//	    ┌─────┐
-//	    │  A  │ (depends on nothing)
-//	    └──┬──┘
-//	       │
-//	    ┌──▼──┐     ┌────┐
-//	    │  B  │────▶│ D  │ (B depends on A, D depends on B)
-//	    └──┬──┘     └────┘
-//	       │
-//	    ┌──▼──┐
-//	    │  C  │
-//	    └─────┘
+//	┌─────┐
+//	│  A  │ (depends on nothing)
+//	└──┬──┘
+//	   │
+//	┌──▼──┐     ┌────┐
+//	│  B  │────▶│ D  │ (B depends on A, D depends on B)
+//	└──┬──┘     └────┘
+//	   │
+//	┌──▼──┐
+//	│  C  │
+//	└─────┘
 //
 // Edges would be: B->[A], C->[A], D->[B]
 // Critical path: A -> B -> D (length 3)

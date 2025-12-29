@@ -40,15 +40,15 @@ func DetectLanguage(path string) string {
 func DetectLanguageFromDirectory(dir string) string {
 	// Check for common project marker files
 	markers := map[string]string{
-		"go.mod":         "go",
-		"go.sum":         "go",
-		"Cargo.toml":     "rust",
-		"Cargo.lock":     "rust",
-		"tsconfig.json":  "typescript",
-		"package.json":   "typescript", // Could be JS too, but assume TS
+		"go.mod":           "go",
+		"go.sum":           "go",
+		"Cargo.toml":       "rust",
+		"Cargo.lock":       "rust",
+		"tsconfig.json":    "typescript",
+		"package.json":     "typescript", // Could be JS too, but assume TS
 		"requirements.txt": "python",
-		"setup.py":       "python",
-		"pyproject.toml": "python",
+		"setup.py":         "python",
+		"pyproject.toml":   "python",
 	}
 
 	for marker, lang := range markers {

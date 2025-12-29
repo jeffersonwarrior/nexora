@@ -35,6 +35,9 @@ func NewGlobTool(workingDir string) fantasy.AgentTool {
 		GlobToolName,
 		string(globDescription),
 		func(ctx context.Context, params GlobParams, call fantasy.ToolCall) (fantasy.ToolResponse, error) {
+			// Sanitize pattern - GLM-4.7 sometimes includes XML artifacts like </arg_key><arg_value>
+			params.Pattern = sanitizeGlobPattern(params.Pattern)
+
 			if params.Pattern == "" {
 				return fantasy.NewTextErrorResponse("pattern is required"), nil
 			}
@@ -122,4 +125,25 @@ func normalizeFilePaths(paths []string) {
 	for i, p := range paths {
 		paths[i] = filepath.ToSlash(p)
 	}
+}
+
+// sanitizeGlobPattern removes XML/JSON artifacts that GLM-4.7 sometimes includes
+// Example: "internal/permission/*.go</arg_key><arg_value>" -> "internal/permission/*.go"
+func sanitizeGlobPattern(pattern string) string {
+	// Remove XML-style artifacts
+	if idx := strings.Index(pattern, "</"); idx > 0 {
+		pattern = pattern[:idx]
+	}
+	if idx := strings.Index(pattern, "<arg"); idx > 0 {
+		pattern = pattern[:idx]
+	}
+	// Remove JSON-style artifacts
+	if idx := strings.Index(pattern, "{"); idx > 0 {
+		// Only trim if it's not a valid glob brace expansion
+		beforeBrace := pattern[:idx]
+		if !strings.Contains(beforeBrace, ",") && !strings.HasSuffix(beforeBrace, "\\") {
+			pattern = beforeBrace
+		}
+	}
+	return strings.TrimSpace(pattern)
 }
