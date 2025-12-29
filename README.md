@@ -107,6 +107,7 @@ nexora chat  # → edit files, run bash, git commit, etc.
 🖼️ **Vision MCP**: @z_ai/mcp-server (image analysis)
 🌐 Web: fetch (smart routing) / web_fetch / web_search
 📊 QA: job_output/job_kill (aliased to bash)
+⚠️ **DELEGATE**: Not yet implemented (coming soon)
 ```
 
 ## 🔤 Natural Language Tool Aliases
