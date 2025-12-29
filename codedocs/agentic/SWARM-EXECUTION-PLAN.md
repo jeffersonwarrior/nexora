@@ -2577,6 +2577,7 @@ func (c *coordinator) saveDelegateState() error {
 }
 
 // recoverOrphanedDelegates checks for delegates from a previous crash
+// NOTE: Must acquire activeDelegatesMu when modifying activeDelegates (Concern 7 - race fix)
 func (c *coordinator) recoverOrphanedDelegates(ctx context.Context) {
     statePath := filepath.Join(c.cfg.WorkingDir(), ".nexora", "delegate-state.json")
     data, err := os.ReadFile(statePath)
@@ -2604,7 +2605,20 @@ func (c *coordinator) recoverOrphanedDelegates(ctx context.Context) {
                     ParentSession: entry.ParentSession,
                 }, string(result), nil)
             } else {
-                // Still running - resume monitoring
+                // Still running - add to active delegates and resume monitoring
+                // CRITICAL: Acquire lock before modifying activeDelegates map
+                c.activeDelegatesMu.Lock()
+                c.activeDelegates[entry.TaskID] = &activeDelegateInfo{
+                    SessionID:   entry.TmuxSessionID,
+                    DelegateDir: entry.DelegateDir,
+                    Task: &delegation.Task{
+                        ID:            entry.TaskID,
+                        ParentSession: entry.ParentSession,
+                    },
+                    StartedAt: entry.StartedAt,
+                }
+                c.activeDelegatesMu.Unlock()
+
                 go c.monitorDelegate(ctx, &delegation.Task{
                     ID:            entry.TaskID,
                     ParentSession: entry.ParentSession,
@@ -3560,3 +3574,161 @@ cat /home/nexora/claude-progress.txt
 # 4. Check workers
 tmux ls | grep cc-worker
 ```
+
+---
+
+## Concern Traceability Matrix
+
+Maps each concern to the feature(s) that address it for verification:
+
+| Concern | Description | Addressed By | Verified |
+|---------|-------------|--------------|----------|
+| C11 | Configuration Integration | F5 | [ ] |
+| C12 | CLI Flag Propagation | F5 | [ ] |
+| C13 | Tool Access Parity | F9 | [ ] |
+| C14 | Permission Model Safety | F1, F5, F6 | [ ] |
+| C15 | Resource Exhaustion Limits | F5, F9b | [ ] |
+| C16 | Configurable Cleanup Retention | F5, F14 | [ ] |
+| C17 | Monitor Error Handling and Backoff | F10 | [ ] |
+| C18 | Move --output-format to Phase 1 | F4b | [ ] |
+| C19 | Extract Atomic File Utilities | F0 | [ ] |
+| C20 | Configuration Validation | F6 | [ ] |
+| C21 | Health Checks in monitorDelegate | F10 | [ ] |
+| C22 | Dependency Adjustments | All Features | [ ] |
+| C23 | Tmux Availability Check | F9b | [ ] |
+| C24 | Session ID Collision Risk | F9 | [ ] |
+| C25 | Race in ProcessPendingDelegateReports | F11 | [ ] |
+| C26 | Add --delegate-timeout Flag | F5, F10 | [ ] |
+| C27 | Headless Validation Mandatory | F6 | [ ] |
+| C28 | Output Format Consistency | F6, F7 | [ ] |
+| C29 | Add Logging to Spawn Command | F9 | [ ] |
+| C30 | Model Override Precedence | F4, F6, F9 | [ ] |
+| C31 | Start Periodic Cleanup Goroutine | F5, F14 | [ ] |
+| C32 | Config Field Reference Consistency | F5, F6, F7, F9-F14 | [ ] |
+| C33 | Circuit Breaker for Delegate Spawning | F5, F9b | [ ] |
+| C34 | Resource Backpressure System | F9b | [ ] |
+| C35 | Retry Logic with Exponential Backoff | F9b | [ ] |
+| C36 | Security Hardening - Command Validation | F9 | [ ] |
+| C37 | Prometheus Metrics for Observability | F5, F9b | [ ] |
+| C38 | Graceful Shutdown with Drain | F10 | [ ] |
+| C39 | Empty Prompt File Validation | F6 | [ ] |
+| C40 | Cross-Platform Disk Space Check | F10 | [ ] |
+| C41 | Add --dry-run Flag for Validation | F1-F4, F6 | [ ] |
+| C42 | Missing removeProcessed Helper Function | F11 | [ ] |
+| C43 | Session ID Should Use Full UUID | F9 | [ ] |
+
+---
+
+## Rollback Procedures
+
+If implementation fails at any phase, use these procedures to safely abort:
+
+### Phase 1 Rollback (CLI Flags)
+```bash
+# Revert flag additions
+git checkout internal/cmd/root.go
+```
+
+### Phase 2 Rollback (Headless Coordinator)
+```bash
+# Revert config and coordinator changes
+git checkout internal/config/config.go
+git checkout internal/agent/coordinator.go
+```
+
+### Phase 3 Rollback (Tmux Spawning)
+```bash
+# Revert delegate tool changes
+git checkout internal/agent/delegate_tool.go
+# Kill any orphaned delegate sessions
+tmux ls | grep delegate- | cut -d: -f1 | xargs -I{} tmux kill-session -t {}
+# Clean up delegate directories
+rm -rf .nexora/delegates/*
+rm -f .nexora/delegate-state.json
+```
+
+### Phase 4 Rollback (File-Based State)
+```bash
+# Same as Phase 3 - already covered
+git checkout internal/agent/delegate_tool.go
+git checkout internal/agent/coordinator.go
+```
+
+### Full Rollback
+```bash
+# Revert all changes to pre-implementation state
+git stash  # or git checkout -f
+# Clean up runtime state
+rm -rf .nexora/delegates .nexora/delegate-reports .nexora/delegate-state.json
+tmux ls | grep delegate- | cut -d: -f1 | xargs -I{} tmux kill-session -t {} 2>/dev/null || true
+```
+
+---
+
+## Required Environment Variables
+
+The headless delegate system requires these environment variables for proper operation:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `HOME` | Yes | User home directory for config paths | `/home/user` |
+| `PATH` | Yes | System path for nexora binary | `/usr/local/bin:...` |
+| `NEXORA_*` | No | Nexora-specific configuration | `NEXORA_DEBUG=1` |
+| `ANTHROPIC_API_KEY` | Yes* | API key for Claude models | `sk-ant-...` |
+| `OPENAI_API_KEY` | No | API key for OpenAI models (if used) | `sk-...` |
+
+*Or configured via psst secret management.
+
+**Environment Inheritance:**
+When spawning delegates via tmux, these environment variables are automatically
+inherited from the parent process. Additional variables can be passed via the
+`--env` flag (if implemented) or environment file.
+
+---
+
+## Success Criteria
+
+The implementation is complete when:
+
+1. **All Features Pass Acceptance Criteria**
+   - Each feature's checkbox list is fully checked
+   - All tests pass with race detector enabled
+
+2. **Build Verification**
+   ```bash
+   go build ./... && go vet ./... && go test ./... -race
+   ```
+
+3. **Manual Verification**
+   ```bash
+   # Test headless mode
+   echo "What is 2+2?" > /tmp/test.txt
+   nexora --headless --prompt-file=/tmp/test.txt --output-file=/tmp/result.txt
+   cat /tmp/result.txt
+
+   # Test delegate spawning (if tmux available)
+   nexora  # Interactive mode, use delegate_tool
+   ```
+
+4. **Traceability Matrix Complete**
+   - All concerns mapped to features
+   - All verification checkboxes checked
+
+---
+
+## Document Version
+
+- **Version:** 2.0
+- **Last Updated:** 2025-12-29
+- **Changes:**
+  - Added F0 (Atomic File Utilities)
+  - Added F2b, F3b, F4b, F4c (missing CLI flags)
+  - Added F9b (Pool Executor Switch)
+  - Fixed F6 config path references (Concern 32)
+  - Added coordinator struct field declarations (F5)
+  - Added interrupt file polling to F6
+  - Fixed race condition in recoverOrphanedDelegates (F8)
+  - Added processPendingDelegateReports integration (F11)
+  - Added Concern Traceability Matrix
+  - Added Rollback Procedures
+  - Added Required Environment Variables

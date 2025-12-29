@@ -1,7 +1,7 @@
 # Nexora Roadmap
 
-**Current Version:** v0.29.3
-**Release Date:** 2025-12-28
+**Current Version:** v0.29.4
+**Release Date:** 2025-12-29
 **Status:** Production Ready
 
 ---
@@ -10,16 +10,17 @@
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **v0.29.3** | About command, version display, **delegate system fixes**, CLI enhancements | 🔧 In Progress |
-| **v0.29.4** | Delegate persistence, tmux workers, project management, code memory | Planned |
-| **v0.29.5** | Claude-swarm integration, protocol composition, A2A | Planned |
+| **v0.29.4** | Headless delegate system, tmux workers, file-based state | 🔧 In Progress |
+| **v0.29.5** | Native GitHub tools, project management, code memory | Planned |
+| **v0.29.6** | Claude-swarm integration, protocol composition, A2A | Planned |
 | **v3.0** | ModelScan integration, VNC/Docker dual-mode | Planned |
 
 ---
 
-## v0.29.3 Release (Current)
+## v0.29.3 Release (Archived)
 
 **Released:** 2025-12-28
+**Status:** ✅ Complete
 
 ### Completed Features
 

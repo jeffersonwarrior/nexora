@@ -106,7 +106,11 @@ func NewDownloadTool(permissions permission.Service, workingDir string, client *
 
 			resp, err := client.Do(req)
 			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("failed to download from URL: %w", err)
+				// Return friendly error message instead of propagating context errors
+				if ctx.Err() != nil || strings.Contains(err.Error(), "deadline exceeded") || strings.Contains(err.Error(), "context canceled") {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("⏱️ Download from %s timed out after %ds. The server may be slow or file too large.", params.URL, params.Timeout)), nil
+				}
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to download from URL: %s", err.Error())), nil
 			}
 			defer resp.Body.Close()
 

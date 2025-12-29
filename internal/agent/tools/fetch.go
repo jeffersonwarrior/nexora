@@ -108,7 +108,11 @@ func NewFetchTool(permissions permission.Service, workingDir string, client *htt
 
 			resp, err := client.Do(req)
 			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("failed to fetch URL: %w", err)
+				// Return friendly error message instead of propagating context errors
+				if ctx.Err() != nil || strings.Contains(err.Error(), "deadline exceeded") || strings.Contains(err.Error(), "context canceled") {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("⏱️ Request to %s timed out after %ds. The server may be slow or unreachable. Try increasing timeout or check if the URL is correct.", params.URL, params.Timeout)), nil
+				}
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to fetch URL: %s", err.Error())), nil
 			}
 			defer resp.Body.Close()
 

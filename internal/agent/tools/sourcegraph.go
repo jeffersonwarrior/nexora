@@ -105,7 +105,11 @@ func NewSourcegraphTool(client *http.Client) fantasy.AgentTool {
 
 			resp, err := client.Do(req)
 			if err != nil {
-				return fantasy.ToolResponse{}, fmt.Errorf("failed to fetch URL: %w", err)
+				// Return friendly error message instead of propagating context errors
+				if ctx.Err() != nil || strings.Contains(err.Error(), "deadline exceeded") || strings.Contains(err.Error(), "context canceled") {
+					return fantasy.NewTextErrorResponse(fmt.Sprintf("⏱️ Sourcegraph request timed out after %ds. Try increasing timeout.", params.Timeout)), nil
+				}
+				return fantasy.NewTextErrorResponse(fmt.Sprintf("Failed to query Sourcegraph: %s", err.Error())), nil
 			}
 			defer resp.Body.Close()
 

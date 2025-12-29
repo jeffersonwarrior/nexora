@@ -1,0 +1,104 @@
+name: Test Greptile API
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository to test with (owner/repo)'
+        required: false
+        default: 'nexora/nexora'
+        type: string
+      branch:
+        description: 'Branch to index'
+        required: false
+        default: 'main'
+        type: string
+
+jobs:
+  test-greptile:
+    name: Test Greptile API Integration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.inputs.repository || 'nexora/nexora' }}
+          fetch-depth: 1
+
+      - name: Test Greptile API
+        run: |
+          # Create the request
+          REQUEST='{
+            "remote": "github",
+            "repository": "${{ github.event.inputs.repository || 'nexora/nexora' }}",
+            "branch": "${{ github.event.inputs.branch || 'main' }}",
+            "reload": true,
+            "notify": true
+          }'
+          
+          echo "Submitting repository to Greptile API..."
+          echo "Request: $REQUEST"
+          
+          # Submit the repository for indexing
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GREPTILE_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
+            -d "$REQUEST" \
+            https://api.greptile.com/v2/repositories)
+          
+          echo "Response: $RESPONSE"
+          
+          # Check if we got a valid response
+          if echo "$RESPONSE" | jq -e '.message' > /dev/null 2>&1; then
+            echo "✅ Repository submitted successfully!"
+            
+            # Extract status endpoint if available
+            STATUS_ENDPOINT=$(echo "$RESPONSE" | jq -r '.statusEndpoint // empty')
+            if [ -n "$STATUS_ENDPOINT" ] && [ "$STATUS_ENDPOINT" != "null" ]; then
+              echo "Status endpoint: $STATUS_ENDPOINT"
+              echo "You can check the status at: $STATUS_ENDPOINT"
+            fi
+          else
+            echo "❌ Failed to submit repository"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Query Test (Optional)
+        if: success()
+        run: |
+          # Wait a bit for indexing to start
+          sleep 30
+          
+          # Test querying the repository
+          QUERY='{
+            "repositories": ["${{ github.event.inputs.repository || 'nexora/nexora' }}"],
+            "query": "What is the main purpose of this repository?"
+          }'
+          
+          echo "Testing query to Greptile API..."
+          echo "Query: $QUERY"
+          
+          QUERY_RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GREPTILE_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Token: ${{ secrets.GITHUB_TOKEN }}" \
+            -d "$QUERY" \
+            https://api.greptile.com/v2/query)
+          
+          echo "Query Response: $QUERY_RESPONSE"
+          
+          # Check if we got a valid query response
+          if echo "$QUERY_RESPONSE" | jq -e '.answer' > /dev/null 2>&1; then
+            ANSWER=$(echo "$QUERY_RESPONSE" | jq -r '.answer')
+            echo "✅ Query successful!"
+            echo "Answer: $ANSWER"
+          else
+            echo "⚠️ Query failed or repository not yet indexed"
+            echo "Response: $QUERY_RESPONSE"
+            echo "This is normal - indexing may take some time"
+          fi

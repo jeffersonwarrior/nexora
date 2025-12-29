@@ -157,11 +157,51 @@ curl https://example.com          # 	 fetch
 wget https://example.com          # 	 fetch
 http-get https://example.com      # 	 fetch
 web-fetch https://example.com     # 	 fetch
+## 🤖 AI Code Review with Greptile
+
+Nexora integrates with [Greptile](https://greptile.com) for automated AI code reviews on pull requests.
+
+### Setup
+1. Get your Greptile API key from the [Greptile Dashboard](https://greptile.com/dashboard)
+2. Add the API key to your repository secrets:
+   ```bash
+   # In GitHub repository settings > Secrets and variables > Actions
+   GREPTILE_API_KEY=your_api_key_here
+   ```
+
+### Features
+- **Automatic PR Reviews**: Greptile analyzes pull requests for:
+  - Code quality and best practices
+  - Security vulnerabilities
+  - Performance considerations
+  - Documentation completeness
+  - Test coverage
+  - Adherence to Go conventions
+
+- **Repository Indexing**: Automatically indexes your codebase for context-aware reviews
+- **Customizable Rules**: Uses `greptile.json` for project-specific review rules
+
+### Configuration
+Configure review settings in your `greptile.json`:
+
+```json
+{
+  "strictness": 3,
+  "commentTypes": ["logic", "syntax", "style"],
+  "model": "gpt-4o",
+  "instructions": "Focus on production-grade code quality and adherence to Go patterns",
+  "includeBranches": ["main", "feature/**", "fix/**"],
+  "excludeAuthors": ["dependabot[bot]", "github-actions[bot]"]
+}
 ```
 
-## 🚀 Why Nexora?
+### Usage
+Once configured, Greptile will automatically review pull requests on:
+- PR creation
+- PR updates/new commits
+- Manual workflow dispatch
 
-| ✅ **Execution Layer** | ❌ **Not for** |
+## 🚀 Why Nexora?
 |-----------------------|-------------|
 | **YOLO mode**: Immediate execution | Human-in-the-loop workflows |
 | **Orchestration-ready**: API-first design | Standalone end-user apps |

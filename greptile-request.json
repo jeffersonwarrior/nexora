@@ -1,0 +1,7 @@
+{
+    "remote": "github",
+    "repository": "jeffersonwarrior/nexora",
+    "branch": "main",
+    "reload": true,
+    "notify": true
+}
