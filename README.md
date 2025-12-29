@@ -62,20 +62,13 @@ nexora chat  # Opens TUI for API key input & provider configuration
 ✅ Auto-loads .env API keys → Production ready
 ```
 
-## 🚀 CI/CD Pipeline
+---
 
-**Comprehensive automated pipeline** with quality checks, security scanning, and release automation:
-```bash
-✅ Multi-stage CI/CD with GitHub Actions
-✅ Automated testing (unit, integration, performance)
-✅ Security scanning (Gosec, SARIF, vulnerability checks)
-✅ Code quality (linting, formatting, static analysis)
-✅ Auto-fix capabilities with PR generation
-✅ Cross-platform releases with checksums
-✅ Dependency management and updates
-```
+⚙️ See [CICD.md](CICD.md) for CI/CD pipeline documentation
 
-See [CICD.md](CICD.md) for detailed pipeline documentation.
+
+
+
 
 ## 📦 Installation Options
 
