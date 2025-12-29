@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"maps"
 	"os"
+	"os/exec"
 	"regexp"
 	"slices"
 	"strconv"
@@ -1300,4 +1301,19 @@ func (c *coordinator) Summarize(ctx context.Context, sessionID string) error {
 		return errors.New("model provider not configured")
 	}
 	return c.currentAgent.Summarize(ctx, sessionID, getProviderOptions(c.currentAgent.Model(), providerCfg))
+}
+
+// Close cleans up coordinator resources, including orphaned delegate tmux sessions
+func (c *coordinator) Close() error {
+	// Kill all orphaned delegate tmux sessions
+	// These are sessions that may have been left running if the parent process crashed
+	cmd := fmt.Sprintf("tmux ls -F '#{session_name}' 2>/dev/null | grep '^nexora-delegate-' | xargs -r -I {} tmux kill-session -t {}")
+	_ = os.Getenv("SHELL") // Ensure shell is available
+
+	// Use bash to execute the cleanup command
+	// We ignore errors here since sessions may not exist
+	bashCmd := fmt.Sprintf("bash -c %q", cmd)
+	_ = exec.Command("sh", "-c", bashCmd).Run()
+
+	return nil
 }

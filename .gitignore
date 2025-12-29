@@ -115,3 +115,6 @@ context-engine/
 
 # Claude Code instructions (use NEXORA.md instead)
 CLAUDE.md
+
+# Delegate working directories (headless mode temp files)
+.nexora/delegates/
