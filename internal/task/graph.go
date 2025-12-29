@@ -228,10 +228,12 @@ func (g *TaskGraph) CalculateProgress(taskID string) float64 {
 //     Processing in reverse means we process dependent tasks first.
 //
 // 3. For each task, we compute its critical path length (longest path from that task to any leaf):
+//
 //   - A task with no dependents (no other tasks depend on it) has critical path length = 1
+//
 //   - A task with dependents has critical path length = 1 + max(critical path length of all dependents)
 //
-//  4. The critical path is reconstructed by tracing forward from the task with the longest
+//     4. The critical path is reconstructed by tracing forward from the task with the longest
 //     critical path, always choosing the dependent that contributed to that length.
 //
 // Example graph:
