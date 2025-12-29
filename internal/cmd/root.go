@@ -45,6 +45,12 @@ For more information, visit our GitHub at https://github.com/jeffersonwarrior/ne
 	rootCmd.Flags().BoolP("help", "h", false, "Help")
 	rootCmd.Flags().BoolP("yolo", "y", false, "Automatically accept all permissions (dangerous mode)")
 
+	// Headless mode flags (for delegate system)
+	rootCmd.Flags().Bool("headless", false, "Run without TUI (for delegates and automation)")
+	rootCmd.Flags().String("prompt-file", "", "Read initial prompt from file (headless mode)")
+	rootCmd.Flags().String("output-file", "", "Write final result to file (headless mode)")
+	rootCmd.Flags().String("model", "", "Model to use (e.g., 'claude-sonnet-4', 'gpt-4o', 'deepseek-v3')")
+
 	rootCmd.AddCommand(
 		runCmd,
 		dirsCmd,
@@ -75,6 +81,12 @@ var rootCmd = &cobra.Command{
 		if flag.Lookup("test.v") != nil {
 			// Don't run the TUI or setup the app in tests.
 			return nil
+		}
+
+		// Check for headless mode
+		headless, _ := cmd.Flags().GetBool("headless")
+		if headless {
+			return runHeadless(cmd)
 		}
 
 		var runErr error
@@ -304,4 +316,64 @@ func shouldQueryTerminalVersion(env uv.Environ) bool {
 		(!strings.Contains(termProg, "Apple") && !okSSHTTY) ||
 		// Terminals that do support XTVERSION.
 		stringext.ContainsAny(termType, "alacritty", "ghostty", "kitty", "rio", "wezterm")
+}
+
+// runHeadless runs nexora in headless mode (no TUI, for delegate system)
+func runHeadless(cmd *cobra.Command) error {
+	promptFile, _ := cmd.Flags().GetString("prompt-file")
+	outputFile, _ := cmd.Flags().GetString("output-file")
+	modelOverride, _ := cmd.Flags().GetString("model")
+
+	if promptFile == "" {
+		return fmt.Errorf("--prompt-file is required in headless mode")
+	}
+	if outputFile == "" {
+		return fmt.Errorf("--output-file is required in headless mode")
+	}
+
+	// Read prompt from file
+	promptBytes, err := os.ReadFile(promptFile)
+	if err != nil {
+		return fmt.Errorf("failed to read prompt file: %w", err)
+	}
+	prompt := string(promptBytes)
+
+	// Setup app (minimal, no TUI)
+	app, err := setupAppWithProgressBar(cmd)
+	if err != nil {
+		return err
+	}
+	defer app.Shutdown()
+
+	// Apply model override if specified
+	if modelOverride != "" {
+		// TODO: implement model override in coordinator
+		slog.Info("model override requested", "model", modelOverride)
+	}
+
+	// Create session and run agent
+	ctx := context.Background()
+	sessionID := fmt.Sprintf("headless-%d", os.Getpid())
+
+	result, err := app.AgentCoordinator.Run(ctx, sessionID, prompt)
+	if err != nil {
+		return fmt.Errorf("agent run failed: %w", err)
+	}
+
+	// Write result to output file
+	resultText := result.Response.Content.Text()
+	if err := os.WriteFile(outputFile, []byte(resultText), 0644); err != nil {
+		return fmt.Errorf("failed to write output file: %w", err)
+	}
+
+	// Write .done marker
+	doneFile := outputFile + ".done"
+	if err := os.WriteFile(doneFile, []byte(""), 0644); err != nil {
+		return fmt.Errorf("failed to write done marker: %w", err)
+	}
+
+	// Stream output to stdout (captured by tmux)
+	fmt.Println(resultText)
+
+	return nil
 }
